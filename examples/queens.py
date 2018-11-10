@@ -1,6 +1,7 @@
 from milppy.model import *
+from sys import *
 
-n = 100
+n = 10
 
 queens = Model()
 x = [[
@@ -32,6 +33,18 @@ for p,k in enumerate(range(2-n,n-2+1)):
 # diagonal /
 for p,k in enumerate(range(3,n+n)):
 	queens.add_constr( sum(x[i][j] for i in range(n) for j in range(n) if i+j==k) <= 1, 'diag2({})'.format(p) )
+
+queens.optimize()
+
+queens.optimize()
+#print('obj: {}'.format(pulp.value(queens.objective)))
+for i in range(n):
+    for j in range(n):
+   	 if x[i][j].value() >= 0.98:
+   		 stdout.write(' O');
+   	 else:
+   		 stdout.write(' .');
+    stdout.write('\n')
 
 #queens.write('queens.lp')
 

@@ -183,6 +183,12 @@ class SolverGurobi(Solver):
 
         GRBsetdblattrlist(self._model, "Start", numnz, cind, cval)
 
+    def x(self, var : "Var"):
+        res = c_double()
+        st = GRBgetdblattrelement(self._model, c_str("X"), c_int(var.idx), byref(res))
+        return res.value
+
+
 
 def write(self, file_path: str):
     # writing formulation to output file
@@ -271,3 +277,10 @@ GRBoptimize.argtypes = [c_void_p]
 GRBwrite = grblib.GRBwrite
 GRBwrite.restype = c_int
 GRBwrite.argtypes = [c_void_p, c_char_p]
+
+# return double attribute element
+GRBgetdblattrelement = grblib.GRBgetdblattrelement
+GRBgetdblattrelement.restype = c_double
+GRBgetdblattrelement.argtypes = [c_void_p, c_char_p, c_int, POINTER(c_double)]
+
+# vim: ts=4 sw=4 et

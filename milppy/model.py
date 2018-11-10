@@ -268,6 +268,7 @@ class Model:
         self.solver.write(path)
 
 
+
 class Solver:
 
     def __init__(self, name: str, sense: str):
@@ -290,6 +291,8 @@ class Solver:
     def set_objective(self, lin_expr: "LinExpr", sense: str = ""): pass
 
     def write(self, file_path: str): pass
+
+    def x(self, var: "Var") -> float: pass
 
 
 class Var:
@@ -360,6 +363,9 @@ class Var:
     def __str__(self) -> str:
         return self.name
 
+    def value(self) -> float:
+        return self.model.solver.x(self)
+
 
 def xsum(terms) -> LinExpr:
     result = LinExpr()
@@ -370,3 +376,5 @@ def xsum(terms) -> LinExpr:
 
 # function aliases
 quicksum = xsum
+
+# vim: ts=4 sw=4 et
