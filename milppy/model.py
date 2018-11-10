@@ -206,6 +206,8 @@ class Model:
     def add_constr(self,
                    lin_expr: "LinExpr",
                    name: str = "") -> Constr:
+        if type(lin_expr) is bool:
+        	return  # empty constraint
         idx = self.solver.add_constr(lin_expr, name)
         self.constrs.append(Constr(self, idx))
         return self.constrs[-1]

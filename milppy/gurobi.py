@@ -1,5 +1,6 @@
 from milppy.model import *
 from ctypes import *
+from ctypes.util import *
 
 
 class SolverGurobi(Solver):
@@ -129,7 +130,7 @@ def c_str(value):
     return create_string_buffer(value.encode('utf-8'))
 
 
-grblib = CDLL('libgurobi80.so')
+grblib = CDLL(find_library('gurobi'))
 
 # create/release environment and model
 
