@@ -232,12 +232,14 @@ class Model:
             from milppy.gurobi import SolverGurobi
             self.solver = SolverGurobi(name, sense)
 
-    def add_var(self, obj: float = 0,
-                lb: float = 0,
+    def add_var(self, 
+                name : str = "",
+                lb: float = 0.0,
                 ub: float = INF,
-                column: "Column" = None,
+                obj: float = 0.0,
                 type: str = CONTINUOUS,
-                name: str = "") -> "Var":
+                column: "Column" = None
+                ) -> "Var":
         idx = self.solver.add_var(obj, lb, ub, column, type, name)
         self.vars.append(Var(self, idx, name))
         return self.vars[-1]

@@ -6,12 +6,8 @@ n = 10
 queens = Model()
 x = [[
 	queens.add_var(
-	1,
-	0.0,
-	1.0,
-	None,
-	'B',
-	'x({},{})'.format(i,j) )
+		'x({},{})'.format(i,j),
+		0.0, 1.0, 1.0, 'B' )
 		for j in range(n)] for i in range(n) ]
 
 # one per row
@@ -36,7 +32,6 @@ for p,k in enumerate(range(3,n+n)):
 
 queens.optimize()
 
-queens.optimize()
 #print('obj: {}'.format(pulp.value(queens.objective)))
 for i in range(n):
     for j in range(n):
