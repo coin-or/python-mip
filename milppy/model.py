@@ -247,11 +247,19 @@ class Model:
         self.constrs.append(Constr(self, idx, name))
         return self.constrs[-1]
 
+    def add_solution(self, variables: List["Var"], values: List[float]):
+        self.solver.add_solution(variables, values)
+
     def optimize(self):
         self.solver.optimize()
 
-    def set_obj(self, lin_expr: "LinExpr"):
-        self.solver.set_obj(lin_expr)
+    def set_objective(self, expr, sense: str = ""):
+        if type(expr) is int or type(expr) is float:
+            self.solver.set_objective(LinExpr([], [], expr))
+        elif type(expr) is Var:
+            self.solver.set_objective(LinExpr([expr], [1]))
+        elif type(expr) is LinExpr:
+            self.solver.set_objective(expr, sense)
 
     def write(self, path: str):
         self.solver.write(path)
@@ -272,11 +280,11 @@ class Solver:
 
     def add_constr(self, lin_expr: "LinExpr", name: str = "") -> int: pass
 
-    def add_solution(self, variables: List["Var"], values: List[float]) -> bool: pass
+    def add_solution(self, variables: List["Var"], values: List[float]): pass
 
     def optimize(self) -> int: pass
 
-    def set_obj(self, lin_expr: "LinExpr"): pass
+    def set_objective(self, lin_expr: "LinExpr", sense: str = ""): pass
 
     def write(self, file_path: str): pass
 

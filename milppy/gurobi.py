@@ -11,19 +11,19 @@ class SolverGurobi(Solver):
         super().__init__(name, sense)
 
         # setting class members to default values
-        self._num_vars = 0
-        self._num_constrs = 0
-        self._log = ""
+        self._num_vars: int = 0
+        self._num_constrs: int = 0
+        self._log: str = ""
         self._env: c_void_p = c_void_p(0)
         self._model: c_void_p = c_void_p(0)
 
         # setting variables for an empty model
-        numvars = c_int(0)
-        obj = c_double(0)
-        lb = c_double(0)
-        ub = c_double(0)
-        vtype = c_char_p()
-        varnames = c_void_p(0)
+        numvars: c_int = c_int(0)
+        obj: c_double = c_double(0)
+        lb: c_double = c_double(0)
+        ub: c_double = c_double(0)
+        vtype: c_char_p = c_char_p()
+        varnames: c_void_p = c_void_p(0)
 
         # creating Gurobi environment
         if GRBloadenv(byref(self._env), c_str(self._log)) != 0:
@@ -42,17 +42,16 @@ class SolverGurobi(Solver):
         if self._env:
             GRBfreeenv(self._env)
 
-    def add_var(self,
-                obj: float = 0,
+    def add_var(self, obj: float = 0,
                 lb: float = 0,
                 ub: float = float("inf"),
                 column: "Column" = None,
                 type: str = 'C',
                 name: str = "") -> int:
         # collecting column data
-        numnz = 0 if column is None else len(column.constrs)
-        vind = (c_int * numnz)()
-        vval = (c_double * numnz)()
+        numnz: c_int = 0 if column is None else len(column.constrs)
+        vind: POINTER(c_int) = (c_int * numnz)()
+        vval: POINTER(c_double) = (c_double * numnz)()
 
         # collecting column coefficients
         for i in range(numnz):
@@ -60,10 +59,10 @@ class SolverGurobi(Solver):
             vval[i] = column.coeffs[i]
 
         # variable type
-        vtype = c_char(ord(type))
+        vtype: c_char = c_char(ord(type))
 
         # variable index
-        idx = self._num_vars
+        idx: int = self._num_vars
         self._num_vars += 1
 
         GRBaddvar(self._model, c_int(numnz), vind, vval, c_double(obj), c_double(lb), c_double(ub), vtype, c_str(name))
@@ -71,9 +70,9 @@ class SolverGurobi(Solver):
 
     def add_constr(self, lin_expr: "LinExpr", name: str = '') -> int:
         # collecting linear expression data
-        numnz = len(lin_expr.expr)
-        cind = (c_int * numnz)()
-        cval = (c_double * numnz)()
+        numnz: c_int = len(lin_expr.expr)
+        cind: POINTER(c_int) = (c_int * numnz)()
+        cval: POINTER(c_double) = (c_double * numnz)()
 
         # collecting variable coefficients
         for i, (var, coeff) in enumerate(lin_expr.expr.items()):
@@ -81,26 +80,29 @@ class SolverGurobi(Solver):
             cval[i] = coeff
 
         # constraint sense and rhs
-        sense = c_char(ord(lin_expr.sense))
-        rhs = c_double(-lin_expr.const)
+        sense: c_char = c_char(ord(lin_expr.sense))
+        rhs: c_double = c_double(-lin_expr.const)
 
         # constraint index
-        idx = self._num_constrs
+        idx: int = self._num_constrs
         self._num_constrs += 1
 
         GRBaddconstr(self._model, numnz, cind, cval, sense, rhs, c_str(name))
         return idx
 
+    def add_solution(self, variables: List["Var"], values: List[float]):
+        pass
+
     def optimize(self) -> int:
         # executing Gurobi to solve the formulation
-        status = int(GRBoptimize(self._model))
+        status: int = int(GRBoptimize(self._model))
         return status
 
-    def set_obj(self, lin_expr: "LinExpr"):
+    def set_objective(self, lin_expr: "LinExpr", sense: str = ""):
         # collecting linear expression data
-        numnz = len(lin_expr.expr)
-        cind = (c_int * numnz)()
-        cval = (c_double * numnz)()
+        numnz: int = len(lin_expr.expr)
+        cind: POINTER(c_int) = (c_int * numnz)()
+        cval: POINTER(c_double) = (c_double * numnz)()
 
         # collecting variable coefficients
         for i, (var, coeff) in enumerate(lin_expr.expr.items()):
@@ -110,8 +112,13 @@ class SolverGurobi(Solver):
         # objective function constant
         const = c_double(lin_expr.const)
 
+        if sense == MAXIMIZE:
+            GRBsetintattr(self._model, c_str("ModelSense"), -1)
+        elif sense == MINIMIZE:
+            GRBsetintattr(self._model, c_str("ModelSense"), 1)
+
         GRBsetdblattr(self._model, c_str("ObjCon"), const)
-        GRBsetdblattrlist(self._model, c_str("Obj"), numnz, cind, cval)
+        GRBsetdblattrlist(self._model, c_str("Obj"), c_int(numnz), cind, cval)
         return True
 
     def write(self, file_path: str):
@@ -120,7 +127,7 @@ class SolverGurobi(Solver):
 
 
 # auxiliary functions
-def c_str(value):
+def c_str(value) -> c_char_p:
     """
     This function converts a python string into a C compatible char[]
     :param value: input string
