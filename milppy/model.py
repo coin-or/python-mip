@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import Dict, List
 
 # epsilon number (practical zero)
@@ -8,13 +7,15 @@ EPS = 10e-6
 INF = float("inf")
 
 # optimization status
+ERROR = -1
 OPTIMAL = 0
 INFEASIBLE = 1
 UNBOUNDED = 2
 FEASIBLE = 3
 INT_INFEASIBLE = 4
 NO_SOLUTION_FOUND = 5
-ERROR = 6
+LOADED = 6
+CUTOFF = 7
 
 # constraint senses
 EQUAL = "="
@@ -38,8 +39,7 @@ GUROBI = "GRB"
 
 class Column:
 
-    def __init__(self,
-                 constrs: List["Constr"] = None,
+    def __init__(self, constrs: List["Constr"] = None,
                  coeffs: List[float] = None):
         self.constrs = constrs if constrs else []
         self.coeffs = coeffs if coeffs else []
@@ -47,31 +47,36 @@ class Column:
 
 class Constr:
 
-    def __init__(self,
-                 model: "Model",
-                 idx: int):
+    def __init__(self, model: "Model",
+                 idx: int,
+                 name: str = ""):
         self.model = model
         self.idx = idx
+        self.name = name
 
     def __hash__(self) -> int:
         return self.idx
 
+    def __str__(self) -> str:
+        return self.name
+
 
 class LinExpr:
 
-    def __init__(self,
-                 coeffs: List[float] = [],
-                 variables: List["Var"] = [],
+    def __init__(self, variables: List["Var"] = None,
+                 coeffs: List[float] = None,
                  const: float = 0,
                  sense: str = ""):
         self.const: int = const
         self.expr: Dict[Var, float] = {}
         self.sense = sense
 
-        for i in range(len(coeffs)):
-            if coeffs[i] == 0:
-                continue
-            self.add_var(variables[i], coeffs[i])
+        if variables:
+            assert len(variables) == len(coeffs)
+            for i in range(len(coeffs)):
+                if coeffs[i] == 0:
+                    continue
+                self.add_var(variables[i], coeffs[i])
 
     def __add__(self, other) -> "LinExpr":
         result: LinExpr = self.copy()
@@ -86,6 +91,15 @@ class LinExpr:
     def __radd__(self, other) -> "LinExpr":
         return self.__add__(other)
 
+    def __iadd__(self, other):
+        if type(other) is Var:
+            self.add_var(other, 1)
+        elif type(other) is LinExpr:
+            self.add_expr(other)
+        elif type(other) is float or type(other) is int:
+            self.add_const(other)
+        return self
+
     def __sub__(self, other) -> "LinExpr":
         result: LinExpr = self.copy()
         if type(other) is Var:
@@ -99,65 +113,92 @@ class LinExpr:
     def __rsub__(self, other) -> "LinExpr":
         return self.__add__(-other)
 
+    def __isub__(self, other) -> "LinExpr":
+        if type(other) is Var:
+            self.add_var(other, -1)
+        elif type(other) is LinExpr:
+            self.add_expr(-other)
+        elif type(other) is float or type(other) is int:
+            self.add_const(-other)
+        return self
+
     def __mul__(self, other) -> "LinExpr":
         result: LinExpr = self.copy()
         assert type(other) is int or type(other) is float
         for var in result.expr.keys():
             result.expr[var] *= other
+        return result
 
     def __rmul__(self, other) -> "LinExpr":
         return self.__mul__(other)
 
-    def __str__(self) -> "LinExpr":
-        result = ""
-        for var, coeff in self.expr.items():
-            result += "+ " if coeff >= 0 else "- "
-            result += str(abs(coeff)) if abs(coeff) != 1 else ""
-            result += "{var} ".format(**locals())
+    def __imul__(self, other) -> "LinExpr":
+        assert type(other) is int or type(other) is float
+        for var in self.expr.keys():
+            self.expr[var] *= other
+        return self
+
+    def __truediv__(self, other) -> "LinExpr":
+        result: LinExpr = self.copy()
+        assert type(other) is int or type(other) is float
+        for var in result.expr.keys():
+            result.expr[var] /= other
+        return result
+
+    def __itruediv__(self, other) -> "LinExpr":
+        assert type(other) is int or type(other) is float
+        for var in self.expr.keys():
+            self.expr[var] /= other
+        return self
+
+    def __str__(self) -> str:
+        result = []
+
+        if self.expr:
+            for var, coeff in self.expr.items():
+                result.append("+ " if coeff >= 0 else "- ")
+                result.append(str(abs(coeff)) if abs(coeff) != 1 else "")
+                result.append("{var} ".format(**locals()))
+
         if self.sense:
-            result += self.sense + "= "
-            result += str(abs(self.const)) if self.const < 0 else "+ " + str(abs(self.const))
+            result.append(self.sense + "= ")
+            result.append(str(abs(self.const)) if self.const < 0 else "+ " + str(abs(self.const)))
         elif self.const != 0:
-            result += "+ " + str(abs(self.const)) if self.const > 0 else "- " + str(abs(self.const))
+            result.append("+ " + str(abs(self.const)) if self.const > 0 else "- " + str(abs(self.const)))
+
+        return "".join(result)
+
+    def __eq__(self, other) -> "LinExpr":
+        result = self - other
+        result.sense = "="
         return result
 
     def __le__(self, other) -> "LinExpr":
-        result: LinExpr = self.copy()
+        result = self - other
         result.sense = "<"
-        return result - other
+        return result
 
     def __ge__(self, other) -> "LinExpr":
-        result: LinExpr = self.copy()
+        result = self - other
         result.sense = ">"
-        return result - other
+        return result
 
-    def __eq__(self, other) -> "LinExpr":
-        result: LinExpr = self.copy()
-        result.sense = "="
-        return result - other
-
-    def add_const(self,
-                  const: float):
+    def add_const(self, const: float):
         self.const += const
 
-    def add_expr(self,
-                 expr: "LinExpr"):
-        for var, coeff in expr.expr.items():
-            self.add_var(var, coeff)
+    def add_expr(self, expr: "LinExpr", coeff: float = 1):
+        for var, coeff_var in expr.expr.items():
+            self.add_var(var, coeff_var * coeff)
 
-    def add_term(self,
-                 expr,
-                 coeff: float = None):
+    def add_term(self, expr, coeff: float = 1):
         if type(expr) is Var:
             self.add_var(expr, coeff)
         elif type(expr) is LinExpr:
-            self.add_expr(self, expr)
+            self.add_expr(expr, coeff)
         elif type(expr) is float or type(expr) is int:
             self.add_const(expr)
 
-    def add_var(self,
-                var: "Var",
-                coeff: float):
+    def add_var(self, var: "Var", coeff: float = 1):
         if var in self.expr:
             if -EPS <= self.expr[var] + coeff <= EPS:
                 del self.expr[var]
@@ -176,8 +217,7 @@ class LinExpr:
 
 class Model:
 
-    def __init__(self,
-                 name: str = "",
+    def __init__(self, name: str = "",
                  solver_name: str = GUROBI,
                  sense: str = MINIMIZE):
         # initializing variables with default values
@@ -192,31 +232,37 @@ class Model:
             from milppy.gurobi import SolverGurobi
             self.solver = SolverGurobi(name, sense)
 
-    def add_var(self,
-                obj: float = 0,
+    def add_var(self, obj: float = 0,
                 lb: float = 0,
                 ub: float = INF,
                 column: "Column" = None,
                 type: str = CONTINUOUS,
                 name: str = "") -> "Var":
         idx = self.solver.add_var(obj, lb, ub, column, type, name)
-        self.vars.append(Var(self, idx))
+        self.vars.append(Var(self, idx, name))
         return self.vars[-1]
 
-    def add_constr(self,
-                   lin_expr: "LinExpr",
+    def add_constr(self, lin_expr: "LinExpr",
                    name: str = "") -> Constr:
         if type(lin_expr) is bool:
         	return  # empty constraint
         idx = self.solver.add_constr(lin_expr, name)
-        self.constrs.append(Constr(self, idx))
+        self.constrs.append(Constr(self, idx, name))
         return self.constrs[-1]
 
     def optimize(self):
         self.solver.optimize()
 
-    def set_obj(self, lin_expr: "LinExpr"):
-        self.solver.set_obj(lin_expr)
+    def set_start(self, variables: List["Var"], values: List[float]):
+        self.solver.set_start(variables, values)
+
+    def set_objective(self, expr, sense: str = ""):
+        if type(expr) is int or type(expr) is float:
+            self.solver.set_objective(LinExpr([], [], expr))
+        elif type(expr) is Var:
+            self.solver.set_objective(LinExpr([expr], [1]))
+        elif type(expr) is LinExpr:
+            self.solver.set_objective(expr, sense)
 
     def write(self, path: str):
         self.solver.write(path)
@@ -228,8 +274,7 @@ class Solver:
         self.name = name
         self.sense = sense
 
-    def add_var(self,
-                obj: float = 0,
+    def add_var(self, obj: float = 0,
                 lb: float = 0,
                 ub: float = INF,
                 column: "Column" = None,
@@ -240,68 +285,88 @@ class Solver:
 
     def optimize(self) -> int: pass
 
-    def set_obj(self, lin_expr: "LinExpr"): pass
+    def set_start(self, variables: List["Var"], values: List[float]): pass
+
+    def set_objective(self, lin_expr: "LinExpr", sense: str = ""): pass
 
     def write(self, file_path: str): pass
 
 
 class Var:
 
-    def __init__(self,
-                 model: Model,
-                 idx: int):
+    def __init__(self, model: Model,
+                 idx: int,
+                 name: str = ""):
         self.model: Model = model
         self.idx: int = idx
+        self.name = name
 
     def __hash__(self) -> int:
         return self.idx
 
     def __add__(self, other) -> LinExpr:
         if type(other) is Var:
-            return LinExpr([1, 1], [self, other])
+            return LinExpr([self, other], [1, 1])
         elif type(other) is LinExpr:
             return other.__add__(self)
         elif type(other) is int or type(other) is float:
-            return LinExpr([1], [self], other)
+            return LinExpr([self], [1], other)
 
     def __radd__(self, other) -> LinExpr:
         return self.__add__(other)
 
-    def __div__(self, other) -> LinExpr:
-        assert type(other) is int or type(other) is float
-        return self.__mul__(1.0 / other)
+    def __sub__(self, other) -> LinExpr:
+        if type(other) is Var:
+            return LinExpr([self, other], [1, -1])
+        elif type(other) is LinExpr:
+            return other.__rsub__(self)
+        elif type(other) is int or type(other) is float:
+            return LinExpr([self], [1], -other)
+
+    def __rsub__(self, other) -> LinExpr:
+        if type(other) is Var:
+            return LinExpr([self, other], [-1, 1])
+        elif type(other) is LinExpr:
+            return other.__sub__(self)
+        elif type(other) is int or type(other) is float:
+            return LinExpr([self], [-1], other)
 
     def __mul__(self, other) -> LinExpr:
         assert type(other) is int or type(other) is float
-        return LinExpr([other], [self])
+        return LinExpr([self], [other])
 
     def __rmul__(self, other) -> LinExpr:
         return self.__mul__(other)
 
-    def __sub__(self, other) -> LinExpr:
-        if type(other) is Var:
-            return LinExpr([1, -1], [self, other])
-        elif type(other) is LinExpr:
-            return other.__rsub__(self)
-        elif type(other) is int or type(other) is float:
-            return LinExpr([1], [self], -other)
-
-    def __rsub__(self, other) -> LinExpr:
-        if type(other) is Var:
-            return LinExpr([-1, 1], [self, other])
-        elif type(other) is LinExpr:
-            return other.__sub__(self)
-        elif type(other) is int or type(other) is float:
-            return LinExpr([-1], [self], other)
-
-    def __str__(self) -> LinExpr:
-        return "x{self.idx}".format(**locals())
-
-    def __le__(self, other) -> LinExpr:
-        return LinExpr([1], [self], -1 * other, sense="<")
-
-    def __ge__(self, other) -> LinExpr:
-        return LinExpr([1], [self], -1 * other, sense=">")
+    def __truediv__(self, other) -> LinExpr:
+        assert type(other) is int or type(other) is float
+        return self.__mul__(1.0 / other)
 
     def __eq__(self, other) -> LinExpr:
-        return LinExpr([1], [self], -1 * other, sense="=")
+        if other != 0:
+            return LinExpr([self], [1], -1 * other, sense="=")
+        return LinExpr([self], [1], sense="=")
+
+    def __le__(self, other) -> LinExpr:
+        if other != 0:
+            return LinExpr([self], [1], -1 * other, sense="<")
+        return LinExpr([self], [1], sense="<")
+
+    def __ge__(self, other) -> LinExpr:
+        if other != 0:
+            return LinExpr([self], [1], -1 * other, sense=">")
+        return LinExpr([self], [1], sense=">")
+
+    def __str__(self) -> str:
+        return self.name
+
+
+def xsum(terms) -> LinExpr:
+    result = LinExpr()
+    for term in terms:
+        result.add_term(term)
+    return result
+
+
+# function aliases
+quicksum = xsum
