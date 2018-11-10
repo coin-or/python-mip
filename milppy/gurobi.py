@@ -87,22 +87,42 @@ class SolverGurobi(Solver):
         GRBaddconstr(self._model, numnz, cind, cval, sense, rhs, c_str(name))
         return idx
 
-    def add_solution(self, variables: List["Var"], values: List[float]):
-        # collecting data
-        numnz: c_int = len(variables)
-        cind: POINTER(c_int) = (c_int * numnz)()
-        cval: POINTER(c_double) = (c_double * numnz)()
-
-        # collecting variable coefficients
-        for i in range(len(variables)):
-            cind[i] = variables[i].idx
-            cval[i] = values[i]
-
-        GRBsetdblattrlist(self._model, "Start", numnz, cind, cval)
-
     def optimize(self) -> int:
         # executing Gurobi to solve the formulation
         status: int = int(GRBoptimize(self._model))
+
+        # todo: read solution status (code below is incomplete)
+        if status == 1:  # LOADED
+            return LOADED
+        elif status == 2:  # OPTIMAL
+            return OPTIMAL
+        elif status == 3:  # INFEASIBLE
+            return INFEASIBLE
+        elif status == 4:  # INF_OR_UNBD
+            return UNBOUNDED
+        elif status == 5:  # UNBOUNDED
+            return UNBOUNDED
+        elif status == 6:  # CUTOFF
+            return CUTOFF
+        elif status == 7:  # ITERATION_LIMIT
+            return -10000
+        elif status == 8:  # NODE_LIMIT
+            return -10000
+        elif status == 9:  # TIME_LIMIT
+            return -10000
+        elif status == 10:  # SOLUTION_LIMIT
+            return FEASIBLE
+        elif status == 11:  # INTERRUPTED
+            return -10000
+        elif status == 12:  # NUMERIC
+            return -10000
+        elif status == 13:  # SUBOPTIMAL
+            return FEASIBLE
+        elif status == 14:  # INPROGRESS
+            return -10000
+        elif status == 15:  # USER_OBJ_LIMIT
+            return FEASIBLE
+
         return status
 
     def set_objective(self, lin_expr: "LinExpr", sense: str = ""):
@@ -148,6 +168,19 @@ class SolverGurobi(Solver):
         #                  reltol, name, const, lnz, lind, lval)
 
         return True
+
+    def set_start(self, variables: List["Var"], values: List[float]):
+        # collecting data
+        numnz: c_int = len(variables)
+        cind: POINTER(c_int) = (c_int * numnz)()
+        cval: POINTER(c_double) = (c_double * numnz)()
+
+        # collecting variable coefficients
+        for i in range(len(variables)):
+            cind[i] = variables[i].idx
+            cval[i] = values[i]
+
+        GRBsetdblattrlist(self._model, "Start", numnz, cind, cval)
 
 
 def write(self, file_path: str):

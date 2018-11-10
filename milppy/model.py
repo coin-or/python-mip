@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import Dict, List
 
 # epsilon number (practical zero)
@@ -8,13 +7,15 @@ EPS = 10e-6
 INF = float("inf")
 
 # optimization status
+ERROR = -1
 OPTIMAL = 0
 INFEASIBLE = 1
 UNBOUNDED = 2
 FEASIBLE = 3
 INT_INFEASIBLE = 4
 NO_SOLUTION_FOUND = 5
-ERROR = 6
+LOADED = 6
+CUTOFF = 7
 
 # constraint senses
 EQUAL = "="
@@ -247,11 +248,11 @@ class Model:
         self.constrs.append(Constr(self, idx, name))
         return self.constrs[-1]
 
-    def add_solution(self, variables: List["Var"], values: List[float]):
-        self.solver.add_solution(variables, values)
-
     def optimize(self):
         self.solver.optimize()
+
+    def set_start(self, variables: List["Var"], values: List[float]):
+        self.solver.set_start(variables, values)
 
     def set_objective(self, expr, sense: str = ""):
         if type(expr) is int or type(expr) is float:
@@ -280,9 +281,9 @@ class Solver:
 
     def add_constr(self, lin_expr: "LinExpr", name: str = "") -> int: pass
 
-    def add_solution(self, variables: List["Var"], values: List[float]): pass
-
     def optimize(self) -> int: pass
+
+    def set_start(self, variables: List["Var"], values: List[float]): pass
 
     def set_objective(self, lin_expr: "LinExpr", sense: str = ""): pass
 
