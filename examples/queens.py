@@ -1,6 +1,6 @@
 from milppy.model import *
 
-n = 50
+n = 100
 
 queens = Model()
 x = [[
@@ -33,6 +33,6 @@ for p,k in enumerate(range(2-n,n-2+1)):
 for p,k in enumerate(range(3,n+n)):
 	queens.add_constr( sum(x[i][j] for i in range(n) for j in range(n) if i+j==k) <= 1, 'diag2({})'.format(p) )
 
-queens.write('queens.lp')
+#queens.write('queens.lp')
 
 
