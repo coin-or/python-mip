@@ -3,9 +3,6 @@ from ctypes import *
 
 
 class SolverGurobi(Solver):
-    """
-
-    """
 
     def __init__(self, name: str, sense: str):
         super().__init__(name, sense)
@@ -91,7 +88,17 @@ class SolverGurobi(Solver):
         return idx
 
     def add_solution(self, variables: List["Var"], values: List[float]):
-        pass
+        # collecting data
+        numnz: c_int = len(variables)
+        cind: POINTER(c_int) = (c_int * numnz)()
+        cval: POINTER(c_double) = (c_double * numnz)()
+
+        # collecting variable coefficients
+        for i in range(len(variables)):
+            cind[i] = variables[i].idx
+            cval[i] = values[i]
+
+        GRBsetdblattrlist(self._model, "Start", numnz, cind, cval)
 
     def optimize(self) -> int:
         # executing Gurobi to solve the formulation
@@ -100,7 +107,7 @@ class SolverGurobi(Solver):
 
     def set_objective(self, lin_expr: "LinExpr", sense: str = ""):
         # collecting linear expression data
-        numnz: int = len(lin_expr.expr)
+        numnz: c_int = len(lin_expr.expr)
         cind: POINTER(c_int) = (c_int * numnz)()
         cval: POINTER(c_double) = (c_double * numnz)()
 
@@ -112,18 +119,40 @@ class SolverGurobi(Solver):
         # objective function constant
         const = c_double(lin_expr.const)
 
+        # resetting objective function
+        num_vars: c_int = c_int(self._num_vars)
+        zeros: POINTER(c_double) = (c_double * self._num_vars)()
+        for i in range(self._num_vars):
+            zeros[i] = 0.0
+        GRBsetdblattrarray(self._model, c_str("Obj"), c_int(0), num_vars, zeros)
+
+        # setting objective sense
         if sense == MAXIMIZE:
             GRBsetintattr(self._model, c_str("ModelSense"), -1)
         elif sense == MINIMIZE:
             GRBsetintattr(self._model, c_str("ModelSense"), 1)
 
+        # setting objective function
         GRBsetdblattr(self._model, c_str("ObjCon"), const)
         GRBsetdblattrlist(self._model, c_str("Obj"), c_int(numnz), cind, cval)
+
+        # (the function may be used for multi-objective models)
+        # index = c_int(0)
+        # priority = c_int(1)
+        # weight = c_double(0.0)
+        # abstol = c_double(0.0)
+        # reltol = c_double(0.0)
+        # name = c_str("primary")
+        # const = c_double(lin_expr.const)
+        # GRBsetobjectiven(self._model, index, priority, weight, abstol,
+        #                  reltol, name, const, lnz, lind, lval)
+
         return True
 
-    def write(self, file_path: str):
-        # writing formulation to output file
-        GRBwrite(self._model, c_str(file_path))
+
+def write(self, file_path: str):
+    # writing formulation to output file
+    GRBwrite(self._model, c_str(file_path))
 
 
 # auxiliary functions
@@ -173,9 +202,19 @@ GRBsetdblattr = grblib.GRBsetdblattr
 GRBsetdblattr.restype = c_int
 GRBsetdblattr.argtypes = [c_void_p, c_char_p, c_double]
 
+GRBsetdblattrarray = grblib.GRBsetdblattrarray
+GRBsetdblattrarray.restype = c_int
+GRBsetdblattrarray.argtypes = [c_void_p, c_char_p, c_int, c_int, POINTER(c_double)]
+
 GRBsetdblattrlist = grblib.GRBsetdblattrlist
 GRBsetdblattrlist.restype = c_int
 GRBsetdblattrlist.argtypes = [c_void_p, c_char_p, c_int, POINTER(c_int), POINTER(c_double)]
+
+# manipulating objective function(s)
+GRBsetobjectiven = grblib.GRBsetobjectiven
+GRBsetobjectiven.restype = c_int
+GRBsetobjectiven.argtypes = [c_void_p, c_int, c_int, c_double, c_double, c_double, c_char_p,
+                             c_double, c_int, POINTER(c_int), POINTER(c_double)]
 
 # add variables and constraints
 
