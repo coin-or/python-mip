@@ -269,6 +269,23 @@ class Model:
     def write(self, path: str):
         self.solver.write(path)
 
+    def __iadd__(self, other) -> 'Model':
+        if isinstance(other, LinExpr):
+            if len(other.sense)==0:
+                # adding objective function components
+                self.set_objective(other)
+            else:
+                # adding constraint
+                self.add_constr(other)
+        elif isinstance(other, tuple):
+            if isinstance(other[0], LinExpr) and isinstance(other[1], str):
+                if len(other[0].sense)==0:
+                    self.set_objective(other[0])
+                else:
+                    self.add_constr(other[0], other[1])
+
+        return self
+
 
 
 class Solver:
