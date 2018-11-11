@@ -382,6 +382,10 @@ class Var:
     def __str__(self) -> str:
         return self.name
 
+    def __neg__(self) -> LinExpr:
+        return LinExpr([self], [-1.0])
+
+
     def value(self) -> float:
         return self.model.solver.x(self)
 

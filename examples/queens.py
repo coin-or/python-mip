@@ -11,7 +11,7 @@ x = [[
 		for j in range(n)] for i in range(n) ]
 
 # objective function
-queens += sum(-1.0*x[i][j] for i in range(n) for j in range(n))
+queens += sum(-x[i][j] for i in range(n) for j in range(n))
 
 # one per row
 for i in range(n):
