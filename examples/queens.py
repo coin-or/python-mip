@@ -7,8 +7,11 @@ queens = Model()
 x = [[
 	queens.add_var(
 		'x({},{})'.format(i,j),
-		0.0, 1.0, 1.0, 'B' )
+		lb=0.0, ub=1.0, type='B' )
 		for j in range(n)] for i in range(n) ]
+
+# objective function
+queens += sum(-1.0*x[i][j] for i in range(n) for j in range(n))
 
 # one per row
 for i in range(n):
@@ -37,6 +40,6 @@ for i in range(n):
    		 stdout.write(' .');
     stdout.write('\n')
 
-#queens.write('queens.lp')
+queens.write('queens.lp')
 
 
