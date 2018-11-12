@@ -268,6 +268,12 @@ class SolverGurobi(Solver):
         GRBsetcharattrelement(self._model, c_str("VType"), c_int(var.idx), vtype)
         self._updated = False
 
+    def var_get_column(self, var: "Var"):
+        raise ValueError("Gurobi: functionality currently unavailable in PyMILP...")
+
+    def var_set_column(self, var: "Var", value: Column):
+        raise ValueError("Gurobi: functionality currently unavailable in PyMILP...")
+
     def var_get_rc(self, var: "Var") -> float:
         res = c_double()
         GRBgetdblattrelement(self._model, c_str("RC"), c_int(var.idx), byref(res))

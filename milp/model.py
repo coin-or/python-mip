@@ -477,7 +477,7 @@ class Var:
         return self.model.solver.var_get_x(self)
 
 
-def xsum(terms: List) -> LinExpr:
+def xsum(terms) -> LinExpr:
     result = LinExpr()
     for term in terms:
         result.add_term(term)
