@@ -86,11 +86,11 @@ class LinExpr:
 
     def __add__(self, other) -> "LinExpr":
         result: LinExpr = self.copy()
-        if type(other) is Var:
+        if isinstance(other, Var):
             result.add_var(other, 1)
-        elif type(other) is LinExpr:
+        elif isinstance(other, LinExpr):
             result.add_expr(other)
-        elif type(other) is float or type(other) is int:
+        elif isinstance(other, float) or isinstance(other, int):
             result.add_const(other)
         return result
 
@@ -98,21 +98,21 @@ class LinExpr:
         return self.__add__(other)
 
     def __iadd__(self, other):
-        if type(other) is Var:
+        if isinstance(other, Var):
             self.add_var(other, 1)
-        elif type(other) is LinExpr:
+        elif isinstance(other, LinExpr):
             self.add_expr(other)
-        elif type(other) is float or type(other) is int:
+        elif isinstance(other, float) or isinstance(other, int):
             self.add_const(other)
         return self
 
     def __sub__(self, other) -> "LinExpr":
         result: LinExpr = self.copy()
-        if type(other) is Var:
+        if isinstance(other, Var):
             result.add_var(other, -1)
-        elif type(other) is LinExpr:
+        elif isinstance(other, LinExpr):
             result.add_expr(-other)
-        elif type(other) is float or type(other) is int:
+        elif isinstance(other, float) or isinstance(other, int):
             result.add_const(-other)
         return result
 
@@ -120,16 +120,16 @@ class LinExpr:
         return self.__add__(-other)
 
     def __isub__(self, other) -> "LinExpr":
-        if type(other) is Var:
+        if isinstance(other, Var):
             self.add_var(other, -1)
-        elif type(other) is LinExpr:
+        elif isinstance(other, LinExpr):
             self.add_expr(-other)
-        elif type(other) is float or type(other) is int:
+        elif isinstance(other, float) or isinstance(other, int):
             self.add_const(-other)
         return self
 
     def __mul__(self, other) -> "LinExpr":
-        assert type(other) is int or type(other) is float
+        assert isinstance(other, int) or isinstance(other, float)
         result: LinExpr = self.copy()
         for var in result.expr.keys():
             result.expr[var] *= other
@@ -139,20 +139,20 @@ class LinExpr:
         return self.__mul__(other)
 
     def __imul__(self, other) -> "LinExpr":
-        assert type(other) is int or type(other) is float
+        assert isinstance(other, int) or isinstance(other, float)
         for var in self.expr.keys():
             self.expr[var] *= other
         return self
 
     def __truediv__(self, other) -> "LinExpr":
-        assert type(other) is int or type(other) is float
+        assert isinstance(other, int) or isinstance(other, float)
         result: LinExpr = self.copy()
         for var in result.expr.keys():
             result.expr[var] /= other
         return result
 
     def __itruediv__(self, other) -> "LinExpr":
-        assert type(other) is int or type(other) is float
+        assert isinstance(other, int) or isinstance(other, float)
         for var in self.expr.keys():
             self.expr[var] /= other
         return self
@@ -200,11 +200,11 @@ class LinExpr:
             self.add_var(var, coeff_var * coeff)
 
     def add_term(self, expr, coeff: float = 1):
-        if type(expr) is Var:
+        if isinstance(expr, Var):
             self.add_var(expr, coeff)
-        elif type(expr) is LinExpr:
+        elif isinstance(expr, LinExpr):
             self.add_expr(expr, coeff)
-        elif type(expr) is float or type(expr) is int:
+        elif isinstance(expr, float) or isinstance(expr, int):
             self.add_const(expr)
 
     def add_var(self, var: "Var", coeff: float = 1):
@@ -276,7 +276,7 @@ class Model:
 
     def add_constr(self, lin_expr: "LinExpr",
                    name: str = "") -> Constr:
-        if type(lin_expr) is bool:
+        if isinstance(lin_expr, bool):
             return None  # empty constraint
         idx = self.solver.add_constr(lin_expr, name)
         self.constrs.append(Constr(self, idx, name))
@@ -289,11 +289,11 @@ class Model:
         self.solver.set_start(variables, values)
 
     def set_objective(self, expr, sense: str = ""):
-        if type(expr) is int or type(expr) is float:
+        if isinstance(expr, int) or isinstance(expr, float):
             self.solver.set_objective(LinExpr([], [], expr))
-        elif type(expr) is Var:
+        elif isinstance(expr, Var):
             self.solver.set_objective(LinExpr([expr], [1]))
-        elif type(expr) is LinExpr:
+        elif isinstance(expr, LinExpr):
             self.solver.set_objective(expr, sense)
 
     def write(self, path: str):
@@ -348,41 +348,41 @@ class Var:
         return self.idx
 
     def __add__(self, other) -> LinExpr:
-        if type(other) is Var:
+        if isinstance(other, Var):
             return LinExpr([self, other], [1, 1])
-        elif type(other) is LinExpr:
+        elif isinstance(other, LinExpr):
             return other.__add__(self)
-        elif type(other) is int or type(other) is float:
+        elif isinstance(other, int) or isinstance(other, float):
             return LinExpr([self], [1], other)
 
     def __radd__(self, other) -> LinExpr:
         return self.__add__(other)
 
     def __sub__(self, other) -> LinExpr:
-        if type(other) is Var:
+        if isinstance(other, Var):
             return LinExpr([self, other], [1, -1])
-        elif type(other) is LinExpr:
+        elif isinstance(other, LinExpr):
             return other.__rsub__(self)
-        elif type(other) is int or type(other) is float:
+        elif isinstance(other, int) or isinstance(other, float):
             return LinExpr([self], [1], -other)
 
     def __rsub__(self, other) -> LinExpr:
-        if type(other) is Var:
+        if isinstance(other, Var):
             return LinExpr([self, other], [-1, 1])
-        elif type(other) is LinExpr:
+        elif isinstance(other, LinExpr):
             return other.__sub__(self)
-        elif type(other) is int or type(other) is float:
+        elif isinstance(other, int) or isinstance(other, float):
             return LinExpr([self], [-1], other)
 
     def __mul__(self, other) -> LinExpr:
-        assert type(other) is int or type(other) is float
+        assert isinstance(other, int) or isinstance(other, float)
         return LinExpr([self], [other])
 
     def __rmul__(self, other) -> LinExpr:
         return self.__mul__(other)
 
     def __truediv__(self, other) -> LinExpr:
-        assert type(other) is int or type(other) is float
+        assert isinstance(other, int) or isinstance(other, float)
         return self.__mul__(1.0 / other)
 
     def __neg__(self) -> LinExpr:
