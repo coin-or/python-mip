@@ -1,6 +1,7 @@
 Ideas:
 	shorter name:  milp ?
+	               PyMIP ?
 
 add_var:
-    move obj param parameter position 
+    move obj param parameter position
          addition of OF in expression makes the model clearer

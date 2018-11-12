@@ -1,5 +1,5 @@
 from typing import Dict, List
-from milppy.constants import *
+from milp.constants import *
 
 
 class Column:
@@ -208,7 +208,7 @@ class Model:
 
         # todo: implement code to detect solver automatically
         if solver_name == GUROBI:
-            from milppy.gurobi import SolverGurobi
+            from milp.gurobi import SolverGurobi
             self.solver = SolverGurobi(name, sense)
 
     def __del__(self):

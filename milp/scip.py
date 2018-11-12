@@ -1,4 +1,4 @@
-from milppy.model import *
+from milp.model import *
 from ctypes import *
 from ctypes.util import *
 
