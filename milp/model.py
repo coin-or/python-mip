@@ -163,14 +163,14 @@ class LinExpr:
         result.sense = ">"
         return result
 
-    def add_const(self, const: float):
+    def add_const(self, const: float) -> None:
         self.const += const
 
-    def add_expr(self, expr: "LinExpr", coeff: float = 1):
+    def add_expr(self, expr: "LinExpr", coeff: float = 1) -> None:
         for var, coeff_var in expr.expr.items():
             self.add_var(var, coeff_var * coeff)
 
-    def add_term(self, expr, coeff: float = 1):
+    def add_term(self, expr, coeff: float = 1) -> None:
         if isinstance(expr, Var):
             self.add_var(expr, coeff)
         elif isinstance(expr, LinExpr):
@@ -178,7 +178,7 @@ class LinExpr:
         elif isinstance(expr, float) or isinstance(expr, int):
             self.add_const(expr)
 
-    def add_var(self, var: "Var", coeff: float = 1):
+    def add_var(self, var: "Var", coeff: float = 1) -> None:
         if var in self.expr:
             if -EPS <= self.expr[var] + coeff <= EPS:
                 del self.expr[var]
@@ -273,13 +273,13 @@ class Model:
 
         return copy
 
-    def optimize(self):
+    def optimize(self) -> int:
         self.solver.optimize()
 
     def set_start(self, variables: List["Var"], values: List[float]):
         self.solver.set_start(variables, values)
 
-    def set_objective(self, expr, sense: str = ""):
+    def set_objective(self, expr, sense: str = "") -> None:
         if isinstance(expr, int) or isinstance(expr, float):
             self.solver.set_objective(LinExpr([], [], expr))
         elif isinstance(expr, Var):
@@ -287,7 +287,7 @@ class Model:
         elif isinstance(expr, LinExpr):
             self.solver.set_objective(expr, sense)
 
-    def write(self, path: str):
+    def write(self, path: str) -> None:
         self.solver.write(path)
 
 
@@ -436,7 +436,7 @@ class Var:
         return self.model.solver.var_get_lb(self)
 
     @lb.setter
-    def lb(self, value: float):
+    def lb(self, value: float) -> None:
         self.model.solver.var_set_lb(self, value)
 
     @property
@@ -444,7 +444,7 @@ class Var:
         return self.model.solver.var_get_ub(self)
 
     @ub.setter
-    def ub(self, value: float):
+    def ub(self, value: float) -> None:
         self.model.solver.var_set_ub(self, value)
 
     @property
@@ -452,7 +452,7 @@ class Var:
         return self.model.solver.var_get_obj(self)
 
     @obj.setter
-    def obj(self, value: float):
+    def obj(self, value: float) -> None:
         self.model.solver.var_set_obj(self, value)
 
     @property
@@ -460,7 +460,7 @@ class Var:
         return self.model.solver.var_get_type(self)
 
     @type.setter
-    def type(self, value: str):
+    def type(self, value: str) -> None:
         assert value in (BINARY, CONTINUOUS, INTEGER)
         self.model.solver.var_set_type(self, value)
 
@@ -469,7 +469,7 @@ class Var:
         return self.model.solver.var_get_column(self)
 
     @column.setter
-    def column(self, value: Column):
+    def column(self, value: Column) -> None:
         self.model.solver.var_set_column(self, value)
 
     @property
