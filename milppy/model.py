@@ -40,17 +40,14 @@ SCIP = "SCIP"
 
 class Column:
 
-    def __init__(self, constrs: List["Constr"] = None,
-                 coeffs: List[float] = None):
+    def __init__(self, constrs: List["Constr"] = None, coeffs: List[float] = None):
         self.constrs = constrs if constrs else []
         self.coeffs = coeffs if coeffs else []
 
 
 class Constr:
 
-    def __init__(self, model: "Model",
-                 idx: int,
-                 name: str = ""):
+    def __init__(self, model: "Model", idx: int, name: str = ""):
         self.model = model
         self.idx = idx
         self.name = name  # discuss this var
@@ -61,15 +58,23 @@ class Constr:
     def __str__(self) -> str:
         return self.name
 
-    def dual(self):
-        return self.model.pi(self)
+    @property
+    def pi(self) -> float:
+        return self.model.solver.constr_get_pi(self)
 
-    pi = property(dual)
+    @property
+    def row(self) -> "Row":
+        return self.model.solver.constr_get_row(self)
+
+    @row.setter
+    def row(self, value: "Row") -> None:
+        self.model.solver.constr_set_row(self, value)
 
 
 class LinExpr:
 
-    def __init__(self, variables: List["Var"] = None,
+    def __init__(self,
+                 variables: List["Var"] = None,
                  coeffs: List[float] = None,
                  const: float = 0,
                  sense: str = ""):
@@ -97,7 +102,7 @@ class LinExpr:
     def __radd__(self, other) -> "LinExpr":
         return self.__add__(other)
 
-    def __iadd__(self, other):
+    def __iadd__(self, other) -> "LinExpr":
         if isinstance(other, Var):
             self.add_var(other, 1)
         elif isinstance(other, LinExpr):
@@ -232,6 +237,7 @@ class Model:
         # initializing variables with default values
         self.name: str = name
         self.sense: str = sense
+        self.solver_name = solver_name
         self.solver: Solver = None
         self.vars = []
         self.constrs = []
@@ -262,25 +268,42 @@ class Model:
 
         return self
 
-    def add_var(self,
-                name: str = "",
+    def add_var(self, name: str = "",
                 lb: float = 0.0,
                 ub: float = INF,
                 obj: float = 0.0,
                 type: str = CONTINUOUS,
-                column: "Column" = None
-                ) -> "Var":
+                column: "Column" = None) -> "Var":
         idx = self.solver.add_var(obj, lb, ub, type, column, name)
         self.vars.append(Var(self, idx, name))
         return self.vars[-1]
 
-    def add_constr(self, lin_expr: "LinExpr",
-                   name: str = "") -> Constr:
+    def add_constr(self, lin_expr: "LinExpr", name: str = "") -> Constr:
         if isinstance(lin_expr, bool):
             return None  # empty constraint
         idx = self.solver.add_constr(lin_expr, name)
         self.constrs.append(Constr(self, idx, name))
         return self.constrs[-1]
+
+    def copy(self, solver_name: str = None) -> "Model":
+        if not solver_name:
+            solver_name = self.solver_name
+        copy: Model = Model(self.name, self.sense, solver_name)
+
+        # adding variables
+        for v in self.vars:
+            copy.add_var(name=v.name, lb=v.lb, ub=v.ub, obj=0.0, type=v.type)
+
+        # adding constraints
+        for c in self.constrs:
+            expr = LinExpr()  # todo: make copy of constraint's lin_expr
+            copy.add_constr(lin_expr=expr, name=c.name)
+
+        # setting objective function's constant
+        expr = LinExpr()  # todo: make copy of objective's lin_expr
+        copy.set_objective(expr)
+
+        return copy
 
     def optimize(self):
         self.solver.optimize()
@@ -299,8 +322,12 @@ class Model:
     def write(self, path: str):
         self.solver.write(path)
 
-    def x(self, var: "Var") -> float:
-        return self.solver.x(var)
+
+class Row:
+
+    def __init__(self, vars: List["Var"] = None, coeffs: List[float] = None):
+        self.vars = vars if vars else []
+        self.coeffs = coeffs if coeffs else []
 
 
 class Solver:
@@ -311,7 +338,8 @@ class Solver:
 
     def __del__(self): pass
 
-    def add_var(self, name: str = "",
+    def add_var(self,
+                name: str = "",
                 obj: float = 0,
                 lb: float = 0,
                 ub: float = INF,
@@ -320,24 +348,53 @@ class Solver:
 
     def add_constr(self, lin_expr: "LinExpr", name: str = "") -> int: pass
 
-    def copy(self) -> "Solver": pass
-
     def optimize(self) -> int: pass
 
-    def pi(self, constr: "Constr") -> float: pass
+    def set_start(self, variables: List["Var"], values: List[float]) -> None: pass
 
-    def set_start(self, variables: List["Var"], values: List[float]): pass
+    def set_objective(self, lin_expr: "LinExpr", sense: str = "") -> None: pass
 
-    def set_objective(self, lin_expr: "LinExpr", sense: str = ""): pass
+    def write(self, file_path: str) -> None: pass
 
-    def write(self, file_path: str): pass
+    # Constraint-related getters/setters
 
-    def x(self, var: "Var") -> float: pass
+    def constr_get_pi(self, constr: "Constr") -> float: pass
+
+    def constr_get_row(self) -> Row: pass
+
+    def constr_set_row(self, value: Row) -> Row: pass
+
+    # Variable-related getters/setters
+
+    def var_get_lb(self, var: "Var") -> float: pass
+
+    def var_set_lb(self, var: "Var", value: float) -> None: pass
+
+    def var_get_ub(self, var: "Var") -> float: pass
+
+    def var_set_ub(self, var: "Var", value: float) -> None: pass
+
+    def var_get_obj(self, var: "Var") -> float: pass
+
+    def var_set_obj(self, var: "Var", value: float) -> None: pass
+
+    def var_get_type(self, var: "Var") -> str: pass
+
+    def var_set_type(self, var: "Var", value: str) -> None: pass
+
+    def var_get_column(self, var: "Var") -> Column: pass
+
+    def var_set_column(self, var: "Var", value: Column) -> None: pass
+
+    def var_get_rc(self, var: "Var") -> float: pass
+
+    def var_get_x(self, var: "Var") -> float: pass
 
 
 class Var:
 
-    def __init__(self, model: Model,
+    def __init__(self,
+                 model: Model,
                  idx: int,
                  name: str = ""):
         self.model: Model = model
@@ -406,13 +463,57 @@ class Var:
     def __str__(self) -> str:
         return self.name
 
-    def value(self) -> float:
-        return self.model.x(self)
+    @property
+    def lb(self) -> float:
+        return self.model.solver.var_get_lb(self)
 
-    x = property(value)
+    @lb.setter
+    def lb(self, value: float):
+        self.model.solver.var_set_lb(self, value)
+
+    @property
+    def ub(self) -> float:
+        return self.model.solver.var_get_ub(self)
+
+    @ub.setter
+    def ub(self, value: float):
+        self.model.solver.var_set_ub(self, value)
+
+    @property
+    def obj(self) -> float:
+        return self.model.solver.var_get_obj(self)
+
+    @obj.setter
+    def obj(self, value: float):
+        self.model.solver.var_set_obj(self, value)
+
+    @property
+    def type(self) -> str:
+        return self.model.solver.var_get_type(self)
+
+    @type.setter
+    def type(self, value: str):
+        assert value in (BINARY, CONTINUOUS, INTEGER)
+        self.model.solver.var_set_type(self, value)
+
+    @property
+    def column(self) -> Column:
+        return self.model.solver.var_get_column(self)
+
+    @column.setter
+    def column(self, value: Column):
+        self.model.solver.var_set_column(self, value)
+
+    @property
+    def rc(self) -> float:
+        return self.model.solver.var_get_rc(self)
+
+    @property
+    def x(self) -> float:
+        return self.model.solver.var_get_x(self)
 
 
-def xsum(terms) -> LinExpr:
+def xsum(terms: List) -> LinExpr:
     result = LinExpr()
     for term in terms:
         result.add_term(term)

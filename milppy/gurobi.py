@@ -9,6 +9,7 @@ class SolverGurobi(Solver):
         super().__init__(name, sense)
 
         # setting class members to default values
+        self._updated = False
         self._num_vars: int = 0
         self._num_constrs: int = 0
         self._log: str = ""
@@ -33,6 +34,12 @@ class SolverGurobi(Solver):
             # todo: model could not be generated
             pass
 
+        # setting objective sense
+        if sense == MAXIMIZE:
+            GRBsetintattr(self._model, c_str("ModelSense"), -1)
+        elif sense == MINIMIZE:
+            GRBsetintattr(self._model, c_str("ModelSense"), 1)
+
     def __del__(self):
         # freeing Gurobi model and environment
         if self._model:
@@ -40,10 +47,11 @@ class SolverGurobi(Solver):
         if self._env:
             GRBfreeenv(self._env)
 
-    def add_var(self, obj: float = 0,
+    def add_var(self,
+                obj: float = 0,
                 lb: float = 0,
                 ub: float = float("inf"),
-                type: str = 'C',
+                type: str = "C",
                 column: "Column" = None,
                 name: str = "") -> int:
         # collecting column data
@@ -64,9 +72,11 @@ class SolverGurobi(Solver):
         self._num_vars += 1
 
         GRBaddvar(self._model, c_int(numnz), vind, vval, c_double(obj), c_double(lb), c_double(ub), vtype, c_str(name))
+        self._updated = False
+
         return idx
 
-    def add_constr(self, lin_expr: "LinExpr", name: str = '') -> int:
+    def add_constr(self, lin_expr: "LinExpr", name: str = "") -> int:
         # collecting linear expression data
         numnz: c_int = len(lin_expr.expr)
         cind: POINTER(c_int) = (c_int * numnz)()
@@ -86,6 +96,8 @@ class SolverGurobi(Solver):
         self._num_constrs += 1
 
         GRBaddconstr(self._model, numnz, cind, cval, sense, rhs, c_str(name))
+        self._updated = False
+
         return idx
 
     def optimize(self) -> int:
@@ -124,14 +136,10 @@ class SolverGurobi(Solver):
         elif status == 15:  # USER_OBJ_LIMIT
             return FEASIBLE
 
+        self._updated = True
         return status
 
-    def pi(self, constr: Constr):
-        res = c_double()
-        GRBgetdblattrelement(self._model, c_str("Pi"), c_int(constr.idx), byref(res))
-        return res
-
-    def set_objective(self, lin_expr: "LinExpr", sense: str = ""):
+    def set_objective(self, lin_expr: "LinExpr", sense: str = "") -> None:
         # collecting linear expression data
         numnz: c_int = len(lin_expr.expr)
         cind: POINTER(c_int) = (c_int * numnz)()
@@ -161,21 +169,11 @@ class SolverGurobi(Solver):
         # setting objective function
         GRBsetdblattr(self._model, c_str("ObjCon"), const)
         GRBsetdblattrlist(self._model, c_str("Obj"), c_int(numnz), cind, cval)
-
-        # (the function may be used for multi-objective models)
-        # index = c_int(0)
-        # priority = c_int(1)
-        # weight = c_double(0.0)
-        # abstol = c_double(0.0)
-        # reltol = c_double(0.0)
-        # name = c_str("primary")
-        # const = c_double(lin_expr.const)
-        # GRBsetobjectiven(self._model, index, priority, weight, abstol,
-        #                  reltol, name, const, lnz, lind, lval)
+        self._updated = False
 
         return True
 
-    def set_start(self, variables: List["Var"], values: List[float]):
+    def set_start(self, variables: List["Var"], values: List[float]) -> None:
         # collecting data
         numnz: c_int = len(variables)
         cind: POINTER(c_int) = (c_int * numnz)()
@@ -187,15 +185,98 @@ class SolverGurobi(Solver):
             cval[i] = values[i]
 
         GRBsetdblattrlist(self._model, "Start", numnz, cind, cval)
+        self._updated = False
 
-    def x(self, var: Var):
+    def update(self) -> None:
+        GRBupdatemodel(self._model)
+        self._updated = True
+
+    def write(self, file_path: str) -> None:
+        # writing formulation to output file
+        if not self._updated:
+            self.update()
+        GRBwrite(self._model, c_str(file_path))
+
+    def constr_get_pi(self, constr: "Constr") -> float:
+        res = c_double()
+        GRBgetdblattrelement(self._model, c_str("Pi"), c_int(constr.idx), byref(res))
+        return res.value
+
+    def var_get_lb(self, var: "Var") -> float:
+        if not self._updated:
+            self.update()
+
+        res = c_double()
+        GRBgetdblattrelement(self._model, c_str("LB"), c_int(var.idx), byref(res))
+        return res.value
+
+    def var_set_lb(self, var: "Var", value: float) -> None:
+        GRBsetdblattrelement(self._model, c_str("LB"), c_int(var.idx), c_double(value))
+        self._updated = False
+
+    def var_get_ub(self, var: "Var") -> float:
+        if not self._updated:
+            self.update()
+
+        res = c_double()
+        GRBgetdblattrelement(self._model, c_str("UB"), c_int(var.idx), byref(res))
+        return res.value
+
+    def var_set_ub(self, var: "Var", value: float) -> None:
+        GRBsetdblattrelement(self._model, c_str("UB"), c_int(var.idx), c_double(value))
+        self._updated = False
+
+    def var_get_obj(self, var: "Var") -> float:
+        if not self._updated:
+            self.update()
+
+        res = c_double()
+        GRBgetdblattrelement(self._model, c_str("Obj"), c_int(var.idx), byref(res))
+        return res.value
+
+    def var_set_obj(self, var: "Var", value: float) -> None:
+        GRBsetdblattrelement(self._model, c_str("Obj"), c_int(var.idx), c_double(value))
+        self._updated = False
+
+    def var_get_type(self, var: "Var") -> str:
+        if not self._updated:
+            self.update()
+
+        res = c_char(0)
+        GRBgetcharattrelement(self._model, c_str("VType"), c_int(var.idx), byref(res))
+
+        if res.value == b"B":
+            return BINARY
+        elif res.value == b"C":
+            return CONTINUOUS
+        elif res.value == b"I":
+            return INTEGER
+
+        raise ValueError("Gurobi: invalid variable type returned...")
+
+    def var_set_type(self, var: "Var", value: str) -> None:
+        vtype: c_char = None
+        if value == BINARY:
+            vtype = c_char(ord("B"))
+        elif value == CONTINUOUS:
+            vtype = c_char(ord("C"))
+        elif value == INTEGER:
+            vtype = c_char(ord("I"))
+        else:
+            raise ValueError("Gurobi: invalid variable type...")
+
+        GRBsetcharattrelement(self._model, c_str("VType"), c_int(var.idx), vtype)
+        self._updated = False
+
+    def var_get_rc(self, var: "Var") -> float:
+        res = c_double()
+        GRBgetdblattrelement(self._model, c_str("RC"), c_int(var.idx), byref(res))
+        return res.value
+
+    def var_get_x(self, var: Var) -> float:
         res = c_double()
         GRBgetdblattrelement(self._model, c_str("X"), c_int(var.idx), byref(res))
         return res.value
-
-    def write(self, file_path: str):
-        # writing formulation to output file
-        GRBwrite(self._model, c_str(file_path))
 
 
 # auxiliary functions
@@ -203,12 +284,12 @@ def c_str(value) -> c_char_p:
     """
     This function converts a python string into a C compatible char[]
     :param value: input string
-    :return: string converted to C's format
+    :return: string converted to C"s format
     """
-    return create_string_buffer(value.encode('utf-8'))
+    return create_string_buffer(value.encode("utf-8"))
 
 
-grblib = CDLL(find_library('gurobi80'))
+grblib = CDLL(find_library("gurobi80"))
 
 # create/release environment and model
 
@@ -237,6 +318,14 @@ GRBsetintattr = grblib.GRBsetintattr
 GRBsetintattr.restype = c_int
 GRBsetintattr.argtypes = [c_void_p, c_char_p, c_int]
 
+GRBgetintattrelement = grblib.GRBgetintattrelement
+GRBgetintattrelement.restype = c_int
+GRBgetintattrelement.argtypes = [c_void_p, c_char_p, c_int, POINTER(c_int)]
+
+GRBsetintattrelement = grblib.GRBsetintattrelement
+GRBsetintattrelement.restype = c_int
+GRBsetintattrelement.argtypes = [c_void_p, c_char_p, c_int, c_int]
+
 GRBgetdblattr = grblib.GRBgetdblattr
 GRBgetdblattr.restype = c_int
 GRBgetdblattr.argtypes = [c_void_p, c_char_p, POINTER(c_double)]
@@ -254,8 +343,20 @@ GRBsetdblattrlist.restype = c_int
 GRBsetdblattrlist.argtypes = [c_void_p, c_char_p, c_int, POINTER(c_int), POINTER(c_double)]
 
 GRBgetdblattrelement = grblib.GRBgetdblattrelement
-GRBgetdblattrelement.restype = c_double
+GRBgetdblattrelement.restype = c_int
 GRBgetdblattrelement.argtypes = [c_void_p, c_char_p, c_int, POINTER(c_double)]
+
+GRBsetdblattrelement = grblib.GRBsetdblattrelement
+GRBsetdblattrelement.restype = c_int
+GRBsetdblattrelement.argtypes = [c_void_p, c_char_p, c_int, c_double]
+
+GRBgetcharattrelement = grblib.GRBgetcharattrelement
+GRBgetcharattrelement.restype = c_int
+GRBgetcharattrelement.argtypes = [c_void_p, c_char_p, c_int, POINTER(c_char)]
+
+GRBsetcharattrelement = grblib.GRBsetcharattrelement
+GRBsetcharattrelement.restype = c_int
+GRBsetcharattrelement.argtypes = [c_void_p, c_char_p, c_int, c_char]
 
 # manipulate objective function(s)
 
@@ -274,11 +375,15 @@ GRBaddconstr = grblib.GRBaddconstr
 GRBaddconstr.restype = c_int
 GRBaddconstr.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double), c_char, c_double, c_char_p]
 
-# optimize
+# optimize/update model
 
 GRBoptimize = grblib.GRBoptimize
 GRBoptimize.restype = c_int
 GRBoptimize.argtypes = [c_void_p]
+
+GRBupdatemodel = grblib.GRBupdatemodel
+GRBupdatemodel.restype = c_int
+GRBupdatemodel.argtypes = [c_void_p]
 
 # read/write files
 
