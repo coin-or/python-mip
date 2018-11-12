@@ -35,6 +35,7 @@ INTEGER = "I"
 CBC = "CBC"
 CPLEX = "CPX"
 GUROBI = "GRB"
+SCIP = "SCIP"
 
 
 class Column:
@@ -52,13 +53,18 @@ class Constr:
                  name: str = ""):
         self.model = model
         self.idx = idx
-        self.name = name
+        self.name = name  # discuss this var
 
     def __hash__(self) -> int:
         return self.idx
 
     def __str__(self) -> str:
         return self.name
+
+    def dual(self):
+        return self.model.pi(self)
+
+    pi = property(dual)
 
 
 class LinExpr:
@@ -123,8 +129,8 @@ class LinExpr:
         return self
 
     def __mul__(self, other) -> "LinExpr":
-        result: LinExpr = self.copy()
         assert type(other) is int or type(other) is float
+        result: LinExpr = self.copy()
         for var in result.expr.keys():
             result.expr[var] *= other
         return result
@@ -139,8 +145,8 @@ class LinExpr:
         return self
 
     def __truediv__(self, other) -> "LinExpr":
-        result: LinExpr = self.copy()
         assert type(other) is int or type(other) is float
+        result: LinExpr = self.copy()
         for var in result.expr.keys():
             result.expr[var] /= other
         return result
@@ -150,6 +156,9 @@ class LinExpr:
         for var in self.expr.keys():
             self.expr[var] /= other
         return self
+
+    def __neg__(self) -> "LinExpr":
+        return self.__mul__(-1)
 
     def __str__(self) -> str:
         result = []
@@ -218,12 +227,12 @@ class LinExpr:
 class Model:
 
     def __init__(self, name: str = "",
-                 solver_name: str = GUROBI,
-                 sense: str = MINIMIZE):
+                 sense: str = MINIMIZE,
+                 solver_name: str = GUROBI):
         # initializing variables with default values
         self.name: str = name
-        self.solver: Solver = None
         self.sense: str = sense
+        self.solver: Solver = None
         self.vars = []
         self.constrs = []
 
@@ -232,22 +241,43 @@ class Model:
             from milppy.gurobi import SolverGurobi
             self.solver = SolverGurobi(name, sense)
 
-    def add_var(self, 
-                name : str = "",
+    def __del__(self):
+        if self.solver:
+            del self.solver
+
+    def __iadd__(self, other) -> 'Model':
+        if isinstance(other, LinExpr):
+            if len(other.sense) == 0:
+                # adding objective function components
+                self.set_objective(other)
+            else:
+                # adding constraint
+                self.add_constr(other)
+        elif isinstance(other, tuple):
+            if isinstance(other[0], LinExpr) and isinstance(other[1], str):
+                if len(other[0].sense) == 0:
+                    self.set_objective(other[0])
+                else:
+                    self.add_constr(other[0], other[1])
+
+        return self
+
+    def add_var(self,
+                name: str = "",
                 lb: float = 0.0,
                 ub: float = INF,
                 obj: float = 0.0,
                 type: str = CONTINUOUS,
                 column: "Column" = None
                 ) -> "Var":
-        idx = self.solver.add_var(obj, lb, ub, column, type, name)
+        idx = self.solver.add_var(obj, lb, ub, type, column, name)
         self.vars.append(Var(self, idx, name))
         return self.vars[-1]
 
     def add_constr(self, lin_expr: "LinExpr",
                    name: str = "") -> Constr:
         if type(lin_expr) is bool:
-        	return  # empty constraint
+            return None  # empty constraint
         idx = self.solver.add_constr(lin_expr, name)
         self.constrs.append(Constr(self, idx, name))
         return self.constrs[-1]
@@ -269,23 +299,8 @@ class Model:
     def write(self, path: str):
         self.solver.write(path)
 
-    def __iadd__(self, other) -> 'Model':
-        if isinstance(other, LinExpr):
-            if len(other.sense)==0:
-                # adding objective function components
-                self.set_objective(other)
-            else:
-                # adding constraint
-                self.add_constr(other)
-        elif isinstance(other, tuple):
-            if isinstance(other[0], LinExpr) and isinstance(other[1], str):
-                if len(other[0].sense)==0:
-                    self.set_objective(other[0])
-                else:
-                    self.add_constr(other[0], other[1])
-
-        return self
-
+    def x(self, var: "Var") -> float:
+        return self.solver.x(var)
 
 
 class Solver:
@@ -294,16 +309,22 @@ class Solver:
         self.name = name
         self.sense = sense
 
-    def add_var(self, obj: float = 0,
+    def __del__(self): pass
+
+    def add_var(self, name: str = "",
+                obj: float = 0,
                 lb: float = 0,
                 ub: float = INF,
-                column: "Column" = None,
                 type: str = CONTINUOUS,
-                name: str = "") -> int: pass
+                column: "Column" = None) -> int: pass
 
     def add_constr(self, lin_expr: "LinExpr", name: str = "") -> int: pass
 
+    def copy(self) -> "Solver": pass
+
     def optimize(self) -> int: pass
+
+    def pi(self, constr: "Constr") -> float: pass
 
     def set_start(self, variables: List["Var"], values: List[float]): pass
 
@@ -321,7 +342,7 @@ class Var:
                  name: str = ""):
         self.model: Model = model
         self.idx: int = idx
-        self.name = name
+        self.name = name  # discuss this var
 
     def __hash__(self) -> int:
         return self.idx
@@ -364,6 +385,9 @@ class Var:
         assert type(other) is int or type(other) is float
         return self.__mul__(1.0 / other)
 
+    def __neg__(self) -> LinExpr:
+        return LinExpr([self], [-1.0])
+
     def __eq__(self, other) -> LinExpr:
         if other != 0:
             return LinExpr([self], [1], -1 * other, sense="=")
@@ -382,12 +406,10 @@ class Var:
     def __str__(self) -> str:
         return self.name
 
-    def __neg__(self) -> LinExpr:
-        return LinExpr([self], [-1.0])
-
-
     def value(self) -> float:
-        return self.model.solver.x(self)
+        return self.model.x(self)
+
+    x = property(value)
 
 
 def xsum(terms) -> LinExpr:

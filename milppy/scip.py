@@ -3,7 +3,7 @@ from ctypes import *
 from ctypes.util import *
 
 
-class SolverGurobi(Solver):
+class SolverSCIP(Solver):
 
     def __init__(self, name: str, sense: str):
         super().__init__(name, sense)
@@ -12,8 +12,7 @@ class SolverGurobi(Solver):
         self._num_vars: int = 0
         self._num_constrs: int = 0
         self._log: str = ""
-        self._env: c_void_p = c_void_p(0)
-        self._model: c_void_p = c_void_p(0)
+        self._scip: c_void_p = c_void_p(0)
 
         # setting variables for an empty model
         numvars: c_int = c_int(0)
@@ -43,8 +42,8 @@ class SolverGurobi(Solver):
     def add_var(self, obj: float = 0,
                 lb: float = 0,
                 ub: float = float("inf"),
-                type: str = 'C',
                 column: "Column" = None,
+                type: str = 'C',
                 name: str = "") -> int:
         # collecting column data
         numnz: c_int = 0 if column is None else len(column.constrs)
@@ -126,11 +125,6 @@ class SolverGurobi(Solver):
 
         return status
 
-    def pi(self, constr: Constr):
-        res = c_double()
-        GRBgetdblattrelement(self._model, c_str("Pi"), c_int(constr.idx), byref(res))
-        return res
-
     def set_objective(self, lin_expr: "LinExpr", sense: str = ""):
         # collecting linear expression data
         numnz: c_int = len(lin_expr.expr)
@@ -188,11 +182,6 @@ class SolverGurobi(Solver):
 
         GRBsetdblattrlist(self._model, "Start", numnz, cind, cval)
 
-    def x(self, var: Var):
-        res = c_double()
-        GRBgetdblattrelement(self._model, c_str("X"), c_int(var.idx), byref(res))
-        return res.value
-
     def write(self, file_path: str):
         # writing formulation to output file
         GRBwrite(self._model, c_str(file_path))
@@ -218,7 +207,8 @@ GRBloadenv.argtypes = [c_void_p, c_char_p]
 
 GRBnewmodel = grblib.GRBnewmodel
 GRBnewmodel.restype = c_int
-GRBnewmodel.argtypes = [c_void_p, c_void_p, c_char_p, c_int, POINTER(c_double), POINTER(c_double), POINTER(c_double), c_char_p, c_void_p]
+GRBnewmodel.argtypes = [c_void_p, c_void_p, c_char_p, c_int, POINTER(c_double),
+                        POINTER(c_double), POINTER(c_double), c_char_p, c_void_p]
 
 GRBfreeenv = grblib.GRBfreeenv
 GRBfreeenv.restype = c_int
@@ -253,12 +243,7 @@ GRBsetdblattrlist = grblib.GRBsetdblattrlist
 GRBsetdblattrlist.restype = c_int
 GRBsetdblattrlist.argtypes = [c_void_p, c_char_p, c_int, POINTER(c_int), POINTER(c_double)]
 
-GRBgetdblattrelement = grblib.GRBgetdblattrelement
-GRBgetdblattrelement.restype = c_double
-GRBgetdblattrelement.argtypes = [c_void_p, c_char_p, c_int, POINTER(c_double)]
-
-# manipulate objective function(s)
-
+# manipulating objective function(s)
 GRBsetobjectiven = grblib.GRBsetobjectiven
 GRBsetobjectiven.restype = c_int
 GRBsetobjectiven.argtypes = [c_void_p, c_int, c_int, c_double, c_double, c_double, c_char_p,
@@ -268,11 +253,13 @@ GRBsetobjectiven.argtypes = [c_void_p, c_int, c_int, c_double, c_double, c_doubl
 
 GRBaddvar = grblib.GRBaddvar
 GRBaddvar.restype = c_int
-GRBaddvar.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double), c_double, c_double, c_double, c_char, c_char_p]
+GRBaddvar.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double), c_double, c_double,
+                      c_double, c_char, c_char_p]
 
 GRBaddconstr = grblib.GRBaddconstr
 GRBaddconstr.restype = c_int
-GRBaddconstr.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double), c_char, c_double, c_char_p]
+GRBaddconstr.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double), c_char, c_double,
+                         c_char_p]
 
 # optimize
 
@@ -285,5 +272,3 @@ GRBoptimize.argtypes = [c_void_p]
 GRBwrite = grblib.GRBwrite
 GRBwrite.restype = c_int
 GRBwrite.argtypes = [c_void_p, c_char_p]
-
-# vim: ts=4 sw=4 et
