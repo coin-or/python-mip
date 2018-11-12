@@ -90,7 +90,7 @@ class LinExpr:
             result.add_var(other, 1)
         elif isinstance(other, LinExpr):
             result.add_expr(other)
-        elif isinstance(other, float) or isinstance(other, int):
+        elif isinstance(other, (int, float)):
             result.add_const(other)
         return result
 
@@ -102,7 +102,7 @@ class LinExpr:
             self.add_var(other, 1)
         elif isinstance(other, LinExpr):
             self.add_expr(other)
-        elif isinstance(other, float) or isinstance(other, int):
+        elif isinstance(other, (int, float)):
             self.add_const(other)
         return self
 
@@ -112,7 +112,7 @@ class LinExpr:
             result.add_var(other, -1)
         elif isinstance(other, LinExpr):
             result.add_expr(-other)
-        elif isinstance(other, float) or isinstance(other, int):
+        elif isinstance(other, (int, float)):
             result.add_const(-other)
         return result
 
@@ -124,7 +124,7 @@ class LinExpr:
             self.add_var(other, -1)
         elif isinstance(other, LinExpr):
             self.add_expr(-other)
-        elif isinstance(other, float) or isinstance(other, int):
+        elif isinstance(other, (int, float)):
             self.add_const(-other)
         return self
 
