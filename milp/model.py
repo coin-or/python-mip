@@ -1,20 +1,21 @@
 from typing import Dict, List
+
 from milp.constants import *
 
 
 class Column:
 
     def __init__(self, constrs: List["Constr"] = None, coeffs: List[float] = None):
-        self.constrs = constrs if constrs else []
-        self.coeffs = coeffs if coeffs else []
+        self.constrs: List[Constr] = constrs if constrs else []
+        self.coeffs: List[float] = coeffs if coeffs else []
 
 
 class Constr:
 
     def __init__(self, model: "Model", idx: int, name: str = ""):
-        self.model = model
-        self.idx = idx
-        self.name = name  # discuss this var
+        self.model: Model = model
+        self.idx: int = idx
+        self.name: str = name  # discuss this var
 
     def __hash__(self) -> int:
         return self.idx
@@ -44,7 +45,7 @@ class LinExpr:
                  sense: str = ""):
         self.const: int = const
         self.expr: Dict[Var, float] = {}
-        self.sense = sense
+        self.sense: str = sense
 
         if variables:
             assert len(variables) == len(coeffs)
@@ -130,7 +131,7 @@ class LinExpr:
         return self.__mul__(-1)
 
     def __str__(self) -> str:
-        result = []
+        result: List[str] = []
 
         if self.expr:
             for var, coeff in self.expr.items():
@@ -142,22 +143,23 @@ class LinExpr:
             result.append(self.sense + "= ")
             result.append(str(abs(self.const)) if self.const < 0 else "+ " + str(abs(self.const)))
         elif self.const != 0:
-            result.append("+ " + str(abs(self.const)) if self.const > 0 else "- " + str(abs(self.const)))
+            result.append(
+                "+ " + str(abs(self.const)) if self.const > 0 else "- " + str(abs(self.const)))
 
         return "".join(result)
 
     def __eq__(self, other) -> "LinExpr":
-        result = self - other
+        result: LinExpr = self - other
         result.sense = "="
         return result
 
     def __le__(self, other) -> "LinExpr":
-        result = self - other
+        result: LinExpr = self - other
         result.sense = "<"
         return result
 
     def __ge__(self, other) -> "LinExpr":
-        result = self - other
+        result: LinExpr = self - other
         result.sense = ">"
         return result
 
@@ -186,7 +188,7 @@ class LinExpr:
             self.expr[var] = coeff
 
     def copy(self) -> "LinExpr":
-        copy = LinExpr()
+        copy: LinExpr = LinExpr()
         copy.const = self.const
         copy.expr = self.expr.copy()
         copy.sense = self.sense
@@ -201,10 +203,12 @@ class Model:
         # initializing variables with default values
         self.name: str = name
         self.sense: str = sense
-        self.solver_name = solver_name
+        self.solver_name: str = solver_name
         self.solver: Solver = None
-        self.vars = []
-        self.constrs = []
+
+        # list of constraints and variables
+        self.constrs: List[Constr] = []
+        self.vars: List[Var] = []
 
         # todo: implement code to detect solver automatically
         if solver_name == GUROBI:
@@ -290,15 +294,15 @@ class Model:
 class Row:
 
     def __init__(self, vars: List["Var"] = None, coeffs: List[float] = None):
-        self.vars = vars if vars else []
-        self.coeffs = coeffs if coeffs else []
+        self.vars: List[Var] = vars if vars else []
+        self.coeffs: List[Constr] = coeffs if coeffs else []
 
 
 class Solver:
 
     def __init__(self, name: str, sense: str):
-        self.name = name
-        self.sense = sense
+        self.name: str = name
+        self.sense: str = sense
 
     def __del__(self): pass
 
@@ -322,11 +326,11 @@ class Solver:
 
     # Constraint-related getters/setters
 
-    def constr_get_pi(self, constr: "Constr") -> float: pass
+    def constr_get_pi(self, constr: Constr) -> float: pass
 
-    def constr_get_row(self) -> Row: pass
+    def constr_get_row(self, constr: Constr) -> Row: pass
 
-    def constr_set_row(self, value: Row) -> Row: pass
+    def constr_set_row(self, constr: Constr, value: Row) -> Row: pass
 
     # Variable-related getters/setters
 
@@ -363,7 +367,7 @@ class Var:
                  name: str = ""):
         self.model: Model = model
         self.idx: int = idx
-        self.name = name  # discuss this var
+        self.name: str = name  # discuss this var
 
     def __hash__(self) -> int:
         return self.idx
@@ -478,7 +482,7 @@ class Var:
 
 
 def xsum(terms) -> LinExpr:
-    result = LinExpr()
+    result: LinExpr = LinExpr()
     for term in terms:
         result.add_term(term)
     return result

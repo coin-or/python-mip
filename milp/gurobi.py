@@ -26,12 +26,13 @@ class SolverGurobi(Solver):
 
         # creating Gurobi environment
         if GRBloadenv(byref(self._env), c_str(self._log)) != 0:
-            # todo: environment could not be loaded
+            # todo: raise exception when environment can't be loaded
             pass
 
         # creating Gurobi model
-        if GRBnewmodel(self._env, byref(self._model), c_str(name), numvars, byref(obj), byref(lb), byref(ub), vtype, varnames) != 0:
-            # todo: model could not be generated
+        if GRBnewmodel(self._env, byref(self._model), c_str(name), numvars,
+                       byref(obj), byref(lb), byref(ub), vtype, varnames) != 0:
+            # todo: raise exception when environment can't be generated
             pass
 
         # setting objective sense
@@ -71,7 +72,8 @@ class SolverGurobi(Solver):
         idx: int = self._num_vars
         self._num_vars += 1
 
-        GRBaddvar(self._model, c_int(numnz), vind, vval, c_double(obj), c_double(lb), c_double(ub), vtype, c_str(name))
+        GRBaddvar(self._model, c_int(numnz), vind, vval, c_double(obj), c_double(lb), c_double(ub),
+                  vtype, c_str(name))
         self._updated = False
 
         return idx
@@ -171,8 +173,6 @@ class SolverGurobi(Solver):
         GRBsetdblattrlist(self._model, c_str("Obj"), c_int(numnz), cind, cval)
         self._updated = False
 
-        return True
-
     def set_start(self, variables: List["Var"], values: List[float]) -> None:
         # collecting data
         numnz: c_int = len(variables)
@@ -201,6 +201,12 @@ class SolverGurobi(Solver):
         res = c_double()
         GRBgetdblattrelement(self._model, c_str("Pi"), c_int(constr.idx), byref(res))
         return res.value
+
+    def constr_get_row(self, constr: Constr) -> Row:
+        raise NotImplementedError("Gurobi: functionality currently unavailable in PyMILP...")
+
+    def constr_set_row(self, constr: Constr, value: Row) -> Row:
+        raise NotImplementedError("Gurobi: functionality currently unavailable in PyMILP...")
 
     def var_get_lb(self, var: "Var") -> float:
         if not self._updated:
@@ -255,7 +261,6 @@ class SolverGurobi(Solver):
         raise ValueError("Gurobi: invalid variable type returned...")
 
     def var_set_type(self, var: "Var", value: str) -> None:
-        vtype: c_char = None
         if value == BINARY:
             vtype = c_char(ord("B"))
         elif value == CONTINUOUS:
@@ -269,10 +274,10 @@ class SolverGurobi(Solver):
         self._updated = False
 
     def var_get_column(self, var: "Var"):
-        raise ValueError("Gurobi: functionality currently unavailable in PyMILP...")
+        raise NotImplementedError("Gurobi: functionality currently unavailable in PyMILP...")
 
     def var_set_column(self, var: "Var", value: Column):
-        raise ValueError("Gurobi: functionality currently unavailable in PyMILP...")
+        raise NotImplementedError("Gurobi: functionality currently unavailable in PyMILP...")
 
     def var_get_rc(self, var: "Var") -> float:
         res = c_double()
@@ -305,7 +310,8 @@ GRBloadenv.argtypes = [c_void_p, c_char_p]
 
 GRBnewmodel = grblib.GRBnewmodel
 GRBnewmodel.restype = c_int
-GRBnewmodel.argtypes = [c_void_p, c_void_p, c_char_p, c_int, POINTER(c_double), POINTER(c_double), POINTER(c_double), c_char_p, c_void_p]
+GRBnewmodel.argtypes = [c_void_p, c_void_p, c_char_p, c_int, POINTER(c_double), POINTER(c_double),
+                        POINTER(c_double), c_char_p, c_void_p]
 
 GRBfreeenv = grblib.GRBfreeenv
 GRBfreeenv.restype = c_int
@@ -375,11 +381,13 @@ GRBsetobjectiven.argtypes = [c_void_p, c_int, c_int, c_double, c_double, c_doubl
 
 GRBaddvar = grblib.GRBaddvar
 GRBaddvar.restype = c_int
-GRBaddvar.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double), c_double, c_double, c_double, c_char, c_char_p]
+GRBaddvar.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double), c_double, c_double,
+                      c_double, c_char, c_char_p]
 
 GRBaddconstr = grblib.GRBaddconstr
 GRBaddconstr.restype = c_int
-GRBaddconstr.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double), c_char, c_double, c_char_p]
+GRBaddconstr.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double), c_char, c_double,
+                         c_char_p]
 
 # optimize/update model
 

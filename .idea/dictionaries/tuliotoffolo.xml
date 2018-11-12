@@ -8,6 +8,9 @@
       <w>cplex</w>
       <w>gurobi</w>
       <w>itruediv</w>
+      <w>milp</w>
+      <w>vtype</w>
+      <w>xsum</w>
     </words>
   </dictionary>
 </component>
