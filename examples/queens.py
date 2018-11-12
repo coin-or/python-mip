@@ -1,4 +1,4 @@
-from milp.model import *
+from mip.model import *
 from sys import stdout
 from time import process_time
 
