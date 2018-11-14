@@ -28,12 +28,12 @@ class Constr:
         return self.model.solver.constr_get_pi(self)
 
     @property
-    def row(self) -> "Row":
-        return self.model.solver.constr_get_row(self)
+    def expr(self) -> "LinExpr":
+        return self.model.solver.constr_get_expr(self)
 
-    @row.setter
-    def row(self, value: "Row") -> None:
-        self.model.solver.constr_set_row(self, value)
+    @expr.setter
+    def expr(self, value: "LinExpr") -> None:
+        self.model.solver.constr_set_expr(self, value)
 
 
 class LinExpr:
@@ -213,7 +213,7 @@ class Model:
         # todo: implement code to detect solver automatically
         if solver_name == GUROBI:
             from mip.gurobi import SolverGurobi
-            self.solver = SolverGurobi(name, sense)
+            self.solver = SolverGurobi(self, name, sense)
 
     def __del__(self):
         if self.solver:
@@ -260,18 +260,23 @@ class Model:
 
         # adding variables
         for v in self.vars:
-            copy.add_var(name=v.name, lb=v.lb, ub=v.ub, obj=0.0, type=v.type)
+            copy.add_var(name=v.name, lb=v.lb, ub=v.ub, obj=v.obj, type=v.type)
 
         # adding constraints
         for c in self.constrs:
-            expr = LinExpr()  # todo: make copy of constraint's lin_expr
+            expr = c.expr  # todo: make copy of constraint's lin_expr
             copy.add_constr(lin_expr=expr, name=c.name)
 
         # setting objective function's constant
-        expr = LinExpr()  # todo: make copy of objective's lin_expr
-        copy.set_objective(expr)
+        copy.set_objective_const(self.get_objective_const())
 
         return copy
+
+    def get_objective(self) -> LinExpr:
+        return self.solver.get_objective()
+
+    def get_objective_const(self) -> float:
+        return self.solver.get_objective_const()
 
     def optimize(self) -> int:
         self.solver.optimize()
@@ -287,20 +292,17 @@ class Model:
         elif isinstance(expr, LinExpr):
             self.solver.set_objective(expr, sense)
 
+    def set_objective_const(self, const: float) -> None:
+        return self.solver.set_objective_const(const)
+
     def write(self, path: str) -> None:
         self.solver.write(path)
 
 
-class Row:
-
-    def __init__(self, vars: List["Var"] = None, coeffs: List[float] = None):
-        self.vars: List[Var] = vars if vars else []
-        self.coeffs: List[Constr] = coeffs if coeffs else []
-
-
 class Solver:
 
-    def __init__(self, name: str, sense: str):
+    def __init__(self, model: Model, name: str, sense: str):
+        self.model: Model = model
         self.name: str = name
         self.sense: str = sense
 
@@ -316,21 +318,27 @@ class Solver:
 
     def add_constr(self, lin_expr: "LinExpr", name: str = "") -> int: pass
 
+    def get_objective(self) -> LinExpr: pass
+
+    def get_objective_const(self) -> float: pass
+
     def optimize(self) -> int: pass
 
     def set_start(self, variables: List["Var"], values: List[float]) -> None: pass
 
     def set_objective(self, lin_expr: "LinExpr", sense: str = "") -> None: pass
 
+    def set_objective_const(self, const: float) -> None: pass
+
     def write(self, file_path: str) -> None: pass
 
     # Constraint-related getters/setters
 
+    def constr_get_expr(self, constr: Constr) -> LinExpr: pass
+
+    def constr_set_expr(self, constr: Constr, value: LinExpr) -> LinExpr: pass
+
     def constr_get_pi(self, constr: Constr) -> float: pass
-
-    def constr_get_row(self, constr: Constr) -> Row: pass
-
-    def constr_set_row(self, constr: Constr, value: Row) -> Row: pass
 
     # Variable-related getters/setters
 

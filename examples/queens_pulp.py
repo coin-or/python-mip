@@ -28,7 +28,7 @@ for p, k in enumerate(range(2 - n, n - 2 + 1)):
 for p, k in enumerate(range(3, n + n)):
     queens += sum(x[i][j] for i in range(n) for j in range(n) if i + j == k) <= 1, 'diag2({})'.format(p)
 
-queens.solve(solver=GUROBI())
+queens.solve()
 
 for i in range(n):
     for j in range(n):
