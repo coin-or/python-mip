@@ -5,8 +5,8 @@ from ctypes.util import *
 
 class SolverGurobi(Solver):
 
-    def __init__(self, name: str, sense: str):
-        super().__init__(name, sense)
+    def __init__(self, model: Model, name: str, sense: str):
+        super().__init__(model, name, sense)
 
         # setting class members to default values
         self._updated = False
@@ -102,6 +102,11 @@ class SolverGurobi(Solver):
 
         return idx
 
+    def get_objective_const(self) -> float:
+        res = c_double()
+        GRBgetdblattr(self._model, c_str("ObjCon"), byref(res))
+        return res.value
+
     def optimize(self) -> int:
         # executing Gurobi to solve the formulation
         status: int = int(GRBoptimize(self._model))
@@ -173,6 +178,9 @@ class SolverGurobi(Solver):
         GRBsetdblattrlist(self._model, c_str("Obj"), c_int(numnz), cind, cval)
         self._updated = False
 
+    def set_objective_const(self, const: float) -> None:
+        GRBsetdblattr(self._model, c_str("ObjCon"), c_double(const))
+
     def set_start(self, variables: List["Var"], values: List[float]) -> None:
         # collecting data
         numnz: c_int = len(variables)
@@ -197,16 +205,54 @@ class SolverGurobi(Solver):
             self.update()
         GRBwrite(self._model, c_str(file_path))
 
+    def constr_get_expr(self, constr: Constr) -> LinExpr:
+        if not self._updated:
+            self.update()
+
+        numnz: c_int = c_int()
+        cbeg: POINTER(c_int) = POINTER(c_int)()
+        cind: POINTER(c_int) = POINTER(c_int)()
+        cval: POINTER(c_double) = POINTER(c_double)()
+
+        # obtaining number of non-zeros
+        GRBgetconstrs(self._model, byref(numnz), cbeg, cind, cval, c_int(constr.idx), c_int(1))
+
+        # creating arrays to hold indices and coefficients
+        cbeg = (c_int * 2)()  # beginning and ending
+        cind = (c_int * numnz.value)()
+        cval = (c_double * numnz.value)()
+
+        # obtaining variables and coefficients
+        GRBgetconstrs(self._model, byref(numnz), cbeg, cind, cval, c_int(constr.idx), c_int(1))
+
+        # obtaining sense and rhs
+        c_sense: c_char = c_char()
+        rhs: c_double = c_double()
+        GRBgetcharattrelement(self._model, c_str("Sense"), c_int(constr.idx), byref(c_sense))
+        GRBgetdblattrelement(self._model, c_str("RHS"), c_int(constr.idx), byref(rhs))
+
+        # translating sense
+        sense = ""
+        if c_sense.value == b"<":
+            sense = LESS_OR_EQUAL
+        elif c_sense.value == b">":
+            sense = GREATER_OR_EQUAL
+        elif c_sense.value == b"=":
+            sense = EQUAL
+
+        expr = LinExpr(const=-rhs.value, sense=sense)
+        for i in range(numnz.value):
+            expr.add_var(self.model.vars[cind[i]], cval[i])
+
+        return expr
+
+    def constr_set_expr(self, constr: Constr, value: LinExpr) -> LinExpr:
+        raise NotImplementedError("Gurobi: functionality currently unavailable in PyMILP...")
+
     def constr_get_pi(self, constr: "Constr") -> float:
         res = c_double()
         GRBgetdblattrelement(self._model, c_str("Pi"), c_int(constr.idx), byref(res))
         return res.value
-
-    def constr_get_row(self, constr: Constr) -> Row:
-        raise NotImplementedError("Gurobi: functionality currently unavailable in PyMILP...")
-
-    def constr_set_row(self, constr: Constr, value: Row) -> Row:
-        raise NotImplementedError("Gurobi: functionality currently unavailable in PyMILP...")
 
     def var_get_lb(self, var: "Var") -> float:
         if not self._updated:
@@ -388,6 +434,13 @@ GRBaddconstr = grblib.GRBaddconstr
 GRBaddconstr.restype = c_int
 GRBaddconstr.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double), c_char, c_double,
                          c_char_p]
+
+# get constraints
+
+GRBgetconstrs = grblib.GRBgetconstrs
+GRBgetconstrs.restype = c_int
+GRBgetconstrs.argtypes = [c_void_p, POINTER(c_int), POINTER(c_int), POINTER(c_int),
+                          POINTER(c_double), c_int, c_int]
 
 # optimize/update model
 

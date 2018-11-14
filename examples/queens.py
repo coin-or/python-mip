@@ -39,6 +39,9 @@ for i in range(n):
     stdout.write('\n')
 
 stdout.write('\n')
+
+print(queens.constrs[0].expr)
+
 stdout.write('Total process time: {:.3f}s\n'.format(process_time()))
 
 # writing resulting lp
