@@ -332,6 +332,8 @@ class Solver:
 
     def write(self, file_path: str) -> None: pass
 
+    def read(self, file_path: str) -> None: pass
+
     # Constraint-related getters/setters
 
     def constr_get_expr(self, constr: Constr) -> LinExpr: pass
