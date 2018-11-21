@@ -36,12 +36,14 @@ class SolverCbc(Solver):
 				c_char(1) if coltype.upper() == "B" or coltype.upper() == "I" \
 				else c_char(0)
 		
-		idx : int = cbcNumCols(self._model)
+		idx = int(cbcNumCols(self._model).value)
 		
 		cbcAddCol(self._model, c_str(name), 
 				c_double(lb), c_double(ub), c_double(obj),
 				isInt, numnz, vind, vval )
 		
+
+		print('cidx {} '.format(idx))
 		return idx
 	
 	
@@ -111,9 +113,11 @@ class SolverCbc(Solver):
 		rhs: c_double = c_double(-lin_expr.const)
 		
 		# constraint index
-		idx: int = cbcNumRows(self._model)
+		idx = int(cbcNumRows(self._model).value)
 		
 		cbcAddRow( self._mode, c_str(name), numnz, cind, cval, sense, rhs )
+
+		print('ridx {} '.format(idx))
 		
 		return idx
 	
@@ -156,16 +160,16 @@ cbcWriteMps = cbclib.Cbc_writeMps
 cbcWriteMps.argtypes = [c_void_p, c_char_p]
 
 cbcNumCols = cbclib.Cbc_getNumCols
-cbcNumCols = cbclib.argtypes = [c_void_p]
-cbcNumCols = cbclib.restype = c_int
+cbcNumCols.argtypes = [c_void_p]
+cbcNumCols.restype = c_int
 
 cbcNumIntegers = cbclib.Cbc_getNumIntegers
-cbcNumIntegers = cbclib.argtypes = [c_void_p]
-cbcNumIntegers = cbclib.restype = c_int
+cbcNumIntegers.argtypes = [c_void_p]
+cbcNumIntegers.restype = c_int
 
 cbcNumRows = cbclib.Cbc_getNumRows
-cbcNumRows = cbclib.argtypes = [c_void_p]
-cbcNumRows = cbclib.restype = c_int
+cbcNumRows.argtypes = [c_void_p]
+cbcNumRows.restype = c_int
 
 cbcAddCol = cbclib.Cbc_addCol
 cbcAddCol.argtypes = [c_void_p, c_char_p, c_double, 
