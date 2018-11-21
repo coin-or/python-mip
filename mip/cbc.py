@@ -36,14 +36,13 @@ class SolverCbc(Solver):
 				c_char(1) if coltype.upper() == "B" or coltype.upper() == "I" \
 				else c_char(0)
 		
-		idx = int(cbcNumCols(self._model).value)
+		idx : int = int(cbcNumCols(self._model))
 		
 		cbcAddCol(self._model, c_str(name), 
 				c_double(lb), c_double(ub), c_double(obj),
 				isInt, numnz, vind, vval )
 		
 
-		print('cidx {} '.format(idx))
 		return idx
 	
 	
@@ -53,7 +52,7 @@ class SolverCbc(Solver):
 	
 	def set_objective(self, lin_expr: "LinExpr", sense: str = "") -> None:
 		# collecting variable coefficients
-		for var, coeff in expr.expr.items():
+		for var, coeff in lin_expr.expr.items():
 			cbcSetObjCoeff(self._model, var.idx, coeff)
 		
 		# objective function constant
@@ -67,7 +66,7 @@ class SolverCbc(Solver):
 	
 	
 	def optimize(self) -> int:
-		res : int = Cbc_solve(self._model)
+		res : int = cbcSolve(self._model)
 		
 		if cbcIsAbandoned(self._model):
 			return ERROR
@@ -113,12 +112,10 @@ class SolverCbc(Solver):
 		rhs: c_double = c_double(-lin_expr.const)
 		
 		# constraint index
-		idx = int(cbcNumRows(self._model).value)
+		idx : int = int(cbcNumRows(self._model))
 		
-		cbcAddRow( self._mode, c_str(name), numnz, cind, cval, sense, rhs )
+		cbcAddRow( self._model, c_str(name), numnz, cind, cval, sense, rhs )
 
-		print('ridx {} '.format(idx))
-		
 		return idx
 	
 	
