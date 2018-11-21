@@ -10,7 +10,7 @@ solver=""
 for arg in (argv):
 	if "-solver=" in arg:
 		solver=arg.split('=')[1]
-		print('trying to load {} solver'.format(arg))
+		print('trying to load {} solver'.format(solver))
 
 
 if (len(solver))==0:
