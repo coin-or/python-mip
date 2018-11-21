@@ -1,10 +1,22 @@
 from mip.model import *
-from sys import stdout
+from sys import stdout,argv
 from time import process_time
 
 n = 100
 
-queens = Model('queens', MINIMIZE)
+# can force a solver to be used with -solver=solverName option
+solver=""
+
+for arg in (argv):
+	if "-solver=" in arg:
+		solver=arg.split('=')[1]
+		print('trying to load {} solver'.format(arg))
+
+
+if (len(solver))==0:
+	queens = Model('queens', MINIMIZE)
+else:
+	queens = Model('queens', MINIMIZE, solver)
 
 x = [[queens.add_var('x({},{})'.format(i, j), type='B')
       for j in range(n)] for i in range(n)]

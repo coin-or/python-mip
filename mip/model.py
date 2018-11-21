@@ -211,9 +211,12 @@ class Model:
         self.vars: List[Var] = []
 
         # todo: implement code to detect solver automatically
-        if solver_name == GUROBI:
+        if solver_name.upper() == GUROBI:
             from mip.gurobi import SolverGurobi
             self.solver = SolverGurobi(self, name, sense)
+        elif solver_name.upper() == CBC:
+            from mip.cbc import SolverCbc
+            self.solver = SolverCbc(self, name, sense)
 
     def __del__(self):
         if self.solver:
