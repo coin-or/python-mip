@@ -151,11 +151,9 @@ cbcReadMps.restype = c_int
 
 cbcWriteLp = cbclib.Cbc_writeLp
 cbcWriteLp.argtypes = [c_void_p, c_char_p]
-cbcWriteLp.restype = c_int
 
 cbcWriteMps = cbclib.Cbc_writeMps
 cbcWriteMps.argtypes = [c_void_p, c_char_p]
-cbcWriteMps.restype = c_int
 
 cbcNumCols = cbclib.Cbc_getNumCols
 cbcNumCols = cbclib.argtypes = [c_void_p]
