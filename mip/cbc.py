@@ -149,11 +149,11 @@ cbcReadMps = cbclib.Cbc_readMps
 cbcReadMps.argtypes = [c_void_p, c_char_p]
 cbcReadMps.restype = c_int
 
-cbcWriteLp = cbclib.Cbc_WriteLp
+cbcWriteLp = cbclib.Cbc_writeLp
 cbcWriteLp.argtypes = [c_void_p, c_char_p]
 cbcWriteLp.restype = c_int
 
-cbcWriteMps = cbclib.Cbc_WriteMps
+cbcWriteMps = cbclib.Cbc_writeMps
 cbcWriteMps.argtypes = [c_void_p, c_char_p]
 cbcWriteMps.restype = c_int
 
@@ -172,13 +172,13 @@ cbcNumRows = cbclib.restype = c_int
 cbcAddCol = cbclib.Cbc_addCol
 cbcAddCol.argtypes = [c_void_p, c_char_p, c_double, 
 		c_double, c_double, c_char, c_int,
-		c_int_p, c_double_p]
+		POINTER(c_int), POINTER(c_double)]
 
 cbcAddRow = cbclib.Cbc_addRow
 cbcAddRow.argtypes = [c_void_p, c_char_p, c_int, 
-		c_int_p, c_double_p, c_char, c_double]
+		POINTER(c_int), POINTER(c_double), c_char, c_double]
 
-cbcSetObjCoeff = cbclib.setObjCoeff
+cbcSetObjCoeff = cbclib.Cbc_setObjCoeff
 cbcSetObjCoeff.argtypes = [c_void_p, c_int, c_double]
 
 cbcDeleteModel = cbclib.Cbc_deleteModel
@@ -190,7 +190,7 @@ cbcSolve.restype = c_int
 
 cbcColSolution = cbclib.Cbc_getColSolution
 cbcColSolution.argtypes = [c_void_p]
-cbcColSolution.restype = c_double_p
+cbcColSolution.restype = POINTER(c_double)
 
 cbcBestSolution = cbclib.Cbc_bestSolution
 cbcBestSolution.argtypes = [c_void_p]
