@@ -205,6 +205,23 @@ class SolverGurobi(Solver):
             self.update()
         GRBwrite(self._model, c_str(file_path))
 
+    def read(self, file_path : str) -> None:
+        GRBfreemodel(self._model)
+        self._model = c_void_p(0)
+        GRBreadModel( self._env, c_str(file_path), byref(self._model) )
+
+    def num_cols(self) -> int:
+        res = c_int(0)
+        st = GRBgetintattr(self._model, c_str('NumVars'), byref(res))
+        assert st == 0
+        return res.value
+
+    def num_rows(self) -> int:
+        res = c_int(0)
+        st = GRBgetintattr(self._model, c_str('NumConstrs'), byref(res))
+        assert st == 0
+        return res.value
+
     def constr_get_expr(self, constr: Constr) -> LinExpr:
         if not self._updated:
             self.update()
@@ -335,6 +352,12 @@ class SolverGurobi(Solver):
         GRBgetdblattrelement(self._model, c_str("X"), c_int(var.idx), byref(res))
         return res.value
 
+    def var_get_name(self, idx : int) -> str:
+        vName : c_char_p(0)
+        st = GRBgetstrattrelement(self._model, c_int(idx), c_str('VarName'), byref(vName) )
+        assert st == 0
+        return vName.value
+
 
 # auxiliary functions
 def c_str(value) -> c_char_p:
@@ -416,6 +439,10 @@ GRBsetcharattrelement = grblib.GRBsetcharattrelement
 GRBsetcharattrelement.restype = c_int
 GRBsetcharattrelement.argtypes = [c_void_p, c_char_p, c_int, c_char]
 
+GRBgetstrattrelement = grblib.GRBgetstrattrelement 
+GRBgetstrattrelement.argtypes = [c_void_p, c_char_p, c_int, POINTER(c_char_p)] 
+GRBgetstrattrelement.restype = c_int
+
 # manipulate objective function(s)
 
 GRBsetobjectiven = grblib.GRBsetobjectiven
@@ -457,5 +484,9 @@ GRBupdatemodel.argtypes = [c_void_p]
 GRBwrite = grblib.GRBwrite
 GRBwrite.restype = c_int
 GRBwrite.argtypes = [c_void_p, c_char_p]
+
+GRBreadModel = grblib.GRBreadmodel
+GRBreadModel.restype = c_int
+GRBreadModel.argtypes = [c_void_p, c_char_p, c_void_p]
 
 # vim: ts=4 sw=4 et
