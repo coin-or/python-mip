@@ -262,6 +262,12 @@ class SolverGurobi(Solver):
             expr.add_var(self.model.vars[cind[i]], cval[i])
 
         return expr
+	
+    def constr_get_name(self, idx : int) -> str:
+        vName : c_char_p(0)
+        st = GRBgetstrattrelement(self._model, c_int(idx), c_str('ConstrName'), byref(vName) )
+        assert st == 0
+        return vName.value
 
     def constr_set_expr(self, constr: Constr, value: LinExpr) -> LinExpr:
         raise NotImplementedError("Gurobi: functionality currently unavailable in PyMILP...")

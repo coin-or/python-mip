@@ -303,6 +303,14 @@ class Model:
 
     def read(self, path: str) -> None:
         self.solver.read(path)
+        nCols = self.solver.num_cols()
+        nRows = self.solver.num_rows()
+        for i in range(nCols):
+            self.vars.append(Var(self, i, self.solver.var_get_name(i)))
+        for i in range(nRows):
+            constr = Constr(self, i, self.solver.constr_get_name(i))
+            constr.expr = self.solver.constr_get_expr()
+            self.constrs.append(constr)
 
 
 class Solver:
@@ -349,6 +357,8 @@ class Solver:
     def constr_get_expr(self, constr: Constr) -> LinExpr: pass
 
     def constr_set_expr(self, constr: Constr, value: LinExpr) -> LinExpr: pass
+
+    def constr_get_name(self, idx : int) -> str: pass
 
     def constr_get_pi(self, constr: Constr) -> float: pass
 
