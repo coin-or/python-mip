@@ -63,7 +63,8 @@ class SolverCbc(Solver):
 			cbcSetObjSense(self._model, -1.0)
 		else:
 			cbcSetObjSense(self._model, 1.0)
-	
+
+
 	def optimize(self) -> int:
 		res : int = cbcSolve(self._model)
 		
@@ -84,7 +85,8 @@ class SolverCbc(Solver):
 				return FEASIBLE
 		
 		return INFEASIBLE
-	
+
+
 	def var_get_x(self, var: Var) -> float:
 		if cbcNumIntegers(self._model)>0:
 			x = cbcBestSolution(self._model)
@@ -93,12 +95,14 @@ class SolverCbc(Solver):
 			x = cbcColSolution(self._model)
 			return float(x[var.idx])
 
+
 	def var_get_lb(self, var: "Var") -> float:
 		res : float = float(cbcGetColLower(self._model)[var.idx])
 		return res
 
+
 	def var_get_name(self, idx : int) -> str:
-        nameSpace : c_char_p = create_string_buffer(256)
+		nameSpace : c_char_p = create_string_buffer(256)
 		cbcGetColName(self._model, c_int(idx), nameSpace, 255)
 		return namesSpace.value
 	
@@ -124,26 +128,60 @@ class SolverCbc(Solver):
 		cbcAddRow( self._model, c_str(name), numnz, cind, cval, sense, rhs )
 
 		return idx
-	
-	
+
+
 	def write(self, file_path: str):
 		if ".mps" in file_path.lower():
 			cbcWriteMps(self._model, c_str(file_path))
 		else:
 			cbcWriteLp(self._model, c_str(file_path))
-	
-	
+
+
 	def read(self, file_path: str) -> None:
 		if ".mps" in file_path.lower():
 			cbcReadMps(self._model, c_str(file_path))
 		else:
 			cbcReadLp(self._model, c_str(file_path))
-	
+
+
 	def num_cols(self) -> int:
 		return cbcNumCols(self._model).value
 
+
 	def num_rows(self) -> int:
 		return cbcNumRows(self._model).value
+
+
+	def constr_get_expr(self, constr: Constr) -> LinExpr:
+		numnz = cbcGetRowNz(self._model, constr.idx).value
+		
+		ridx = cbcGetRowIndices(self._model, constr.idx)
+		rcoef = cbcGetRowCoeffs(self._model, constr.idx)
+		
+		rhs = cbcGetRowRHS(self._model, constr.idx).value
+		rsense = cbcGetRowSense(self._model, constr.idx).value.upper()
+		
+		sense = ''
+		if (rsense == 'E'):
+			sense = EQUAL
+		elif (rsense == 'L'):
+			sense = LESS_OR_EQUAL
+		elif (rsense == 'G'):
+			sense = GREATER_OR_EQUAL
+		else:
+			raise Exception('Unknow sense: {}'.format(rsense.value))
+		
+		expr = LinExpr(const=-rhs, sense=sense)
+		for i in range(numnz):
+		    expr.add_var(self.model.vars[ridx[i]], rcoef[i])
+		
+		return expr
+	
+	def constr_get_name(self, idx : int) -> str:
+		nameSpace : c_char_p = create_string_buffer(256)
+		cbcGetRowName(self._model, c_int(idx), nameSpace, 255)
+		return nameSpace.value
+
 	
 	def __del__(self):
 		cbcDeleteModel(self._model)
@@ -179,6 +217,26 @@ cbcNumIntegers.restype = c_int
 cbcNumRows = cbclib.Cbc_getNumRows
 cbcNumRows.argtypes = [c_void_p]
 cbcNumRows.restype = c_int
+
+cbcGetRowNz = cbclib.Cbc_getRowNz
+cbcGetRowNz.argtypes = [c_void_p, c_int]
+cbcGetRowNz.restype = c_int
+
+cbcGetRowIndices = cbclib.Cbc_getRowIndices
+cbcGetRowIndices.argtypes = [c_void_p, c_int]
+cbcGetRowIndices.restype = POINTER(c_int)
+
+cbcGetRowCoeffs = cbclib.Cbc_getRowCoeffs
+cbcGetRowCoeffs.argtypes = [c_void_p, c_int]
+cbcGetRowCoeffs.restype = POINTER(c_double)
+
+cbcGetRowRHS = cbclib.Cbc_getRowRHS
+cbcGetRowRHS.argtypes = [c_void_p, c_int]
+cbcGetRowRHS.restype = c_double
+
+cbcGetRowSense = cbclib.Cbc_getRowSense
+cbcGetRowSense.argtypes = [c_void_p, c_int]
+cbcGetRowSense.restype = c_char
 
 cbcAddCol = cbclib.Cbc_addCol
 cbcAddCol.argtypes = [c_void_p, c_char_p, c_double, 
@@ -248,6 +306,9 @@ cbcSetColUpper.restype = POINTER(c_double)
 
 cbcGetColName = cbclib.Cbc_getColName
 cbcGetColName.argtypes = [c_void_p, c_int, c_char_p, c_int]
+
+cbcGetRowName = cbclib.Cbc_getRowName
+cbcGetRowName.argtypes = [c_void_p, c_int, c_char_p, c_int]
 
 def c_str(value) -> c_char_p:
     """
