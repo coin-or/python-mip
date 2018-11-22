@@ -301,6 +301,9 @@ class Model:
     def write(self, path: str) -> None:
         self.solver.write(path)
 
+    def read(self, path: str) -> None:
+        self.solver.read(path)
+
 
 class Solver:
 
@@ -337,6 +340,10 @@ class Solver:
 
     def read(self, file_path: str) -> None: pass
 
+    def num_cols(self) -> int: pass
+
+    def num_rows(self) -> int: pass
+
     # Constraint-related getters/setters
 
     def constr_get_expr(self, constr: Constr) -> LinExpr: pass
@@ -370,6 +377,8 @@ class Solver:
     def var_get_rc(self, var: "Var") -> float: pass
 
     def var_get_x(self, var: "Var") -> float: pass
+
+    def var_get_name(self, idx : int) -> str: pass
 
 
 class Var:

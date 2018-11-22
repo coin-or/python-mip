@@ -64,7 +64,6 @@ class SolverCbc(Solver):
 		else:
 			cbcSetObjSense(self._model, 1.0)
 	
-	
 	def optimize(self) -> int:
 		res : int = cbcSolve(self._model)
 		
@@ -86,7 +85,6 @@ class SolverCbc(Solver):
 		
 		return INFEASIBLE
 	
-	
 	def var_get_x(self, var: Var) -> float:
 		if cbcNumIntegers(self._model)>0:
 			x = cbcBestSolution(self._model)
@@ -94,6 +92,15 @@ class SolverCbc(Solver):
 		else:
 			x = cbcColSolution(self._model)
 			return float(x[var.idx])
+
+	def var_get_lb(self, var: "Var") -> float:
+		res : float = float(cbcGetColLower(self._model)[var.idx])
+		return res
+
+	def var_get_name(self, idx : int) -> str:
+        nameSpace : c_char_p = create_string_buffer(256)
+		cbcGetColName(self._model, c_int(idx), nameSpace, 255)
+		return namesSpace.value
 	
 	
 	def add_constr(self, lin_expr: "LinExpr", name: str = "") -> int:
@@ -132,6 +139,11 @@ class SolverCbc(Solver):
 		else:
 			cbcReadLp(self._model, c_str(file_path))
 	
+	def num_cols(self) -> int:
+		return cbcNumCols(self._model).value
+
+	def num_rows(self) -> int:
+		return cbcNumRows(self._model).value
 	
 	def __del__(self):
 		cbcDeleteModel(self._model)
@@ -217,6 +229,25 @@ cbcIsContinuousUnbounded.restype = c_int
 cbcIsAbandoned = cbclib.Cbc_isAbandoned
 cbcIsAbandoned.argtypes = [c_void_p]
 cbcIsAbandoned.restype = c_int
+
+cbcGetColLower = cbclib.Cbc_getColLower
+cbcGetColLower.argtypes = [c_void_p]
+cbcGetColLower.restype = POINTER(c_double)
+
+cbcGetColUpper = cbclib.Cbc_getColUpper
+cbcGetColUpper.argtypes = [c_void_p]
+cbcGetColUpper.restype = POINTER(c_double)
+
+cbcSetColLower = cbclib.Cbc_setColLower
+cbcSetColLower.argtypes = [c_void_p, c_int, c_double]
+cbcSetColLower.restype = POINTER(c_double)
+
+cbcSetColUpper = cbclib.Cbc_setColUpper
+cbcSetColUpper.argtypes = [c_void_p, c_int, c_double]
+cbcSetColUpper.restype = POINTER(c_double)
+
+cbcGetColName = cbclib.Cbc_getColName
+cbcGetColName.argtypes = [c_void_p, c_int, c_char_p, c_int]
 
 def c_str(value) -> c_char_p:
     """
