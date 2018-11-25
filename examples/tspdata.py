@@ -60,12 +60,12 @@ class TSPData:
                 self.y.append( cy )
 
         for i in range(self.n):
-            deg = floor( self.x[i] + 0.5 )
-            min = self.x[i] - deg
-            self.latitude[i] = PI * (deg + 5.0 * min / 3.0 ) / 180.0
-            deg = floor( self.y[i] + 0.5 )
-            min = self.y[i] - deg
-            self.longitude[i] = PI * (deg + 5.0 * min / 3.0 ) / 180.0
+            deg = round( self.x[i] )
+            vmin = self.x[i] - deg
+            self.latitude[i] = PI * (deg + 5.0 * vmin / 3.0 ) / 180.0
+            deg = round( self.y[i] )
+            vmin = self.y[i] - deg
+            self.longitude[i] = PI * (deg + 5.0 * vmin / 3.0 ) / 180.0
 
         for i in range(self.n):
             self.d[i][i] = 0
