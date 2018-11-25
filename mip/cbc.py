@@ -1,188 +1,202 @@
 from mip.model import *
 from ctypes import *
 from ctypes.util import *
+from typing import Dict
 
 
 class SolverCbc(Solver):
-	def __init__(self, model: Model, name: str, sense: str):
-		super().__init__(model, name, sense)
-		
-		self._model = cbcNewModel()
-		
-		self._objconst = 0.0
-		# setting objective sense
-		if sense == MAXIMIZE:
-			cbcSetObjSense(self._model, -1.0)
+    def __init__(self, model: Model, name: str, sense: str):
+        super().__init__(model, name, sense)
+        
+        self._model = cbcNewModel()
+        
+        self._objconst = 0.0
+        # setting objective sense
+        if sense == MAXIMIZE:
+            cbcSetObjSense(self._model, -1.0)
 
 
-	def add_var(self,
-		        obj: float = 0,
-		        lb: float = 0,
-		        ub: float = float("inf"),
-		        coltype: str = "C",
-		        column: "Column" = None,
-		        name: str = "") -> int:
-		# collecting column data
-		numnz: c_int = 0 if column is None else len(column.constrs)
-		vind: POINTER(c_int) = (c_int * numnz)()
-		vval: POINTER(c_double) = (c_double * numnz)()
-		
-		# collecting column coefficients
-		for i in range(numnz):
-		    vind[i] = column.constrs[i].idx
-		    vval[i] = column.coeffs[i]
-		
-		isInt : c_char = \
-				c_char(1) if coltype.upper() == "B" or coltype.upper() == "I" \
-				else c_char(0)
-		
-		idx : int = int(cbcNumCols(self._model))
-		
-		cbcAddCol(self._model, c_str(name), 
-				c_double(lb), c_double(ub), c_double(obj),
-				isInt, numnz, vind, vval )
-		
+    def add_var(self,
+                obj: float = 0,
+                lb: float = 0,
+                ub: float = float("inf"),
+                coltype: str = "C",
+                column: "Column" = None,
+                name: str = "") -> int:
+        # collecting column data
+        numnz: c_int = 0 if column is None else len(column.constrs)
+        vind: POINTER(c_int) = (c_int * numnz)()
+        vval: POINTER(c_double) = (c_double * numnz)()
+        
+        # collecting column coefficients
+        for i in range(numnz):
+            vind[i] = column.constrs[i].idx
+            vval[i] = column.coeffs[i]
+        
+        isInt : c_char = \
+                c_char(1) if coltype.upper() == "B" or coltype.upper() == "I" \
+                else c_char(0)
+        
+        idx : int = int(cbcNumCols(self._model))
+        
+        cbcAddCol(self._model, c_str(name), 
+                c_double(lb), c_double(ub), c_double(obj),
+                isInt, numnz, vind, vval )
+        
 
-		return idx
-	
-	
-	def get_objective_const(self) -> float:
-		return self._objconst
-	
-	
-	def set_objective(self, lin_expr: "LinExpr", sense: str = "") -> None:
-		# collecting variable coefficients
-		for var, coeff in lin_expr.expr.items():
-			cbcSetObjCoeff(self._model, var.idx, coeff)
-		
-		# objective function constant
-		self._objconst = c_double(lin_expr.const)
-		
-		# setting objective sense
-		if sense == MAXIMIZE:
-			cbcSetObjSense(self._model, -1.0)
-		else:
-			cbcSetObjSense(self._model, 1.0)
+        return idx
 
 
-	def optimize(self) -> int:
-		res : int = cbcSolve(self._model)
-		
-		if cbcIsAbandoned(self._model):
-			return ERROR
-		
-		if cbcIsProvenOptimal(self._model):
-			return OPTIMAL
-		
-		if cbcIsProvenInfeasible(self._model):
-			return INFEASIBLE
-		
-		if cbcIsContinuousUnbounded(self._model):
-			return UNBOUNDED
-		
-		if cbcNumIntegers(self._model):
-			if cbcBestSolution(self._model):
-				return FEASIBLE
-		
-		return INFEASIBLE
+    def get_objective_const(self) -> float:
+        return self._objconst
 
 
-	def var_get_x(self, var: Var) -> float:
-		if cbcNumIntegers(self._model)>0:
-			x = cbcBestSolution(self._model)
-			return float(x[var.idx])
-		else:
-			x = cbcColSolution(self._model)
-			return float(x[var.idx])
+    def set_objective(self, lin_expr: "LinExpr", sense: str = "") -> None:
+        # collecting variable coefficients
+        for var, coeff in lin_expr.expr.items():
+            cbcSetObjCoeff(self._model, var.idx, coeff)
+        
+        # objective function constant
+        self._objconst = c_double(lin_expr.const)
+        
+        # setting objective sense
+        if sense == MAXIMIZE:
+            cbcSetObjSense(self._model, -1.0)
+        else:
+            cbcSetObjSense(self._model, 1.0)
 
 
-	def var_get_lb(self, var: "Var") -> float:
-		res : float = float(cbcGetColLower(self._model)[var.idx])
-		return res
+    def optimize(self) -> int:
+        res : int = cbcSolve(self._model)
+        
+        if cbcIsAbandoned(self._model):
+            return ERROR
+        
+        if cbcIsProvenOptimal(self._model):
+            return OPTIMAL
+        
+        if cbcIsProvenInfeasible(self._model):
+            return INFEASIBLE
+        
+        if cbcIsContinuousUnbounded(self._model):
+            return UNBOUNDED
+        
+        if cbcNumIntegers(self._model):
+            if cbcBestSolution(self._model):
+                return FEASIBLE
+        
+        return INFEASIBLE
 
 
-	def var_get_name(self, idx : int) -> str:
-		nameSpace : c_char_p = create_string_buffer(256)
-		cbcGetColName(self._model, c_int(idx), nameSpace, 255)
-		return namesSpace.value
-	
-	
-	def add_constr(self, lin_expr: "LinExpr", name: str = "") -> int:
-		# collecting linear expression data
-		numnz: c_int = len(lin_expr.expr)
-		cind: POINTER(c_int) = (c_int * numnz)()
-		cval: POINTER(c_double) = (c_double * numnz)()
-		
-		# collecting variable coefficients
-		for i, (var, coeff) in enumerate(lin_expr.expr.items()):
-		    cind[i] = var.idx
-		    cval[i] = coeff
-		
-		# constraint sense and rhs
-		sense: c_char = c_char(ord(lin_expr.sense))
-		rhs: c_double = c_double(-lin_expr.const)
-		
-		# constraint index
-		idx : int = int(cbcNumRows(self._model))
-		
-		cbcAddRow( self._model, c_str(name), numnz, cind, cval, sense, rhs )
-
-		return idx
+    def var_get_x(self, var: Var) -> float:
+        if cbcNumIntegers(self._model)>0:
+            x = cbcBestSolution(self._model)
+            return float(x[var.idx])
+        else:
+            x = cbcColSolution(self._model)
+            return float(x[var.idx])
 
 
-	def write(self, file_path: str):
-		if ".mps" in file_path.lower():
-			cbcWriteMps(self._model, c_str(file_path))
-		else:
-			cbcWriteLp(self._model, c_str(file_path))
+    def var_get_lb(self, var: "Var") -> float:
+        res : float = float(cbcGetColLower(self._model)[var.idx])
+        return res
 
 
-	def read(self, file_path: str) -> None:
-		if ".mps" in file_path.lower():
-			cbcReadMps(self._model, c_str(file_path))
-		else:
-			cbcReadLp(self._model, c_str(file_path))
+    def var_get_name(self, idx : int) -> str:
+        nameSpace : c_char_p = create_string_buffer(256)
+        cbcGetColName(self._model, c_int(idx), nameSpace, 255)
+        return namesSpace.value
 
 
-	def num_cols(self) -> int:
-		return cbcNumCols(self._model).value
+    def add_constr(self, lin_expr: "LinExpr", name: str = "") -> int:
+        # collecting linear expression data
+        numnz: c_int = len(lin_expr.expr)
+        cind: POINTER(c_int) = (c_int * numnz)()
+        cval: POINTER(c_double) = (c_double * numnz)()
+        
+        # collecting variable coefficients
+        for i, (var, coeff) in enumerate(lin_expr.expr.items()):
+            cind[i] = var.idx
+            cval[i] = coeff
+        
+        # constraint sense and rhs
+        sense: c_char = c_char(ord(lin_expr.sense))
+        rhs: c_double = c_double(-lin_expr.const)
+        
+        # constraint index
+        idx : int = int(cbcNumRows(self._model))
+        
+        cbcAddRow( self._model, c_str(name), numnz, cind, cval, sense, rhs )
+
+        return idx
 
 
-	def num_rows(self) -> int:
-		return cbcNumRows(self._model).value
+    def write(self, file_path: str):
+        if ".mps" in file_path.lower():
+            cbcWriteMps(self._model, c_str(file_path))
+        else:
+            cbcWriteLp(self._model, c_str(file_path))
 
 
-	def constr_get_expr(self, constr: Constr) -> LinExpr:
-		numnz = cbcGetRowNz(self._model, constr.idx).value
-		
-		ridx = cbcGetRowIndices(self._model, constr.idx)
-		rcoef = cbcGetRowCoeffs(self._model, constr.idx)
-		
-		rhs = cbcGetRowRHS(self._model, constr.idx).value
-		rsense = cbcGetRowSense(self._model, constr.idx).value.upper()
-		
-		sense = ''
-		if (rsense == 'E'):
-			sense = EQUAL
-		elif (rsense == 'L'):
-			sense = LESS_OR_EQUAL
-		elif (rsense == 'G'):
-			sense = GREATER_OR_EQUAL
-		else:
-			raise Exception('Unknow sense: {}'.format(rsense.value))
-		
-		expr = LinExpr(const=-rhs, sense=sense)
-		for i in range(numnz):
-		    expr.add_var(self.model.vars[ridx[i]], rcoef[i])
-		
-		return expr
-	
-	def constr_get_name(self, idx : int) -> str:
-		nameSpace : c_char_p = create_string_buffer(256)
-		cbcGetRowName(self._model, c_int(idx), nameSpace, 255)
-		return nameSpace.value
+    def read(self, file_path: str) -> None:
+        if ".mps" in file_path.lower():
+            cbcReadMps(self._model, c_str(file_path))
+        else:
+            cbcReadLp(self._model, c_str(file_path))
 
-	
+
+    def num_cols(self) -> int:
+        return cbcNumCols(self._model).value
+
+
+    def num_rows(self) -> int:
+        return cbcNumRows(self._model).value
+
+
+    def constr_get_expr(self, constr: Constr) -> LinExpr:
+        numnz = cbcGetRowNz(self._model, constr.idx).value
+        
+        ridx = cbcGetRowIndices(self._model, constr.idx)
+        rcoef = cbcGetRowCoeffs(self._model, constr.idx)
+        
+        rhs = cbcGetRowRHS(self._model, constr.idx).value
+        rsense = cbcGetRowSense(self._model, constr.idx).value.upper()
+        
+        sense = ''
+        if (rsense == 'E'):
+            sense = EQUAL
+        elif (rsense == 'L'):
+            sense = LESS_OR_EQUAL
+        elif (rsense == 'G'):
+            sense = GREATER_OR_EQUAL
+        else:
+            raise Exception('Unknow sense: {}'.format(rsense.value))
+        
+        expr = LinExpr(const=-rhs, sense=sense)
+        for i in range(numnz):
+            expr.add_var(self.model.vars[ridx[i]], rcoef[i])
+        
+        return expr
+
+    def constr_get_name(self, idx : int) -> str:
+        nameSpace : c_char_p = create_string_buffer(256)
+	cbcGetRowName(self._model, c_int(idx), nameSpace, 255)
+    return nameSpace.value
+    
+    def set_processing_limits(self,
+        maxTime  = inf,
+        maxNodes = inf,
+        maxSol = inf ):
+        m = self._model
+        if maxTime != inf:
+            cbcSetParameter( m, 'timeMode', 'elapsed')
+            cbcSetParameter( m, 'seconds', '{}'.format(maxTime))
+        if maxNodes != inf:
+            cbcSetParameter( m, 'maxNodes', '{}'.format(maxNodes))
+        if maxNodes != inf:
+            cbcSetParameter( m, 'maxSolutions', '{}'.format(maxNodes))
+
+
 	def __del__(self):
 		cbcDeleteModel(self._model)
 	
@@ -309,6 +323,9 @@ cbcGetColName.argtypes = [c_void_p, c_int, c_char_p, c_int]
 
 cbcGetRowName = cbclib.Cbc_getRowName
 cbcGetRowName.argtypes = [c_void_p, c_int, c_char_p, c_int]
+
+cbcSetParameter = cbclib.Cbc_setParameter
+cbcSetParameter.argtypes = [c_void_p, c_char_p, c_char_p]
 
 def c_str(value) -> c_char_p:
     """
