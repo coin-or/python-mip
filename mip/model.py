@@ -328,7 +328,10 @@ class Solver:
                 lb: float = 0,
                 ub: float = INF,
                 type: str = CONTINUOUS,
-                column: "Column" = None) -> int: pass
+                column: "Column" = None) -> int: 
+        if type == BINARY:
+            lb = 0.0
+            ub = 1.0
 
     def add_constr(self, lin_expr: "LinExpr", name: str = "") -> int: pass
 
