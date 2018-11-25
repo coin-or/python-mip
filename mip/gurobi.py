@@ -1,6 +1,7 @@
 from mip.model import *
 from ctypes import *
 from ctypes.util import *
+from math import inf
 
 
 class SolverGurobi(Solver):
@@ -363,6 +364,19 @@ class SolverGurobi(Solver):
         st = GRBgetstrattrelement(self._model, c_int(idx), c_str('VarName'), byref(vName) )
         assert st == 0
         return vName.value
+    
+    def set_processing_limits(self, 
+        maxTime  = inf,
+        maxNodes = inf,
+        maxSol = inf ):
+        e = self._env
+        if maxTime != inf:
+            GRBsetdblattr(e, c_str("TimeLimit"), c_double(float(maxTime)))
+        if maxNodes != inf:
+            GRBsetdblattr(e, c_str("NodeLimit"), c_double(float(maxNodes)))
+        if maxSol != inf:
+            GRBsetintattr(e, c_str("SolutionLimit"), c_double(float(maxNodes)))
+
 
 
 # auxiliary functions

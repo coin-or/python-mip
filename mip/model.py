@@ -1,6 +1,7 @@
 from typing import Dict, List
 
 from mip.constants import *
+from math import inf
 
 
 class Column:
@@ -281,7 +282,13 @@ class Model:
     def get_objective_const(self) -> float:
         return self.solver.get_objective_const()
 
-    def optimize(self) -> int:
+    def optimize(self,
+        maxSeconds = inf,
+        maxNodes = inf,
+        maxSolutions = inf
+                 ) -> int:
+        if maxSeconds != inf or maxNodes != inf or maxSolutions != inf:            
+            self.solver.set_processing_limits( maxSeconds, maxNodes, maxSolutions    )
         self.solver.optimize()
 
     def set_start(self, variables: List["Var"], values: List[float]):
@@ -392,6 +399,11 @@ class Solver:
     def var_get_x(self, var: "Var") -> float: pass
 
     def var_get_name(self, idx : int) -> str: pass
+
+    def set_processing_limits(self, 
+        maxTime  = inf,
+        maxNodes = inf,
+        maxSol = inf ): pass
 
 
 class Var:
