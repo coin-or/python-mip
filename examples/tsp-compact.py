@@ -50,7 +50,8 @@ for i in range(0, n):
             y[i] - y[j] - (n+1)*x[i][j] >= -n, 'noSub({},{})'.format(i,j)
                  
     
-model.write('tsp.lp')
+model.optimize( maxSeconds=20 )
+#model.write('tsp.lp')
 
 print('a')        
     

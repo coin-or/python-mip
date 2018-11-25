@@ -60,18 +60,17 @@ class TSPData:
                 self.y.append( cy )
 
         for i in range(self.n):
-            deg = ceil( self.x[i] )
+            deg = floor( self.x[i] + 0.5 )
             min = self.x[i] - deg
             self.latitude[i] = PI * (deg + 5.0 * min / 3.0 ) / 180.0
-            deg = ceil( self.y[i] )
+            deg = floor( self.y[i] + 0.5 )
             min = self.y[i] - deg
             self.longitude[i] = PI * (deg + 5.0 * min / 3.0 ) / 180.0
 
         for i in range(self.n):
             self.d[i][i] = 0
-            for j in range(i+1, self.n):
+            for j in range(0, self.n):
                 q1 = cos( self.longitude[i] - self.longitude[j] )
                 q2 = cos( self.latitude[i] - self.latitude[j] )
                 q3 = cos( self.latitude[i] + self.latitude[j] )
-                self.d[i][j] = floor( RRR * acos( 0.5*((1.0+q1)*q2 - (1.0-q1)*q3) ) + 1.0)
-                self.d[j][i] = floor( RRR * acos( 0.5*((1.0+q1)*q2 - (1.0-q1)*q3) ) + 1.0)
+                self.d[i][j] = floor(RRR * acos( 0.5*((1.0+q1)*q2 - (1.0-q1)*q3) ) + 1.0)
