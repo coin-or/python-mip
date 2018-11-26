@@ -35,6 +35,7 @@ class SolverGurobi(Solver):
                        byref(obj), byref(lb), byref(ub), vtype, varnames) != 0:
             # todo: raise exception when environment can't be generated
             pass
+        self._env = GRBgetenv(self._model)
 
         # setting objective sense
         if sense == MAXIMIZE:
@@ -158,13 +159,12 @@ class SolverGurobi(Solver):
 
         self._updated = True
         return status
-    
+
     def get_objective_value(self) -> float:
         res = c_double(float('inf'))
         st = GRBgetdblattr(self._model, c_str('ObjVal'), byref(res))
         assert st == 0
         return res
-    
 
     def set_objective(self, lin_expr: "LinExpr", sense: str = "") -> None:
         # collecting linear expression data
@@ -385,19 +385,20 @@ class SolverGurobi(Solver):
         st: int = GRBgetstrattrelement(self._model, c_int(idx), c_str('VarName'), byref(vName))
         assert st == 0
         return vName.value
-    
-    def set_processing_limits(self, 
-        maxTime  = inf,
-        maxNodes = inf,
-        maxSol = inf ):
-        e =  GRBgetenv( self._model )
-        if maxTime != inf:
-            GRBsetdblattr(e, c_str("TimeLimit"), c_double(float(maxTime)))
-        if maxNodes != inf:
-            GRBsetdblattr(e, c_str("NodeLimit"), c_double(float(maxNodes)))
-        if maxSol != inf:
-            GRBsetintattr(e, c_str("SolutionLimit"), c_double(float(maxNodes)))
 
+    def set_processing_limits(self,
+                              max_time: float = inf,
+                              max_nodes: float = inf,
+                              max_sol: int = inf):
+        if max_time != inf:
+            res = GRBsetdblparam(self._env, c_str("TimeLimit"), c_double(max_time))
+            assert res == 0
+        if max_nodes != inf:
+            res = GRBsetdblparam(self._env, c_str("NodeLimit"), c_double(max_nodes))
+            assert res == 0
+        if max_sol != inf:
+            res = GRBsetintparam(self._env, c_str("SolutionLimit"), c_int(max_sol))
+            assert res == 0
 
 
 # auxiliary functions
@@ -487,6 +488,24 @@ GRBsetcharattrelement.argtypes = [c_void_p, c_char_p, c_int, c_char]
 GRBgetstrattrelement = grblib.GRBgetstrattrelement
 GRBgetstrattrelement.argtypes = [c_void_p, c_char_p, c_int, POINTER(c_char_p)]
 GRBgetstrattrelement.restype = c_int
+
+# manipulate parameter(s)
+
+GRBgetintparam = grblib.GRBgetintparam
+GRBgetintparam.argtypes = [c_void_p, c_char_p, POINTER(c_int)]
+GRBgetintparam.restype = c_int
+
+GRBsetintparam = grblib.GRBsetintparam
+GRBsetintparam.argtypes = [c_void_p, c_char_p, c_int]
+GRBsetintparam.restype = c_int
+
+GRBgetdblparam = grblib.GRBgetdblparam
+GRBgetdblparam.argtypes = [c_void_p, c_char_p, POINTER(c_double)]
+GRBgetdblparam.restype = c_int
+
+GRBsetdblparam = grblib.GRBsetdblparam
+GRBsetdblparam.argtypes = [c_void_p, c_char_p, c_double]
+GRBsetdblparam.restype = c_int
 
 # manipulate objective function(s)
 
