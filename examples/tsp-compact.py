@@ -51,14 +51,14 @@ for i in range(0, n):
             y[i] - y[j] - (n+1)*x[i][j] >= -n, 'noSub({},{})'.format(i,j)
                  
     
-model.optimize( maxSeconds=5 )
+model.optimize( maxSeconds=10 )
 #model.write('tsp.lp')
 
 print('best route found has length {}'.format(model.get_objective_value()))
 
 for i in range(n):
     for j in range(n):
-        if x[i][j].x > 0.5:
+        if x[i][j].x >= 0.98:
             print('arc ({},{})'.format(i,j))
 
 print('finished')        
