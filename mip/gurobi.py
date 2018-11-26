@@ -146,6 +146,13 @@ class SolverGurobi(Solver):
 
         self._updated = True
         return status
+    
+    def get_objective_value(self) -> float:
+        res = c_double(float('inf'))
+        st = GRBgetdblattr(self._model, c_str('ObjVal'), byref(res))
+        assert st == 0
+        return res
+    
 
     def set_objective(self, lin_expr: "LinExpr", sense: str = "") -> None:
         # collecting linear expression data

@@ -2,6 +2,7 @@ from tspdata import TSPData
 from sys import argv
 from mip.model import Model
 from mip.constants import *
+from matplotlib.pyplot import plot
 
 if len(argv) <= 1:
     print('enter instance name.')
@@ -12,7 +13,7 @@ n = inst.n
 d = inst.d
 print('solving TSP with {} cities'.format(inst.n))
 
-model = Model(solver_name="cbc")
+model = Model(solver_name='cbc')
 
 # binary variables indicating if arc (i,j) is used on the route or not
 x = [ [ model.add_var(
@@ -55,6 +56,11 @@ model.optimize( maxSeconds=5 )
 
 print('best route found has length {}'.format(model.get_objective_value()))
 
-print('a')        
+for i in range(n):
+    for j in range(n):
+        if x[i][j].x > 0.5:
+            print('arc ({},{})'.format(i,j))
+
+print('finished')        
     
 
