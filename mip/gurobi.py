@@ -35,7 +35,6 @@ class SolverGurobi(Solver):
                        byref(obj), byref(lb), byref(ub), vtype, varnames) != 0:
             # todo: raise exception when environment can't be generated
             pass
-        self._env = GRBgetenv(self._model)
 
         # setting objective sense
         if sense == MAXIMIZE:
@@ -164,7 +163,7 @@ class SolverGurobi(Solver):
         res = c_double(float('inf'))
         st = GRBgetdblattr(self._model, c_str('ObjVal'), byref(res))
         assert st == 0
-        return res
+        return res.value
 
     def set_objective(self, lin_expr: "LinExpr", sense: str = "") -> None:
         # collecting linear expression data
@@ -391,13 +390,13 @@ class SolverGurobi(Solver):
                               max_nodes: float = inf,
                               max_sol: int = inf):
         if max_time != inf:
-            res = GRBsetdblparam(self._env, c_str("TimeLimit"), c_double(max_time))
+            res = GRBsetdblparam(GRBgetenv( self._model) , c_str("TimeLimit"), c_double(max_time))
             assert res == 0
         if max_nodes != inf:
-            res = GRBsetdblparam(self._env, c_str("NodeLimit"), c_double(max_nodes))
+            res = GRBsetdblparam(GRBgetenv( self._model), c_str("NodeLimit"), c_double(max_nodes))
             assert res == 0
         if max_sol != inf:
-            res = GRBsetintparam(self._env, c_str("SolutionLimit"), c_int(max_sol))
+            res = GRBsetintparam(GRBgetenv( self._model), c_str("SolutionLimit"), c_int(max_sol))
             assert res == 0
 
 
