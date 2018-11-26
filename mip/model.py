@@ -290,6 +290,9 @@ class Model:
         if maxSeconds != inf or maxNodes != inf or maxSolutions != inf:            
             self.solver.set_processing_limits( maxSeconds, maxNodes, maxSolutions    )
         self.solver.optimize()
+        
+    def get_objective_value(self) -> float:
+        return self.solver.get_objective_value()
 
     def set_start(self, variables: List["Var"], values: List[float]):
         self.solver.set_start(variables, values)
@@ -347,6 +350,8 @@ class Solver:
     def get_objective_const(self) -> float: pass
 
     def optimize(self) -> int: pass
+
+    def get_objective_value(self) -> float: pass
 
     def set_start(self, variables: List["Var"], values: List[float]) -> None: pass
 
