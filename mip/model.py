@@ -82,7 +82,7 @@ class LinExpr:
         if isinstance(other, Var):
             result.add_var(other, -1)
         elif isinstance(other, LinExpr):
-            result.add_expr(-other)
+            result.add_expr(other, -1)
         elif isinstance(other, (int, float)):
             result.add_const(-other)
         return result
@@ -94,7 +94,7 @@ class LinExpr:
         if isinstance(other, Var):
             self.add_var(other, -1)
         elif isinstance(other, LinExpr):
-            self.add_expr(-other)
+            self.add_expr(other, -1)
         elif isinstance(other, (int, float)):
             self.add_const(-other)
         return self
@@ -102,6 +102,7 @@ class LinExpr:
     def __mul__(self, other) -> "LinExpr":
         assert isinstance(other, int) or isinstance(other, float)
         result: LinExpr = self.copy()
+        result.const *= other
         for var in result.expr.keys():
             result.expr[var] *= other
         return result
@@ -111,6 +112,7 @@ class LinExpr:
 
     def __imul__(self, other) -> "LinExpr":
         assert isinstance(other, int) or isinstance(other, float)
+        self.const *= other
         for var in self.expr.keys():
             self.expr[var] *= other
         return self
@@ -118,12 +120,14 @@ class LinExpr:
     def __truediv__(self, other) -> "LinExpr":
         assert isinstance(other, int) or isinstance(other, float)
         result: LinExpr = self.copy()
+        result.const /= other
         for var in result.expr.keys():
             result.expr[var] /= other
         return result
 
     def __itruediv__(self, other) -> "LinExpr":
         assert isinstance(other, int) or isinstance(other, float)
+        self.const /= other
         for var in self.expr.keys():
             self.expr[var] /= other
         return self
@@ -142,7 +146,7 @@ class LinExpr:
 
         if self.sense:
             result.append(self.sense + "= ")
-            result.append(str(abs(self.const)) if self.const < 0 else "+ " + str(abs(self.const)))
+            result.append(str(abs(self.const)) if self.const < 0 else "- " + str(abs(self.const)))
         elif self.const != 0:
             result.append(
                 "+ " + str(abs(self.const)) if self.const > 0 else "- " + str(abs(self.const)))
@@ -168,6 +172,7 @@ class LinExpr:
         self.const += const
 
     def add_expr(self, expr: "LinExpr", coeff: float = 1) -> None:
+        self.const += expr.const * coeff
         for var, coeff_var in expr.expr.items():
             self.add_var(var, coeff_var * coeff)
 
@@ -448,7 +453,7 @@ class Var:
         if isinstance(other, Var):
             return LinExpr([self, other], [1, -1])
         elif isinstance(other, LinExpr):
-            return other.__rsub__(self)
+            return (-other).__iadd__(self)
         elif isinstance(other, int) or isinstance(other, float):
             return LinExpr([self], [1], -other)
 
