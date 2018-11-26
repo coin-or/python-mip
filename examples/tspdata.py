@@ -13,8 +13,8 @@ class TSPData:
     
     Attributes:
     
-        n (int): Human readable string describing the exception.
-        d (List[List[int]]): Exception error code.
+        n (int): number of cities
+        d (List[List[int]]): distance matrix
     
     """
     def __init__(self, fileName : str):
@@ -24,14 +24,14 @@ class TSPData:
         
         self.d = None
         
-        self.latitude = []
+        self.latitude : List[float] = []
         
-        self.longitude = []
+        self.longitude : List[float] = []
         
         readingCoord = False
         
-        self.x = []
-        self.y = []
+        self.x : List[float] = []
+        self.y : List[float] = []
         
         f=open(fileName, 'r')
         for l in f:
@@ -60,10 +60,10 @@ class TSPData:
                 self.y.append( cy )
 
         for i in range(self.n):
-            deg = round( self.x[i] )
+            deg = floor( self.x[i] )
             vmin = self.x[i] - deg
             self.latitude[i] = PI * (deg + 5.0 * vmin / 3.0 ) / 180.0
-            deg = round( self.y[i] )
+            deg = floor( self.y[i] )
             vmin = self.y[i] - deg
             self.longitude[i] = PI * (deg + 5.0 * vmin / 3.0 ) / 180.0
 
@@ -73,4 +73,4 @@ class TSPData:
                 q1 = cos( self.longitude[i] - self.longitude[j] )
                 q2 = cos( self.latitude[i] - self.latitude[j] )
                 q3 = cos( self.latitude[i] + self.latitude[j] )
-                self.d[i][j] = floor(RRR * acos( 0.5*((1.0+q1)*q2 - (1.0-q1)*q3) ) + 1.0)
+                self.d[i][j] = int(floor(RRR*acos(0.5*((1.0+q1)*q2-(1.0-q1)*q3))+1.0)) 
