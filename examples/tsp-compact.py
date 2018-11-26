@@ -17,7 +17,6 @@ model = Model()
 
 # binary variables indicating if arc (i,j) is used on the route or not
 x = [ [ model.add_var(
-           name='x({},{})'.format(i,j), 
            type=BINARY) 
              for j in range(n) ] 
                for i in range(n) ]
@@ -48,7 +47,7 @@ for i in range(0, n):
         if i==j or i==0 or j==0:
             continue
         model += \
-            y[i] - y[j] - (n+1)*x[i][j] >= -n, 'noSub({},{})'.format(i,j)
+            y[i]  - (n+1)*x[i][j] >=  y[j] -n, 'noSub({},{})'.format(i,j)
                  
     
 model.optimize( maxSeconds=10 )

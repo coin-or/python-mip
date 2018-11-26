@@ -152,11 +152,11 @@ class SolverCbc(Solver):
 
 
     def num_cols(self) -> int:
-        return cbcNumCols(self._model).value
+        return cbcNumCols(self._model)
 
 
     def num_rows(self) -> int:
-        return cbcNumRows(self._model).value
+        return cbcNumRows(self._model)
 
 
     def constr_get_expr(self, constr: Constr) -> LinExpr:
@@ -206,8 +206,15 @@ class SolverCbc(Solver):
     def __del__(self):
         cbcDeleteModel(self._model)
 
+has_cbc = False
 
-cbclib = CDLL(find_library("CbcSolver"))
+try:
+    cbclib = CDLL(find_library("CbcSolver"))
+    has_cbc = True
+    print('cbc found')
+except: 
+    has_cbc = False
+    print('cbc not found')
 
 cbcNewModel = cbclib.Cbc_newModel
 cbcNewModel.restype = c_void_p
