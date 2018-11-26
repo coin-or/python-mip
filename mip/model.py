@@ -286,14 +286,14 @@ class Model:
         return self.solver.get_objective_const()
 
     def optimize(self,
-        maxSeconds = inf,
-        maxNodes = inf,
-        maxSolutions = inf
+                 maxSeconds=inf,
+                 maxNodes=inf,
+                 maxSolutions=inf
                  ) -> int:
-        if maxSeconds != inf or maxNodes != inf or maxSolutions != inf:            
-            self.solver.set_processing_limits( maxSeconds, maxNodes, maxSolutions    )
+        if maxSeconds != inf or maxNodes != inf or maxSolutions != inf:
+            self.solver.set_processing_limits(maxSeconds, maxNodes, maxSolutions)
         self.solver.optimize()
-        
+
     def get_objective_value(self) -> float:
         return self.solver.get_objective_value()
 
@@ -321,9 +321,15 @@ class Model:
         for i in range(nCols):
             self.vars.append(Var(self, i, self.solver.var_get_name(i)))
         for i in range(nRows):
-            constr = Constr(self, i, self.solver.constr_get_name(i))
-            constr.expr = self.solver.constr_get_expr()
-            self.constrs.append(constr)
+            self.constrs.append(Constr(self, i, self.solver.constr_get_name(i)))
+
+    @property
+    def num_cols(self) -> int:
+        return len(self.vars)
+
+    @property
+    def num_rows(self) -> int:
+        return len(self.constrs)
 
 
 class Solver:
@@ -341,7 +347,7 @@ class Solver:
                 lb: float = 0,
                 ub: float = INF,
                 type: str = CONTINUOUS,
-                column: "Column" = None) -> int: 
+                column: "Column" = None) -> int:
         if type == BINARY:
             lb = 0.0
             ub = 1.0
@@ -376,7 +382,7 @@ class Solver:
 
     def constr_set_expr(self, constr: Constr, value: LinExpr) -> LinExpr: pass
 
-    def constr_get_name(self, idx : int) -> str: pass
+    def constr_get_name(self, idx: int) -> str: pass
 
     def constr_get_pi(self, constr: Constr) -> float: pass
 
@@ -406,12 +412,12 @@ class Solver:
 
     def var_get_x(self, var: "Var") -> float: pass
 
-    def var_get_name(self, idx : int) -> str: pass
+    def var_get_name(self, idx: int) -> str: pass
 
-    def set_processing_limits(self, 
-        maxTime  = inf,
-        maxNodes = inf,
-        maxSol = inf ): pass
+    def set_processing_limits(self,
+                              maxTime=inf,
+                              maxNodes=inf,
+                              maxSol=inf): pass
 
 
 class Var:
@@ -469,19 +475,34 @@ class Var:
         return LinExpr([self], [-1.0])
 
     def __eq__(self, other) -> LinExpr:
-        if other != 0:
-            return LinExpr([self], [1], -1 * other, sense="=")
-        return LinExpr([self], [1], sense="=")
+        if isinstance(other, Var):
+            return LinExpr([self, other], [1, -1], sense="=")
+        elif isinstance(other, LinExpr):
+            return other == self
+        elif isinstance(other, int) or isinstance(other, float):
+            if other != 0:
+                return LinExpr([self], [1], -1 * other, sense="=")
+            return LinExpr([self], [1], sense="=")
 
     def __le__(self, other) -> LinExpr:
-        if other != 0:
-            return LinExpr([self], [1], -1 * other, sense="<")
-        return LinExpr([self], [1], sense="<")
+        if isinstance(other, Var):
+            return LinExpr([self, other], [1, -1], sense="<")
+        elif isinstance(other, LinExpr):
+            return other >= self
+        elif isinstance(other, int) or isinstance(other, float):
+            if other != 0:
+                return LinExpr([self], [1], -1 * other, sense="<")
+            return LinExpr([self], [1], sense="<")
 
     def __ge__(self, other) -> LinExpr:
-        if other != 0:
-            return LinExpr([self], [1], -1 * other, sense=">")
-        return LinExpr([self], [1], sense=">")
+        if isinstance(other, Var):
+            return LinExpr([self, other], [1, -1], sense=">")
+        elif isinstance(other, LinExpr):
+            return other <= self
+        elif isinstance(other, int) or isinstance(other, float):
+            if other != 0:
+                return LinExpr([self], [1], -1 * other, sense=">")
+            return LinExpr([self], [1], sense=">")
 
     def __str__(self) -> str:
         return self.name

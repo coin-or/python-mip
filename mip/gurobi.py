@@ -79,7 +79,7 @@ class SolverGurobi(Solver):
 
         return idx
 
-    def add_constr(self, lin_expr: "LinExpr", name: str = "") -> int:
+    def add_constr(self, lin_expr: LinExpr, name: str = "") -> int:
         # collecting linear expression data
         numnz: c_int = len(lin_expr.expr)
         cind: POINTER(c_int) = (c_int * numnz)()
@@ -102,6 +102,18 @@ class SolverGurobi(Solver):
         self._updated = False
 
         return idx
+
+    def get_objective(self) -> LinExpr:
+        if not self._updated:
+            self.update()
+
+        numnz: c_int = c_int()
+        cbeg: POINTER(c_int) = POINTER(c_int)()
+        cind: POINTER(c_int) = POINTER(c_int)()
+        cval: POINTER(c_double) = POINTER(c_double)()
+
+        # todo: implementation is currently incomplete
+        return None
 
     def get_objective_const(self) -> float:
         res = c_double()
@@ -213,10 +225,10 @@ class SolverGurobi(Solver):
             self.update()
         GRBwrite(self._model, c_str(file_path))
 
-    def read(self, file_path : str) -> None:
+    def read(self, file_path: str) -> None:
         GRBfreemodel(self._model)
         self._model = c_void_p(0)
-        GRBreadModel( self._env, c_str(file_path), byref(self._model) )
+        GRBreadModel(self._env, c_str(file_path), byref(self._model))
 
     def num_cols(self) -> int:
         res = c_int(0)
@@ -270,19 +282,20 @@ class SolverGurobi(Solver):
             expr.add_var(self.model.vars[cind[i]], cval[i])
 
         return expr
-	
-    def constr_get_name(self, idx : int) -> str:
-        vName : c_char_p(0)
-        st = GRBgetstrattrelement(self._model, c_int(idx), c_str('ConstrName'), byref(vName) )
+
+    def constr_get_name(self, idx: int) -> str:
+        vName: c_char_p(0)
+        st: int = GRBgetstrattrelement(self._model, c_int(idx), c_str('ConstrName'), byref(vName))
         assert st == 0
         return vName.value
 
     def constr_set_expr(self, constr: Constr, value: LinExpr) -> LinExpr:
-        raise NotImplementedError("Gurobi: functionality currently unavailable in PyMILP...")
+        raise NotImplementedError("Gurobi: functionality currently unavailable via PyMIP...")
 
     def constr_get_pi(self, constr: "Constr") -> float:
         res = c_double()
-        GRBgetdblattrelement(self._model, c_str("Pi"), c_int(constr.idx), byref(res))
+        st: int = GRBgetdblattrelement(self._model, c_str("Pi"), c_int(constr.idx), byref(res))
+        assert st == 0
         return res.value
 
     def var_get_lb(self, var: "Var") -> float:
@@ -290,7 +303,8 @@ class SolverGurobi(Solver):
             self.update()
 
         res = c_double()
-        GRBgetdblattrelement(self._model, c_str("LB"), c_int(var.idx), byref(res))
+        st: int = GRBgetdblattrelement(self._model, c_str("LB"), c_int(var.idx), byref(res))
+        assert st == 0
         return res.value
 
     def var_set_lb(self, var: "Var", value: float) -> None:
@@ -351,10 +365,10 @@ class SolverGurobi(Solver):
         self._updated = False
 
     def var_get_column(self, var: "Var"):
-        raise NotImplementedError("Gurobi: functionality currently unavailable in PyMILP...")
+        raise NotImplementedError("Gurobi: functionality currently unavailable via PyMIP...")
 
     def var_set_column(self, var: "Var", value: Column):
-        raise NotImplementedError("Gurobi: functionality currently unavailable in PyMILP...")
+        raise NotImplementedError("Gurobi: functionality currently unavailable via PyMIP...")
 
     def var_get_rc(self, var: "Var") -> float:
         res = c_double()
@@ -366,9 +380,9 @@ class SolverGurobi(Solver):
         GRBgetdblattrelement(self._model, c_str("X"), c_int(var.idx), byref(res))
         return res.value
 
-    def var_get_name(self, idx : int) -> str:
-        vName : c_char_p(0)
-        st = GRBgetstrattrelement(self._model, c_int(idx), c_str('VarName'), byref(vName) )
+    def var_get_name(self, idx: int) -> str:
+        vName: c_char_p(0)
+        st: int = GRBgetstrattrelement(self._model, c_int(idx), c_str('VarName'), byref(vName))
         assert st == 0
         return vName.value
     
@@ -442,6 +456,10 @@ GRBsetdblattr = grblib.GRBsetdblattr
 GRBsetdblattr.restype = c_int
 GRBsetdblattr.argtypes = [c_void_p, c_char_p, c_double]
 
+GRBgetdblattrarray = grblib.GRBgetdblattrarray
+GRBgetdblattrarray.restype = c_int
+GRBgetdblattrarray.argtypes = [c_void_p, c_char_p, c_int, c_int, POINTER(c_double)]
+
 GRBsetdblattrarray = grblib.GRBsetdblattrarray
 GRBsetdblattrarray.restype = c_int
 GRBsetdblattrarray.argtypes = [c_void_p, c_char_p, c_int, c_int, POINTER(c_double)]
@@ -466,8 +484,8 @@ GRBsetcharattrelement = grblib.GRBsetcharattrelement
 GRBsetcharattrelement.restype = c_int
 GRBsetcharattrelement.argtypes = [c_void_p, c_char_p, c_int, c_char]
 
-GRBgetstrattrelement = grblib.GRBgetstrattrelement 
-GRBgetstrattrelement.argtypes = [c_void_p, c_char_p, c_int, POINTER(c_char_p)] 
+GRBgetstrattrelement = grblib.GRBgetstrattrelement
+GRBgetstrattrelement.argtypes = [c_void_p, c_char_p, c_int, POINTER(c_char_p)]
 GRBgetstrattrelement.restype = c_int
 
 # manipulate objective function(s)
