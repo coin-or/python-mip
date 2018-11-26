@@ -53,6 +53,8 @@ for i in range(0, n):
 model.optimize( maxSeconds=5 )
 #model.write('tsp.lp')
 
+print('best route found has length {}'.format(model.get_objective_value()))
+
 print('a')        
     
 

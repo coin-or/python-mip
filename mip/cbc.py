@@ -86,6 +86,11 @@ class SolverCbc(Solver):
                 return FEASIBLE
         
         return INFEASIBLE
+    
+    
+    def get_objective_value(self) -> float:
+        return cbcObjValue(self._model)
+        
 
 
     def var_get_x(self, var: Var) -> float:
