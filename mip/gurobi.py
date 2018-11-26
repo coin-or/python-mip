@@ -5,13 +5,6 @@ from math import inf
 
 
 class SolverGurobi(Solver):
-    lib_gurobi = ''
-    
-    @staticmethod
-    def is_available() -> bool: 
-        # checks if gurobi is in the path
-        from shutil import which
-        print(which('gurobi_cl'))
     
     def __init__(self, model: Model, name: str, sense: str):
         super().__init__(model, name, sense)

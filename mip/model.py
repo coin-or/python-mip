@@ -431,12 +431,6 @@ class Solver:
                               maxNodes=inf,
                               maxSol=inf): pass
     
-    """
-    checks if a given solver is available, probably storing which version is available
-    
-    """
-    @staticmethod
-    def is_available() -> bool: pass
 
 
 class Var:
