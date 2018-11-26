@@ -95,6 +95,8 @@ class SolverCbc(Solver):
     def var_get_x(self, var: Var) -> float:
         if cbcNumIntegers(self._model)>0:
             x = cbcBestSolution(self._model)
+            if x == 0:
+                raise Exception('no solution found')
             return float(x[var.idx])
         else:
             x = cbcColSolution(self._model)

@@ -246,6 +246,9 @@ class Model:
                 obj: float = 0.0,
                 type: str = CONTINUOUS,
                 column: "Column" = None) -> "Var":
+        if len(name.strip()) == 0:
+            nc = self.solver.num_cols()
+            name = 'C{:011d}'.format(nc)
         idx = self.solver.add_var(obj, lb, ub, type, column, name)
         self.vars.append(Var(self, idx, name))
         return self.vars[-1]
