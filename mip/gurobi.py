@@ -5,7 +5,14 @@ from math import inf
 
 
 class SolverGurobi(Solver):
-
+    lib_gurobi = ''
+    
+    @staticmethod
+    def is_available() -> bool: 
+        # checks if gurobi is in the path
+        from shutil import which
+        print(which('gurobi_cl'))
+    
     def __init__(self, model: Model, name: str, sense: str):
         super().__init__(model, name, sense)
 
@@ -409,151 +416,175 @@ def c_str(value) -> c_char_p:
     """
     return create_string_buffer(value.encode("utf-8"))
 
+has_gurobi = False
 
-grblib = CDLL(find_library("gurobi80"))
+try:
+    found = False
+    libPath = None
+    
+    for majorVersion in reversed(range(2,12)):
+        for minorVersion in reversed(range(0,11)):
+            try:
+                libPath = find_library('gurobi{}{}'.format(majorVersion, minorVersion))
+                if libPath != None:
+                    break
+            except:
+                continue
+        if libPath != None:
+            break
 
+    
+    if libPath == None:
+        raise Exception()
+    grblib = CDLL(libPath)
+    print('gurobi version {}.{} found'.format(majorVersion, minorVersion))
+    has_gurobi = True
+except:
+    print('gurobi not found')
+    has_gurobi = False
 # create/release environment and model
 
-GRBloadenv = grblib.GRBloadenv
-GRBloadenv.restype = c_int
-GRBloadenv.argtypes = [c_void_p, c_char_p]
+if has_gurobi:
+    GRBloadenv = grblib.GRBloadenv
+    GRBloadenv.restype = c_int
+    GRBloadenv.argtypes = [c_void_p, c_char_p]
 
-GRBnewmodel = grblib.GRBnewmodel
-GRBnewmodel.restype = c_int
-GRBnewmodel.argtypes = [c_void_p, c_void_p, c_char_p, c_int, POINTER(c_double), POINTER(c_double),
-                        POINTER(c_double), c_char_p, c_void_p]
+    GRBnewmodel = grblib.GRBnewmodel
+    GRBnewmodel.restype = c_int
+    GRBnewmodel.argtypes = [c_void_p, c_void_p, c_char_p, c_int, POINTER(c_double), POINTER(c_double),
+                            POINTER(c_double), c_char_p, c_void_p]
 
-GRBfreeenv = grblib.GRBfreeenv
-GRBfreeenv.restype = c_int
-GRBfreeenv.argtypes = [c_void_p]
+    GRBfreeenv = grblib.GRBfreeenv
+    GRBfreeenv.restype = c_int
+    GRBfreeenv.argtypes = [c_void_p]
 
-GRBfreemodel = grblib.GRBfreemodel
-GRBfreemodel.argtypes = [c_void_p]
+    GRBfreemodel = grblib.GRBfreemodel
+    GRBfreemodel.argtypes = [c_void_p]
 
-# manipulate attributes
+    # manipulate attributes
 
-GRBgetintattr = grblib.GRBgetintattr
-GRBgetintattr.restype = c_int
-GRBgetintattr.argtypes = [c_void_p, c_char_p, POINTER(c_int)]
+    GRBgetintattr = grblib.GRBgetintattr
+    GRBgetintattr.restype = c_int
+    GRBgetintattr.argtypes = [c_void_p, c_char_p, POINTER(c_int)]
 
-GRBsetintattr = grblib.GRBsetintattr
-GRBsetintattr.restype = c_int
-GRBsetintattr.argtypes = [c_void_p, c_char_p, c_int]
+    GRBsetintattr = grblib.GRBsetintattr
+    GRBsetintattr.restype = c_int
+    GRBsetintattr.argtypes = [c_void_p, c_char_p, c_int]
 
-GRBgetintattrelement = grblib.GRBgetintattrelement
-GRBgetintattrelement.restype = c_int
-GRBgetintattrelement.argtypes = [c_void_p, c_char_p, c_int, POINTER(c_int)]
+    GRBgetintattrelement = grblib.GRBgetintattrelement
+    GRBgetintattrelement.restype = c_int
+    GRBgetintattrelement.argtypes = [c_void_p, c_char_p, c_int, POINTER(c_int)]
 
-GRBsetintattrelement = grblib.GRBsetintattrelement
-GRBsetintattrelement.restype = c_int
-GRBsetintattrelement.argtypes = [c_void_p, c_char_p, c_int, c_int]
+    GRBsetintattrelement = grblib.GRBsetintattrelement
+    GRBsetintattrelement.restype = c_int
+    GRBsetintattrelement.argtypes = [c_void_p, c_char_p, c_int, c_int]
 
-GRBgetdblattr = grblib.GRBgetdblattr
-GRBgetdblattr.restype = c_int
-GRBgetdblattr.argtypes = [c_void_p, c_char_p, POINTER(c_double)]
+    GRBgetdblattr = grblib.GRBgetdblattr
+    GRBgetdblattr.restype = c_int
+    GRBgetdblattr.argtypes = [c_void_p, c_char_p, POINTER(c_double)]
 
-GRBsetdblattr = grblib.GRBsetdblattr
-GRBsetdblattr.restype = c_int
-GRBsetdblattr.argtypes = [c_void_p, c_char_p, c_double]
+    GRBsetdblattr = grblib.GRBsetdblattr
+    GRBsetdblattr.restype = c_int
+    GRBsetdblattr.argtypes = [c_void_p, c_char_p, c_double]
 
-GRBgetdblattrarray = grblib.GRBgetdblattrarray
-GRBgetdblattrarray.restype = c_int
-GRBgetdblattrarray.argtypes = [c_void_p, c_char_p, c_int, c_int, POINTER(c_double)]
+    GRBgetdblattrarray = grblib.GRBgetdblattrarray
+    GRBgetdblattrarray.restype = c_int
+    GRBgetdblattrarray.argtypes = [c_void_p, c_char_p, c_int, c_int, POINTER(c_double)]
 
-GRBsetdblattrarray = grblib.GRBsetdblattrarray
-GRBsetdblattrarray.restype = c_int
-GRBsetdblattrarray.argtypes = [c_void_p, c_char_p, c_int, c_int, POINTER(c_double)]
+    GRBsetdblattrarray = grblib.GRBsetdblattrarray
+    GRBsetdblattrarray.restype = c_int
+    GRBsetdblattrarray.argtypes = [c_void_p, c_char_p, c_int, c_int, POINTER(c_double)]
 
-GRBsetdblattrlist = grblib.GRBsetdblattrlist
-GRBsetdblattrlist.restype = c_int
-GRBsetdblattrlist.argtypes = [c_void_p, c_char_p, c_int, POINTER(c_int), POINTER(c_double)]
+    GRBsetdblattrlist = grblib.GRBsetdblattrlist
+    GRBsetdblattrlist.restype = c_int
+    GRBsetdblattrlist.argtypes = [c_void_p, c_char_p, c_int, POINTER(c_int), POINTER(c_double)]
 
-GRBgetdblattrelement = grblib.GRBgetdblattrelement
-GRBgetdblattrelement.restype = c_int
-GRBgetdblattrelement.argtypes = [c_void_p, c_char_p, c_int, POINTER(c_double)]
+    GRBgetdblattrelement = grblib.GRBgetdblattrelement
+    GRBgetdblattrelement.restype = c_int
+    GRBgetdblattrelement.argtypes = [c_void_p, c_char_p, c_int, POINTER(c_double)]
 
-GRBsetdblattrelement = grblib.GRBsetdblattrelement
-GRBsetdblattrelement.restype = c_int
-GRBsetdblattrelement.argtypes = [c_void_p, c_char_p, c_int, c_double]
+    GRBsetdblattrelement = grblib.GRBsetdblattrelement
+    GRBsetdblattrelement.restype = c_int
+    GRBsetdblattrelement.argtypes = [c_void_p, c_char_p, c_int, c_double]
 
-GRBgetcharattrelement = grblib.GRBgetcharattrelement
-GRBgetcharattrelement.restype = c_int
-GRBgetcharattrelement.argtypes = [c_void_p, c_char_p, c_int, POINTER(c_char)]
+    GRBgetcharattrelement = grblib.GRBgetcharattrelement
+    GRBgetcharattrelement.restype = c_int
+    GRBgetcharattrelement.argtypes = [c_void_p, c_char_p, c_int, POINTER(c_char)]
 
-GRBsetcharattrelement = grblib.GRBsetcharattrelement
-GRBsetcharattrelement.restype = c_int
-GRBsetcharattrelement.argtypes = [c_void_p, c_char_p, c_int, c_char]
+    GRBsetcharattrelement = grblib.GRBsetcharattrelement
+    GRBsetcharattrelement.restype = c_int
+    GRBsetcharattrelement.argtypes = [c_void_p, c_char_p, c_int, c_char]
 
-GRBgetstrattrelement = grblib.GRBgetstrattrelement
-GRBgetstrattrelement.argtypes = [c_void_p, c_char_p, c_int, POINTER(c_char_p)]
-GRBgetstrattrelement.restype = c_int
+    GRBgetstrattrelement = grblib.GRBgetstrattrelement
+    GRBgetstrattrelement.argtypes = [c_void_p, c_char_p, c_int, POINTER(c_char_p)]
+    GRBgetstrattrelement.restype = c_int
 
-# manipulate parameter(s)
+    # manipulate parameter(s)
 
-GRBgetintparam = grblib.GRBgetintparam
-GRBgetintparam.argtypes = [c_void_p, c_char_p, POINTER(c_int)]
-GRBgetintparam.restype = c_int
+    GRBgetintparam = grblib.GRBgetintparam
+    GRBgetintparam.argtypes = [c_void_p, c_char_p, POINTER(c_int)]
+    GRBgetintparam.restype = c_int
 
-GRBsetintparam = grblib.GRBsetintparam
-GRBsetintparam.argtypes = [c_void_p, c_char_p, c_int]
-GRBsetintparam.restype = c_int
+    GRBsetintparam = grblib.GRBsetintparam
+    GRBsetintparam.argtypes = [c_void_p, c_char_p, c_int]
+    GRBsetintparam.restype = c_int
 
-GRBgetdblparam = grblib.GRBgetdblparam
-GRBgetdblparam.argtypes = [c_void_p, c_char_p, POINTER(c_double)]
-GRBgetdblparam.restype = c_int
+    GRBgetdblparam = grblib.GRBgetdblparam
+    GRBgetdblparam.argtypes = [c_void_p, c_char_p, POINTER(c_double)]
+    GRBgetdblparam.restype = c_int
 
-GRBsetdblparam = grblib.GRBsetdblparam
-GRBsetdblparam.argtypes = [c_void_p, c_char_p, c_double]
-GRBsetdblparam.restype = c_int
+    GRBsetdblparam = grblib.GRBsetdblparam
+    GRBsetdblparam.argtypes = [c_void_p, c_char_p, c_double]
+    GRBsetdblparam.restype = c_int
 
-# manipulate objective function(s)
+    # manipulate objective function(s)
 
-GRBsetobjectiven = grblib.GRBsetobjectiven
-GRBsetobjectiven.restype = c_int
-GRBsetobjectiven.argtypes = [c_void_p, c_int, c_int, c_double, c_double, c_double, c_char_p,
-                             c_double, c_int, POINTER(c_int), POINTER(c_double)]
+    GRBsetobjectiven = grblib.GRBsetobjectiven
+    GRBsetobjectiven.restype = c_int
+    GRBsetobjectiven.argtypes = [c_void_p, c_int, c_int, c_double, c_double, c_double, c_char_p,
+                                c_double, c_int, POINTER(c_int), POINTER(c_double)]
 
-# add variables and constraints
+    # add variables and constraints
 
-GRBaddvar = grblib.GRBaddvar
-GRBaddvar.restype = c_int
-GRBaddvar.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double), c_double, c_double,
-                      c_double, c_char, c_char_p]
+    GRBaddvar = grblib.GRBaddvar
+    GRBaddvar.restype = c_int
+    GRBaddvar.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double), c_double, c_double,
+                        c_double, c_char, c_char_p]
 
-GRBaddconstr = grblib.GRBaddconstr
-GRBaddconstr.restype = c_int
-GRBaddconstr.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double), c_char, c_double,
-                         c_char_p]
+    GRBaddconstr = grblib.GRBaddconstr
+    GRBaddconstr.restype = c_int
+    GRBaddconstr.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double), c_char, c_double,
+                            c_char_p]
 
-# get constraints
+    # get constraints
 
-GRBgetconstrs = grblib.GRBgetconstrs
-GRBgetconstrs.restype = c_int
-GRBgetconstrs.argtypes = [c_void_p, POINTER(c_int), POINTER(c_int), POINTER(c_int),
-                          POINTER(c_double), c_int, c_int]
+    GRBgetconstrs = grblib.GRBgetconstrs
+    GRBgetconstrs.restype = c_int
+    GRBgetconstrs.argtypes = [c_void_p, POINTER(c_int), POINTER(c_int), POINTER(c_int),
+                            POINTER(c_double), c_int, c_int]
 
-# optimize/update model
+    # optimize/update model
 
-GRBoptimize = grblib.GRBoptimize
-GRBoptimize.restype = c_int
-GRBoptimize.argtypes = [c_void_p]
+    GRBoptimize = grblib.GRBoptimize
+    GRBoptimize.restype = c_int
+    GRBoptimize.argtypes = [c_void_p]
 
-GRBupdatemodel = grblib.GRBupdatemodel
-GRBupdatemodel.restype = c_int
-GRBupdatemodel.argtypes = [c_void_p]
+    GRBupdatemodel = grblib.GRBupdatemodel
+    GRBupdatemodel.restype = c_int
+    GRBupdatemodel.argtypes = [c_void_p]
 
-# read/write files
+    # read/write files
 
-GRBwrite = grblib.GRBwrite
-GRBwrite.restype = c_int
-GRBwrite.argtypes = [c_void_p, c_char_p]
+    GRBwrite = grblib.GRBwrite
+    GRBwrite.restype = c_int
+    GRBwrite.argtypes = [c_void_p, c_char_p]
 
-GRBreadModel = grblib.GRBreadmodel
-GRBreadModel.restype = c_int
-GRBreadModel.argtypes = [c_void_p, c_char_p, c_void_p]
+    GRBreadModel = grblib.GRBreadmodel
+    GRBreadModel.restype = c_int
+    GRBreadModel.argtypes = [c_void_p, c_char_p, c_void_p]
 
-GRBgetenv = grblib.GRBgetenv
-GRBgetenv.restype = c_void_p
-GRBgetenv.argtypes = [c_void_p]
+    GRBgetenv = grblib.GRBgetenv
+    GRBgetenv.restype = c_void_p
+    GRBgetenv.argtypes = [c_void_p]
 
 # vim: ts=4 sw=4 et
