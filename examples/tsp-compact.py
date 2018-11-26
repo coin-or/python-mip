@@ -12,7 +12,7 @@ n = inst.n
 d = inst.d
 print('solving TSP with {} cities'.format(inst.n))
 
-model = Model()
+model = Model(solver_name="cbc")
 
 # binary variables indicating if arc (i,j) is used on the route or not
 x = [ [ model.add_var(
@@ -21,7 +21,7 @@ x = [ [ model.add_var(
              for j in range(n) ] 
                for i in range(n) ]
 
-# continuous variable to prevend subtours: each
+# continuous variable to prevent subtours: each
 # city will have a different "identifier" in the planned route
 y = [ model.add_var(
        name='y({})'.format(i),
@@ -50,7 +50,7 @@ for i in range(0, n):
             y[i] - y[j] - (n+1)*x[i][j] >= -n, 'noSub({},{})'.format(i,j)
                  
     
-model.optimize( maxSeconds=20 )
+model.optimize( maxSeconds=5 )
 #model.write('tsp.lp')
 
 print('a')        

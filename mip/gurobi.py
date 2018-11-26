@@ -369,7 +369,7 @@ class SolverGurobi(Solver):
         maxTime  = inf,
         maxNodes = inf,
         maxSol = inf ):
-        e = self._env
+        e =  GRBgetenv( self._model )
         if maxTime != inf:
             GRBsetdblattr(e, c_str("TimeLimit"), c_double(float(maxTime)))
         if maxNodes != inf:
@@ -508,5 +508,9 @@ GRBwrite.argtypes = [c_void_p, c_char_p]
 GRBreadModel = grblib.GRBreadmodel
 GRBreadModel.restype = c_int
 GRBreadModel.argtypes = [c_void_p, c_char_p, c_void_p]
+
+GRBgetenv = grblib.GRBgetenv
+GRBgetenv.restype = c_void_p
+GRBgetenv.argtypes = [c_void_p]
 
 # vim: ts=4 sw=4 et

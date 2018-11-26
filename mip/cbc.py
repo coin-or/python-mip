@@ -180,8 +180,8 @@ class SolverCbc(Solver):
 
     def constr_get_name(self, idx : int) -> str:
         nameSpace : c_char_p = create_string_buffer(256)
-	cbcGetRowName(self._model, c_int(idx), nameSpace, 255)
-    return nameSpace.value
+        cbcGetRowName(self._model, c_int(idx), nameSpace, 255)
+        return nameSpace.value
     
     def set_processing_limits(self,
         maxTime  = inf,
@@ -189,18 +189,18 @@ class SolverCbc(Solver):
         maxSol = inf ):
         m = self._model
         if maxTime != inf:
-            cbcSetParameter( m, 'timeMode', 'elapsed')
-            cbcSetParameter( m, 'seconds', '{}'.format(maxTime))
+            cbcSetParameter( m, c_str('timeMode'), c_str('elapsed'))
+            cbcSetParameter( m, c_str('seconds'), c_str('{}'.format(maxTime)))
         if maxNodes != inf:
-            cbcSetParameter( m, 'maxNodes', '{}'.format(maxNodes))
+            cbcSetParameter( m, c_str('maxNodes'), c_str('{}'.format(maxNodes)))
         if maxNodes != inf:
-            cbcSetParameter( m, 'maxSolutions', '{}'.format(maxNodes))
+            cbcSetParameter( m, c_str('maxSolutions'), c_str('{}'.format(maxNodes)))
 
 
-	def __del__(self):
-		cbcDeleteModel(self._model)
-	
-	
+    def __del__(self):
+        cbcDeleteModel(self._model)
+
+
 cbclib = CDLL(find_library("CbcSolver"))
 
 cbcNewModel = cbclib.Cbc_newModel
