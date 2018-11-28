@@ -209,9 +209,16 @@ class SolverCbc(Solver):
 has_cbc = False
 
 try:
-    cbclib = CDLL(find_library("CbcSolver"))
-    has_cbc = True
-    print('cbc found')
+	try:
+		# linux library
+		cbclib = CDLL(find_library("CbcSolver"))
+		has_cbc = True
+		print('cbc found')
+	except:
+		# window library
+		cbclib = CDLL(find_library("cbcCInterfaceDll"))
+		has_cbc = True
+		print('cbc found')
 except: 
     has_cbc = False
     print('cbc not found')
