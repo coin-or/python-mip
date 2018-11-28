@@ -160,7 +160,7 @@ class SolverCbc(Solver):
 
 
     def constr_get_expr(self, constr: Constr) -> LinExpr:
-        numnz = cbcGetRowNz(self._model, constr.idx).value
+        numnz = cbcGetRowNz(self._model, constr.idx)
         
         ridx = cbcGetRowIndices(self._model, constr.idx)
         rcoef = cbcGetRowCoeffs(self._model, constr.idx)
