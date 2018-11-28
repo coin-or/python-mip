@@ -1,22 +1,21 @@
 from mip.model import *
-from sys import stdout,argv
+from sys import stdout, argv
 from time import process_time
 
 n = 20
 
 # can force a solver to be used with -solver=solverName option
-solver=""
+solver = ""
 
 for arg in (argv):
-	if "-solver=" in arg:
-		solver=arg.split('=')[1]
-		print('trying to load {} solver'.format(solver))
+    if "-solver=" in arg:
+        solver = arg.split('=')[1]
+        print('trying to load {} solver'.format(solver))
 
-
-if (len(solver))==0:
-	queens = Model('queens', MINIMIZE)
+if (len(solver)) == 0:
+    queens = Model('queens', MINIMIZE)
 else:
-	queens = Model('queens', MINIMIZE, solver)
+    queens = Model('queens', MINIMIZE, solver)
 
 x = [[queens.add_var('x({},{})'.format(i, j), type='B')
       for j in range(n)] for i in range(n)]
@@ -52,9 +51,4 @@ for i in range(n):
 
 stdout.write('\n')
 
-print(queens.constrs[0].expr)
-
 stdout.write('Total process time: {:.3f}s\n'.format(process_time()))
-
-# writing resulting lp
-queens.write('queens.lp')
