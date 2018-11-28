@@ -205,7 +205,7 @@ class Model:
 
     def __init__(self, name: str = "",
                  sense: str = MINIMIZE,
-                 solver_name: str = GUROBI):
+                 solver_name: str = ''):
         # initializing variables with default values
         self.name: str = name
         self.sense: str = sense
@@ -216,13 +216,20 @@ class Model:
         self.constrs: List[Constr] = []
         self.vars: List[Var] = []
 
-        # todo: implement code to detect solver automatically
         if solver_name.upper() == GUROBI:
             from mip.gurobi import SolverGurobi
             self.solver = SolverGurobi(self, name, sense)
         elif solver_name.upper() == CBC:
             from mip.cbc import SolverCbc
             self.solver = SolverCbc(self, name, sense)
+        else:
+            # search for the best solver available
+            if gurobi.has_gurobi:
+                from mip.gurobi import SolverGurobi
+                self.solver = SolverGurobi(self, name, sense)
+            elif cbc.has_cbc:
+                from mip.cbc import SolverCbc
+                self.solver = SolverCbc(self, name, sense)
 
     def __del__(self):
         if self.solver:
@@ -423,6 +430,7 @@ class Solver:
                               maxTime=inf,
                               maxNodes=inf,
                               maxSol=inf): pass
+    
 
 
 class Var:
@@ -571,5 +579,9 @@ def xsum(terms) -> LinExpr:
 
 # function aliases
 quicksum = xsum
+
+# checking which solvers are available
+from mip import gurobi
+from mip import cbc
 
 # vim: ts=4 sw=4 et
