@@ -33,6 +33,9 @@ class TSPData:
         self.x : List[float] = []
         self.y : List[float] = []
         
+        self.ix : List[int] = []
+        self.iy : List[int] = []
+        
         f=open(fileName, 'r')
         for l in f:
             if ':' in l:
@@ -56,8 +59,14 @@ class TSPData:
                 i = int(vls[0])
                 cx = float(vls[1])
                 cy = float(vls[2])
+                    
                 self.x.append( cx )
                 self.y.append( cy )
+
+                if len(vls)>3:
+                    self.ix.append( int(vls[3]) )
+                    self.iy.append( int(vls[4]) )
+                    print('i {} {}'.format(self.ix[-1], self.iy[-1]))
 
         for i in range(self.n):
             deg = floor( self.x[i] )
