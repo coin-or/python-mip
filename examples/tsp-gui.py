@@ -56,7 +56,7 @@ def optimize( problemName : str, cnvs ):
     for i in range(n):
         for j in range(n):
             if x[i][j].x >= 0.98:
-                cnvs.create_line( data.ix[i], data.iy[i], data.ix[j], data.iy[j], arrow=LAST )
+                cnvs.create_line( data.ix[i], data.iy[i], data.ix[j], data.iy[j], arrow=LAST, width=3 )
                 print('arc {} {}'.format(i,j))
 
     
