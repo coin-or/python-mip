@@ -6,6 +6,12 @@ from typing import List
 PI = 3.141592
 RRR = 6378.388
 
+# convert to radians
+def rad(val : float) -> float:
+    deg = float(floor(val))
+    minute = val - deg
+    return PI * (deg + 5*minute/3)/180
+
 class TSPData:
     """Reads instances from the Traveling Salesman Problem
     
@@ -69,12 +75,8 @@ class TSPData:
                     print('i {} {}'.format(self.ix[-1], self.iy[-1]))
 
         for i in range(self.n):
-            deg = floor( self.x[i] )
-            vmin = self.x[i] - deg
-            self.latitude[i] = PI * (deg + 5.0 * vmin / 3.0 ) / 180.0
-            deg = floor( self.y[i] )
-            vmin = self.y[i] - deg
-            self.longitude[i] = PI * (deg + 5.0 * vmin / 3.0 ) / 180.0
+            self.latitude[i] = rad(self.x[i])
+            self.longitude[i] = rad(self.y[i])
 
         for i in range(self.n):
             self.d[i][i] = 0
