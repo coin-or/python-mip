@@ -2,7 +2,7 @@ from mip.model import *
 from sys import stdout,argv
 from time import process_time
 
-n = 20
+n = 100
 
 # can force a solver to be used with -solver=solverName option
 solver=""
