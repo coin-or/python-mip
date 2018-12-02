@@ -8,9 +8,14 @@ RRR = 6378.388
 
 # convert to radians
 def rad(val : float) -> float:
+    mult = 1.0
+    if val<0.0:
+        mult = -1.0
+        val = abs(val)
+    
     deg = float(floor(val))
     minute = val - deg
-    return PI * (deg + 5*minute/3)/180
+    return (PI * (deg + 5*minute/3)/180)*mult
 
 class TSPData:
     """Reads instances from the Traveling Salesman Problem
@@ -53,8 +58,8 @@ class TSPData:
                 elif fn == 'dimension':
                     self.n = int(fv.strip())
                     self.d = [[inf for i in range(self.n)] for j in range(self.n)]
-                    self.latitude = [0 for i in range(self.n)]
-                    self.longitude = [0 for i in range(self.n)]
+                    self.latitude = [float(0) for i in range(self.n)]
+                    self.longitude = [float(0) for i in range(self.n)]
             elif 'NODE_COORD_SECTION' in l:
                 readingCoord = True
             elif readingCoord:
@@ -85,3 +90,21 @@ class TSPData:
                 q2 = cos( self.latitude[i] - self.latitude[j] )
                 q3 = cos( self.latitude[i] + self.latitude[j] )
                 self.d[i][j] = int(floor(RRR*acos(0.5*((1.0+q1)*q2-(1.0-q1)*q3))+1.0)) 
+                
+        """
+        ff = open('t.data', 'w')
+        ff.write('data;\n\n')
+        ff.write('set V :=')
+        for i in range(self.n):
+            ff.write(' {}'.format(i+1))
+        ff.write('\n\n')
+        ff.write('param : A : c :=\n')
+        for i in range(self.n):
+            for j in range(self.n):
+                if i==j:
+                    continue
+                ff.write('\t{} {} {}\n'.format(i+1,j+1, self.d[i][j]))
+        ff.write(';\n\nend;\n\n')
+
+        ff.close()
+        """
