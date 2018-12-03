@@ -165,8 +165,8 @@ class SolverCbc(Solver):
         ridx = cbcGetRowIndices(self._model, constr.idx)
         rcoef = cbcGetRowCoeffs(self._model, constr.idx)
         
-        rhs = cbcGetRowRHS(self._model, constr.idx).value
-        rsense = cbcGetRowSense(self._model, constr.idx).value.upper()
+        rhs = cbcGetRowRHS(self._model, constr.idx)
+        rsense = cbcGetRowSense(self._model, constr.idx).decode('utf-8').upper()
         
         sense = ''
         if (rsense == 'E'):
@@ -176,7 +176,7 @@ class SolverCbc(Solver):
         elif (rsense == 'G'):
             sense = GREATER_OR_EQUAL
         else:
-            raise Exception('Unknow sense: {}'.format(rsense.value))
+            raise Exception('Unknow sense: {}'.format(rsense))
         
         expr = LinExpr(const=-rhs, sense=sense)
         for i in range(numnz):

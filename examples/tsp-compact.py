@@ -2,7 +2,7 @@ from tspdata import TSPData
 from sys import argv
 from mip.model import Model
 from mip.constants import *
-from matplotlib.pyplot import plot
+#from matplotlib.pyplot import plot
 
 if len(argv) <= 1:
     print('enter instance name.')
