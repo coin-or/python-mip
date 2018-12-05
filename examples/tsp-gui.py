@@ -1,20 +1,21 @@
 from tkinter import *
+from tk_tools import *
 from os import listdir
 from tkinter import messagebox
 from tspdata import *
+from mip.model import *
+from mip.constants import *
 
 def optimize( problemName : str, cnvs ):
     data = TSPData(problemName)
-    messagebox.showinfo('Info', 'instance {} loaded'.format(problemName))
+    #messagebox.showinfo('Info', 'instance {} loaded'.format(problemName))
     
-    from mip.model import Model
-    from mip.constants import BINARY
 
     n = data.n
     d = data.d
     print('solving TSP with {} cities'.format(data.n))
 
-    model = Model(solver_name='gurobi')
+    model = Model(solver_name='cbc')
 
     # binary variables indicating if arc (i,j) is used on the route or not
     x = [ [ model.add_var(
@@ -31,16 +32,16 @@ def optimize( problemName : str, cnvs ):
             for i in range(n) ]    
     
     # objective funtion: minimize the distance
-    model += sum( d[i][j]*x[i][j]
+    model += xsum( d[i][j]*x[i][j]
                     for j in range(n) for i in range(n) )
 
     # constraint : enter each city coming from another city
     for i in range(n):
-        model += sum( x[j][i] for j in range(n) if j != i ) == 1, 'enter({})'.format(i)
+        model += xsum( x[j][i] for j in range(n) if j != i ) == 1, 'enter({})'.format(i)
         
     # constraint : leave each city coming from another city
     for i in range(n):
-        model += sum( x[i][j] for j in range(n) if j != i ) == 1, 'leave({})'.format(i)
+        model += xsum( x[i][j] for j in range(n) if j != i ) == 1, 'leave({})'.format(i)
         
     # subtour elimination
     for i in range(0, n):
@@ -49,7 +50,6 @@ def optimize( problemName : str, cnvs ):
                 continue
             model += \
                 y[i]  - (n+1)*x[i][j] >=  y[j] -n, 'noSub({},{})'.format(i,j)
-                    
         
     model.optimize(  )
     
@@ -59,6 +59,7 @@ def optimize( problemName : str, cnvs ):
                 cnvs.create_line( data.ix[i], data.iy[i], data.ix[j], data.iy[j], arrow=LAST, width=3 )
                 print('arc {} {}'.format(i,j))
 
+
     
 
 w = Tk()
@@ -66,16 +67,26 @@ w.title('Trip Planner')
 w.geometry( "1100x860")
 
 
-imap = PhotoImage(file='./img/belgium-tourism-14.gif')
 frame = Frame(w, relief=RAISED, borderwidth=2)
 #lbli = Label(w, image=imap)
 #lbli.pack(pady=5, side=BOTTOM)
 
 
-cnvs = Canvas(frame, width=imap.width(), height=imap.height())
-cnvs.create_image(0,0, anchor=NW, image=imap)
+imap = PhotoImage(file='./img/belgium-tourism-14.gif')
+cnvs = Canvas(frame, width=800, height=600)
 
-cnvs.pack(fill=BOTH, expand=1)
+
+def load_map( mapFile : str ):
+    global cnvs, imap
+    print('loading {}'.format(mapFile))
+    cnvs.delete('all')
+    imap = PhotoImage(file=mapFile)
+    cnvs.create_image(0,0, anchor=NW, image=imap)
+    cnvs.pack(fill=BOTH, expand=1)
+    #messagebox.showinfo('ha', 'ha')
+
+
+
 
 frame.pack(fill=BOTH, expand=True, side=BOTTOM)
 
@@ -88,11 +99,28 @@ fls = listdir('.')
 for f in fls:
     if '.tsp' in f:
         insts.append(f)
+        
 
+def selectInstance():
+    mfile = './img/{}'.format( selInst.get().replace('.tsp', '.gif') )
+    load_map( mfile )
+    
+selInst = SmartOptionMenu(w, insts)
+selInst.add_callback( selectInstance )
+selInst.pack( padx=5, side=LEFT)
+
+"""
 selInst = StringVar(w)
+
+
 selInst.set(insts[0]) # set the default option
-popupMenu = OptionMenu(w, selInst, *insts)
+
+popupMenu = OptionMenu(w, selInst, *insts, command=selectInstance())
 popupMenu.pack(padx=5, side=LEFT)
+selInst.trace('w', selectInstance)
+"""
+
+
 
 lbl2 = Label(w, text='Time limit: (s)' )
 lbl2.pack( padx=5, side=LEFT )
@@ -109,7 +137,7 @@ btnOpt.pack( padx=5, side=LEFT)
 
 lblimg=Label()
 
-
+selectInstance()
 
 
 w.mainloop()
