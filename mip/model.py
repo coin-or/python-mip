@@ -258,6 +258,9 @@ class Model:
                 obj: float = 0.0,
                 type: str = CONTINUOUS,
                 column: "Column" = None) -> "Var":
+        if type==BINARY:
+            lb = 0.0
+            ub = 1.0
         if len(name.strip()) == 0:
             nc = self.solver.num_cols()
             name = 'C{:011d}'.format(nc)
@@ -579,6 +582,8 @@ def xsum(terms) -> LinExpr:
 
 # function aliases
 quicksum = xsum
+
+print('using python mip package version 1.0.14')
 
 # checking which solvers are available
 from mip import gurobi
