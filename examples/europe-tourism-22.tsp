@@ -1,0 +1,30 @@
+NAME: europe-tourism-22
+TYPE: TSP
+COMMENT: Europe tourist attractions
+DIMENSION: 22
+EDGE_WEIGHT_TYPE: GEO
+DISPLAY_DATA_TYPE: COORD_DISPLAY
+NODE_COORD_SECTION
+ 1 50.07553 14.4378 750 219 Prague Czech Republic
+ 2 41.40362 2.17435 250 727 Barcelona Spain
+ 3 45.43731 12.32563 618 483 Grande Canal de Veneza
+ 4 43.76135 6.37883 422 597 579 Verdon Gorge
+ 5 46.68081 9.67629 556 428 Landwasser Viaduct
+ 6 47.56223 13.64926 718 375 Hallstatt Village Austria
+ 7 52.37073 4.89195 362 70 Keizersgracht Amsterdam
+ 8 44.13492 9.68499 664 500 Venice
+ 9 47.55757 10.7498 600 375 Neuschwanstein Castle
+ 10 48.85904 2.29329 255 296 Paris
+ 11 44.86539 15.58201 796 533 Plitvice Park Croatia
+ 12 48.63606 -1.51145 100 309 Mont Saint Michel France
+ 13 44.83778 -0.57917 139 535 Bordeaux France
+ 14 51.75202 -1.25772 110 111 Oxford UK
+ 15 51.0504 13.73726 722 156 Dresten Germany
+ 16 50.93753 6.96027 446 165 Cologne Germany
+ 17 46.00367 8.95105 526 467 Lugano Swiss
+ 18 48.57482 7.7535 478 312 Strassbourg France
+ 19 43.59123 3.25836 294 606 Languedoc-Roussillon France
+ 20 49.61162 6.13193 412 248 Luxembourg
+ 21 52.52 13.40495 708 60 Berlin
+ 22 51.75 10.63333 595 110 Harz Germany
+EOF
