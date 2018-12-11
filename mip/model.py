@@ -301,13 +301,12 @@ class Model:
         return self.solver.get_objective_const()
 
     def optimize(self,
-                 maxSeconds=inf,
-                 maxNodes=inf,
-                 maxSolutions=inf
-                 ) -> int:
-        if maxSeconds != inf or maxNodes != inf or maxSolutions != inf:
-            self.solver.set_processing_limits(maxSeconds, maxNodes, maxSolutions)
-        self.solver.optimize()
+                 max_seconds: float = inf,
+                 max_nodes: float = inf,
+                 max_solutions: float = inf) -> int:
+        if max_seconds != inf or max_nodes != inf or max_solutions != inf:
+            self.solver.set_processing_limits(max_seconds, max_nodes, max_solutions)
+        return self.solver.optimize()
 
     def get_objective_value(self) -> float:
         return self.solver.get_objective_value()
@@ -433,7 +432,6 @@ class Solver:
                               maxTime=inf,
                               maxNodes=inf,
                               maxSol=inf): pass
-    
 
 
 class Var:
