@@ -1,6 +1,6 @@
 from tspdata import TSPData
 from sys import argv
-from mip.model import Model
+from mip.model import *
 from mip.constants import *
 #from matplotlib.pyplot import plot
 
@@ -29,17 +29,23 @@ y = [ model.add_var(
        ub=n) 
          for i in range(n) ]
 
-# objective funtion: minimize the distance
-model += sum( d[i][j]*x[i][j]
+# objective function: minimize the distance
+model += xsum( d[i][j]*x[i][j]
                 for j in range(n) for i in range(n) )
 
 # constraint : enter each city coming from another city
 for i in range(n):
-    model += sum( x[j][i] for j in range(n) if j != i ) == 1, 'enter({})'.format(i)
+    model += xsum( x[j][i] for j in range(n) if j != i ) == 1, 'enter({})'.format(i)
     
 # constraint : leave each city coming from another city
 for i in range(n):
-    model += sum( x[i][j] for j in range(n) if j != i ) == 1, 'leave({})'.format(i)
+    model += xsum( x[i][j] for j in range(n) if j != i ) == 1, 'leave({})'.format(i)
+    
+# no 2 subtours
+for i in range(n):
+    for j in range(n):
+        if j!=j:
+            model += x[i][j] + x[j][i] <= 1
     
 # subtour elimination
 for i in range(0, n):

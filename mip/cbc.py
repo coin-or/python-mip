@@ -11,6 +11,7 @@ class SolverCbc(Solver):
         self._model = cbcNewModel()
         
         self._objconst = 0.0
+                
         # setting objective sense
         if sense == MAXIMIZE:
             cbcSetObjSense(self._model, -1.0)
@@ -55,14 +56,14 @@ class SolverCbc(Solver):
         # collecting variable coefficients
         for var, coeff in lin_expr.expr.items():
             cbcSetObjCoeff(self._model, var.idx, coeff)
-        
+
         # objective function constant
         self._objconst = c_double(lin_expr.const)
         
         # setting objective sense
         if sense == MAXIMIZE:
             cbcSetObjSense(self._model, -1.0)
-        else:
+        elif sense == MINIMIZE:
             cbcSetObjSense(self._model, 1.0)
 
 
@@ -216,9 +217,14 @@ try:
 		print('cbc found')
 	except:
 		# window library
-		cbclib = CDLL(find_library("cbcCInterfaceDll"))
-		has_cbc = True
-		print('cbc found')
+		try:
+			cbclib = CDLL(find_library("cbcCInterfaceDll"))
+			has_cbc = True
+			print('cbc found')
+		except:
+			cbclib = CDLL(find_library("./cbcCInterfaceDll"))
+			has_cbc = True
+			print('cbc found')
 except: 
     has_cbc = False
     print('cbc not found')

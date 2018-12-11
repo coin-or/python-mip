@@ -1,4 +1,4 @@
-from math import inf, ceil, cos, acos, floor
+from math import inf, ceil, cos, acos, floor, radians
 from typing import List
 
 # constants as stated in TSPlib doc
@@ -60,6 +60,12 @@ class TSPData:
                     self.d = [[inf for i in range(self.n)] for j in range(self.n)]
                     self.latitude = [float(0) for i in range(self.n)]
                     self.longitude = [float(0) for i in range(self.n)]
+                    self.x = [float(0) for i in range(self.n)]
+                    self.y = [float(0) for i in range(self.n)]
+                    self.ix = [int(0) for i in range(self.n)]
+                    self.iy = [int(0) for i in range(self.n)]
+                    
+                    self.names = ['city{}'.format(i+1) for i in range(self.n)]
             elif 'NODE_COORD_SECTION' in l:
                 readingCoord = True
             elif readingCoord:
@@ -71,17 +77,24 @@ class TSPData:
                 cx = float(vls[1])
                 cy = float(vls[2])
                     
-                self.x.append( cx )
-                self.y.append( cy )
+                self.x[i-1] = cx 
+                self.y[i-1] = cy
 
                 if len(vls)>3:
-                    self.ix.append( int(vls[3]) )
-                    self.iy.append( int(vls[4]) )
-                    print('i {} {}'.format(self.ix[-1], self.iy[-1]))
+                    self.ix[i-1] = int(vls[3]) 
+                    self.iy[i-1] = int(vls[4])
+                    #print('i {} {}'.format(self.ix[-1], self.iy[-1]))
+                    if len(vls)>5:
+                        self.names[i-1] = ''
+                        for j in range(5, len(vls)):
+                            self.names[i-1] += vls[j]
+                        
+                        
+                        
 
         for i in range(self.n):
-            self.latitude[i] = rad(self.x[i])
-            self.longitude[i] = rad(self.y[i])
+            self.latitude[i] = radians(self.x[i])
+            self.longitude[i] = radians(self.y[i])
 
         for i in range(self.n):
             self.d[i][i] = 0
