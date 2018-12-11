@@ -429,9 +429,9 @@ class Solver:
     def var_get_name(self, idx: int) -> str: pass
 
     def set_processing_limits(self,
-                              maxTime=inf,
-                              maxNodes=inf,
-                              maxSol=inf): pass
+                              max_time=inf,
+                              max_nodes=inf,
+                              max_sol=inf): pass
 
 
 class Var:
