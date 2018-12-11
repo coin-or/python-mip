@@ -88,7 +88,7 @@ class LinExpr:
         return result
 
     def __rsub__(self, other) -> "LinExpr":
-        return self.__add__(-other)
+        return (-self).__add__(other)
 
     def __isub__(self, other) -> "LinExpr":
         if isinstance(other, Var):
@@ -585,6 +585,6 @@ print('using python mip package version 1.0.14')
 
 # checking which solvers are available
 from mip import gurobi
-from mip import cbc
+# from mip import cbc
 
 # vim: ts=4 sw=4 et
