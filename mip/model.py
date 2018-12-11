@@ -223,6 +223,10 @@ class Model:
             from mip.cbc import SolverCbc
             self.solver = SolverCbc(self, name, sense)
         else:
+            # checking which solvers are available
+            from mip import gurobi
+            from mip import cbc
+
             # search for the best solver available
             if gurobi.has_gurobi:
                 from mip.gurobi import SolverGurobi
@@ -258,7 +262,7 @@ class Model:
                 obj: float = 0.0,
                 type: str = CONTINUOUS,
                 column: "Column" = None) -> "Var":
-        if type==BINARY:
+        if type == BINARY:
             lb = 0.0
             ub = 1.0
         if len(name.strip()) == 0:
@@ -582,9 +586,5 @@ def xsum(terms) -> LinExpr:
 quicksum = xsum
 
 print('using python mip package version 1.0.14')
-
-# checking which solvers are available
-from mip import gurobi
-# from mip import cbc
 
 # vim: ts=4 sw=4 et
