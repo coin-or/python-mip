@@ -1,3 +1,11 @@
+"""MIP Model
+
+This module implements abstractions for working with Mixed-Integer Programming
+Models.
+
+"""
+
+
 from typing import Dict, List
 
 from mip.constants import *
@@ -5,6 +13,11 @@ from math import inf
 
 
 class Column:
+    """ A column (variable) in the constraint matrix 
+
+        To create a column see Model.add_var
+
+    """
 
     def __init__(self, constrs: List["Constr"] = None, coeffs: List[float] = None):
         self.constrs: List[Constr] = constrs if constrs else []
@@ -12,6 +25,18 @@ class Column:
 
 
 class Constr:
+    """ A row (constraint) in the constraint matrix 
+
+        a constraint can be added to the model using the overloaded operator
+        +=, e.g., if m is a model:
+
+        m += 3*x1 + 4*x2 <= 5
+
+        summation expressions are also supported:
+
+        m += xsum(x[i] for i in range(n)) == 1
+
+    """
 
     def __init__(self, model: "Model", idx: int, name: str = ""):
         self.model: Model = model
@@ -38,6 +63,27 @@ class Constr:
 
 
 class LinExpr:
+    """ A Linear Expression
+
+    Linear expressions are used to enter the objective function and constraints of the model.
+
+    Consider a model object m, the objective function of m can be specified as:
+
+    m += 10*x1 + 7*x4
+
+    summation can also be used:
+
+    m += sum(3*x[i] i in range(n)) - sum(x[i] i in range(m))
+
+    If not specified in the construction of the model object, it is assumed
+    that the model is a minimization one.
+
+    A constraint is just a linear expression with the addition of a sense (==,
+    <= or >=) and a right hand side, e.g.:
+
+    m += x1 + x2 + x3 == 1
+
+    """
 
     def __init__(self,
                  variables: List["Var"] = None,
@@ -202,10 +248,21 @@ class LinExpr:
 
 
 class Model:
+    """ Mixed Integer Programming Model
+
+    This is the main class, providing methods for building, optimizing,
+    querying optimization results and reoptimizing Mixed-Integer Programming Models.
+
+    To check how models are created please see the examples included.
+
+    """
 
     def __init__(self, name: str = "",
                  sense: str = MINIMIZE,
                  solver_name: str = ''):
+        """Model constructor
+
+        """
         # initializing variables with default values
         self.name: str = name
         self.sense: str = sense
