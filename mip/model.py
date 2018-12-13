@@ -262,6 +262,17 @@ class Model:
                  solver_name: str = ''):
         """Model constructor
 
+        If no parameters are informed a Minimization model will be created.  It
+        is also not mandatory to inform a MIP solver: the mip package
+        automatically checks for installed MIP solvers and selects the best one
+        available on your system.
+
+        Args: 
+            name (str): model name 
+            sense (str): MINIMIZATION ("MIN") or MAXIMIZATION ("MAX") 
+            solver_name: gurobi or cbc, searches for which
+                solver is available if not informed
+
         """
         # initializing variables with default values
         self.name: str = name
@@ -319,6 +330,21 @@ class Model:
                 obj: float = 0.0,
                 type: str = CONTINUOUS,
                 column: "Column" = None) -> "Var":
+        """ Creates a new variable
+
+        Adds a new variable to the model.
+
+        Args:
+            name (str): variable name (optional)
+            lb (float): variable lower bound, default 0.0
+            ub (float): variable upper bound, default infinity
+            obj (float): coefficient of this variable in the objective function, default 0
+            type (str): CONTINUOUS ("C"), BINARY ("B") or INTEGER ("I")
+            column (Column): constraints where this variable will appear, necessary \
+            only when constraints are already created in the model and a new \
+            variable will be created. 
+
+        """
         if type == BINARY:
             lb = 0.0
             ub = 1.0
