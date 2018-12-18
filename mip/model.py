@@ -344,6 +344,17 @@ class Model:
             only when constraints are already created in the model and a new \
             variable will be created. 
 
+        Examples:
+
+            To add a variable x which is continuous and greater or equal to zero to model m::
+
+                x = m.add_var()
+
+            The following code creates a vector of binary variables x[0], ..., x[n-1] to model m::
+
+                x = [m.add_var(type=BINARY) for i in range(n)]
+            
+
         """
         if type == BINARY:
             lb = 0.0
@@ -356,6 +367,30 @@ class Model:
         return self.vars[-1]
 
     def add_constr(self, lin_expr: "LinExpr", name: str = "") -> Constr:
+        """ Creates a new constraint (row)
+
+        Adds a new constraint to the model
+
+        Args:
+            lin_expr (LinExpr): linear expression
+            name (str): optional constraint name, used when saving model to lp or mps files
+
+        Examples:
+
+        The following code adds the constraint :math:`x_1 + x_2 \leq 1`::
+
+            m += x1 + x2 <= 1
+
+        Which is equivalent to::
+
+            m.add_constr( x1 + x2 <= 1 )
+
+        Summation expressions can be used also, to add the constraint :math:`\displaystyle \sum_{i=0}^{n-1} x_i = y` and name this constraint cons1::
+
+            m += xsum(x[i] for i in range(n)) == y, 'cons1'
+
+        """
+ 
         if isinstance(lin_expr, bool):
             return None  # empty constraint
         idx = self.solver.add_constr(lin_expr, name)
@@ -363,6 +398,15 @@ class Model:
         return self.constrs[-1]
 
     def copy(self, solver_name: str = None) -> "Model":
+        """ Creates a copy of the current model
+
+        Args:
+            solver_name(str): solver name (optional)
+
+        Returns:
+            Model: clone of current model
+
+        """
         if not solver_name:
             solver_name = self.solver_name
         copy: Model = Model(self.name, self.sense, solver_name)
@@ -391,6 +435,21 @@ class Model:
                  max_seconds: float = inf,
                  max_nodes: float = inf,
                  max_solutions: float = inf) -> int:
+        """ Optimizes current model
+
+        Optimizes current model, optionally specifying processing limits.
+
+        To optimize model m within a processing time limit of 300 seconds::
+
+            m.optimize(max_seconds=300)
+
+        Returns:
+            int: optimization status, which can be OPTIMAL(0), ERROR(-1), INFEASIBLE(1), UNBOUNDED(2). When optimizing problems 
+            with integer variables some additional cases may happen, FEASIBLE(3) for the case when a feasible solution was found
+            but optimility was not proved, INT_INFEASIBLE(4) for the case when the lp relaxation is feasible but no feasible integer
+            solution exists and NO_SOLUTION_FOUND(5) for the case when an integer solution was not found in the optimization.
+
+        """
         if max_seconds != inf or max_nodes != inf or max_solutions != inf:
             self.solver.set_processing_limits(max_seconds, max_nodes, max_solutions)
         return self.solver.optimize()
