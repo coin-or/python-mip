@@ -251,7 +251,8 @@ class Model:
     """ Mixed Integer Programming Model
 
     This is the main class, providing methods for building, optimizing,
-    querying optimization results and reoptimizing Mixed-Integer Programming Models.
+    querying optimization results and reoptimizing Mixed-Integer Programming
+    Models.
 
     To check how models are created please see the examples included.
 
@@ -262,10 +263,13 @@ class Model:
                  solver_name: str = ''):
         """Model constructor
 
-        If no parameters are informed a Minimization model will be created.  It
-        is also not mandatory to inform a MIP solver: the mip package
-        automatically checks for installed MIP solvers and selects the best one
-        available on your system.
+        Creates a Mixed-Integer Linear Programming Model. The default model
+        optimization direction is Minimization. To store and optimize the model
+        the MIP package automatically searches and connects in runtime to the
+        dynamic library of some MIP solver installed on your computer, nowadays
+        gurobi and cbc are supported. This solver is automatically selected,
+        but you can force the selection of a specific solver with the parameter
+        solver_name.
 
         Args: 
             name (str): model name 
@@ -426,6 +430,12 @@ class Model:
         return copy
 
     def get_objective(self) -> LinExpr:
+        """ Returns the objective function
+
+        Returns:
+            LinExpr: the model objective function 
+
+        """
         return self.solver.get_objective()
 
     def get_objective_const(self) -> float:
@@ -455,12 +465,41 @@ class Model:
         return self.solver.optimize()
 
     def get_objective_value(self) -> float:
+        """ Objective function value
+
+        Returns:
+            float: returns the objetive function value of the solution found.
+
+        """
         return self.solver.get_objective_value()
 
     def set_start(self, variables: List["Var"], values: List[float]):
         self.solver.set_start(variables, values)
 
     def set_objective(self, expr, sense: str = "") -> None:
+        """ Modifies the objective function
+
+        Args:
+            expr(LinExpr): linear expression
+            sense(str): MINIMIZE("MIN") (default) or MAXIMIZE("MAX") (optional)
+
+        Examples:
+            
+            The following code adds all x variables x[0], ..., x[n-1], with
+            to the objective function of model m with weight w::
+
+                m.set_objective(xsum(w*x[i] for i in range(n)))
+
+            A simpler way to define the objective function is the use of the
+            model operator += ::
+
+                m += xsum(w*x[i] for i in range(n))
+
+            Note that the only difference of adding a constraint is the lack of
+            a sense and a rhs.
+
+        """
+
         if isinstance(expr, int) or isinstance(expr, float):
             self.solver.set_objective(LinExpr([], [], expr))
         elif isinstance(expr, Var):
@@ -472,9 +511,27 @@ class Model:
         return self.solver.set_objective_const(const)
 
     def write(self, path: str) -> None:
+        """ Saves the the MIP model
+
+        Args:
+            path(str): file name
+
+        Saves the the MIP model, use the extension ".lp" or ".mps" in the file
+        name to specify the file format.
+
+        """
         self.solver.write(path)
 
+
     def read(self, path: str) -> None:
+        """ Reads a MIP model
+
+        Reads a MIP model in .lp or .mps file format.
+
+        Args:
+            path(str): file name
+
+        """
         self.solver.read(path)
         nCols = self.solver.num_cols()
         nRows = self.solver.num_rows()

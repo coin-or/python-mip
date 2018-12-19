@@ -2,9 +2,13 @@ Python MIP - Mixed-Integer Programming Package Documentation
 ============================================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents:
 
+   intro
+
+Classes
+=======
 
 .. automodule:: model
  
