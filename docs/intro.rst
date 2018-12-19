@@ -3,7 +3,7 @@ Introduction
 
 The MIP python package provides a solver independent interface to Mixed-Integer
 Linear Programming solvers. The basic functionality allows the modelling,
-optimization, problem modification and re-optimization and solution query.
+optimization, problem modification, re-optimization and solution query.
 
 As a first example, consider the solution of the 0/1 knapsack problem: given a
 set :math:`I` each one with a weight :math:`w_i`  and estimated profit
