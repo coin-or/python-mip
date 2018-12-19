@@ -5,7 +5,6 @@ Models.
 
 """
 
-
 from typing import Dict, List
 
 from mip.constants import *
@@ -13,7 +12,7 @@ from math import inf
 
 
 class Column:
-    """ A column (variable) in the constraint matrix 
+    """ A column (variable) in the constraint matrix
 
         To create a column see Model.add_var
 
@@ -25,7 +24,7 @@ class Column:
 
 
 class Constr:
-    """ A row (constraint) in the constraint matrix 
+    """ A row (constraint) in the constraint matrix
 
         a constraint can be added to the model using the overloaded operator
         +=, e.g., if m is a model:
@@ -271,9 +270,9 @@ class Model:
         but you can force the selection of a specific solver with the parameter
         solver_name.
 
-        Args: 
-            name (str): model name 
-            sense (str): MINIMIZATION ("MIN") or MAXIMIZATION ("MAX") 
+        Args:
+            name (str): model name
+            sense (str): MINIMIZATION ("MIN") or MAXIMIZATION ("MAX")
             solver_name: gurobi or cbc, searches for which
                 solver is available if not informed
 
@@ -286,7 +285,9 @@ class Model:
 
         # list of constraints and variables
         self.constrs: List[Constr] = []
+        self.constrs_dict: Dict[str, Var] = {}
         self.vars: List[Var] = []
+        self.vars_dict: Dict[str, Constr] = {}
 
         if solver_name.upper() == GUROBI:
             from mip.gurobi import SolverGurobi
@@ -346,7 +347,7 @@ class Model:
             type (str): CONTINUOUS ("C"), BINARY ("B") or INTEGER ("I")
             column (Column): constraints where this variable will appear, necessary \
             only when constraints are already created in the model and a new \
-            variable will be created. 
+            variable will be created.
 
         Examples:
 
@@ -357,7 +358,7 @@ class Model:
             The following code creates a vector of binary variables x[0], ..., x[n-1] to model m::
 
                 x = [m.add_var(type=BINARY) for i in range(n)]
-            
+
 
         """
         if type == BINARY:
@@ -366,8 +367,9 @@ class Model:
         if len(name.strip()) == 0:
             nc = self.solver.num_cols()
             name = 'C{:011d}'.format(nc)
-        idx = self.solver.add_var(obj, lb, ub, type, column, name)
+        idx: int = self.solver.add_var(obj, lb, ub, type, column, name)
         self.vars.append(Var(self, idx, name))
+        self.vars_dict[name] = self.vars[-1]
         return self.vars[-1]
 
     def add_constr(self, lin_expr: "LinExpr", name: str = "") -> Constr:
@@ -394,11 +396,12 @@ class Model:
             m += xsum(x[i] for i in range(n)) == y, 'cons1'
 
         """
- 
+
         if isinstance(lin_expr, bool):
             return None  # empty constraint
-        idx = self.solver.add_constr(lin_expr, name)
+        idx: int = self.solver.add_constr(lin_expr, name)
         self.constrs.append(Constr(self, idx, name))
+        self.constrs_dict[name] = self.constrs[-1]
         return self.constrs[-1]
 
     def copy(self, solver_name: str = None) -> "Model":
@@ -429,40 +432,20 @@ class Model:
 
         return copy
 
+    def get_constr_by_name(self, name) -> "Constr":
+        return self.constrs_dict.get(name, None)
+
     def get_objective(self) -> LinExpr:
         """ Returns the objective function
 
         Returns:
-            LinExpr: the model objective function 
+            LinExpr: the model objective function
 
         """
         return self.solver.get_objective()
 
     def get_objective_const(self) -> float:
         return self.solver.get_objective_const()
-
-    def optimize(self,
-                 max_seconds: float = inf,
-                 max_nodes: float = inf,
-                 max_solutions: float = inf) -> int:
-        """ Optimizes current model
-
-        Optimizes current model, optionally specifying processing limits.
-
-        To optimize model m within a processing time limit of 300 seconds::
-
-            m.optimize(max_seconds=300)
-
-        Returns:
-            int: optimization status, which can be OPTIMAL(0), ERROR(-1), INFEASIBLE(1), UNBOUNDED(2). When optimizing problems 
-            with integer variables some additional cases may happen, FEASIBLE(3) for the case when a feasible solution was found
-            but optimility was not proved, INT_INFEASIBLE(4) for the case when the lp relaxation is feasible but no feasible integer
-            solution exists and NO_SOLUTION_FOUND(5) for the case when an integer solution was not found in the optimization.
-
-        """
-        if max_seconds != inf or max_nodes != inf or max_solutions != inf:
-            self.solver.set_processing_limits(max_seconds, max_nodes, max_solutions)
-        return self.solver.optimize()
 
     def get_objective_value(self) -> float:
         """ Objective function value
@@ -472,6 +455,63 @@ class Model:
 
         """
         return self.solver.get_objective_value()
+
+    def get_var_by_name(self, name) -> "Var":
+        return self.vars_dict.get(name, None)
+
+    def optimize(self,
+                 branch_selector: "BranchSelector" = None,
+                 cuts_generator: "CutsGenerator" = None,
+                 incumbent_updater: "IncumbentUpdater" = None,
+                 max_seconds: float = inf,
+                 max_nodes: int = inf,
+                 max_solutions: int = inf) -> int:
+        """ Optimizes current model
+
+        Optimizes current model, optionally specifying processing limits.
+
+        To optimize model m within a processing time limit of 300 seconds::
+
+            m.optimize(max_seconds=300)
+
+        Args:
+            branch_selector (BranchSelector): Callback to select branch (an object of a class inheriting from BranchSelector must be passed)
+            cuts_generator (CutsGenerator): Callback to generate cuts (an object of a class inheriting from CutsGenerator must be passed)
+            incumbent_updater (IncumbentUpdater): Callback to update incumbent solution (an object of a class inheriting from IncumbentUpdater must be passed)
+            max_seconds (float): Maximum runtime in seconds (default: inf)
+            max_nodes (float): Maximum number of nodes (default: inf)
+            max_solutions (float): Maximum number of solutions (default: inf)
+
+        Returns:
+            int: optimization status, which can be OPTIMAL(0), ERROR(-1), INFEASIBLE(1), UNBOUNDED(2). When optimizing problems
+            with integer variables some additional cases may happen, FEASIBLE(3) for the case when a feasible solution was found
+            but optimility was not proved, INT_INFEASIBLE(4) for the case when the lp relaxation is feasible but no feasible integer
+            solution exists and NO_SOLUTION_FOUND(5) for the case when an integer solution was not found in the optimization.
+
+        """
+        self.solver.set_callbacks(branch_selector, cuts_generator, incumbent_updater)
+        self.solver.set_processing_limits(max_seconds, max_nodes, max_solutions)
+
+        return self.solver.optimize()
+
+    def read(self, path: str) -> None:
+        """ Reads a MIP model
+
+        Reads a MIP model in .lp or .mps file format.
+
+        Args:
+            path(str): file name
+
+        """
+        self.solver.read(path)
+        n_cols = self.solver.num_cols()
+        n_rows = self.solver.num_rows()
+        for i in range(n_cols):
+            self.vars.append(Var(self, i, self.solver.var_get_name(i)))
+            self.vars_dict[self.vars[-1].name] = self.vars[-1]
+        for i in range(n_rows):
+            self.constrs.append(Constr(self, i, self.solver.constr_get_name(i)))
+            self.constrs_dict[self.constrs[-1].name] = self.constrs[-1]
 
     def set_start(self, variables: List["Var"], values: List[float]):
         self.solver.set_start(variables, values)
@@ -484,7 +524,7 @@ class Model:
             sense(str): MINIMIZE("MIN") (default) or MAXIMIZE("MAX") (optional)
 
         Examples:
-            
+
             The following code adds all x variables x[0], ..., x[n-1], with
             to the objective function of model m with weight w::
 
@@ -521,24 +561,6 @@ class Model:
 
         """
         self.solver.write(path)
-
-
-    def read(self, path: str) -> None:
-        """ Reads a MIP model
-
-        Reads a MIP model in .lp or .mps file format.
-
-        Args:
-            path(str): file name
-
-        """
-        self.solver.read(path)
-        nCols = self.solver.num_cols()
-        nRows = self.solver.num_rows()
-        for i in range(nCols):
-            self.vars.append(Var(self, i, self.solver.var_get_name(i)))
-        for i in range(nRows):
-            self.constrs.append(Constr(self, i, self.solver.constr_get_name(i)))
 
     @property
     def num_cols(self) -> int:
@@ -585,6 +607,18 @@ class Solver:
 
     def set_objective_const(self, const: float) -> None: pass
 
+    def set_callbacks(self,
+                      branch_selector: "BranchSelector" = None,
+                      cuts_generator: "CutsGenerator" = None,
+                      incumbent_updater: "IncumbentUpdater" = None) -> None:
+        pass
+
+    def set_processing_limits(self,
+                              max_time: float = inf,
+                              max_nodes: int = inf,
+                              max_sol: int = inf):
+        pass
+
     def write(self, file_path: str) -> None: pass
 
     def read(self, file_path: str) -> None: pass
@@ -630,11 +664,6 @@ class Solver:
     def var_get_x(self, var: "Var") -> float: pass
 
     def var_get_name(self, idx: int) -> str: pass
-
-    def set_processing_limits(self,
-                              max_time=inf,
-                              max_nodes=inf,
-                              max_sol=inf): pass
 
 
 class Var:
@@ -772,6 +801,30 @@ class Var:
     @property
     def x(self) -> float:
         return self.model.solver.var_get_x(self)
+
+
+class BranchSelector:
+    def __init__(self, model: Model):
+        self.model = model
+
+    def select_branch(self, vars: List[Var], values: List[float]) -> (Var, int):
+        raise NotImplementedError()
+
+
+class CutsGenerator:
+    def __init__(self, model: Model):
+        self.model = model
+
+    def generate_cuts(self, vars: List[Var], values: List[float]) -> List[LinExpr]:
+        raise NotImplementedError()
+
+
+class IncumbentUpdater:
+    def __init__(self, model: Model):
+        self.model = model
+
+    def update_incumbent(self, vars: List[Var], values: List[float]) -> List[(Var, float)]:
+        raise NotImplementedError()
 
 
 def xsum(terms) -> LinExpr:
