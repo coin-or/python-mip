@@ -5,7 +5,7 @@ from math import inf
 
 
 class SolverGurobi(Solver):
-    
+
     def __init__(self, model: Model, name: str, sense: str):
         super().__init__(model, name, sense)
 
@@ -16,6 +16,7 @@ class SolverGurobi(Solver):
         self._log: str = ""
         self._env: c_void_p = c_void_p(0)
         self._model: c_void_p = c_void_p(0)
+        self._callback = None
 
         # setting variables for an empty model
         numvars: c_int = c_int(0)
@@ -164,6 +165,67 @@ class SolverGurobi(Solver):
         st = GRBgetdblattr(self._model, c_str('ObjVal'), byref(res))
         assert st == 0
         return res.value
+
+    def set_callbacks(self,
+                      branch_selector: "BranchSelector" = None,
+                      cuts_generator: "CutsGenerator" = None,
+                      incumbent_updater: "IncumbentUpdater" = None) -> None:
+        # todo add branch_selector and incumbent_updater callbacks
+        def callback(p_model: c_void_p,
+                     p_cbdata: c_void_p,
+                     where: c_int,
+                     p_usrdata: c_void_p) -> int:
+            if cuts_generator and where.value == 5:  # MIPNODE == 5
+                print('hihihi')
+
+                # obtaining relaxation solution and "translating" it
+                solution: POINTER(c_double) = (c_double * len(self.vars))()
+                GRBcbget(p_cbdata, where, "MIPNODE_REL", solution)
+                relax_solution = []
+                for i in range(len(self._num_vars)):
+                    if solution[i] <= -EPS or solution[i] >= EPS:
+                        relax_solution.append((self.vars[i], solution[i]))
+
+                # calling user callback
+                cuts: List[LinExpr] = cuts_generator.generate_cuts(relax_solution)
+
+                # adding cuts
+                for lin_expr in cuts:
+                    # collecting linear expression data
+                    numnz: c_int = len(lin_expr.expr)
+                    cind: POINTER(c_int) = (c_int * numnz)()
+                    cval: POINTER(c_double) = (c_double * numnz)()
+
+                    # collecting variable coefficients
+                    for i, (var, coeff) in enumerate(lin_expr.expr.items()):
+                        cind[i] = var.idx
+                        cval[i] = coeff
+
+                    # constraint sense and rhs
+                    sense: c_char = c_char(ord(lin_expr.sense))
+                    rhs: c_double = c_double(-lin_expr.const)
+
+                    GRBcbcut(p_cbdata, numnz, cind, cval, sense, rhs)
+
+            return 0
+
+        self._callback = GRBcallbacktype(callback)
+        GRBsetcallbackfunc(self._model, self._callback, c_void_p(0))
+
+    def set_processing_limits(self,
+                              max_time: float = inf,
+                              max_nodes: float = inf,
+                              max_sol: int = inf):
+        # todo: Set limits even when they are 'inf'
+        if max_time != inf:
+            res = GRBsetdblparam(GRBgetenv(self._model), c_str("TimeLimit"), c_double(max_time))
+            assert res == 0
+        if max_nodes != inf:
+            res = GRBsetdblparam(GRBgetenv(self._model), c_str("NodeLimit"), c_double(max_nodes))
+            assert res == 0
+        if max_sol != inf:
+            res = GRBsetintparam(GRBgetenv(self._model), c_str("SolutionLimit"), c_int(max_sol))
+            assert res == 0
 
     def set_objective(self, lin_expr: "LinExpr", sense: str = "") -> None:
         # collecting linear expression data
@@ -385,20 +447,6 @@ class SolverGurobi(Solver):
         assert st == 0
         return vName.value
 
-    def set_processing_limits(self,
-                              max_time: float = inf,
-                              max_nodes: float = inf,
-                              max_sol: int = inf):
-        if max_time != inf:
-            res = GRBsetdblparam(GRBgetenv( self._model) , c_str("TimeLimit"), c_double(max_time))
-            assert res == 0
-        if max_nodes != inf:
-            res = GRBsetdblparam(GRBgetenv( self._model), c_str("NodeLimit"), c_double(max_nodes))
-            assert res == 0
-        if max_sol != inf:
-            res = GRBsetintparam(GRBgetenv( self._model), c_str("SolutionLimit"), c_int(max_sol))
-            assert res == 0
-
 
 # auxiliary functions
 def c_str(value) -> c_char_p:
@@ -409,14 +457,15 @@ def c_str(value) -> c_char_p:
     """
     return create_string_buffer(value.encode("utf-8"))
 
+
 has_gurobi = False
 
 try:
     found = False
     libPath = None
-    
-    for majorVersion in reversed(range(2,12)):
-        for minorVersion in reversed(range(0,11)):
+
+    for majorVersion in reversed(range(2, 12)):
+        for minorVersion in reversed(range(0, 11)):
             try:
                 libPath = find_library('gurobi{}{}'.format(majorVersion, minorVersion))
                 if libPath != None:
@@ -426,7 +475,6 @@ try:
         if libPath != None:
             break
 
-    
     if libPath == None:
         raise Exception()
     grblib = CDLL(libPath)
@@ -535,26 +583,46 @@ if has_gurobi:
     GRBsetobjectiven = grblib.GRBsetobjectiven
     GRBsetobjectiven.restype = c_int
     GRBsetobjectiven.argtypes = [c_void_p, c_int, c_int, c_double, c_double, c_double, c_char_p,
-                                c_double, c_int, POINTER(c_int), POINTER(c_double)]
+                                 c_double, c_int, POINTER(c_int), POINTER(c_double)]
 
     # add variables and constraints
 
     GRBaddvar = grblib.GRBaddvar
     GRBaddvar.restype = c_int
     GRBaddvar.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double), c_double, c_double,
-                        c_double, c_char, c_char_p]
+                          c_double, c_char, c_char_p]
 
     GRBaddconstr = grblib.GRBaddconstr
     GRBaddconstr.restype = c_int
     GRBaddconstr.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double), c_char, c_double,
-                            c_char_p]
+                             c_char_p]
 
     # get constraints
 
     GRBgetconstrs = grblib.GRBgetconstrs
     GRBgetconstrs.restype = c_int
     GRBgetconstrs.argtypes = [c_void_p, POINTER(c_int), POINTER(c_int), POINTER(c_int),
-                            POINTER(c_double), c_int, c_int]
+                              POINTER(c_double), c_int, c_int]
+
+    # callback functions
+
+    GRBcallbacktype = CFUNCTYPE(c_int, c_void_p, c_void_p, c_int, c_void_p)
+
+    GRBsetcallbackfunc = grblib.GRBsetcallbackfunc
+    GRBsetcallbackfunc.restype = c_int
+    GRBsetcallbackfunc.argtypes = [c_void_p, GRBcallbacktype, c_void_p]
+
+    GRBcbcut = grblib.GRBcbget
+    GRBcbcut.restype = c_int
+    GRBcbcut.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double), c_char, c_double]
+
+    GRBcbget = grblib.GRBcbget
+    GRBcbget.restype = c_int
+    GRBcbget.argtypes = [c_void_p, c_int, c_int, c_void_p]
+
+    GRBcbsolution = grblib.GRBcbsolution
+    GRBcbsolution.restype = c_int
+    GRBcbsolution.argtypes = [c_void_p, POINTER(c_double), POINTER(c_double)]
 
     # optimize/update model
 
