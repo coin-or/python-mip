@@ -173,18 +173,16 @@ class SolverGurobi(Solver):
         # todo add branch_selector and incumbent_updater callbacks
         def callback(p_model: c_void_p,
                      p_cbdata: c_void_p,
-                     where: c_int,
+                     where: int,
                      p_usrdata: c_void_p) -> int:
-            if cuts_generator and where.value == 5:  # MIPNODE == 5
-                print('hihihi')
-
+            if cuts_generator and where == 5:  # MIPNODE == 5
                 # obtaining relaxation solution and "translating" it
-                solution: POINTER(c_double) = (c_double * len(self.vars))()
-                GRBcbget(p_cbdata, where, "MIPNODE_REL", solution)
+                solution: POINTER(c_double) = (c_double * self._num_vars)()
+                GRBcbget(p_cbdata, where, GRB_CB_MIPNODE_REL, solution)
                 relax_solution = []
-                for i in range(len(self._num_vars)):
+                for i in range(self._num_vars):
                     if solution[i] <= -EPS or solution[i] >= EPS:
-                        relax_solution.append((self.vars[i], solution[i]))
+                        relax_solution.append((self.model.vars[i], solution[i]))
 
                 # calling user callback
                 cuts: List[LinExpr] = cuts_generator.generate_cuts(relax_solution)
@@ -604,7 +602,7 @@ if has_gurobi:
     GRBgetconstrs.argtypes = [c_void_p, POINTER(c_int), POINTER(c_int), POINTER(c_int),
                               POINTER(c_double), c_int, c_int]
 
-    # callback functions
+    # callback functions and constants
 
     GRBcallbacktype = CFUNCTYPE(c_int, c_void_p, c_void_p, c_int, c_void_p)
 
@@ -623,6 +621,43 @@ if has_gurobi:
     GRBcbsolution = grblib.GRBcbsolution
     GRBcbsolution.restype = c_int
     GRBcbsolution.argtypes = [c_void_p, POINTER(c_double), POINTER(c_double)]
+
+    GRB_CB_PRE_COLDEL = 1000
+    GRB_CB_PRE_ROWDEL = 1001
+    GRB_CB_PRE_SENCHG = 1002
+    GRB_CB_PRE_BNDCHG = 1003
+    GRB_CB_PRE_COECHG = 1004
+
+    GRB_CB_SPX_ITRCNT = 2000
+    GRB_CB_SPX_OBJVAL = 2001
+    GRB_CB_SPX_PRIMINF = 2002
+    GRB_CB_SPX_DUALINF = 2003
+    GRB_CB_SPX_ISPERT = 2004
+
+    GRB_CB_MIP_OBJBST = 3000
+    GRB_CB_MIP_OBJBND = 3001
+    GRB_CB_MIP_NODCNT = 3002
+    GRB_CB_MIP_SOLCNT = 3003
+    GRB_CB_MIP_CUTCNT = 3004
+    GRB_CB_MIP_NODLFT = 3005
+    GRB_CB_MIP_ITRCNT = 3006
+
+    GRB_CB_MIPSOL_SOL = 4001
+    GRB_CB_MIPSOL_OBJ = 4002
+    GRB_CB_MIPSOL_OBJBST = 4003
+    GRB_CB_MIPSOL_OBJBND = 4004
+    GRB_CB_MIPSOL_NODCNT = 4005
+    GRB_CB_MIPSOL_SOLCNT = 4006
+
+    GRB_CB_MIPNODE_STATUS = 5001
+    GRB_CB_MIPNODE_REL = 5002
+    GRB_CB_MIPNODE_OBJBST = 5003
+    GRB_CB_MIPNODE_OBJBND = 5004
+    GRB_CB_MIPNODE_NODCNT = 5005
+    GRB_CB_MIPNODE_SOLCNT = 5006
+
+    GRB_CB_MSG_STRING = 6001
+    GRB_CB_RUNTIME = 6002
 
     # optimize/update model
 
