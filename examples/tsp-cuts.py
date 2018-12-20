@@ -13,6 +13,8 @@ class SubTourCutGenerator(CutsGenerator):
 	def generate_cuts(self, vars : List[Var], values : List[float] ) -> List[LinExpr]:
 		G = nx.DiGraph()
 		for (i, v) in enumerate(vars):
+			if 'x(' not in v.name:
+				continue
 			strarc = v.name.split('(')[1].split(')')[0]
 			if abs(values[i])<1e-6:
 				continue
