@@ -19,9 +19,9 @@ class SubTourCutGenerator(CutsGenerator):
             strarc = v.name.split('(')[1].split(')')[0]
             if abs(x) < 1e-6:
                 continue
-            u = int(strarc.split(',')[0].strip())
-            v = int(strarc.split(',')[1].strip())
-            G.add_edge(u, v, capacity=int(floor(x * 10000.0)))
+            ui = int(strarc.split(',')[0].strip())
+            vi = int(strarc.split(',')[1].strip())
+            G.add_edge(ui, vi, capacity=int(floor(x * 10000.0)))
 
         cuts = []
 
@@ -30,20 +30,20 @@ class SubTourCutGenerator(CutsGenerator):
                 if u == v: continue
                 val, part = nx.minimum_cut(G, u, v)
                 # checking violation
-                if val < 10000:
+                if val >= 9999:
                     continue
 
                 reachable, nonreachable = part
 
-                cutvars = []
+                cutvars = list()
 
                 for u in reachable:
                     for v in nonreachable:
                         var = model.get_var_by_name('x({},{})'.format(u, v))
                         if var != None:
-                            cutvars += var
-                if cutvars:
-                    cuts.append(xsum(v for v in cutvars) >= 1)
+                            cutvars.append(var) 
+                if len(cutvars):
+                    cuts.append(xsum(1.0*var for var in cutvars) >= 1)
 
         print("Cuts: ", cuts)
         return cuts
