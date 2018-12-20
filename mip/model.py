@@ -5,7 +5,7 @@ Models.
 
 """
 
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from mip.constants import *
 from math import inf
@@ -807,7 +807,7 @@ class BranchSelector:
     def __init__(self, model: Model):
         self.model = model
 
-    def select_branch(self, vars: List[Var], values: List[float]) -> (Var, int):
+    def select_branch(self, relax_solution: List[Tuple[Var, float]]) -> Tuple[Var, int]:
         raise NotImplementedError()
 
 
@@ -815,7 +815,7 @@ class CutsGenerator:
     def __init__(self, model: Model):
         self.model = model
 
-    def generate_cuts(self, vars: List[Var], values: List[float]) -> List[LinExpr]:
+    def generate_cuts(self, relax_solution: List[Tuple[Var, float]]) -> List[LinExpr]:
         raise NotImplementedError()
 
 
@@ -823,7 +823,7 @@ class IncumbentUpdater:
     def __init__(self, model: Model):
         self.model = model
 
-    def update_incumbent(self, vars: List[Var], values: List[float]) -> List[(Var, float)]:
+    def update_incumbent(self, solution: List[Tuple[Var, float]]) -> List[Tuple[Var, float]]:
         raise NotImplementedError()
 
 
