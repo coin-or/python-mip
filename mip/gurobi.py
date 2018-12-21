@@ -120,6 +120,20 @@ class SolverGurobi(Solver):
         res = c_double()
         GRBgetdblattr(self._model, c_str("ObjCon"), byref(res))
         return res.value
+    
+    def relax(self):
+        idxs = list()
+        for var in self.model.vars:
+            vtype = self.var_get_type( var )
+            if vtype == BINARY or vtype == INTEGER:
+                idxs.append(var.idx)
+                
+        ccont : POINTER(c_char) = (c_char * len(idxs))()
+        for i in idxs:
+            ccont[i] = CONTINUOUS.encode("utf-8")
+        
+        GRBsetcharattrarray( self._model, c_str("VType"), 0, len(idxs), ccont )
+        GRBupdatemodel( self._model )
 
     def optimize(self) -> int:
         # executing Gurobi to solve the formulation
@@ -202,6 +216,9 @@ class SolverGurobi(Solver):
                     # constraint sense and rhs
                     sense: c_char = c_char(ord(lin_expr.sense))
                     rhs: c_double = c_double(-lin_expr.const)
+
+                    print('ind: {}'.format(cind))
+                    print('val: {}'.format(cval))
 
                     GRBcbcut(p_cbdata, numnz, cind, cval, sense, rhs)
 
@@ -343,8 +360,8 @@ class SolverGurobi(Solver):
         return expr
 
     def constr_get_name(self, idx: int) -> str:
-        vName: c_char_p(0)
-        st: int = GRBgetstrattrelement(self._model, c_int(idx), c_str('ConstrName'), byref(vName))
+        vName = c_char_p(0)
+        st: int = GRBgetstrattrelement(self._model, c_str('ConstrName'), c_int(idx), byref(vName))
         assert st == 0
         return vName.value
 
@@ -440,8 +457,8 @@ class SolverGurobi(Solver):
         return res.value
 
     def var_get_name(self, idx: int) -> str:
-        vName: c_char_p(0)
-        st: int = GRBgetstrattrelement(self._model, c_int(idx), c_str('VarName'), byref(vName))
+        vName = c_char_p(0) 
+        st: int = GRBgetstrattrelement(self._model, c_str('VarName'), c_int(idx), byref(vName))
         assert st == 0
         return vName.value
 
@@ -545,6 +562,10 @@ if has_gurobi:
     GRBsetdblattrelement = grblib.GRBsetdblattrelement
     GRBsetdblattrelement.restype = c_int
     GRBsetdblattrelement.argtypes = [c_void_p, c_char_p, c_int, c_double]
+    
+    GRBsetcharattrarray = grblib.GRBsetcharattrarray
+    GRBsetcharattrarray.restype = c_int
+    GRBsetcharattrarray.argtypes = [c_void_p, c_char_p, c_int, c_int, c_char_p]
 
     GRBgetcharattrelement = grblib.GRBgetcharattrelement
     GRBgetcharattrelement.restype = c_int
