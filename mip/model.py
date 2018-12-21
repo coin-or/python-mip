@@ -457,7 +457,20 @@ class Model:
         return self.solver.get_objective_value()
 
     def get_var_by_name(self, name) -> "Var":
+        """ Searchers a variable by its name
+        
+        Returns:
+            Var: a reference to a variable
+        """
         return self.vars_dict.get(name, None)
+    
+    def relax(self):
+        """ Relax integrality constraints of variables
+        
+        Changes the type of all integer and binary variables to
+        continuous. Bounds are preserved.
+        """
+        self.solver.relax()
 
     def optimize(self,
                  branch_selector: "BranchSelector" = None,
@@ -596,6 +609,8 @@ class Solver:
     def get_objective(self) -> LinExpr: pass
 
     def get_objective_const(self) -> float: pass
+
+    def relax(self): pass
 
     def optimize(self) -> int: pass
 
