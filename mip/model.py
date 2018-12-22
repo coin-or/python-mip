@@ -150,6 +150,13 @@ class LinExpr:
         result.const *= other
         for var in result.expr.keys():
             result.expr[var] *= other
+
+        # if constraint sense will change
+        if self.sense == GREATER_OR_EQUAL and other <= -1e-8:
+            self.sense = LESS_OR_EQUAL
+        if self.sense == LESS_OR_EQUAL and other <= -1e-8:
+            self.sense = GREATER_OR_EQUAL
+
         return result
 
     def __rmul__(self, other) -> "LinExpr":

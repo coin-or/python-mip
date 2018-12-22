@@ -111,10 +111,15 @@ class SolverCbc(Solver):
     
     
     def var_get_lb(self, var: "Var") -> float:
-        res : float = float(cbcGetColLower(self._model)[var.idx])
+        res = float(cbcGetColLower(self._model)[var.idx])
         return res
-    
-    
+ 
+
+    def var_get_ub(self, var: "Var") -> float:
+        res = float(cbcGetColUpper(self._model)[var.idx])
+        return res
+
+     
     def var_get_name(self, idx : int) -> str:
         nameSpace = create_string_buffer(256)
         cbcGetColName(self._model, c_int(idx), nameSpace, 255)
