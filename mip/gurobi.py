@@ -129,7 +129,7 @@ class SolverGurobi(Solver):
                 idxs.append(var.idx)
                 
         ccont : POINTER(c_char) = (c_char * len(idxs))()
-        for i in idxs:
+        for i in range(len(idxs)):
             ccont[i] = CONTINUOUS.encode("utf-8")
         
         GRBsetcharattrarray( self._model, c_str("VType"), 0, len(idxs), ccont )
@@ -460,7 +460,7 @@ class SolverGurobi(Solver):
         vName = c_char_p(0) 
         st: int = GRBgetstrattrelement(self._model, c_str('VarName'), c_int(idx), byref(vName))
         assert st == 0
-        return vName.value
+        return vName.value.decode('utf-8')
 
 
 # auxiliary functions

@@ -481,6 +481,9 @@ class Model:
         continuous. Bounds are preserved.
         """
         self.solver.relax()
+        for v in self.vars:
+            if v.type==BINARY or v.type==INTEGER:
+                v.type = CONTINUOUS
 
     def optimize(self,
                  branch_selector: "BranchSelector" = None,
