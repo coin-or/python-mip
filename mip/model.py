@@ -381,7 +381,6 @@ class Model:
         self.vars_dict[name] = self.vars[-1]
         return self.vars[-1]
 
-
     def add_constr(self, lin_expr: "LinExpr", name: str = "") -> Constr:
         """ Creates a new constraint (row)
 
@@ -468,27 +467,28 @@ class Model:
 
     def get_var_by_name(self, name) -> "Var":
         """ Searchers a variable by its name
-        
+
         Returns:
             Var: a reference to a variable
         """
         return self.vars_dict.get(name, None)
-    
+
     def relax(self):
         """ Relax integrality constraints of variables
-        
+
         Changes the type of all integer and binary variables to
         continuous. Bounds are preserved.
         """
         self.solver.relax()
         for v in self.vars:
-            if v.type==BINARY or v.type==INTEGER:
+            if v.type == BINARY or v.type == INTEGER:
                 v.type = CONTINUOUS
 
     def optimize(self,
                  branch_selector: "BranchSelector" = None,
                  cuts_generator: "CutsGenerator" = None,
                  incumbent_updater: "IncumbentUpdater" = None,
+                 lazy_constrs_generator: "LazyConstrsGenerator" = None,
                  max_seconds: float = inf,
                  max_nodes: int = inf,
                  max_solutions: int = inf) -> int:
@@ -504,6 +504,7 @@ class Model:
             branch_selector (BranchSelector): Callback to select branch (an object of a class inheriting from BranchSelector must be passed)
             cuts_generator (CutsGenerator): Callback to generate cuts (an object of a class inheriting from CutsGenerator must be passed)
             incumbent_updater (IncumbentUpdater): Callback to update incumbent solution (an object of a class inheriting from IncumbentUpdater must be passed)
+            lazy_constrs_generator (LazyConstrsGenerator): Callback to include lazy generated constraints (an object of a class inheriting from LazyConstrsGenerator must be passed)
             max_seconds (float): Maximum runtime in seconds (default: inf)
             max_nodes (float): Maximum number of nodes (default: inf)
             max_solutions (float): Maximum number of solutions (default: inf)
@@ -511,11 +512,11 @@ class Model:
         Returns:
             int: optimization status, which can be OPTIMAL(0), ERROR(-1), INFEASIBLE(1), UNBOUNDED(2). When optimizing problems
             with integer variables some additional cases may happen, FEASIBLE(3) for the case when a feasible solution was found
-            but optimility was not proved, INT_INFEASIBLE(4) for the case when the lp relaxation is feasible but no feasible integer
+            but optimality was not proved, INT_INFEASIBLE(4) for the case when the lp relaxation is feasible but no feasible integer
             solution exists and NO_SOLUTION_FOUND(5) for the case when an integer solution was not found in the optimization.
 
         """
-        self.solver.set_callbacks(branch_selector, cuts_generator, incumbent_updater)
+        self.solver.set_callbacks(branch_selector, cuts_generator, incumbent_updater, lazy_constrs_generator)
         self.solver.set_processing_limits(max_seconds, max_nodes, max_solutions)
 
         return self.solver.optimize()
@@ -638,7 +639,8 @@ class Solver:
     def set_callbacks(self,
                       branch_selector: "BranchSelector" = None,
                       cuts_generator: "CutsGenerator" = None,
-                      incumbent_updater: "IncumbentUpdater" = None) -> None:
+                      incumbent_updater: "IncumbentUpdater" = None,
+                      lazy_constrs_generator: "LazyConstrsGenerator" = None) -> None:
         pass
 
     def set_processing_limits(self,
@@ -852,6 +854,14 @@ class IncumbentUpdater:
         self.model = model
 
     def update_incumbent(self, solution: List[Tuple[Var, float]]) -> List[Tuple[Var, float]]:
+        raise NotImplementedError()
+
+
+class LazyConstrsGenerator:
+    def __init(self, model: Model):
+        self.model = model
+
+    def generate_constrs(self, solution: List[Tuple[Var, float]]) -> List[LinExpr]:
         raise NotImplementedError()
 
 

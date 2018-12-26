@@ -124,16 +124,16 @@ class SolverGurobi(Solver):
     def relax(self):
         idxs = list()
         for var in self.model.vars:
-            vtype = self.var_get_type( var )
+            vtype = self.var_get_type(var)
             if vtype == BINARY or vtype == INTEGER:
                 idxs.append(var.idx)
 
-        ccont : POINTER(c_char) = (c_char * len(idxs))()
+        ccont: POINTER(c_char) = (c_char * len(idxs))()
         for i in range(len(idxs)):
             ccont[i] = CONTINUOUS.encode("utf-8")
 
-        GRBsetcharattrarray( self._model, c_str("VType"), 0, len(idxs), ccont )
-        GRBupdatemodel( self._model )
+        GRBsetcharattrarray(self._model, c_str("VType"), 0, len(idxs), ccont)
+        GRBupdatemodel(self._model)
 
     def optimize(self) -> int:
         # executing Gurobi to solve the formulation
@@ -183,7 +183,8 @@ class SolverGurobi(Solver):
     def set_callbacks(self,
                       branch_selector: "BranchSelector" = None,
                       cuts_generator: "CutsGenerator" = None,
-                      incumbent_updater: "IncumbentUpdater" = None) -> None:
+                      incumbent_updater: "IncumbentUpdater" = None,
+                      lazy_constrs_generator: "LazyConstrsGenerator" = None) -> None:
         # todo add branch_selector and incumbent_updater callbacks
         def callback(p_model: c_void_p,
                      p_cbdata: c_void_p,
