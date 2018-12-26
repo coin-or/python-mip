@@ -631,7 +631,7 @@ if has_gurobi:
     GRBsetcallbackfunc.restype = c_int
     GRBsetcallbackfunc.argtypes = [c_void_p, GRBcallbacktype, c_void_p]
 
-    GRBcbcut = grblib.GRBcbget
+    GRBcbcut = grblib.GRBcbcut
     GRBcbcut.restype = c_int
     GRBcbcut.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double), c_char, c_double]
 
