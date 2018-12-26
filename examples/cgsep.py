@@ -76,7 +76,7 @@ if len(argv)<2:
     exit(1)
 
 # original mip
-omip = Model( solver_name="gurobi" )
+omip = Model( solver_name="cbc" )
 omip.read( argv[1] )
 
 print('original mip has {} variables and {} constraints'.format(omip.num_cols, omip.num_rows))
