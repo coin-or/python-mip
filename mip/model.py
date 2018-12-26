@@ -311,9 +311,11 @@ class Model:
             if gurobi.has_gurobi:
                 from mip.gurobi import SolverGurobi
                 self.solver = SolverGurobi(self, name, sense)
+                self.solver_name = "gurobi"
             elif cbc.has_cbc:
                 from mip.cbc import SolverCbc
                 self.solver = SolverCbc(self, name, sense)
+                self.solver_name = "cbc"
 
     def __del__(self):
         if self.solver:
@@ -378,6 +380,7 @@ class Model:
         self.vars.append(Var(self, idx, name))
         self.vars_dict[name] = self.vars[-1]
         return self.vars[-1]
+
 
     def add_constr(self, lin_expr: "LinExpr", name: str = "") -> Constr:
         """ Creates a new constraint (row)
