@@ -90,7 +90,7 @@ class SolverCbc(Solver):
 
 
     def get_objective_sense(self) -> str:
-        obj = cbcGetObjSense( self._model ).value
+        obj = cbcGetObjSense( self._model )
         if obj < 0.0 :
             return MAXIMIZE
 
@@ -265,159 +265,200 @@ except:
     print('cbc not found')
 
 if has_cbc:
+    method_check = ""
     try:
+        method_check = "Cbc_newModel"
         cbcNewModel = cbclib.Cbc_newModel
         cbcNewModel.restype = c_void_p
 
+        method_check = "Cbc_readLp"
         cbcReadLp = cbclib.Cbc_readLp
         cbcReadLp.argtypes = [c_void_p, c_char_p]
         cbcReadLp.restype = c_int
 
+        method_check = "Cbc_readMps"
         cbcReadMps = cbclib.Cbc_readMps
         cbcReadMps.argtypes = [c_void_p, c_char_p]
         cbcReadMps.restype = c_int
 
+        method_check = "Cbc_writeLp"
         cbcWriteLp = cbclib.Cbc_writeLp
         cbcWriteLp.argtypes = [c_void_p, c_char_p]
 
+        method_check = "Cbc_writeMps"
         cbcWriteMps = cbclib.Cbc_writeMps
         cbcWriteMps.argtypes = [c_void_p, c_char_p]
 
+        method_check = "Cbc_getNumCols"
         cbcNumCols = cbclib.Cbc_getNumCols
         cbcNumCols.argtypes = [c_void_p]
         cbcNumCols.restype = c_int
 
+        method_check = "Cbc_getNumIntegers"
         cbcNumIntegers = cbclib.Cbc_getNumIntegers
         cbcNumIntegers.argtypes = [c_void_p]
         cbcNumIntegers.restype = c_int
 
+        method_check = "Cbc_getNumRows"
         cbcNumRows = cbclib.Cbc_getNumRows
         cbcNumRows.argtypes = [c_void_p]
         cbcNumRows.restype = c_int
 
+        method_check = "Cbc_getRowNz"
         cbcGetRowNz = cbclib.Cbc_getRowNz
         cbcGetRowNz.argtypes = [c_void_p, c_int]
         cbcGetRowNz.restype = c_int
 
+        method_check = "Cbc_getRowIndices"
         cbcGetRowIndices = cbclib.Cbc_getRowIndices
         cbcGetRowIndices.argtypes = [c_void_p, c_int]
         cbcGetRowIndices.restype = POINTER(c_int)
 
+        method_check = "Cbc_getRowCoeffs"
         cbcGetRowCoeffs = cbclib.Cbc_getRowCoeffs
         cbcGetRowCoeffs.argtypes = [c_void_p, c_int]
         cbcGetRowCoeffs.restype = POINTER(c_double)
 
+        method_check = "Cbc_getRowRHS"
         cbcGetRowRHS = cbclib.Cbc_getRowRHS
         cbcGetRowRHS.argtypes = [c_void_p, c_int]
         cbcGetRowRHS.restype = c_double
 
+        method_check = "Cbc_getRowSense"
         cbcGetRowSense = cbclib.Cbc_getRowSense
         cbcGetRowSense.argtypes = [c_void_p, c_int]
         cbcGetRowSense.restype = c_char
 
+        method_check = "Cbc_getColNz"
         cbcGetColNz = cbclib.Cbc_getColNz
         cbcGetColNz.argtypes = [c_void_p, c_int]
         cbcGetColNz.restype = c_int
 
+        method_check = "Cbc_getColIndices"
         cbcGetColIndices = cbclib.Cbc_getColIndices
         cbcGetColIndices.argtypes = [c_void_p, c_int]
         cbcGetColIndices.restype = POINTER(c_int)
 
+        method_check = "Cbc_getColCoeffs"
         cbcGetColCoeffs = cbclib.Cbc_getColCoeffs
         cbcGetColCoeffs.argtypes = [c_void_p, c_int]
         cbcGetColCoeffs.restype = POINTER(c_double)
 
+        method_check = "Cbc_addCol"
         cbcAddCol = cbclib.Cbc_addCol
         cbcAddCol.argtypes = [c_void_p, c_char_p, c_double,
                               c_double, c_double, c_char, c_int,
                               POINTER(c_int), POINTER(c_double)]
 
+        method_check = "Cbc_addRow"
         cbcAddRow = cbclib.Cbc_addRow
         cbcAddRow.argtypes = [c_void_p, c_char_p, c_int,
                               POINTER(c_int), POINTER(c_double), c_char, c_double]
 
+        method_check = "Cbc_setObjCoeff"
         cbcSetObjCoeff = cbclib.Cbc_setObjCoeff
         cbcSetObjCoeff.argtypes = [c_void_p, c_int, c_double]
 
+        method_check = "Cbc_getObjSense"
         cbcGetObjSense = cbclib.Cbc_getObjSense
-        cbcGetObjSense = cbclib.argtypes = [c_void_p]
+        cbcGetObjSense.argtypes = [c_void_p]
         cbcGetObjSense.restype = c_double
 
+        method_check = "Cbc_getObjCoefficients"
         cbcGetObjCoeff = cbclib.Cbc_getObjCoefficients
         cbcGetObjCoeff.argtypes = [c_void_p]
         cbcGetObjCoeff.restype = POINTER(c_double)
 
+        method_check = "Cbc_deleteModel"
         cbcDeleteModel = cbclib.Cbc_deleteModel
         cbcDeleteModel.argtypes = [c_void_p]
 
+        method_check = "Cbc_solve"
         cbcSolve = cbclib.Cbc_solve
         cbcSolve.argtypes = [c_void_p]
         cbcSolve.restype = c_int
 
+        method_check = "Cbc_getColSolution"
         cbcColSolution = cbclib.Cbc_getColSolution
         cbcColSolution.argtypes = [c_void_p]
         cbcColSolution.restype = POINTER(c_double)
 
+        method_check = "Cbc_bestSolution"
         cbcBestSolution = cbclib.Cbc_bestSolution
         cbcBestSolution.argtypes = [c_void_p]
         cbcBestSolution.restype = POINTER(c_double)
 
+        method_check = "Cbc_getObjValue"
         cbcObjValue = cbclib.Cbc_getObjValue
         cbcObjValue.argtypes = [c_void_p]
         cbcObjValue.restype = c_double
 
+        method_check = "Cbc_setObjSense"
         cbcSetObjSense = cbclib.Cbc_setObjSense
         cbcSetObjSense.argtypes = [c_void_p, c_double]
 
+        method_check = "Cbc_isProvenOptimal"
         cbcIsProvenOptimal = cbclib.Cbc_isProvenOptimal
         cbcIsProvenOptimal.argtypes = [c_void_p]
         cbcIsProvenOptimal.restype = c_int
 
+        method_check = "Cbc_isProvenInfeasible"
         cbcIsProvenInfeasible = cbclib.Cbc_isProvenInfeasible
         cbcIsProvenInfeasible.argtypes = [c_void_p]
         cbcIsProvenInfeasible.restype = c_int
 
+        method_check = "Cbc_isContinuousUnbounded"
         cbcIsContinuousUnbounded = cbclib.Cbc_isContinuousUnbounded
         cbcIsContinuousUnbounded.argtypes = [c_void_p]
         cbcIsContinuousUnbounded.restype = c_int
 
+        method_check = "Cbc_isAbandoned"
         cbcIsAbandoned = cbclib.Cbc_isAbandoned
         cbcIsAbandoned.argtypes = [c_void_p]
         cbcIsAbandoned.restype = c_int
 
+        method_check = "Cbc_getColLower"
         cbcGetColLower = cbclib.Cbc_getColLower
         cbcGetColLower.argtypes = [c_void_p]
         cbcGetColLower.restype = POINTER(c_double)
 
+        method_check = "Cbc_getColUpper"
         cbcGetColUpper = cbclib.Cbc_getColUpper
         cbcGetColUpper.argtypes = [c_void_p]
         cbcGetColUpper.restype = POINTER(c_double)
 
+        method_check = "Cbc_setColLower"
         cbcSetColLower = cbclib.Cbc_setColLower
         cbcSetColLower.argtypes = [c_void_p, c_int, c_double]
         cbcSetColLower.restype = POINTER(c_double)
 
+        method_check = "Cbc_setColUpper"
         cbcSetColUpper = cbclib.Cbc_setColUpper
         cbcSetColUpper.argtypes = [c_void_p, c_int, c_double]
         cbcSetColUpper.restype = POINTER(c_double)
 
+        method_check = "Cbc_getColName"
         cbcGetColName = cbclib.Cbc_getColName
         cbcGetColName.argtypes = [c_void_p, c_int, c_char_p, c_int]
 
+        method_check = "Cbc_getRowName"
         cbcGetRowName = cbclib.Cbc_getRowName
         cbcGetRowName.argtypes = [c_void_p, c_int, c_char_p, c_int]
 
+        method_check = "Cbc_isInteger"
         cbcIsInteger = cbclib.Cbc_isInteger
         cbcIsInteger.argtypes = [c_void_p, c_int]
         cbcIsInteger.restype = c_int
 
+        method_check = "Cbc_setContinuous"
         cbcSetContinuous = cbclib.Cbc_setContinuous
         cbcSetContinuous.argtypes = [c_void_p, c_int]
 
+        method_check = "Cbc_setParameter"
         cbcSetParameter = cbclib.Cbc_setParameter
         cbcSetParameter.argtypes = [c_void_p, c_char_p, c_char_p]
     except:
-        print('\nplease install a more updated version of cbc (or cbc trunk)')
+        print('\nplease install a more updated version of cbc (or cbc trunk), function {} not implemented in the installed version'.format(method_check))
         has_cbc = False
 
 
