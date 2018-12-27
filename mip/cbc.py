@@ -211,7 +211,7 @@ class SolverCbc(Solver):
     def constr_get_name(self, idx: int) -> str:
         nameSpace: c_char_p = create_string_buffer(256)
         cbcGetRowName(self._model, c_int(idx), nameSpace, 255)
-        return nameSpace.value
+        return nameSpace.value.decode('utf-8')
 
     def set_processing_limits(self,
                               maxTime=inf,
