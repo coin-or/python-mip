@@ -27,7 +27,7 @@ def separateCuts(omip : Model) -> List[LinExpr]:
 	V = [var for var in omip.vars if var.x>=1e-4]
 
 	# creating model to separate cuts
-	cgsep = Model( solver_name="cbc", sense=MAXIMIZE )
+	cgsep = Model( solver_name="gurobi", sense=MAXIMIZE )
 
 	varsConstr = list()
 	for constr in omip.constrs:
@@ -76,7 +76,7 @@ if len(argv)<2:
     exit(1)
 
 # original mip
-omip = Model( solver_name="cbc" )
+omip = Model( solver_name="gurobi" )
 omip.read( argv[1] )
 
 print('original mip has {} variables and {} constraints'.format(omip.num_cols, omip.num_rows))
@@ -84,6 +84,8 @@ print('original mip has {} variables and {} constraints'.format(omip.num_cols, o
 omip.relax()
 
 it = 0
+
+omip.write('omip.lp')
 
 # solve LP relaxation
 status = omip.optimize()
@@ -94,10 +96,12 @@ smip = std_model(omip)
 print('mip in standard form has {} variables and {} constraints'.format(smip.num_cols, smip.num_rows))
 
 
+
 status = smip.optimize()
 assert status==OPTIMAL
 print('obj relax {}'.format(smip.get_objective_value()))
 
+smip.write('smip.lp')
 
 """
 print('at iteration {} obj value is {}'.format(it, omip.get_objective_value()))

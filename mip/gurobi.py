@@ -361,7 +361,8 @@ class SolverGurobi(Solver):
         vName = c_char_p(0)
         st: int = GRBgetstrattrelement(self._model, c_str('ConstrName'), c_int(idx), byref(vName))
         assert st == 0
-        return vName.value
+        return vName.value.decode('utf-8')
+
 
     def constr_set_expr(self, constr: Constr, value: LinExpr) -> LinExpr:
         raise NotImplementedError("Gurobi: functionality currently unavailable via PyMIP...")
