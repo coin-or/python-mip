@@ -27,7 +27,7 @@ def separateCuts(omip : Model) -> List[LinExpr]:
 	V = [var for var in omip.vars if var.x>=1e-4]
 
 	# creating model to separate cuts
-	cgsep = Model( solver_name="gurobi", sense=MAXIMIZE )
+	cgsep = Model( solver_name="cbc", sense=MAXIMIZE )
 
 	varsConstr = list()
 	for constr in omip.constrs:
@@ -76,7 +76,7 @@ if len(argv)<2:
     exit(1)
 
 # original mip
-omip = Model( solver_name="gurobi" )
+omip = Model( solver_name="cbc" )
 omip.read( argv[1] )
 
 print('original mip has {} variables and {} constraints'.format(omip.num_cols, omip.num_rows))

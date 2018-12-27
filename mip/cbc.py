@@ -88,6 +88,15 @@ class SolverCbc(Solver):
 
         return INFEASIBLE
 
+
+    def get_objective_sense(self) -> str:
+        obj = cbcGetObjSense( self._model ).value
+        if obj < 0.0 :
+            return MAXIMIZE
+
+        return MINIMIZE
+
+
     def get_objective_value(self) -> float:
         return cbcObjValue(self._model)
 
@@ -329,6 +338,10 @@ if has_cbc:
 
         cbcSetObjCoeff = cbclib.Cbc_setObjCoeff
         cbcSetObjCoeff.argtypes = [c_void_p, c_int, c_double]
+
+        cbcGetObjSense = cbclib.Cbc_getObjSense
+        cbcGetObjSense = cbclib.argtypes = [c_void_p]
+        cbcGetObjSense.restype = c_double
 
         cbcGetObjCoeff = cbclib.Cbc_getObjCoefficients
         cbcGetObjCoeff.argtypes = [c_void_p]

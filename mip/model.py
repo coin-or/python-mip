@@ -539,6 +539,7 @@ class Model:
         for i in range(n_rows):
             self.constrs.append(Constr(self, i, self.solver.constr_get_name(i)))
             self.constrs_dict[self.constrs[-1].name] = self.constrs[-1]
+        self.sense = self.solver.get_objective_sense()
 
     def set_start(self, variables: List["Var"], values: List[float]):
         self.solver.set_start(variables, values)
@@ -629,6 +630,8 @@ class Solver:
     def optimize(self) -> int: pass
 
     def get_objective_value(self) -> float: pass
+
+    def get_objective_sense(self) -> str: pass
 
     def set_start(self, variables: List["Var"], values: List[float]) -> None: pass
 
