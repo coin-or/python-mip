@@ -174,6 +174,17 @@ class SolverGurobi(Solver):
         self._updated = True
         return status
 
+    def get_objective_sense(self) -> str:
+        isense = c_int(0)
+        st = GRBgetintattr( self._model, c_str("ModelSense"), byref(isense) )
+        if isense.value == 1:
+            return MINIMIZE
+        elif isense.value == -1:
+            return MAXIMIZE
+        else:
+            raise Exception('Unknow sense')
+
+
     def get_objective_value(self) -> float:
         res = c_double(float('inf'))
         st = GRBgetdblattr(self._model, c_str('ObjVal'), byref(res))
