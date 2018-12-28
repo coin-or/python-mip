@@ -450,8 +450,34 @@ class SolverGurobi(Solver):
         GRBsetcharattrelement(self._model, c_str("VType"), c_int(var.idx), vtype)
         self._updated = False
 
+
     def var_get_column(self, var: "Var"):
-        raise NotImplementedError("Gurobi: functionality currently unavailable via PyMIP...")
+        if not self._updated:
+            self.update()
+
+        numnz: c_int = c_int()
+        cbeg: POINTER(c_int) = POINTER(c_int)()
+        cind: POINTER(c_int) = POINTER(c_int)()
+        cval: POINTER(c_double) = POINTER(c_double)()
+
+        # obtaining number of non-zeros
+        GRBgetvars(self._model, byref(numnz), cbeg, cind, cval, c_int(var.idx), c_int(1))
+
+        # creating arrays to hold indices and coefficients
+        cbeg = (c_int * 2)()  # beginning and ending
+        cind = (c_int * numnz.value)()
+        cval = (c_double * numnz.value)()
+
+        # obtaining variables and coefficients
+        GRBgetvars(self._model, byref(numnz), cbeg, cind, cval, c_int(var.idx), c_int(1))
+
+        constr = [self.model.constrs[cind[i]] for i in range(numnz.value)]
+        coefs = [float(cval[i]) for i in range(numnz.value)]
+
+        col = Column( constr, coefs )
+
+        return col
+
 
     def var_set_column(self, var: "Var", value: Column):
         raise NotImplementedError("Gurobi: functionality currently unavailable via PyMIP...")
@@ -632,6 +658,12 @@ if has_gurobi:
     GRBgetconstrs.restype = c_int
     GRBgetconstrs.argtypes = [c_void_p, POINTER(c_int), POINTER(c_int), POINTER(c_int),
                               POINTER(c_double), c_int, c_int]
+
+    # get variables
+    GRBgetvars = grblib.GRBgetvars
+    GRBgetvars.argtypes = [c_void_p, POINTER(c_int), POINTER(c_int),
+        POINTER(c_int), POINTER(c_double), c_int, c_int ]
+    GRBgetvars.restype = c_int
 
     # callback functions and constants
 
