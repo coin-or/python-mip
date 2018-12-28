@@ -9,25 +9,30 @@ def std_model( omip : Model ) -> Model:
 
 	for c in omip.constrs:
 		ce = c.expr
+		a = c.name
 		if ce.sense == LESS_OR_EQUAL:
 			smodel += ce, c.name
 		elif ce.sense == EQUAL:
 			c1 = ce
 			c1.sense = LESS_OR_EQUAL
 			smodel += c1, '{}(L)'.format(c.name)
-			c1.sense = GREATER_OR_EQUAL
+
+			c1 = -1.0*c1
+			c1.sense = LESS_OR_EQUAL
 			smodel += c1, '{}(G)'.format(c.name)
 		elif ce.sense == GREATER_OR_EQUAL:
-			smodel += -1.0*ce, c.name
+			lee = -1.0*ce
+			lee.sense = LESS_OR_EQUAL
+			smodel += lee, c.name
 
 	return smodel
 
-def separateCuts(omip : Model) -> List[LinExpr]:
+def separateCuts( mip : Model ) -> List[LinExpr]:
 	# set of variables active in LP relaxation
 	V = [var for var in omip.vars if var.x>=1e-4]
 
 	# creating model to separate cuts
-	cgsep = Model( solver_name="cbc", sense=MAXIMIZE )
+	cgsep = Model( solver_name="gurobi", sense=MAXIMIZE )
 
 	varsConstr = list()
 	for constr in omip.constrs:
@@ -35,25 +40,9 @@ def separateCuts(omip : Model) -> List[LinExpr]:
 
 	for constr in omip.constrs:
 		expr = constr.expr
-		if expr.sense == EQUAL:
-			newVarInfo = ( constr.idx, 
-			 cgsep.add_var(name='u({}L)'.format(constr.name), lb=0.0, ub=0.99, type=CONTINUOUS), 1.0 )
-			varsConstr[constr.idx].append( newVarInfo )
-			newVarInfo = ( constr.idx, 
-			 cgsep.add_var(name='u({}G)'.format(constr.name), lb=0.0, ub=0.99, type=CONTINUOUS), -1.0 )
-			varsConstr[constr.idx].append( newVarInfo )
-		elif expr.sense == LESS_OR_EQUAL:
-			newVarInfo = ( constr.idx, 
+		newVarInfo = ( constr.idx, 
 			 cgsep.add_var(name='u({})'.format(constr.name), lb=0.0, ub=0.99, type=CONTINUOUS), 1.0 )
-			varsConstr[constr.idx].append( newVarInfo )
-		elif expr.sense == GREATER_OR_EQUAL:
-			newVarInfo = ( constr.idx, 
-			 cgsep.add_var(name='u({})'.format(constr.name), lb=0.0, ub=0.99, type=CONTINUOUS), -1.0 )
-			varsConstr[constr.idx].append( newVarInfo )
-
-
-	#u = [ cgsep.add_var( , 
-#		   ) for constr in omip.constrs ]
+		varsConstr[constr.idx].append( newVarInfo )
 
 	a = [ cgsep.add_var( name='a({})'.format(var.name),
 		lb=-10, ub=10, type=INTEGER ) for var in V ]
@@ -76,7 +65,7 @@ if len(argv)<2:
     exit(1)
 
 # original mip
-omip = Model( solver_name="cbc" )
+omip = Model( solver_name="gurobi" )
 omip.read( argv[1] )
 
 print('original mip has {} variables and {} constraints'.format(omip.num_cols, omip.num_rows))
@@ -94,6 +83,10 @@ print('obj relax {}'.format(omip.get_objective_value()))
 
 smip = std_model(omip)
 print('mip in standard form has {} variables and {} constraints'.format(smip.num_cols, smip.num_rows))
+
+cc = omip.solver.var_get_column(omip.vars[0])
+
+print(cc)
 
 
 

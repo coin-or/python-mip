@@ -17,7 +17,6 @@ class Column:
         To create a column see Model.add_var
 
     """
-
     def __init__(self, constrs: List["Constr"] = None, coeffs: List[float] = None):
         self.constrs: List[Constr] = constrs if constrs else list()
         self.coeffs: List[float] = coeffs if coeffs else list()
