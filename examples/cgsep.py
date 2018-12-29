@@ -83,6 +83,7 @@ omip.write('omip.lp')
 
 # solve LP relaxation
 status = omip.optimize()
+print('status: {}'.format(status))
 assert status==OPTIMAL
 print('obj relax {}'.format(omip.get_objective_value()))
 
