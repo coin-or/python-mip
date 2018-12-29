@@ -27,22 +27,15 @@ def std_model( omip : Model ) -> Model:
 
 	return smodel
 
-def separateCuts( mip : Model ) -> List[LinExpr]:
+def separate_cuts( mip : Model ) -> List[LinExpr]:
 	# set of variables active in LP relaxation
 	V = [var for var in omip.vars if var.x>=1e-4]
 
 	# creating model to separate cuts
 	cgsep = Model( solver_name="gurobi", sense=MAXIMIZE )
 
-	varsConstr = list()
-	for constr in omip.constrs:
-		varsConstr.append( list() )
-
-	for constr in omip.constrs:
-		expr = constr.expr
-		newVarInfo = ( constr.idx, 
-			 cgsep.add_var(name='u({})'.format(constr.name), lb=0.0, ub=0.99, type=CONTINUOUS), 1.0 )
-		varsConstr[constr.idx].append( newVarInfo )
+	U = [ cgsep.add_var(name='u({})'.format(constr.name), lb=0.0, ub=0.5, type=CONTINUOUS)
+		for constr in mip.constrs ]
 
 	a = [ cgsep.add_var( name='a({})'.format(var.name),
 		lb=-10, ub=10, type=INTEGER ) for var in V ]
@@ -50,15 +43,27 @@ def separateCuts( mip : Model ) -> List[LinExpr]:
 	f = [ cgsep.add_var( name='f({})'.format(var.name),
 		lb=0.0, ub=0.99, type=CONTINUOUS ) for var in V ]
 
-	a0 = cgsep.add_var( name="a0", lb=-10, ub=10 )
-	f0 = cgsep.add_var( name="f0", lb=0.0, ub=0.99 )
+	a0 = cgsep.add_var( name="a0", lb=-10, ub=10, type=INTEGER  )
+	f0 = cgsep.add_var( name="f0", lb=0.0, ub=0.99, type=CONTINUOUS )
 
 	# objective function:
-	#cgsep += 
-	#	xsum( var.x*a[j] for j,var in enumerate(V) ) \
-	#	 -a0 + xsum()
+	cgsep += \
+		xsum( var.x*a[j] for j,var in enumerate(V) ) \
+		 -a0 - xsum( 1e-4*u for u in U )
 
-
+	# linking a with us
+	for j,var in enumerate(V):
+		col = var.column
+		cgsep += a[j] + f[j] == \
+			xsum( col.coeffs[j]*U[constr.idx] for \
+				j,constr in enumerate(col.constrs) ), 'lnkA({})'.format(var.name)
+	
+	# linking a0 and f0 with rhs
+	rhs = [-constr.expr.const for constr in mip.constrs]
+	cgsep += a0 + f0 == \
+		xsum( v*U[j] for j,v in enumerate(rhs) if abs(v)>1e-7 )
+	
+	cgsep.write('cgsep.lp')
 
 if len(argv)<2:
     print('usage: \n\tcgsep instanceName')
@@ -84,21 +89,7 @@ print('obj relax {}'.format(omip.get_objective_value()))
 smip = std_model(omip)
 print('mip in standard form has {} variables and {} constraints'.format(smip.num_cols, smip.num_rows))
 
-cc = omip.solver.var_get_column(omip.vars[0])
-
-print(cc)
-
-
-
-status = smip.optimize()
-assert status==OPTIMAL
-print('obj relax {}'.format(smip.get_objective_value()))
-
-smip.write('smip.lp')
-
-"""
-print('at iteration {} obj value is {}'.format(it, omip.get_objective_value()))
-"""
+cuts = separate_cuts(smip)
 
 #vim: ts=4 sw=4 et
 
