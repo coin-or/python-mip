@@ -88,7 +88,7 @@ class LinExpr:
                  coeffs: List[float] = None,
                  const: float = 0,
                  sense: str = ""):
-        self.const: int = const
+        self.const: float = const
         self.expr: Dict[Var, float] = {}
         self.sense: str = sense
 
