@@ -138,6 +138,8 @@ class SolverGurobi(Solver):
     def optimize(self) -> int:
         # executing Gurobi to solve the formulation
         status: int = int(GRBoptimize(self._model))
+        if status == 10009:
+            raise Exception('gurobi found but license not accepted, please check it')
 
         # todo: read solution status (code below is incomplete)
         if status == 1:  # LOADED
