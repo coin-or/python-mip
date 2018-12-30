@@ -847,6 +847,9 @@ class Var:
     def x(self) -> float:
         return self.model.solver.var_get_x(self)
 
+    def xi(self, i : int) -> float:
+        return self.model.solver.var_get_xi(self, i)
+
 
 class BranchSelector:
     def __init__(self, model: Model):

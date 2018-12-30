@@ -113,10 +113,10 @@ class SolverCbc(Solver):
 
 
     def get_num_solutions(self) -> int: 
-        return cbcNumberSavedSolutions(self.model_)
+        return cbcNumberSavedSolutions(self._model)
 
     def var_get_xi(self, var: "Var", i: int) -> float: 
-        x = cbcSavedSolution(self._model, i)
+        x = cbcSavedSolution(self._model, c_int(i))
         if x == c_void_p(0):
             raise Exception('no solution found')
         return float(x[var.idx])
