@@ -41,7 +41,7 @@ def separate_cuts( origMip : Model, stdMip : Model ) -> List[LinExpr]:
 	V = [var for var in origMip.vars if abs(var.x)>=1e-4]
 
 	# creating model to separate cuts
-	cgsep = Model( solver_name="gurobi", sense=MAXIMIZE )
+	cgsep = Model( solver_name="cbc", sense=MAXIMIZE )
 
 	U = [ cgsep.add_var(name='u({})'.format(constr.name), lb=0.0, ub=0.99, type=CONTINUOUS)
 		for constr in stdMip.constrs ]
@@ -105,23 +105,26 @@ def separate_cuts( origMip : Model, stdMip : Model ) -> List[LinExpr]:
 					stdout.write('\n\t')
 					nprint = 0
 
-		stdout.write('\nCut:\n\t')
 
-		nprint = 0
-		rhs = round(a0.x)
-		lhsSum = 0.0
-		for j,aa in enumerate(a):
-			if abs(aa.x)>1e-6:
-				v = V[j]
-				coef = round(aa.x)
-				lhsSum += coef*v.x
-				stdout.write('{:+} {} '.format(coef, v.name))
-				nprint += 1
-				if nprint==7:
-					nprint = 0
-					stdout.write('\n\t')
-		stdout.write('<= {}\n'.format(round(rhs)))
-		print('violation {}'.format(lhsSum-rhs))
+		print('\n\nFound {} cuts'.format(cgsep.get_num_solutions()))
+		for isol in range(cgsep.get_num_solutions()):
+			stdout.write('\nCut:\n\t')
+
+			nprint = 0
+			rhs = round(a0.xi(isol))
+			lhsSum = 0.0
+			for j,aa in enumerate(a):
+				if abs(aa.xi(isol))>1e-6:
+					v = V[j]
+					coef = round(aa.xi(isol))
+					lhsSum += coef*v.x
+					stdout.write('{:+} {} '.format(coef, v.name))
+					nprint += 1
+					if nprint==7:
+						nprint = 0
+						stdout.write('\n\t')
+			stdout.write('<= {}\n'.format(round(rhs)))
+			print('violation {}'.format(lhsSum-rhs))
 
 
 if len(argv)<2:
@@ -129,7 +132,7 @@ if len(argv)<2:
     exit(1)
 
 # original mip
-mip1 = Model( solver_name="gurobi" )
+mip1 = Model( solver_name="cbc" )
 mip1.read( argv[1] )
 
 print('original mip has {} variables and {} constraints'.format(mip1.num_cols, mip1.num_rows))
