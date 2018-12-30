@@ -464,6 +464,15 @@ class Model:
         """
         return self.solver.get_objective_value()
 
+    def get_num_solutions(self) -> int:
+        """ Number of solutions found during the MIP search
+
+        Returns:
+            int: number of solutions stored in the solution pool
+
+        """
+        return self.solver.get_num_solutions()
+
     def get_var_by_name(self, name) -> "Var":
         """ Searchers a variable by its name
 
@@ -630,6 +639,8 @@ class Solver:
 
     def get_objective_value(self) -> float: pass
 
+    def get_num_solutions(self) -> int: pass
+
     def get_objective_sense(self) -> str: pass
 
     def set_start(self, variables: List["Var"], values: List[float]) -> None: pass
@@ -694,6 +705,8 @@ class Solver:
     def var_get_rc(self, var: "Var") -> float: pass
 
     def var_get_x(self, var: "Var") -> float: pass
+
+    def var_get_xi(self, var: "Var", i: int) -> float: pass
 
     def var_get_name(self, idx: int) -> str: pass
 
