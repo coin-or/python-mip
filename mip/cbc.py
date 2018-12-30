@@ -112,6 +112,16 @@ class SolverCbc(Solver):
             return float(x[var.idx])
 
 
+    def get_num_solutions(self) -> int: 
+        return cbcNumberSavedSolutions(self.model_)
+
+    def var_get_xi(self, var: "Var", i: int) -> float: 
+        x = cbcSavedSolution(self._model, i)
+        if x == c_void_p(0):
+            raise Exception('no solution found')
+        return float(x[var.idx])
+
+
     def var_get_rc(self, var: Var) -> float:
         rc = cbcReducedCost(self._model)
         return float(rc[var.idx])
@@ -399,6 +409,16 @@ if has_cbc:
         cbcBestSolution = cbclib.Cbc_bestSolution
         cbcBestSolution.argtypes = [c_void_p]
         cbcBestSolution.restype = POINTER(c_double)
+
+        method_check = "Cbc_numberSavedSolutions"
+        cbcNumberSavedSolutions = cbclib.Cbc_numberSavedSolutions
+        cbcNumberSavedSolutions.argtypes = [c_void_p]
+        cbcNumberSavedSolutions.restype = c_int
+
+        method_check = "Cbc_savedSolution"
+        cbcSavedSolution = cbclib.Cbc_savedSolution
+        cbcSavedSolution.argtypes = [c_void_p, c_int]
+        cbcSavedSolution.restype = POINTER(c_double)
 
         method_check = "Cbc_getObjValue"
         cbcObjValue = cbclib.Cbc_getObjValue
