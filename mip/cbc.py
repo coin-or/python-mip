@@ -100,6 +100,7 @@ class SolverCbc(Solver):
     def get_objective_value(self) -> float:
         return cbcObjValue(self._model)
 
+
     def var_get_x(self, var: Var) -> float:
         if cbcNumIntegers(self._model) > 0:
             x = cbcBestSolution(self._model)
@@ -109,6 +110,12 @@ class SolverCbc(Solver):
         else:
             x = cbcColSolution(self._model)
             return float(x[var.idx])
+
+
+    def var_get_rc(self, var: Var) -> float:
+        rc = cbcReducedCost(self._model)
+        return float(rc[var.idx])
+
 
     def var_get_lb(self, var: "Var") -> float:
         res = float(cbcGetColLower(self._model)[var.idx])
@@ -382,6 +389,11 @@ if has_cbc:
         cbcColSolution = cbclib.Cbc_getColSolution
         cbcColSolution.argtypes = [c_void_p]
         cbcColSolution.restype = POINTER(c_double)
+
+        method_check = "Cbc_getReducedCost"
+        cbcReducedCost = cbclib.Cbc_getReducedCost
+        cbcReducedCost.argtypes = [c_void_p]
+        cbcReducedCost.restype = POINTER(c_double)
 
         method_check = "Cbc_bestSolution"
         cbcBestSolution = cbclib.Cbc_bestSolution
