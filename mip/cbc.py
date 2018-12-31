@@ -68,6 +68,7 @@ class SolverCbc(Solver):
                 cbcSetContinuous(self._model, c_int(var.idx))
 
     def optimize(self) -> int:
+        cbcSetParameter(self._model, c_str('maxSavedSolutions'), c_str('10'))
         res: int = cbcSolve(self._model)
 
         if cbcIsAbandoned(self._model):
@@ -114,6 +115,9 @@ class SolverCbc(Solver):
 
     def get_num_solutions(self) -> int: 
         return cbcNumberSavedSolutions(self._model)
+
+    def get_objective_value_i(self, i : int) -> float:
+        return float(cbcSavedSolutionObj(self._model, c_int(i)))
 
     def var_get_xi(self, var: "Var", i: int) -> float: 
         x = cbcSavedSolution(self._model, c_int(i))
@@ -419,6 +423,12 @@ if has_cbc:
         cbcSavedSolution = cbclib.Cbc_savedSolution
         cbcSavedSolution.argtypes = [c_void_p, c_int]
         cbcSavedSolution.restype = POINTER(c_double)
+
+        method_check = "Cbc_savedSolutionObj"
+        cbcSavedSolutionObj = cbclib.Cbc_savedSolutionObj
+        cbcSavedSolutionObj.argtypes = [c_void_p, c_int]
+        cbcSavedSolutionObj.restype = c_double
+
 
         method_check = "Cbc_getObjValue"
         cbcObjValue = cbclib.Cbc_getObjValue

@@ -473,6 +473,15 @@ class Model:
         """
         return self.solver.get_num_solutions()
 
+    def get_objective_value_i(self, i : int) -> float:
+        """ Cost of the i-th solution found
+
+        Returns:
+            float: cost of the i-th best solution from the solution pool
+        """
+        return self.solver.get_objective_value_i(i)
+        
+
     def get_var_by_name(self, name) -> "Var":
         """ Searchers a variable by its name
 
@@ -638,6 +647,8 @@ class Solver:
     def optimize(self) -> int: pass
 
     def get_objective_value(self) -> float: pass
+
+    def get_objective_value_i(self, i : int) -> float: pass
 
     def get_num_solutions(self) -> int: pass
 
