@@ -186,6 +186,25 @@ class SolverGurobi(Solver):
         else:
             raise Exception('Unknow sense')
 
+    def get_num_solutions(self) -> int: 
+        res = c_int(0)
+        st = GRBgetintattr(self._model, c_str("SolCount"), byref(res))
+        assert st == 0
+        return res.value
+
+    def var_get_xi(self, var: "Var", i: int) -> float: 
+        res = c_double()
+        st = GRBsetintparam( GRBgetenv(self._model), c_str("SolutionNumber"), c_int(i) );
+        assert st == 0
+        st = GRBgetdblattrelement(self._model, c_str("Xn"), c_int(var.idx), byref(res))
+        assert st == 0
+        return res.value
+
+    def get_objective_value_i(self, i : int) -> float:
+        res = c_double(0)
+        st = GRBgetdblattr( self._model, c_str("PoolObjVal") , byref(res) );
+        assert st == 0
+        return res.value
 
     def get_objective_value(self) -> float:
         res = c_double(float('inf'))
