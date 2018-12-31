@@ -13,7 +13,7 @@ n = inst.n
 d = inst.d
 print('solving TSP with {} cities'.format(inst.n))
 
-model = Model()
+model = Model( solver_name="cbc" )
 
 # binary variables indicating if arc (i,j) is used on the route or not
 x = [ [ model.add_var(
@@ -56,15 +56,26 @@ for i in range(0, n):
             y[i]  - (n+1)*x[i][j] >=  y[j] -n, 'noSub({},{})'.format(i,j)
                  
     
-model.optimize(  )
-#model.write('tsp.lp')
+model.write('tsp.lp')
+model.optimize( max_seconds=60 )
 
-print('best route found has length {}'.format(model.get_objective_value()))
+#print('best route found has length {}'.format(model.get_objective_value()))
 
-for i in range(n):
-    for j in range(n):
-        if x[i][j].x >= 0.98:
-            print('arc ({},{})'.format(i,j))
+#for i in range(n):
+#    for j in range(n):
+#        if x[i][j].x >= 0.98:
+#            print('arc ({},{})'.format(i,j))
+
+print('{} routes found'.format(model.get_num_solutions()))
+
+
+for k in range(model.get_num_solutions()):
+	print('route {} with length {}'.format(k, model.get_objective_value_i(k)))
+	for i in range(n):
+		for j in range(n):
+			if x[i][j].xi(k) >= 0.98:
+				print('\tarc ({},{})'.format(i,j))
+	
 
 print('finished')        
     
