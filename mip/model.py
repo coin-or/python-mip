@@ -559,6 +559,16 @@ class Model:
         self.sense = self.solver.get_objective_sense()
 
     def set_start(self, variables: List["Var"], values: List[float]):
+        """ Enter an initial feasible solution
+
+        Enters an initial feasible solution. Only the main binary/integer decision variables.
+        Auxiliary or continuous variables are automatically computed.
+
+        Args:
+            variables(List[Var]): list of variables 
+            values(List[float]): list of variable values in initial feasible solution
+
+        """
         self.solver.set_start(variables, values)
 
     def set_objective(self, expr, sense: str = "") -> None:
@@ -904,6 +914,6 @@ def xsum(terms) -> LinExpr:
 # function aliases
 quicksum = xsum
 
-print('using python mip package version 1.0.14')
+print('using python mip package version 1.0.15')
 
 # vim: ts=4 sw=4 et

@@ -207,6 +207,19 @@ class SolverCbc(Solver):
         else:
             cbcReadLp(self._model, c_str(file_path))
 
+    def set_start(self, variables: List["Var"], values: List[float]) -> None:
+        assert len(values) == len(variables)
+        n = len(variables)
+        count = c_int(n)
+        dvalues = (c_double * n)()
+        for i in range(n):
+            dvalues[i] = values[i]
+        cidxs = (c_int * n)()
+        for i in range(n):
+            cidxs[i] = variables[i].idx
+
+        cbcSetMIPStartI( self._model, count, cidxs, dvalues )
+
     def num_cols(self) -> int:
         return cbcNumCols(self._model)
 
@@ -499,6 +512,14 @@ if has_cbc:
         method_check = "Cbc_setParameter"
         cbcSetParameter = cbclib.Cbc_setParameter
         cbcSetParameter.argtypes = [c_void_p, c_char_p, c_char_p]
+
+        method_check = "Cbc_setMIPStart"
+        cbcSetMIPStart = cbclib.Cbc_setMIPStart
+        cbcSetMIPStart.argtypes = [c_int, POINTER(c_char_p), POINTER(c_double)]
+
+        method_check = "Cbc_setMIPStartI"
+        cbcSetMIPStartI = cbclib.Cbc_setMIPStartI
+        cbcSetMIPStartI.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double)]
     except:
         print('\nplease install a more updated version of cbc (or cbc trunk), function {} not implemented in the installed version'.format(method_check))
         has_cbc = False
