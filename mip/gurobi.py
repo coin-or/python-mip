@@ -318,7 +318,7 @@ class SolverGurobi(Solver):
             cind[i] = variables[i].idx
             cval[i] = values[i]
 
-        GRBsetdblattrlist(self._model, "Start", numnz, cind, cval)
+        GRBsetdblattrlist(self._model, c_str("Start"), numnz, cind, cval)
         self._updated = False
 
     def update(self) -> None:
