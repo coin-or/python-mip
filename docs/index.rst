@@ -12,7 +12,7 @@ Classes
 
 .. automodule:: mip.model
  
-.. autoclass:: mip.Model
+.. autoclass:: Model
     :members:
 
 
