@@ -18,8 +18,8 @@ class Column:
 
     """
     def __init__(self, constrs: List["Constr"] = None, coeffs: List[float] = None):
-        self.constrs: List[Constr] = constrs if constrs else list()
-        self.coeffs: List[float] = coeffs if coeffs else list()
+        self.constrs = constrs if constrs else list()
+        self.coeffs = coeffs if coeffs else list()
 
 
 class Constr:
@@ -37,9 +37,9 @@ class Constr:
     """
 
     def __init__(self, model: "Model", idx: int, name: str = ""):
-        self.model: Model = model
-        self.idx: int = idx
-        self.name: str = name  # discuss this var
+        self.model = model
+        self.idx = idx
+        self.name = name  # discuss this var
 
     def __hash__(self) -> int:
         return self.idx
@@ -88,9 +88,9 @@ class LinExpr:
                  coeffs: List[float] = None,
                  const: float = 0,
                  sense: str = ""):
-        self.const: float = const
-        self.expr: Dict[Var, float] = {}
-        self.sense: str = sense
+        self.const = const
+        self.expr  = {}
+        self.sense = sense
 
         if variables:
             assert len(variables) == len(coeffs)
@@ -100,7 +100,7 @@ class LinExpr:
                 self.add_var(variables[i], coeffs[i])
 
     def __add__(self, other) -> "LinExpr":
-        result: LinExpr = self.copy()
+        result = self.copy()
         if isinstance(other, Var):
             result.add_var(other, 1)
         elif isinstance(other, LinExpr):
@@ -122,7 +122,7 @@ class LinExpr:
         return self
 
     def __sub__(self, other) -> "LinExpr":
-        result: LinExpr = self.copy()
+        result = self.copy()
         if isinstance(other, Var):
             result.add_var(other, -1)
         elif isinstance(other, LinExpr):
@@ -145,7 +145,7 @@ class LinExpr:
 
     def __mul__(self, other) -> "LinExpr":
         assert isinstance(other, int) or isinstance(other, float)
-        result: LinExpr = self.copy()
+        result = self.copy()
         result.const *= other
         for var in result.expr.keys():
             result.expr[var] *= other
@@ -170,7 +170,7 @@ class LinExpr:
 
     def __truediv__(self, other) -> "LinExpr":
         assert isinstance(other, int) or isinstance(other, float)
-        result: LinExpr = self.copy()
+        result = self.copy()
         result.const /= other
         for var in result.expr.keys():
             result.expr[var] /= other
@@ -205,17 +205,17 @@ class LinExpr:
         return "".join(result)
 
     def __eq__(self, other) -> "LinExpr":
-        result: LinExpr = self - other
+        result = self - other
         result.sense = "="
         return result
 
     def __le__(self, other) -> "LinExpr":
-        result: LinExpr = self - other
+        result = self - other
         result.sense = "<"
         return result
 
     def __ge__(self, other) -> "LinExpr":
-        result: LinExpr = self - other
+        result = self - other
         result.sense = ">"
         return result
 
@@ -245,7 +245,7 @@ class LinExpr:
             self.expr[var] = coeff
 
     def copy(self) -> "LinExpr":
-        copy: LinExpr = LinExpr()
+        copy = LinExpr()
         copy.const = self.const
         copy.expr = self.expr.copy()
         copy.sense = self.sense
@@ -284,16 +284,16 @@ class Model:
 
         """
         # initializing variables with default values
-        self.name: str = name
-        self.sense: str = sense
-        self.solver_name: str = solver_name
+        self.name = name
+        self.sense = sense
+        self.solver_name = solver_name
         self.solver: Solver = None
 
         # list of constraints and variables
-        self.constrs: List[Constr] = []
-        self.constrs_dict: Dict[str, Var] = {}
-        self.vars: List[Var] = []
-        self.vars_dict: Dict[str, Constr] = {}
+        self.constrs = []
+        self.constrs_dict = {}
+        self.vars = []
+        self.vars_dict = {}
 
         if solver_name.upper() == GUROBI:
             from mip.gurobi import SolverGurobi
@@ -375,7 +375,7 @@ class Model:
         if len(name.strip()) == 0:
             nc = self.solver.num_cols()
             name = 'C{:011d}'.format(nc)
-        idx: int = self.solver.add_var(obj, lb, ub, type, column, name)
+        idx = self.solver.add_var(obj, lb, ub, type, column, name)
         self.vars.append(Var(self, idx, name))
         self.vars_dict[name] = self.vars[-1]
         return self.vars[-1]
@@ -424,7 +424,7 @@ class Model:
         """
         if not solver_name:
             solver_name = self.solver_name
-        copy: Model = Model(self.name, self.sense, solver_name)
+        copy = Model(self.name, self.sense, solver_name)
 
         # adding variables
         for v in self.vars:
@@ -629,9 +629,9 @@ class Model:
 class Solver:
 
     def __init__(self, model: Model, name: str, sense: str):
-        self.model: Model = model
-        self.name: str = name
-        self.sense: str = sense
+        self.model = model
+        self.name = name
+        self.sense = sense
 
     def __del__(self): pass
 
@@ -905,7 +905,7 @@ class LazyConstrsGenerator:
 
 
 def xsum(terms) -> LinExpr:
-    result: LinExpr = LinExpr()
+    result = LinExpr()
     for term in terms:
         result.add_term(term)
     return result
