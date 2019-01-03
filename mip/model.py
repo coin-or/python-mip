@@ -287,7 +287,7 @@ class Model:
         self.name = name
         self.sense = sense
         self.solver_name = solver_name
-        self.solver: Solver = None
+        self.solver = None
 
         # list of constraints and variables
         self.constrs = []
