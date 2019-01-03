@@ -9,8 +9,9 @@ should be quite easy.
 Some of the main features of MIP are:
 
 * high level modelling: write your MIP models in Python as easily as in
-  high level languages such as AMPL: with operator overloading you can
-  easily write linear expressions in Python;
+  high level languages such as
+  [MathProg](https://en.wikibooks.org/wiki/GLPK/GMPL_(MathProg)): with
+  operator overloading you can easily write linear expressions in Python;
 
 * multi solver: works with different MIP solvers; right now Gurobi and CBC
   are supported;
@@ -23,5 +24,8 @@ Some of the main features of MIP are:
 * cut generation: write your cut generator in python and integrate it into
   the Branch-and-Cut search;
 
-* solution pool: query the elite set of solutions found during the search.
+* solution pool: query the elite set of solutions found during the search;
+
+* mipstart: use a problem dependent heuristic to generate initial feasible
+  solutions for the MIP search.
 
