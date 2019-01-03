@@ -13,13 +13,17 @@ Some of the main features of MIP are:
   [MathProg](https://en.wikibooks.org/wiki/GLPK/GMPL_(MathProg)): with
   operator overloading you can easily write linear expressions in Python;
 
-* multi solver: works with different MIP solvers; right now Gurobi and CBC
-  are supported;
+* multi solver: works with different MIP solvers; right now the commercial
+  [Gurobi](http://www.gurobi.com/) solver and the open source COIN-OR
+  Branch-&-Cut [CBC](https://projects.coin-or.org/Cbc) solver are supported;
   
 * fast: the Python MIP package calls directly the native dynamic loadable
-  library of the installed solver; models are efficiently stored and
-  optimized by the solver and MIP transparently handles all communication
-  ;
+  library of the installed solver using the modern python
+  [ctypes](https://docs.python.org/3/library/ctypes.html); models are
+  efficiently stored and optimized by the solver and MIP transparently
+  handles all communication with your Python code;
+
+* written in modern statically typed Python 3;
 
 * cut generation: write your cut generator in python and integrate it into
   the Branch-and-Cut search;
