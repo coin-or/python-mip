@@ -19,17 +19,18 @@ Some of the main features of MIP are:
   
 * fast: the Python MIP package calls directly the native dynamic loadable
   library of the installed solver using the modern python
-  [ctypes](https://docs.python.org/3/library/ctypes.html); models are
-  efficiently stored and optimized by the solver and MIP transparently
+  [ctypes](https://docs.python.org/3/library/ctypes.html) module; models
+  are efficiently stored and optimized by the solver and MIP transparently
   handles all communication with your Python code;
 
-* written in modern statically typed Python 3;
-
-* cut generation: write your cut generator in python and integrate it into
-  the Branch-and-Cut search;
+* completely written in modern statically typed Python 3;
 
 * solution pool: query the elite set of solutions found during the search;
 
 * mipstart: use a problem dependent heuristic to generate initial feasible
-  solutions for the MIP search.
+  solutions for the MIP search;
+
+* cut generation: write your cut generator in python and integrate it into
+  the Branch-and-Cut search (currently only for Gurobi).
+
 
