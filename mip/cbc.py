@@ -24,20 +24,20 @@ class SolverCbc(Solver):
                 column: "Column" = None,
                 name: str = "") -> int:
         # collecting column data
-        numnz: c_int = 0 if column is None else len(column.constrs)
-        vind: POINTER(c_int) = (c_int * numnz)()
-        vval: POINTER(c_double) = (c_double * numnz)()
+        numnz = 0 if column is None else len(column.constrs)
+        vind = (c_int * numnz)()
+        vval = (c_double * numnz)()
 
         # collecting column coefficients
         for i in range(numnz):
             vind[i] = column.constrs[i].idx
             vval[i] = column.coeffs[i]
 
-        isInt: c_char = \
+        isInt = \
             c_char(1) if coltype.upper() == "B" or coltype.upper() == "I" \
                 else c_char(0)
 
-        idx: int = int(cbcNumCols(self._model))
+        idx = int(cbcNumCols(self._model))
 
         cbcAddCol(self._model, c_str(name),
                   c_double(lb), c_double(ub), c_double(obj),
@@ -69,7 +69,7 @@ class SolverCbc(Solver):
 
     def optimize(self) -> int:
         cbcSetParameter(self._model, c_str('maxSavedSolutions'), c_str('10'))
-        res: int = cbcSolve(self._model)
+        res = cbcSolve(self._model)
 
         if cbcIsAbandoned(self._model):
             return ERROR
@@ -175,9 +175,9 @@ class SolverCbc(Solver):
 
     def add_constr(self, lin_expr: "LinExpr", name: str = "") -> int:
         # collecting linear expression data
-        numnz: c_int = len(lin_expr.expr)
-        cind: POINTER(c_int) = (c_int * numnz)()
-        cval: POINTER(c_double) = (c_double * numnz)()
+        numnz = len(lin_expr.expr)
+        cind = (c_int * numnz)()
+        cval = (c_double * numnz)()
 
         # collecting variable coefficients
         for i, (var, coeff) in enumerate(lin_expr.expr.items()):
@@ -185,11 +185,11 @@ class SolverCbc(Solver):
             cval[i] = coeff
 
         # constraint sense and rhs
-        sense: c_char = c_char(ord(lin_expr.sense))
-        rhs: c_double = c_double(-lin_expr.const)
+        sense = c_char(ord(lin_expr.sense))
+        rhs = c_double(-lin_expr.const)
 
         # constraint index
-        idx: int = int(cbcNumRows(self._model))
+        idx = int(cbcNumRows(self._model))
 
         cbcAddRow(self._model, c_str(name), numnz, cind, cval, sense, rhs)
 
@@ -252,7 +252,7 @@ class SolverCbc(Solver):
         return expr
 
     def constr_get_name(self, idx: int) -> str:
-        nameSpace: c_char_p = create_string_buffer(256)
+        nameSpace = create_string_buffer(256)
         cbcGetRowName(self._model, c_int(idx), nameSpace, 255)
         return nameSpace.value.decode('utf-8')
 

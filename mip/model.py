@@ -407,7 +407,7 @@ class Model:
 
         if isinstance(lin_expr, bool):
             return None  # empty constraint
-        idx: int = self.solver.add_constr(lin_expr, name)
+        idx = self.solver.add_constr(lin_expr, name)
         self.constrs.append(Constr(self, idx, name))
         self.constrs_dict[name] = self.constrs[-1]
         return self.constrs[-1]
@@ -738,9 +738,9 @@ class Var:
                  model: Model,
                  idx: int,
                  name: str = ""):
-        self.model: Model = model
-        self.idx: int = idx
-        self.name: str = name  # discuss this var
+        self.model = model
+        self.idx = idx
+        self.name = name  # discuss this var
 
     def __hash__(self) -> int:
         return self.idx
