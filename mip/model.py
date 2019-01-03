@@ -187,7 +187,7 @@ class LinExpr:
         return self.__mul__(-1)
 
     def __str__(self) -> str:
-        result: List[str] = []
+        result = []
 
         if self.expr:
             for var, coeff in self.expr.items():
