@@ -11,20 +11,20 @@ class SolverGurobi(Solver):
 
         # setting class members to default values
         self._updated = False
-        self._num_vars: int = 0
-        self._num_constrs: int = 0
-        self._log: str = ""
-        self._env: c_void_p = c_void_p(0)
-        self._model: c_void_p = c_void_p(0)
+        self._num_vars = 0
+        self._num_constrs = 0
+        self._log = ""
+        self._env = c_void_p(0)
+        self._model = c_void_p(0)
         self._callback = None
 
         # setting variables for an empty model
-        numvars: c_int = c_int(0)
-        obj: c_double = c_double(0)
-        lb: c_double = c_double(0)
-        ub: c_double = c_double(0)
-        vtype: c_char_p = c_char_p()
-        varnames: c_void_p = c_void_p(0)
+        numvars = c_int(0)
+        obj = c_double(0)
+        lb = c_double(0)
+        ub = c_double(0)
+        vtype = c_char_p()
+        varnames = c_void_p(0)
 
         # creating Gurobi environment
         if GRBloadenv(byref(self._env), c_str(self._log)) != 0:
@@ -58,9 +58,9 @@ class SolverGurobi(Solver):
                 column: "Column" = None,
                 name: str = "") -> int:
         # collecting column data
-        numnz: c_int = 0 if column is None else len(column.constrs)
-        vind: POINTER(c_int) = (c_int * numnz)()
-        vval: POINTER(c_double) = (c_double * numnz)()
+        numnz = 0 if column is None else len(column.constrs)
+        vind = (c_int * numnz)()
+        vval = (c_double * numnz)()
 
         # collecting column coefficients
         for i in range(numnz):
@@ -68,10 +68,10 @@ class SolverGurobi(Solver):
             vval[i] = column.coeffs[i]
 
         # variable type
-        vtype: c_char = c_char(ord(type))
+        vtype = c_char(ord(type))
 
         # variable index
-        idx: int = self._num_vars
+        idx = self._num_vars
         self._num_vars += 1
 
         GRBaddvar(self._model, c_int(numnz), vind, vval, c_double(obj), c_double(lb), c_double(ub),
@@ -82,9 +82,9 @@ class SolverGurobi(Solver):
 
     def add_constr(self, lin_expr: LinExpr, name: str = "") -> int:
         # collecting linear expression data
-        numnz: c_int = len(lin_expr.expr)
-        cind: POINTER(c_int) = (c_int * numnz)()
-        cval: POINTER(c_double) = (c_double * numnz)()
+        numnz = len(lin_expr.expr)
+        cind = (c_int * numnz)()
+        cval = (c_double * numnz)()
 
         # collecting variable coefficients
         for i, (var, coeff) in enumerate(lin_expr.expr.items()):
@@ -92,11 +92,11 @@ class SolverGurobi(Solver):
             cval[i] = coeff
 
         # constraint sense and rhs
-        sense: c_char = c_char(ord(lin_expr.sense))
-        rhs: c_double = c_double(-lin_expr.const)
+        sense = c_char(ord(lin_expr.sense))
+        rhs = c_double(-lin_expr.const)
 
         # constraint index
-        idx: int = self._num_constrs
+        idx = self._num_constrs
         self._num_constrs += 1
 
         GRBaddconstr(self._model, numnz, cind, cval, sense, rhs, c_str(name))
@@ -108,10 +108,10 @@ class SolverGurobi(Solver):
         if not self._updated:
             self.update()
 
-        numnz: c_int = c_int()
-        cbeg: POINTER(c_int) = POINTER(c_int)()
-        cind: POINTER(c_int) = POINTER(c_int)()
-        cval: POINTER(c_double) = POINTER(c_double)()
+        numnz = c_int()
+        cbeg = POINTER(c_int)()
+        cind = POINTER(c_int)()
+        cval = POINTER(c_double)()
 
         # todo: implementation is currently incomplete
         return None
@@ -128,7 +128,7 @@ class SolverGurobi(Solver):
             if vtype == BINARY or vtype == INTEGER:
                 idxs.append(var.idx)
 
-        ccont: POINTER(c_char) = (c_char * len(idxs))()
+        ccont = (c_char * len(idxs))()
         for i in range(len(idxs)):
             ccont[i] = CONTINUOUS.encode("utf-8")
 
@@ -137,7 +137,7 @@ class SolverGurobi(Solver):
 
     def optimize(self) -> int:
         # executing Gurobi to solve the formulation
-        status: int = int(GRBoptimize(self._model))
+        status = int(GRBoptimize(self._model))
         if status == 10009:
             raise Exception('gurobi found but license not accepted, please check it')
 
@@ -224,7 +224,7 @@ class SolverGurobi(Solver):
                      p_usrdata: c_void_p) -> int:
             if cuts_generator and where == 5:  # MIPNODE == 5
                 # obtaining relaxation solution and "translating" it
-                solution: POINTER(c_double) = (c_double * self._num_vars)()
+                solution = (c_double * self._num_vars)()
                 GRBcbget(p_cbdata, where, GRB_CB_MIPNODE_REL, solution)
                 relax_solution = []
                 for i in range(self._num_vars):
@@ -232,14 +232,14 @@ class SolverGurobi(Solver):
                         relax_solution.append((self.model.vars[i], solution[i]))
 
                 # calling user callback
-                cuts: List[LinExpr] = cuts_generator.generate_cuts(relax_solution)
+                cuts = cuts_generator.generate_cuts(relax_solution)
 
                 # adding cuts
                 for lin_expr in cuts:
                     # collecting linear expression data
-                    numnz: c_int = len(lin_expr.expr)
-                    cind: POINTER(c_int) = (c_int * numnz)()
-                    cval: POINTER(c_double) = (c_double * numnz)()
+                    numnz = len(lin_expr.expr)
+                    cind = (c_int * numnz)()
+                    cval = (c_double * numnz)()
 
                     # collecting variable coefficients
                     for i, (var, coeff) in enumerate(lin_expr.expr.items()):
@@ -247,8 +247,8 @@ class SolverGurobi(Solver):
                         cval[i] = coeff
 
                     # constraint sense and rhs
-                    sense: c_char = c_char(ord(lin_expr.sense))
-                    rhs: c_double = c_double(-lin_expr.const)
+                    sense = c_char(ord(lin_expr.sense))
+                    rhs = c_double(-lin_expr.const)
 
                     GRBcbcut(p_cbdata, numnz, cind, cval, sense, rhs)
 
@@ -274,9 +274,9 @@ class SolverGurobi(Solver):
 
     def set_objective(self, lin_expr: "LinExpr", sense: str = "") -> None:
         # collecting linear expression data
-        numnz: c_int = len(lin_expr.expr)
-        cind: POINTER(c_int) = (c_int * numnz)()
-        cval: POINTER(c_double) = (c_double * numnz)()
+        numnz = len(lin_expr.expr)
+        cind = (c_int * numnz)()
+        cval = (c_double * numnz)()
 
         # collecting variable coefficients
         for i, (var, coeff) in enumerate(lin_expr.expr.items()):
@@ -287,8 +287,8 @@ class SolverGurobi(Solver):
         const = c_double(lin_expr.const)
 
         # resetting objective function
-        num_vars: c_int = c_int(self._num_vars)
-        zeros: POINTER(c_double) = (c_double * self._num_vars)()
+        num_vars = c_int(self._num_vars)
+        zeros = (c_double * self._num_vars)()
         for i in range(self._num_vars):
             zeros[i] = 0.0
         GRBsetdblattrarray(self._model, c_str("Obj"), c_int(0), num_vars, zeros)
@@ -309,9 +309,9 @@ class SolverGurobi(Solver):
 
     def set_start(self, variables: List["Var"], values: List[float]) -> None:
         # collecting data
-        numnz: c_int = len(variables)
-        cind: POINTER(c_int) = (c_int * numnz)()
-        cval: POINTER(c_double) = (c_double * numnz)()
+        numnz = len(variables)
+        cind = (c_int * numnz)()
+        cval = (c_double * numnz)()
 
         # collecting variable coefficients
         for i in range(len(variables)):
@@ -352,10 +352,10 @@ class SolverGurobi(Solver):
         if not self._updated:
             self.update()
 
-        numnz: c_int = c_int()
-        cbeg: POINTER(c_int) = POINTER(c_int)()
-        cind: POINTER(c_int) = POINTER(c_int)()
-        cval: POINTER(c_double) = POINTER(c_double)()
+        numnz = c_int()
+        cbeg = POINTER(c_int)()
+        cind = POINTER(c_int)()
+        cval = POINTER(c_double)()
 
         # obtaining number of non-zeros
         GRBgetconstrs(self._model, byref(numnz), cbeg, cind, cval, c_int(constr.idx), c_int(1))
@@ -369,8 +369,8 @@ class SolverGurobi(Solver):
         GRBgetconstrs(self._model, byref(numnz), cbeg, cind, cval, c_int(constr.idx), c_int(1))
 
         # obtaining sense and rhs
-        c_sense: c_char = c_char()
-        rhs: c_double = c_double()
+        c_sense = c_char()
+        rhs = c_double()
         GRBgetcharattrelement(self._model, c_str("Sense"), c_int(constr.idx), byref(c_sense))
         GRBgetdblattrelement(self._model, c_str("RHS"), c_int(constr.idx), byref(rhs))
 
@@ -391,7 +391,7 @@ class SolverGurobi(Solver):
 
     def constr_get_name(self, idx: int) -> str:
         vName = c_char_p(0)
-        st: int = GRBgetstrattrelement(self._model, c_str('ConstrName'), c_int(idx), byref(vName))
+        st = GRBgetstrattrelement(self._model, c_str('ConstrName'), c_int(idx), byref(vName))
         assert st == 0
         return vName.value.decode('utf-8')
 
@@ -401,7 +401,7 @@ class SolverGurobi(Solver):
 
     def constr_get_pi(self, constr: "Constr") -> float:
         res = c_double()
-        st: int = GRBgetdblattrelement(self._model, c_str("Pi"), c_int(constr.idx), byref(res))
+        st = GRBgetdblattrelement(self._model, c_str("Pi"), c_int(constr.idx), byref(res))
         assert st == 0
         return res.value
 
@@ -410,7 +410,7 @@ class SolverGurobi(Solver):
             self.update()
 
         res = c_double()
-        st: int = GRBgetdblattrelement(self._model, c_str("LB"), c_int(var.idx), byref(res))
+        st = GRBgetdblattrelement(self._model, c_str("LB"), c_int(var.idx), byref(res))
         assert st == 0
         return res.value
 
@@ -476,10 +476,10 @@ class SolverGurobi(Solver):
         if not self._updated:
             self.update()
 
-        numnz: c_int = c_int()
-        cbeg: POINTER(c_int) = POINTER(c_int)()
-        cind: POINTER(c_int) = POINTER(c_int)()
-        cval: POINTER(c_double) = POINTER(c_double)()
+        numnz = c_int()
+        cbeg = POINTER(c_int)()
+        cind = POINTER(c_int)()
+        cval = POINTER(c_double)()
 
         # obtaining number of non-zeros
         GRBgetvars(self._model, byref(numnz), cbeg, cind, cval, c_int(var.idx), c_int(1))
@@ -515,7 +515,7 @@ class SolverGurobi(Solver):
 
     def var_get_name(self, idx: int) -> str:
         vName = c_char_p(0)
-        st: int = GRBgetstrattrelement(self._model, c_str('VarName'), c_int(idx), byref(vName))
+        st = GRBgetstrattrelement(self._model, c_str('VarName'), c_int(idx), byref(vName))
         assert st == 0
         return vName.value.decode('utf-8')
 
