@@ -17,9 +17,12 @@ class Column:
         To create a column see Model.add_var
 
     """
-    def __init__(self, constrs: List["Constr"] = None, coeffs: List[float] = None):
-        self.constrs = constrs if constrs else list()
-        self.coeffs = coeffs if coeffs else list()
+
+    def __init__(self,
+                 constrs: List["Constr"] = None,
+                 coeffs: List[float] = None):
+        self.constrs = constrs
+        self.coeffs = coeffs
 
 
 class Constr:
@@ -71,7 +74,7 @@ class LinExpr:
 
     summation can also be used:
 
-    m += sum(3*x[i] i in range(n)) - sum(x[i] i in range(m))
+    m += xsum(3*x[i] i in range(n)) - xsum(x[i] i in range(m))
 
     If not specified in the construction of the model object, it is assumed
     that the model is a minimization one.
@@ -89,7 +92,7 @@ class LinExpr:
                  const: float = 0,
                  sense: str = ""):
         self.const = const
-        self.expr  = {}
+        self.expr = {}
         self.sense = sense
 
         if variables:
@@ -473,14 +476,13 @@ class Model:
         """
         return self.solver.get_num_solutions()
 
-    def get_objective_value_i(self, i : int) -> float:
+    def get_objective_value_i(self, i: int) -> float:
         """ Cost of the i-th solution found
 
         Returns:
             float: cost of the i-th best solution from the solution pool
         """
         return self.solver.get_objective_value_i(i)
-        
 
     def get_var_by_name(self, name) -> "Var":
         """ Searchers a variable by its name
@@ -565,7 +567,7 @@ class Model:
         Auxiliary or continuous variables are automatically computed.
 
         Args:
-            variables(List[Var]): list of variables 
+            variables(List[Var]): list of variables
             values(List[float]): list of variable values in initial feasible solution
 
         """
@@ -658,7 +660,7 @@ class Solver:
 
     def get_objective_value(self) -> float: pass
 
-    def get_objective_value_i(self, i : int) -> float: pass
+    def get_objective_value_i(self, i: int) -> float: pass
 
     def get_num_solutions(self) -> int: pass
 
@@ -868,7 +870,7 @@ class Var:
     def x(self) -> float:
         return self.model.solver.var_get_x(self)
 
-    def xi(self, i : int) -> float:
+    def xi(self, i: int) -> float:
         return self.model.solver.var_get_xi(self, i)
 
 
@@ -900,7 +902,7 @@ class LazyConstrsGenerator:
     def __init(self, model: Model):
         self.model = model
 
-    def generate_constrs(self, solution: List[Tuple[Var, float]]) -> List[LinExpr]:
+    def generate_lazy_constrs(self, solution: List[Tuple[Var, float]]) -> List[LinExpr]:
         raise NotImplementedError()
 
 

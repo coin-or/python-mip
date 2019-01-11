@@ -105,16 +105,9 @@ class SolverGurobi(Solver):
         return idx
 
     def get_objective(self) -> LinExpr:
-        if not self._updated:
-            self.update()
-
-        numnz: c_int = c_int()
-        cbeg: POINTER(c_int) = POINTER(c_int)()
-        cind: POINTER(c_int) = POINTER(c_int)()
-        cval: POINTER(c_double) = POINTER(c_double)()
-
-        # todo: implementation is currently incomplete
-        return None
+        res = c_double()
+        GRBgetdblattr(self._model, c_str("ObjVal"), byref(res))
+        return res.value
 
     def get_objective_const(self) -> float:
         res = c_double()
@@ -186,13 +179,13 @@ class SolverGurobi(Solver):
         else:
             raise Exception('Unknow sense')
 
-    def get_num_solutions(self) -> int: 
+    def get_num_solutions(self) -> int:
         res = c_int(0)
         st = GRBgetintattr(self._model, c_str("SolCount"), byref(res))
         assert st == 0
         return res.value
 
-    def var_get_xi(self, var: "Var", i: int) -> float: 
+    def var_get_xi(self, var: "Var", i: int) -> float:
         res = c_double()
         st = GRBsetintparam( GRBgetenv(self._model), c_str("SolutionNumber"), c_int(i) );
         assert st == 0
