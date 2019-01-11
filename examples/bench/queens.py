@@ -39,6 +39,6 @@ for n in N:
 
 		print('n {} cols {} rows {} solver {} time {}'.format(n, queens.num_cols, queens.num_rows, solver, ed-st))
 
-		f.write('{},{},{:.4f}\n'.format(n, solver, ed-st))
+		f.write('{},{},{},{},{:.4f}\n'.format(n, queens.num_cols, queens.num_rows, solver, ed-st))
 
 f.close()
