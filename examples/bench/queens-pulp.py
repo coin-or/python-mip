@@ -4,7 +4,7 @@ from time import process_time
 import time
 import timeout_decorator
 
-N = range(50,501,50)
+N = range(100,1001,100)
 
 f=open('queens-pulp.csv', 'w')
 

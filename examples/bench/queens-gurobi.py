@@ -4,7 +4,7 @@ import time
 # from time import process_time
 import timeout_decorator
 
-N = range(50,1001,50)
+N = range(100,1001,100)
 
 @timeout_decorator.timeout(1000)
 def gen_model(n):
