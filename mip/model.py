@@ -19,8 +19,8 @@ class Column:
     """
 
     def __init__(self,
-                 constrs: List["Constr"] = None,
-                 coeffs: List[float] = None):
+                 constrs = None,
+                 coeffs = None):
         self.constrs = constrs
         self.coeffs = coeffs
 
