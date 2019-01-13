@@ -7,8 +7,6 @@ import timeout_decorator
 Solvers=['cbc', 'gurobi']
 N = range(100,1001,100)
 
-f = open('queens.csv', 'w')
-
 @timeout_decorator.timeout(1000)
 def gen_model(n, solver):
 	st = time.time()
@@ -35,11 +33,12 @@ def gen_model(n, solver):
 
 	ed = time.time()
 
-	f.write('{},{},{},mip-{},{:.4f}\n'.format(n, queens.num_cols, queens.num_rows, solver, ed-st))
+	f.write('{},{},{},{:.4f}\n'.format(n, queens.num_cols, queens.num_rows, ed-st))
 	f.flush()
 
 
-for n in N:
-	for solver in Solvers:
+for solver in Solvers:
+	f = open('queens-{}.csv'.format(solver), 'w')
+	for n in N:
 		gen_model(n, solver)
-f.close()
+	f.close()
