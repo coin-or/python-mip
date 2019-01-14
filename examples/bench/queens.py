@@ -8,7 +8,7 @@ Solvers=['cbc', 'gurobi']
 N = range(100,1001,100)
 
 @timeout_decorator.timeout(1000)
-def gen_model(n, solver):
+def gen_model(n, solver, f):
 	st = time.time()
 	queens = Model('queens', MINIMIZE, solver_name=solver)
 
@@ -40,5 +40,5 @@ def gen_model(n, solver):
 for solver in Solvers:
 	f = open('queens-{}.csv'.format(solver), 'w')
 	for n in N:
-		gen_model(n, solver)
+		gen_model(n, solver, f)
 	f.close()
