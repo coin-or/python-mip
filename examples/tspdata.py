@@ -35,17 +35,17 @@ class TSPData:
         
         self.d = None
         
-        self.latitude : List[float] = []
+        self.latitude = []
         
-        self.longitude : List[float] = []
+        self.longitude = []
         
         readingCoord = False
         
-        self.x : List[float] = []
-        self.y : List[float] = []
+        self.x  = []
+        self.y  = []
         
-        self.ix : List[int] = []
-        self.iy : List[int] = []
+        self.ix = []
+        self.iy = []
         
         f=open(fileName, 'r')
         for l in f:
