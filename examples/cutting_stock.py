@@ -41,7 +41,7 @@ def cg():
         a.append(pricing.add_var(obj=0, type=INTEGER, name='a_%d' % (i + 1)))
 
     # creating pricing constraint
-    pricing.add_constr(xsum(w[i] * a[i] for i in range(m)) <= L, name='bar_length')
+    pricing += xsum(w[i] * a[i] for i in range(m)) <= L, 'bar_length'
 
     pricing.write('pricing.lp')
 
@@ -122,9 +122,9 @@ def kantorovich():
 
     # constraints
     for i in range(m):
-        model.add_constr(xsum(x[i, j] for j in range(N)) >= b[i])
+        model += xsum(x[i, j] for j in range(N)) >= b[i]
     for j in range(N):
-        model.add_constr(xsum(w[i] * x[i, j] for i in range(m)) <= L * y[j])
+        model += xsum(w[i] * x[i, j] for i in range(m)) <= L * y[j]
 
     # additional constraint to reduce symmetry
     for j in range(1, N):
