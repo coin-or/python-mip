@@ -916,6 +916,6 @@ def xsum(terms) -> LinExpr:
 # function aliases
 quicksum = xsum
 
-print('using python mip package version 1.0.15')
+print('using python mip package version 1.0.16')
 
 # vim: ts=4 sw=4 et
