@@ -297,6 +297,7 @@ class Model:
         self.constrs_dict = {}
         self.vars = []
         self.vars_dict = {}
+        self.cut_generators = []
 
         if solver_name.upper() == GUROBI:
             from mip.gurobi import SolverGurobi
@@ -502,10 +503,22 @@ class Model:
         for v in self.vars:
             if v.type == BINARY or v.type == INTEGER:
                 v.type = CONTINUOUS
+    
+    def add_cut_generator(self, cuts_generator : "CutsGenerator") -> None:
+        """ Adds a cut generator
 
+        Cut generators are called whenever a solution where one or more
+        integer variables appear with continuous values. A cut generator will
+        try to produce one or more inequalities to remove this fractional point.
+        
+        Args:
+            cuts_generator : CutsGenerator
+        
+        """
+        self.cut_generators.append(cuts_generator)
+    
     def optimize(self,
                  branch_selector: "BranchSelector" = None,
-                 cuts_generator: "CutsGenerator" = None,
                  incumbent_updater: "IncumbentUpdater" = None,
                  lazy_constrs_generator: "LazyConstrsGenerator" = None,
                  max_seconds: float = inf,
@@ -535,7 +548,7 @@ class Model:
             solution exists and NO_SOLUTION_FOUND(5) for the case when an integer solution was not found in the optimization.
 
         """
-        self.solver.set_callbacks(branch_selector, cuts_generator, incumbent_updater, lazy_constrs_generator)
+        self.solver.set_callbacks(branch_selector, incumbent_updater, lazy_constrs_generator)
         self.solver.set_processing_limits(max_seconds, max_nodes, max_solutions)
 
         return self.solver.optimize()
@@ -674,10 +687,10 @@ class Solver:
 
     def set_callbacks(self,
                       branch_selector: "BranchSelector" = None,
-                      cuts_generator: "CutsGenerator" = None,
                       incumbent_updater: "IncumbentUpdater" = None,
                       lazy_constrs_generator: "LazyConstrsGenerator" = None) -> None:
         pass
+
 
     def set_processing_limits(self,
                               max_time: float = inf,
@@ -916,6 +929,25 @@ def xsum(terms) -> LinExpr:
 # function aliases
 quicksum = xsum
 
+
+def read_custom_settings() -> str:
+    global customCbcLib
+    from pathlib import Path
+    home=str(Path.home())
+    import os
+    configpath = os.path.join(home, '.config')
+    if os.path.isdir(configpath):
+        conffile = os.path.join(configpath, 'python-mip')
+        f = open(conffile, 'r')
+        for line in f:
+            if '=' in line:
+                cols=line.split('=')
+                if cols[0].strip().lower()=='cbc-library':
+                    customCbcLib = cols[1].lstrip().rstrip().replace('"','')
+
 print('using python mip package version 1.0.16')
+customCbcLib=''
+read_custom_settings()
+print('customCbcLib {}'.format(customCbcLib))
 
 # vim: ts=4 sw=4 et
