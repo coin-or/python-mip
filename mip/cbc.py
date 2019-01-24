@@ -12,6 +12,9 @@ class SolverCbc(Solver):
 
         self._objconst = 0.0
 
+        # to not add cut generators twice when reoptimizing
+        self.added_cut_callback = False
+
         # setting objective sense
         if sense == MAXIMIZE:
             cbcSetObjSense(self._model, -1.0)
@@ -68,6 +71,39 @@ class SolverCbc(Solver):
                 cbcSetContinuous(self._model, c_int(var.idx))
 
     def optimize(self) -> int:
+
+        # cut callback
+        def cbc_cut_callback( osiSolver : c_void_p, osiCuts : c_void_p, appData, c_void_p ) -> None:
+            # getting fractional solution
+            fracSol = []
+            n = Osi_getNumCols( osiSolver )
+            nameSpace = create_string_buffer(256)
+            for i in range(n):
+                x = osiColSolution(self._model)
+                if x == c_void_p(0):
+                    raise Exception('no solution found')
+                val = float(x[i])
+                if abs(val) < 1e-7:
+                    continue
+
+                osiColName(self._model, c_int(i), namespace, 255)
+                cname = nameSpace.value.decode('utf-8')
+                var = self.model.get_var_by_name(cname) 
+                fracSol.append( (var, val) )
+
+            # calling cut generators
+            for cg in model.cut_generators:
+                cuts = cg.generate_cuts(fracSol)
+                # translating cuts for variables in the preprocessed problem
+                for cut in cuts:
+                    print('a')
+
+        # adding cut generators
+        if self.model.cut_generators and self.added_cut_callback == False:
+            self._cutCallBack = CBCcallbacktype(cbc_cut_callback)
+            cbcAddCutCallback(self._model, self._cutCallback, "mipCutGen", c_void_p(0) )
+            self.added_cut_callback = True
+
         cbcSetParameter(self._model, c_str('maxSavedSolutions'), c_str('10'))
         res = cbcSolve(self._model)
 
@@ -276,24 +312,30 @@ class SolverCbc(Solver):
 has_cbc = False
 
 try:
-    try:
-        # linux library
-        cbclib = CDLL(find_library("CbcSolver"))
+
+    if customCbcLib:
+        print('CBC library path from config file: {}'.format(mip.model.customCbcLib))
+        cbclib = CDLL(mip.model.customCbcLib)
         has_cbc = True
-        print('cbc found')
-    except:
-        # window library
+    else:
         try:
-            cbclib = CDLL(find_library("cbcCInterfaceDll"))
+            # linux library
+            cbclib = CDLL(find_library("CbcSolver"))
             has_cbc = True
             print('cbc found')
         except:
+            # window library
             try:
-                cbclib = CDLL(find_library("./cbcCInterfaceDll"))
+                cbclib = CDLL(find_library("cbcCInterfaceDll"))
                 has_cbc = True
                 print('cbc found')
             except:
-                print('cbc not found')
+                try:
+                    cbclib = CDLL(find_library("./cbcCInterfaceDll"))
+                    has_cbc = True
+                    print('cbc found')
+                except:
+                    print('cbc not found')
 except:
     has_cbc = False
     print('cbc not found')
@@ -520,6 +562,28 @@ if has_cbc:
         method_check = "Cbc_setMIPStartI"
         cbcSetMIPStartI = cbclib.Cbc_setMIPStartI
         cbcSetMIPStartI.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double)]
+
+        method_check = "CBCCutCallback"
+        CBCcallbacktype = CFUNCTYPE(c_void_p, c_void_p, c_void_p)
+
+        method_check = "Cbc_addCutCallback"
+        cbcAddCutCallback = cbclib.Cbc_addCutCallback;
+        cbcAddCutCallback.argtypes = [ c_void_p, CBCcallbacktype, c_char_p, c_void_p ]
+
+        method_check = "Osi_getNumCols"
+        osiNumCols = cbclib.Osi_getNumCols
+        osiNumCols.argtypes = [c_void_p]
+        osiNumCols.restype = c_int
+
+        method_check = "Osi_getColName"
+        osiGetColName = cbclib.Osi_getColName
+        osiGetColName.argtypes = [c_void_p, c_int, c_char_p, c_int]
+
+        method_check = "Osi_getColSolution"
+        osiColSolution = cbclib.Osi_getColSolution
+        osiColSolution.argtypes = [c_void_p]
+        osiColSolution.restype = POINTER(c_double)
+
     except:
         print('\nplease install a more updated version of cbc (or cbc trunk), function {} not implemented in the installed version'.format(method_check))
         has_cbc = False

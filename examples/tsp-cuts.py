@@ -45,7 +45,7 @@ class SubTourCutGenerator(CutsGenerator):
                 if len(cutvars):
                     cuts.append(xsum(1.0*var for var in cutvars) >= 1)
 
-        print("Cuts: ", cuts)
+        #print("Cuts: ", cuts)
         return cuts
 
 
@@ -58,7 +58,7 @@ n = inst.n
 d = inst.d
 print('solving TSP with {} cities'.format(inst.n))
 
-model = Model(solver_name=GUROBI)
+model = Model(solver_name=CBC)
 
 # binary variables indicating if arc (i,j) is used on the route or not
 x = [[model.add_var(
@@ -101,8 +101,8 @@ for i in range(0, n):
         model += \
             y[i] - (n + 1) * x[i][j] >= y[j] - n, 'noSub({},{})'.format(i, j)
 
-cuts_generator = SubTourCutGenerator(model, n)
-model.optimize(cuts_generator=cuts_generator, max_seconds=10)
+model.add_cut_generator(SubTourCutGenerator(model, n))
+model.optimize(max_seconds=60)
 # model.write('tsp.lp')
 
 print('best route found has length {}'.format(model.get_objective_value()))
