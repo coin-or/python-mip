@@ -129,6 +129,49 @@ class SolverGurobi(Solver):
         GRBupdatemodel(self._model)
 
     def optimize(self) -> int:
+
+        # todo add branch_selector and incumbent_updater callbacks
+        def callback(p_model: c_void_p,
+                     p_cbdata: c_void_p,
+                     where: int,
+                     p_usrdata: c_void_p) -> int:
+            if self.model.cut_generators and where == 5:  # MIPNODE == 5
+                # obtaining relaxation solution and "translating" it
+                solution = (c_double * self._num_vars)()
+                GRBcbget(p_cbdata, where, GRB_CB_MIPNODE_REL, solution)
+                relax_solution = []
+                for i in range(self._num_vars):
+                    if solution[i] <= -EPS or solution[i] >= EPS:
+                        relax_solution.append((self.model.vars[i], solution[i]))
+
+                # calling cut generators
+                for cg in self.model.cut_generators:
+                    cuts = cg.generate_cuts(relax_solution)
+                    # adding cuts
+                    for lin_expr in cuts:
+                        # collecting linear expression data
+                        numnz = len(lin_expr.expr)
+                        cind = (c_int * numnz)()
+                        cval = (c_double * numnz)()
+
+                        # collecting variable coefficients
+                        for i, (var, coeff) in enumerate(lin_expr.expr.items()):
+                            cind[i] = var.idx
+                            cval[i] = coeff
+
+                        # constraint sense and rhs
+                        sense = c_char(ord(lin_expr.sense))
+                        rhs = c_double(-lin_expr.const)
+
+                        GRBcbcut(p_cbdata, numnz, cind, cval, sense, rhs)
+
+
+            return 0
+    
+        if (self.model.cut_generators):
+            self._callback = GRBcallbacktype(callback)
+            GRBsetcallbackfunc(self._model, self._callback, c_void_p(0))
+
         # executing Gurobi to solve the formulation
         status = int(GRBoptimize(self._model))
         if status == 10009:
@@ -204,51 +247,6 @@ class SolverGurobi(Solver):
         st = GRBgetdblattr(self._model, c_str('ObjVal'), byref(res))
         assert st == 0
         return res.value
-
-    def set_callbacks(self,
-                      branch_selector: "BranchSelector" = None,
-                      cuts_generator: "CutsGenerator" = None,
-                      incumbent_updater: "IncumbentUpdater" = None,
-                      lazy_constrs_generator: "LazyConstrsGenerator" = None) -> None:
-        # todo add branch_selector and incumbent_updater callbacks
-        def callback(p_model: c_void_p,
-                     p_cbdata: c_void_p,
-                     where: int,
-                     p_usrdata: c_void_p) -> int:
-            if cuts_generator and where == 5:  # MIPNODE == 5
-                # obtaining relaxation solution and "translating" it
-                solution = (c_double * self._num_vars)()
-                GRBcbget(p_cbdata, where, GRB_CB_MIPNODE_REL, solution)
-                relax_solution = []
-                for i in range(self._num_vars):
-                    if solution[i] <= -EPS or solution[i] >= EPS:
-                        relax_solution.append((self.model.vars[i], solution[i]))
-
-                # calling user callback
-                cuts = cuts_generator.generate_cuts(relax_solution)
-
-                # adding cuts
-                for lin_expr in cuts:
-                    # collecting linear expression data
-                    numnz = len(lin_expr.expr)
-                    cind = (c_int * numnz)()
-                    cval = (c_double * numnz)()
-
-                    # collecting variable coefficients
-                    for i, (var, coeff) in enumerate(lin_expr.expr.items()):
-                        cind[i] = var.idx
-                        cval[i] = coeff
-
-                    # constraint sense and rhs
-                    sense = c_char(ord(lin_expr.sense))
-                    rhs = c_double(-lin_expr.const)
-
-                    GRBcbcut(p_cbdata, numnz, cind, cval, sense, rhs)
-
-            return 0
-
-        self._callback = GRBcallbacktype(callback)
-        GRBsetcallbackfunc(self._model, self._callback, c_void_p(0))
 
     def set_processing_limits(self,
                               max_time: float = inf,
