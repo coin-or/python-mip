@@ -1,3 +1,5 @@
+VERSION = '1.0.17'
+
 # epsilon number (practical zero)
 EPS = 10e-6
 
