@@ -938,16 +938,17 @@ def read_custom_settings() -> str:
     configpath = os.path.join(home, '.config')
     if os.path.isdir(configpath):
         conffile = os.path.join(configpath, 'python-mip')
-        f = open(conffile, 'r')
-        for line in f:
-            if '=' in line:
-                cols=line.split('=')
-                if cols[0].strip().lower()=='cbc-library':
-                    customCbcLib = cols[1].lstrip().rstrip().replace('"','')
+        if os.path.isfile(conffile):
+            f = open(conffile, 'r')
+            for line in f:
+                if '=' in line:
+                    cols=line.split('=')
+                    if cols[0].strip().lower()=='cbc-library':
+                        customCbcLib = cols[1].lstrip().rstrip().replace('"','')
 
-print('using python mip package version 1.0.16')
+print('using python mip package version {}'.format(VERSION))
 customCbcLib=''
 read_custom_settings()
-print('customCbcLib {}'.format(customCbcLib))
+#print('customCbcLib {}'.format(customCbcLib))
 
 # vim: ts=4 sw=4 et
