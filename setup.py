@@ -11,7 +11,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="mip",
-    version=VERSION
+    version=VERSION,
     author="Toffolo, T.A.M. and Santos, H.G.",
     author_email="haroldo@ufop.edu.br",
     description="Python tools for Modeling and Solving Mixed-Integer Programs",
