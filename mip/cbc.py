@@ -100,8 +100,8 @@ class SolverCbc(Solver):
             for cg in self.model.cut_generators:
                 cuts = cg.generate_cuts(fracSol)
                 # translating cuts for variables in the preprocessed problem
-                for cut in cuts:
-                    print('a')
+                #for cut in cuts:
+                #    print('a')
 
 
         # adding cut generators

@@ -60,6 +60,13 @@ x = [ [ model.add_var(
 
 # adding heuristic initial solution
 hsol = gen_ini_sol(n, d)
+
+f=open('tsp.mipstart', 'w')
+f.write('\n')
+for k in range(n):
+	f.write('x({},{}) 1\n'.format(hsol[k-1]+1, hsol[k]+1))
+f.close()
+
 varsms = [x[hsol[k-1]][hsol[k]] for k in range(n)]
 valuesms = [1.0 for k in range(n)]
 
