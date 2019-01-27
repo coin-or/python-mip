@@ -102,8 +102,8 @@ for i in range(0, n):
             y[i] - (n + 1) * x[i][j] >= y[j] - n, 'noSub({},{})'.format(i, j)
 
 model.add_cut_generator(SubTourCutGenerator(model, n))
-model.optimize(max_seconds=60)
-# model.write('tsp.lp')
+model.write('tsp.lp')
+model.optimize(max_seconds=60, max_nodes=1)
 
 print('best route found has length {}'.format(model.get_objective_value()))
 
