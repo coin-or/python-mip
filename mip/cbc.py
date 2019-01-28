@@ -6,6 +6,8 @@ from typing import Dict
 from sys import platform
 from os.path import dirname
 
+warningMessages = 0
+
 
 
 class SolverCbc(Solver):
@@ -75,16 +77,30 @@ class SolverCbc(Solver):
                 cbcSetContinuous(self._model, c_int(var.idx))
 
     def optimize(self) -> int:
+        # get name indexes from an osi problem
+        def cbc_get_osi_name_indexes(osiSolver : c_void_p) -> Dict[str, int]:
+            nameIdx = {}
+            n = osiNumCols( osiSolver )
+            nameSpace = create_string_buffer(256)
+            for i in range(n):
+                osiColName(osiSolver, c_int(i), nameSpace, 255)
+                cname = nameSpace.value.decode('utf-8')
+                nameIdx[cname] = i
+
+            return nameIdx;
+
         # cut callback
         def cbc_cut_callback( osiSolver : c_void_p, osiCuts : c_void_p ) -> None:
+            global warningMessages
             # getting fractional solution
             fracSol = []
             n = osiNumCols( osiSolver )
             nameSpace = create_string_buffer(256)
+            x = osiColSolution(osiSolver)
+            if x == c_void_p(0):
+                raise Exception('no solution found')
+
             for i in range(n):
-                x = osiColSolution(osiSolver)
-                if x == c_void_p(0):
-                    raise Exception('no solution found')
                 val = float(x[i])
                 if abs(val) < 1e-7:
                     continue
@@ -95,13 +111,46 @@ class SolverCbc(Solver):
                 if var == None:
                     print('-->> var {} not found'.format(cname))
                 fracSol.append( (var, val) )
+            
+            # storing names and indexes to translate cuts
+            nameIdx = {}
+            cidx = (c_int * n)()
+            cval = (c_double * n)()
 
             # calling cut generators
             for cg in self.model.cut_generators:
                 cuts = cg.generate_cuts(fracSol)
+
+                if cuts and not nameIdx:
+                    nameIdx = cbc_get_osi_name_indexes(osiSolver)
+
                 # translating cuts for variables in the preprocessed problem
-                #for cut in cuts:
-                #    print('a')
+                for cut in cuts:
+                    cutIdx = []
+                    cutCoef = []
+                    hasAllVars = True
+                    missingVarName = ''
+                    for v,c in cut.expr.items():
+                        if v.name in nameIdx.keys():
+                            cutIdx.append( nameIdx[v.name] );
+                            cutCoef.append( c )
+                        else:
+                            hasAllVars = False
+                            missingVarName = v.name
+                            break
+                    if hasAllVars:
+                        nz = len(cutIdx)
+                        for i, ci in enumerate(cutIdx):
+                            cidx[i] = ci
+                            cval[i] = cutCoef[i]
+                        sense = c_char(ord(cut.sense))
+                        rhs = c_double(-cut.const)
+                        osiCutsAddRowCut( osiCuts, c_int(nz), cidx, cval, sense, rhs );
+                        #print('cut add successfully')
+                    else:
+                        if warningMessages < 5:
+                            print('cut discarded because variable {} does not exists in preprocessed problem.'.format(missingVarName))
+                            warningMessages += 1
 
 
         # adding cut generators
@@ -321,6 +370,7 @@ try:
     if customCbcLib:
         print('CBC library path from config file: {}'.format(mip.model.customCbcLib))
         cbclib = CDLL(mip.model.customCbcLib)
+        print('has cbc')
         has_cbc = True
     else:
         try:
@@ -608,6 +658,9 @@ if has_cbc:
         osiColSolution.argtypes = [c_void_p]
         osiColSolution.restype = POINTER(c_double)
 
+        method_check = "oc_addRowCut"
+        osiCutsAddRowCut = cbclib.OsiCuts_addRowCut
+        osiCutsAddRowCut.argtypes = [ c_void_p, c_int, POINTER(c_int), POINTER(c_double), c_char, c_double ]
     except:
         print('\nplease install a more updated version of cbc (or cbc trunk), function {} not implemented in the installed version'.format(method_check))
         has_cbc = False

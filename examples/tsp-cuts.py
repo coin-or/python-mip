@@ -58,7 +58,7 @@ n = inst.n
 d = inst.d
 print('solving TSP with {} cities'.format(inst.n))
 
-model = Model(solver_name=CBC)
+model = Model()
 
 # binary variables indicating if arc (i,j) is used on the route or not
 x = [[model.add_var(
@@ -102,8 +102,7 @@ for i in range(0, n):
             y[i] - (n + 1) * x[i][j] >= y[j] - n, 'noSub({},{})'.format(i, j)
 
 model.add_cut_generator(SubTourCutGenerator(model, n))
-model.write('tsp.lp')
-model.optimize(max_seconds=60, max_nodes=1)
+model.optimize(max_seconds=60, max_nodes=100)
 
 print('best route found has length {}'.format(model.get_objective_value()))
 
