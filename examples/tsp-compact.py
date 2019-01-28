@@ -13,7 +13,7 @@ n = inst.n
 d = inst.d
 print('solving TSP with {} cities'.format(inst.n))
 
-model = Model( solver_name="gurobi" )
+model = Model( )
 
 # binary variables indicating if arc (i,j) is used on the route or not
 x = [ [ model.add_var(
@@ -56,7 +56,7 @@ for i in range(0, n):
             y[i]  - (n+1)*x[i][j] >=  y[j] -n, 'noSub({},{})'.format(i,j)
                  
     
-model.write('tsp.lp')
+#model.write('tsp.lp')
 model.optimize( max_seconds=60 )
 
 print('best route found has length {}'.format(model.get_objective_value()))
