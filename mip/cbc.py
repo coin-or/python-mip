@@ -349,8 +349,8 @@ class SolverCbc(Solver):
             cbcSetParameter(m, c_str('seconds'), c_str('{}'.format(maxTime)))
         if maxNodes != inf:
             cbcSetParameter(m, c_str('maxNodes'), c_str('{}'.format(maxNodes)))
-        if maxNodes != inf:
-            cbcSetParameter(m, c_str('maxSolutions'), c_str('{}'.format(maxNodes)))
+        if maxSol != inf:
+            cbcSetParameter(m, c_str('maxSolutions'), c_str('{}'.format(maxSol)))
 
     def __del__(self):
         cbcDeleteModel(self._model)
