@@ -9,7 +9,6 @@ from os.path import dirname
 warningMessages = 0
 
 
-
 class SolverCbc(Solver):
     def __init__(self, model: Model, name: str, sense: str):
         super().__init__(model, name, sense)
@@ -78,9 +77,9 @@ class SolverCbc(Solver):
 
     def optimize(self) -> int:
         # get name indexes from an osi problem
-        def cbc_get_osi_name_indexes(osiSolver : c_void_p) -> Dict[str, int]:
+        def cbc_get_osi_name_indexes(osiSolver: c_void_p) -> Dict[str, int]:
             nameIdx = {}
-            n = osiNumCols( osiSolver )
+            n = osiNumCols(osiSolver)
             nameSpace = create_string_buffer(256)
             for i in range(n):
                 osiColName(osiSolver, c_int(i), nameSpace, 255)
@@ -90,11 +89,11 @@ class SolverCbc(Solver):
             return nameIdx;
 
         # cut callback
-        def cbc_cut_callback( osiSolver : c_void_p, osiCuts : c_void_p ) -> None:
+        def cbc_cut_callback(osiSolver: c_void_p, osiCuts: c_void_p) -> None:
             global warningMessages
             # getting fractional solution
             fracSol = []
-            n = osiNumCols( osiSolver )
+            n = osiNumCols(osiSolver)
             nameSpace = create_string_buffer(256)
             x = osiColSolution(osiSolver)
             if x == c_void_p(0):
@@ -107,11 +106,11 @@ class SolverCbc(Solver):
 
                 osiColName(osiSolver, c_int(i), nameSpace, 255)
                 cname = nameSpace.value.decode('utf-8')
-                var = self.model.get_var_by_name(cname) 
+                var = self.model.get_var_by_name(cname)
                 if var == None:
                     print('-->> var {} not found'.format(cname))
-                fracSol.append( (var, val) )
-            
+                fracSol.append((var, val))
+
             # storing names and indexes to translate cuts
             nameIdx = {}
             cidx = (c_int * n)()
@@ -130,10 +129,10 @@ class SolverCbc(Solver):
                     cutCoef = []
                     hasAllVars = True
                     missingVarName = ''
-                    for v,c in cut.expr.items():
+                    for v, c in cut.expr.items():
                         if v.name in nameIdx.keys():
-                            cutIdx.append( nameIdx[v.name] );
-                            cutCoef.append( c )
+                            cutIdx.append(nameIdx[v.name]);
+                            cutCoef.append(c)
                         else:
                             hasAllVars = False
                             missingVarName = v.name
@@ -145,18 +144,17 @@ class SolverCbc(Solver):
                             cval[i] = cutCoef[i]
                         sense = c_char(ord(cut.sense))
                         rhs = c_double(-cut.const)
-                        osiCutsAddRowCut( osiCuts, c_int(nz), cidx, cval, sense, rhs );
-                        #print('cut add successfully')
+                        osiCutsAddRowCut(osiCuts, c_int(nz), cidx, cval, sense, rhs);
+                        # print('cut add successfully')
                     else:
                         if warningMessages < 5:
                             print('cut discarded because variable {} does not exists in preprocessed problem.'.format(missingVarName))
                             warningMessages += 1
 
-
         # adding cut generators
         if self.model.cut_generators and self.added_cut_callback == False:
             self._cutCallback = CBCcallbacktype(cbc_cut_callback)
-            cbcAddCutCallback(self._model, self._cutCallback, c_str("mipCutGen"), c_void_p(0) )
+            cbcAddCutCallback(self._model, self._cutCallback, c_str("mipCutGen"), c_void_p(0))
             self.added_cut_callback = True
 
         cbcSetParameter(self._model, c_str('maxSavedSolutions'), c_str('10'))
@@ -180,18 +178,15 @@ class SolverCbc(Solver):
 
         return INFEASIBLE
 
-
     def get_objective_sense(self) -> str:
-        obj = cbcGetObjSense( self._model )
-        if obj < 0.0 :
+        obj = cbcGetObjSense(self._model)
+        if obj < 0.0:
             return MAXIMIZE
 
         return MINIMIZE
 
-
     def get_objective_value(self) -> float:
         return cbcObjValue(self._model)
-
 
     def var_get_x(self, var: Var) -> float:
         if cbcNumIntegers(self._model) > 0:
@@ -203,24 +198,21 @@ class SolverCbc(Solver):
             x = cbcColSolution(self._model)
             return float(x[var.idx])
 
-
-    def get_num_solutions(self) -> int: 
+    def get_num_solutions(self) -> int:
         return cbcNumberSavedSolutions(self._model)
 
-    def get_objective_value_i(self, i : int) -> float:
+    def get_objective_value_i(self, i: int) -> float:
         return float(cbcSavedSolutionObj(self._model, c_int(i)))
 
-    def var_get_xi(self, var: "Var", i: int) -> float: 
+    def var_get_xi(self, var: "Var", i: int) -> float:
         x = cbcSavedSolution(self._model, c_int(i))
         if x == c_void_p(0):
             raise Exception('no solution found')
         return float(x[var.idx])
 
-
     def var_get_rc(self, var: Var) -> float:
         rc = cbcReducedCost(self._model)
         return float(rc[var.idx])
-
 
     def var_get_lb(self, var: "Var") -> float:
         res = float(cbcGetColLower(self._model)[var.idx])
@@ -309,7 +301,7 @@ class SolverCbc(Solver):
         for i in range(n):
             cidxs[i] = variables[i].idx
 
-        cbcSetMIPStartI( self._model, count, cidxs, dvalues )
+        cbcSetMIPStartI(self._model, count, cidxs, dvalues)
 
     def num_cols(self) -> int:
         return cbcNumCols(self._model)
@@ -374,20 +366,25 @@ try:
         has_cbc = True
     else:
         try:
-            pathmip=dirname(mip.__file__)
-            pathlib=os.path.join(pathmip, 'libraries')
+            pathmip = dirname(mip.__file__)
+            pathlib = os.path.join(pathmip, 'libraries')
             if 'linux' in sys.platform.lower():
-                if sizeof(c_void_p)==8:
-                    libfile=os.path.join(pathlib, 'cbc-c-linux-x86-64.so')
+                if sizeof(c_void_p) == 8:
+                    libfile = os.path.join(pathlib, 'cbc-c-linux-x86-64.so')
                     cbclib = CDLL(libfile)
                     has_cbc = True
-            elif 'win' in sys.platform.lower():
-                if sizeof(c_void_p)==8:
-                    libfile=os.path.join(pathlib, 'cbc-c-windows-x86-64.dll')
+            elif sys.platform.lower().startswith('win'):
+                if sizeof(c_void_p) == 8:
+                    libfile = os.path.join(pathlib, 'cbc-c-windows-x86-64.dll')
                     cbclib = CDLL(libfile)
                     has_cbc = True
                 else:
-                    libfile=os.path.join(pathlib, 'cbc-c-windows-x86-32.dll')
+                    libfile = os.path.join(pathlib, 'cbc-c-windows-x86-32.dll')
+                    cbclib = CDLL(libfile)
+                    has_cbc = True
+            elif sys.platform.lower().startswith('darwin'):
+                if sizeof(c_void_p) == 8:
+                    libfile = os.path.join(pathlib, 'cbc-c-darwin-x86-64.a')
                     cbclib = CDLL(libfile)
                     has_cbc = True
         except:
@@ -558,7 +555,6 @@ if has_cbc:
         cbcSavedSolutionObj.argtypes = [c_void_p, c_int]
         cbcSavedSolutionObj.restype = c_double
 
-
         method_check = "Cbc_getObjValue"
         cbcObjValue = cbclib.Cbc_getObjValue
         cbcObjValue.argtypes = [c_void_p]
@@ -642,7 +638,7 @@ if has_cbc:
 
         method_check = "Cbc_addCutCallback"
         cbcAddCutCallback = cbclib.Cbc_addCutCallback;
-        cbcAddCutCallback.argtypes = [ c_void_p, CBCcallbacktype, c_char_p, c_void_p ]
+        cbcAddCutCallback.argtypes = [c_void_p, CBCcallbacktype, c_char_p, c_void_p]
 
         method_check = "Osi_getNumCols"
         osiNumCols = cbclib.Osi_getNumCols
@@ -660,7 +656,7 @@ if has_cbc:
 
         method_check = "oc_addRowCut"
         osiCutsAddRowCut = cbclib.OsiCuts_addRowCut
-        osiCutsAddRowCut.argtypes = [ c_void_p, c_int, POINTER(c_int), POINTER(c_double), c_char, c_double ]
+        osiCutsAddRowCut.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double), c_char, c_double]
     except:
         print('\nplease install a more updated version of cbc (or cbc trunk), function {} not implemented in the installed version'.format(method_check))
         has_cbc = False
