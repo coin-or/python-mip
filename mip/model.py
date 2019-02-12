@@ -294,9 +294,9 @@ class Model:
 
         # list of constraints and variables
         self.constrs = []
-        self.constrs_dict = {}
+        self.constrs_by_name = {}
         self.vars = []
-        self.vars_dict = {}
+        self.vars_by_name = {}
         self.cut_generators = []
 
         if solver_name.upper() == GUROBI:
@@ -314,11 +314,11 @@ class Model:
             if gurobi.has_gurobi:
                 from mip.gurobi import SolverGurobi
                 self.solver = SolverGurobi(self, name, sense)
-                self.solver_name = "gurobi"
+                self.solver_name = GUROBI
             elif cbc.has_cbc:
                 from mip.cbc import SolverCbc
                 self.solver = SolverCbc(self, name, sense)
-                self.solver_name = "cbc"
+                self.solver_name = CBC
 
     def __del__(self):
         if self.solver:
@@ -381,7 +381,7 @@ class Model:
             name = 'C{:011d}'.format(nc)
         idx = self.solver.add_var(obj, lb, ub, type, column, name)
         self.vars.append(Var(self, idx, name))
-        self.vars_dict[name] = self.vars[-1]
+        self.vars_by_name[name] = self.vars[-1]
         return self.vars[-1]
 
     def add_constr(self, lin_expr: "LinExpr", name: str = "") -> Constr:
@@ -413,7 +413,7 @@ class Model:
             return None  # empty constraint
         idx = self.solver.add_constr(lin_expr, name)
         self.constrs.append(Constr(self, idx, name))
-        self.constrs_dict[name] = self.constrs[-1]
+        self.constrs_by_name[name] = self.constrs[-1]
         return self.constrs[-1]
 
     def copy(self, solver_name: str = None) -> "Model":
@@ -445,7 +445,7 @@ class Model:
         return copy
 
     def get_constr_by_name(self, name) -> "Constr":
-        return self.constrs_dict.get(name, None)
+        return self.constrs_by_name.get(name, None)
 
     def get_objective(self) -> LinExpr:
         """ Returns the objective function
@@ -491,7 +491,7 @@ class Model:
         Returns:
             Var: a reference to a variable
         """
-        return self.vars_dict.get(name, None)
+        return self.vars_by_name.get(name, None)
 
     def relax(self):
         """ Relax integrality constraints of variables
@@ -503,20 +503,20 @@ class Model:
         for v in self.vars:
             if v.type == BINARY or v.type == INTEGER:
                 v.type = CONTINUOUS
-    
-    def add_cut_generator(self, cuts_generator : "CutsGenerator") -> None:
+
+    def add_cut_generator(self, cuts_generator: "CutsGenerator") -> None:
         """ Adds a cut generator
 
         Cut generators are called whenever a solution where one or more
         integer variables appear with continuous values. A cut generator will
         try to produce one or more inequalities to remove this fractional point.
-        
+
         Args:
             cuts_generator : CutsGenerator
-        
+
         """
         self.cut_generators.append(cuts_generator)
-    
+
     def optimize(self,
                  branch_selector: "BranchSelector" = None,
                  incumbent_updater: "IncumbentUpdater" = None,
@@ -567,10 +567,10 @@ class Model:
         n_rows = self.solver.num_rows()
         for i in range(n_cols):
             self.vars.append(Var(self, i, self.solver.var_get_name(i)))
-            self.vars_dict[self.vars[-1].name] = self.vars[-1]
+            self.vars_by_name[self.vars[-1].name] = self.vars[-1]
         for i in range(n_rows):
             self.constrs.append(Constr(self, i, self.solver.constr_get_name(i)))
-            self.constrs_dict[self.constrs[-1].name] = self.constrs[-1]
+            self.constrs_by_name[self.constrs[-1].name] = self.constrs[-1]
         self.sense = self.solver.get_objective_sense()
 
     def set_start(self, variables: List["Var"], values: List[float]):
@@ -690,7 +690,6 @@ class Solver:
                       incumbent_updater: "IncumbentUpdater" = None,
                       lazy_constrs_generator: "LazyConstrsGenerator" = None) -> None:
         pass
-
 
     def set_processing_limits(self,
                               max_time: float = inf,
@@ -933,7 +932,7 @@ quicksum = xsum
 def read_custom_settings() -> str:
     global customCbcLib
     from pathlib import Path
-    home=str(Path.home())
+    home = str(Path.home())
     import os
     configpath = os.path.join(home, '.config')
     if os.path.isdir(configpath):
@@ -942,13 +941,14 @@ def read_custom_settings() -> str:
             f = open(conffile, 'r')
             for line in f:
                 if '=' in line:
-                    cols=line.split('=')
-                    if cols[0].strip().lower()=='cbc-library':
-                        customCbcLib = cols[1].lstrip().rstrip().replace('"','')
+                    cols = line.split('=')
+                    if cols[0].strip().lower() == 'cbc-library':
+                        customCbcLib = cols[1].lstrip().rstrip().replace('"', '')
+
 
 print('using python mip package version {}'.format(VERSION))
-customCbcLib=''
+customCbcLib = ''
 read_custom_settings()
-#print('customCbcLib {}'.format(customCbcLib))
+# print('customCbcLib {}'.format(customCbcLib))
 
 # vim: ts=4 sw=4 et
