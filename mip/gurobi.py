@@ -167,8 +167,8 @@ class SolverGurobi(Solver):
 
 
             return 0
-    
-        if (self.model.cut_generators):
+
+        if self.model.cut_generators:
             self._callback = GRBcallbacktype(callback)
             GRBsetcallbackfunc(self._model, self._callback, c_void_p(0))
 
