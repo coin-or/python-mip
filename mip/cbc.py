@@ -658,7 +658,8 @@ if has_cbc:
         osiCutsAddRowCut = cbclib.OsiCuts_addRowCut
         osiCutsAddRowCut.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double), c_char, c_double]
     except:
-        print('\nplease install a more updated version of cbc (or cbc trunk), function {} not implemented in the installed version'.format(method_check))
+        print('\nplease install a more updated version of cbc (or cbc trunk),\
+ function {} not implemented in the installed version'.format(method_check))
         has_cbc = False
 
 
