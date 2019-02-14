@@ -339,6 +339,36 @@ class SolverGurobi(Solver):
         assert st == 0
         return res.value
 
+    def get_cutoff(self) -> float:
+        res = c_double(0.0)
+        st = GRBgetdblattr(self._model, c_str("Cutoff", byref(res)))
+        assert st == 0
+        return res.value
+
+    def set_cutoff(self, cutoff : float): 
+        st = GRBsetdblattr(self._model, c_str("Cutoff"), c_double(cutoff))
+        assert st == 0
+
+    def get_allowable_gap(self) -> float:
+        res = c_double(0.0)
+        st = GRBgetdblattr(self._model, c_str("MIPGapAbs", byref(res)))
+        assert st == 0
+        return res.value
+
+    def set_allowable_gap(self, allowable_gap : float):
+        st = GRBsetdblattr(self._model, c_str("MIPGap"), c_double(allowable_gap))
+        assert st == 0
+
+    def get_allowable_ratio_gap(self) -> float:
+        res = c_double(0.0)
+        st = GRBgetdblattr(self._model, c_str("MIPGap", byref(res)))
+        assert st == 0
+        return res.value
+
+    def set_allowable_ratio_gap(self, allowable_ratio_gap : float):
+        st = GRBsetdblattr(self._model, c_str("MIPGap"), c_double(allowable_ratio_gap))
+        assert st == 0
+
     def constr_get_expr(self, constr: Constr) -> LinExpr:
         if not self._updated:
             self.update()
