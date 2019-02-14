@@ -9,6 +9,7 @@ from typing import Dict, List, Tuple
 
 from mip.constants import *
 from math import inf
+from builtins import property
 
 
 class Column:
@@ -639,6 +640,41 @@ class Model:
     @property
     def num_rows(self) -> int:
         return len(self.constrs)
+    
+    @property
+    def cutoff(self) -> float:
+        """float: upper limit for the solution cost, solutions with cost > cutoff 
+        will be removed from the search space, a small cutoff value may significantly 
+        speedup the search, but if cutoff is set to a value too low
+        the model will become infeasible"""
+        return self.solver.get_cutoff()
+    
+    @cutoff.setter
+    def cutoff(self, value : float):
+        self.solver.set_cutoff(value)
+
+    @property
+    def allowable_gap(self) -> float:
+        """float: tolerance for the quality of the optimal solution, if a 
+        solution with cost c and a lower bound l are available and c-l<allowable_gap,
+        the search will be concluded, see allowable_ratio_gap to determine 
+        a percentage value """
+        return self.solver.get_allowable_gap()
+    
+    @allowable_gap.setter
+    def allowable_gap(self, value):
+        self.solver.set_allowable_gap(value)
+    
+    @property
+    def allowable_ratio_gap(self) -> float:
+        """float: percentage indicating the tolerance for the maximum percentage deviation
+        from the optimal solution cost, if a solution with cost c and a lower bound l 
+        are available and (c-l)/l < allowable_ratio_gap the search will be concluded."""
+        return self.solver.get_allowable_ratio_gap()
+    
+    @allowable_ratio_gap.setter
+    def allowable_ratio_gap(self, value):
+        self.solver.set_allowable_ratio_gap(value)
 
 
 class Solver:
@@ -704,6 +740,18 @@ class Solver:
     def num_cols(self) -> int: pass
 
     def num_rows(self) -> int: pass
+    
+    def get_cutoff(self) -> float:pass
+
+    def set_cutoff(self, cutoff : float): pass
+
+    def get_allowable_gap(self) -> float:pass
+
+    def set_allowable_gap(self, allowable_gap : float): pass
+
+    def get_allowable_ratio_gap(self) -> float:pass
+
+    def set_allowable_ratio_gap(self, allowable_ratio_gap : float): pass
 
     # Constraint-related getters/setters
 

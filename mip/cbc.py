@@ -308,6 +308,24 @@ class SolverCbc(Solver):
 
     def num_rows(self) -> int:
         return cbcNumRows(self._model)
+    
+    def get_cutoff(self) -> float:
+        return cbcGetCutoff(self._model)
+    
+    def set_cutoff(self, cutoff : float):
+        cbcSetCutoff(self._model, cutoff) 
+
+    def get_allowable_gap(self) -> float:
+        return cbcGetAllowableGap(self._model)
+
+    def set_allowable_gap(self, allowable_gap : float):
+        cbcSetAllowableGap(self._model, allowable_gap)
+
+    def get_allowable_ratio_gap(self) -> float:
+        return cbcGetAllowableFractionGap(self._model)
+
+    def set_allowable_ratio_gap(self, allowable_ratio_gap : float):
+        cbcSetAllowableFractionGap(self._model, allowable_ratio_gap)    
 
     def constr_get_expr(self, constr: Constr) -> LinExpr:
         numnz = cbcGetRowNz(self._model, constr.idx)
@@ -657,6 +675,35 @@ if has_cbc:
         method_check = "oc_addRowCut"
         osiCutsAddRowCut = cbclib.OsiCuts_addRowCut
         osiCutsAddRowCut.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double), c_char, c_double]
+        
+        method_check = "Cbc_getCutoff"
+        cbcGetCutoff = cbclib.Cbc_getCutoff
+        cbcGetCutoff.argtype = [c_void_p]
+        cbcGetCutoff.restype = c_double
+
+        method_check = "Cbc_setCutoff"
+        cbcSetCutoff = cbclib.Cbc_setCutoff
+        cbcSetCutoff.argtype = [c_void_p, c_double]
+
+        method_check = "Cbc_getAllowableGap"
+        cbcGetAllowableGap = cbclib.Cbc_getAllowableGap
+        cbcGetAllowableGap.argtype = [c_void_p]
+        cbcGetAllowableGap.restype = c_double
+
+        method_check = "Cbc_setAllowableGap"
+        cbcSetAllowableGap = cbclib.Cbc_setAllowableGap
+        cbcSetAllowableGap.argtype = [c_void_p, c_double]
+
+        method_check = "Cbc_getAllowableFractionGap"
+        cbcGetAllowableFractionGap = cbclib.Cbc_getAllowableFractionGap
+        cbcGetAllowableFractionGap.argtype = [c_void_p]
+        cbcGetAllowableFractionGap.restype = c_double
+
+        method_check = "Cbc_setAllowableFractionGap"
+        cbcSetAllowableFractionGap = cbclib.Cbc_setAllowableFractionGap
+        cbcSetAllowableFractionGap.argtype = [c_void_p, c_double]
+        
+        has_cbc = True
     except:
         print('\nplease install a more updated version of cbc (or cbc trunk),\
  function {} not implemented in the installed version'.format(method_check))
