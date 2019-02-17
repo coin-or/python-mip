@@ -10,6 +10,7 @@ from typing import Dict, List, Tuple
 from mip.constants import *
 from math import inf
 from builtins import property
+from os import environ
 
 
 class Column:
@@ -292,6 +293,14 @@ class Model:
         self.sense = sense
         self.solver_name = solver_name
         self.solver = None
+        if "solver_name" in environ:
+            solver_name = environ["solver_name"]
+        if "solver_name".upper() in environ:
+            solver_name = environ["solver_name".upper()]
+            
+        self.__mipStart = []
+
+        
 
         # list of constraints and variables
         self.constrs = []
@@ -329,14 +338,14 @@ class Model:
         if isinstance(other, LinExpr):
             if len(other.sense) == 0:
                 # adding objective function components
-                self.set_objective(other)
+                self.objective = other
             else:
                 # adding constraint
                 self.add_constr(other)
         elif isinstance(other, tuple):
             if isinstance(other[0], LinExpr) and isinstance(other[1], str):
                 if len(other[0].sense) == 0:
-                    self.set_objective(other[0])
+                    self.objective = other[0]
                 else:
                     self.add_constr(other[0], other[1])
 
@@ -441,35 +450,89 @@ class Model:
             copy.add_constr(lin_expr=expr, name=c.name)
 
         # setting objective function's constant
-        copy.set_objective_const(self.get_objective_const())
+        copy.objective_const = self.get_objective_const()
 
         return copy
 
-    def get_constr_by_name(self, name) -> "Constr":
-        return self.constrs_by_name.get(name, None)
-
-    def get_objective(self) -> LinExpr:
-        """ Returns the objective function
-
+    def get_constr_by_name(self, name : str) -> "Constr":
+        """ Queries a constraint per name
+        
+        Args:  
+            name(str): constraint name
+        
         Returns:
-            LinExpr: the model objective function
+            Constr: constraint
+        """
+        return self.constrs_by_name.get(name, None)
+        
+    @property
+    def objective(self) -> LinExpr:
+        """LinExpr: Objective function of the problem
+
+        The objective function of the problem as a linear expression.
+
+        Examples:
+
+            The following code adds all x variables x[0], ..., x[n-1], to
+            the objective function of model m with weight w::
+
+                m.objective = xsum(w*x[i] for i in range(n))
+
+            A simpler way to define the objective function is the use of the
+            model operator += ::
+
+                m += xsum(w*x[i] for i in range(n))
+
+            Note that the only difference of adding a constraint is the lack of
+            a sense and a rhs.
 
         """
         return self.solver.get_objective()
 
-    def get_objective_const(self) -> float:
-        return self.solver.get_objective_const()
 
-    def get_objective_value(self) -> float:
+    @objective.setter
+    def objective(self, expr):    
+        if isinstance(expr, int) or isinstance(expr, float):
+            self.solver.set_objective(LinExpr([], [], expr))
+        elif isinstance(expr, Var):
+            self.solver.set_objective(LinExpr([expr], [1]))
+        elif isinstance(expr, LinExpr):
+            self.solver.set_objective(expr)
+            
+    @property       
+    def sense(self) -> str:
+        """ The optimization sense
+        
+        Returns:
+            str: the objective function sense, MINIMIZE (default) or (MAXIMIZE)
+        """
+        
+        return self.solver.get_objective_sense()
+
+    @property
+    def objective_const(self) -> float:
+        """ Returns the current constant part of the objective function
+        
+        float: the constant part in the objective function
+        """
+        return self.solver.get_objective_const()
+    
+    @objective_const.setter
+    def objective_const(self, const: float) -> None:
+        self.solver.set_objective_const(const)
+
+    @property
+    def objective_value(self) -> float:
         """ Objective function value
 
         Returns:
-            float: returns the objetive function value of the solution found.
+            float: returns the objective function value of the solution found.
 
         """
         return self.solver.get_objective_value()
 
-    def get_num_solutions(self) -> int:
+    @property
+    def num_solutions(self) -> int:
         """ Number of solutions found during the MIP search
 
         Returns:
@@ -478,7 +541,8 @@ class Model:
         """
         return self.solver.get_num_solutions()
 
-    def get_objective_value_i(self, i: int) -> float:
+    @property
+    def objective_value_i(self, i: int) -> float:
         """ Cost of the i-th solution found
 
         Returns:
@@ -574,52 +638,25 @@ class Model:
             self.constrs_by_name[self.constrs[-1].name] = self.constrs[-1]
         self.sense = self.solver.get_objective_sense()
 
-    def set_start(self, variables: List["Var"], values: List[float]):
+    @property
+    def start(self) -> List[Tuple["Var", float]]:
         """ Enter an initial feasible solution
 
         Enters an initial feasible solution. Only the main binary/integer decision variables.
         Auxiliary or continuous variables are automatically computed.
 
         Args:
-            variables(List[Var]): list of variables
-            values(List[float]): list of variable values in initial feasible solution
+            start_sol: list of tuples Var,float indicating non-zero variables
+            and their values in the initial feasible solution
 
         """
-        self.solver.set_start(variables, values)
+        return self.__mipStart
 
-    def set_objective(self, expr, sense: str = "") -> None:
-        """ Modifies the objective function
+    @start.setter
+    def start(self, start_sol : List[Tuple["Var", float]]):
+        self.__mipStart = start_sol
+        self.solver.set_start(start_sol)
 
-        Args:
-            expr(LinExpr): linear expression
-            sense(str): MINIMIZE("MIN") (default) or MAXIMIZE("MAX") (optional)
-
-        Examples:
-
-            The following code adds all x variables x[0], ..., x[n-1], with
-            to the objective function of model m with weight w::
-
-                m.set_objective(xsum(w*x[i] for i in range(n)))
-
-            A simpler way to define the objective function is the use of the
-            model operator += ::
-
-                m += xsum(w*x[i] for i in range(n))
-
-            Note that the only difference of adding a constraint is the lack of
-            a sense and a rhs.
-
-        """
-
-        if isinstance(expr, int) or isinstance(expr, float):
-            self.solver.set_objective(LinExpr([], [], expr))
-        elif isinstance(expr, Var):
-            self.solver.set_objective(LinExpr([expr], [1]))
-        elif isinstance(expr, LinExpr):
-            self.solver.set_objective(expr, sense)
-
-    def set_objective_const(self, const: float) -> None:
-        return self.solver.set_objective_const(const)
 
     def write(self, path: str) -> None:
         """ Saves the the MIP model
@@ -715,7 +752,7 @@ class Solver:
 
     def get_objective_sense(self) -> str: pass
 
-    def set_start(self, variables: List["Var"], values: List[float]) -> None: pass
+    def set_start(self, start : List[Tuple["Var", float]]) -> None: pass
 
     def set_objective(self, lin_expr: "LinExpr", sense: str = "") -> None: pass
 

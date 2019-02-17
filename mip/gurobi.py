@@ -298,16 +298,16 @@ class SolverGurobi(Solver):
     def set_objective_const(self, const: float) -> None:
         GRBsetdblattr(self._model, c_str("ObjCon"), c_double(const))
 
-    def set_start(self, variables: List["Var"], values: List[float]) -> None:
+    def set_start(self, start : List[Tuple["Var", float]]) -> None:
         # collecting data
-        numnz = len(variables)
+        numnz = len(start)
         cind = (c_int * numnz)()
         cval = (c_double * numnz)()
 
         # collecting variable coefficients
-        for i in range(len(variables)):
-            cind[i] = variables[i].idx
-            cval[i] = values[i]
+        for i in range(len(start)):
+            cind[i] = start[i][0].idx
+            cval[i] = start[i][1]
 
         GRBsetdblattrlist(self._model, c_str("Start"), numnz, cind, cval)
         self._updated = False
