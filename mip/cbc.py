@@ -290,16 +290,15 @@ class SolverCbc(Solver):
         else:
             cbcReadLp(self._model, c_str(file_path))
 
-    def set_start(self, variables: List["Var"], values: List[float]) -> None:
-        assert len(values) == len(variables)
-        n = len(variables)
+    def set_start(self, start : List[Tuple["Var", float]]) -> None:
+        n = len(start)
         count = c_int(n)
         dvalues = (c_double * n)()
         for i in range(n):
-            dvalues[i] = values[i]
+            dvalues[i] = start[i][1]
         cidxs = (c_int * n)()
         for i in range(n):
-            cidxs[i] = variables[i].idx
+            cidxs[i] = start[i].idx
 
         cbcSetMIPStartI(self._model, count, cidxs, dvalues)
 
