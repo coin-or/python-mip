@@ -65,7 +65,7 @@ def cg():
         # STEP 2: updating pricing objective with dual values from master
         ##########
 
-        pricing.set_objective(1)
+        pricing.objective = 1
         for i in range(m):
             a[i].obj = -constraints[i].pi
 
