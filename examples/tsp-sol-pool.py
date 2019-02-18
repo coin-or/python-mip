@@ -55,6 +55,7 @@ for i in range(0, n):
         model += \
             y[i]  - (n+1)*x[i][j] >=  y[j] -n, 'noSub({},{})'.format(i,j)
 
+model.emphasis = FEASIBILITY
 model.optimize( max_seconds=30 )
 
 print('{} routes found'.format(model.num_solutions))

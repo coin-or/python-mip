@@ -587,6 +587,32 @@ class SolverGurobi(Solver):
         assert st == 0
         return vName.value.decode('utf-8')
 
+    def get_emphasis(self) -> int:
+        fc = c_int(0)
+        st = GRBgetintparam(GRBgetenv(self._model), c_str("MIPFocus"),
+                            byref(fc))
+        assert st == 0
+        if fc == 1:
+            return FEASIBILITY
+        elif fc == 3 or fc == 2:
+            return OPTIMALITY
+
+        return 0
+
+    def set_emphasis(self, emph: int):
+        if emph == FEASIBILITY:
+            st = GRBsetintparam(GRBgetenv(self._model), c_str("MIPFocus"),
+                                c_int(1))
+            assert st == 0
+        elif emph == OPTIMALITY:
+            st = GRBsetintparam(GRBgetenv(self._model), c_str("MIPFocus"),
+                                c_int(2))
+            assert st == 0
+        else:
+            st = GRBsetintparam(GRBgetenv(self._model), c_str("MIPFocus"),
+                                c_int(0))
+            assert st == 0
+
 
 # auxiliary functions
 def c_str(value) -> c_char_p:
