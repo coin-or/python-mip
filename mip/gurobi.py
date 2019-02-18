@@ -128,8 +128,38 @@ class SolverGurobi(Solver):
         GRBsetcharattrarray(self._model, c_str("VType"), 0, len(idxs), ccont)
         GRBupdatemodel(self._model)
 
-    def optimize(self) -> int:
+    def get_max_seconds(self) -> float:
+        res = c_double()
+        GRBgetdblparam(GRBgetenv(self._model), c_str("TimeLimit"), byref(res))
+        return res.value
 
+    def set_max_seconds(self, max_seconds: float):
+        st = GRBsetdblparam(GRBgetenv(self._model), c_str("TimeLimit"), c_double(max_seconds))
+        assert st == 0
+
+    def get_max_solutions(self) -> int:
+        res = c_double()
+        st = GRBgetintparam(GRBgetenv(self._model), c_str("SolutionLimit"), byref(res))
+        assert st == 0
+        return res.value
+
+    def set_max_solutions(self, max_solutions: int):
+        st = GRBsetintparam(GRBgetenv(self._model), c_str("SolutionLimit"), c_int(max_solutions))
+        assert st == 0
+
+    def get_max_nodes(self) -> int:
+        res = c_double()
+        st = GRBgetdblparam(GRBgetenv(self._model), c_str("NodeLimit"), byref(res))
+        assert st == 0
+        rdbl = res.value
+        rint = min(sys.maxsize, int(rdbl))
+        return rint
+
+    def set_max_nodes(self, max_nodes: int):
+        st = GRBsetdblparam(GRBgetenv(self._model), c_str("NodeLimit"), c_double(max_nodes))
+        assert st == 0
+
+    def optimize(self) -> int:
         # todo add branch_selector and incumbent_updater callbacks
         def callback(p_model: c_void_p,
                      p_cbdata: c_void_p,
@@ -214,13 +244,26 @@ class SolverGurobi(Solver):
 
     def get_objective_sense(self) -> str:
         isense = c_int(0)
-        st = GRBgetintattr( self._model, c_str("ModelSense"), byref(isense) )
+        st = GRBgetintattr(self._model, c_str("ModelSense"), byref(isense))
+        assert st == 0
         if isense.value == 1:
             return MINIMIZE
         elif isense.value == -1:
             return MAXIMIZE
         else:
-            raise Exception('Unknow sense')
+            raise Exception('Unknown sense')
+
+    def set_objective_sense(self, sense: str):
+        if sense.strip().upper() == MAXIMIZE.strip().upper():
+            st = GRBsetintattr(self._model, c_str("ModelSense"), c_int(-1))
+            assert st == 0
+        elif sense.strip().upper() == MINIMIZE.strip().upper():
+            st = GRBsetintattr(self._model, c_str("ModelSense"), c_int(1))
+            assert st == 0
+        else:
+            raise Exception("Unknown sense: {}, use {} or {}".format(sense,
+                                                                     MAXIMIZE,
+                                                                     MINIMIZE))
 
     def get_num_solutions(self) -> int:
         res = c_int(0)
@@ -230,15 +273,17 @@ class SolverGurobi(Solver):
 
     def var_get_xi(self, var: "Var", i: int) -> float:
         res = c_double()
-        st = GRBsetintparam( GRBgetenv(self._model), c_str("SolutionNumber"), c_int(i) );
+        st = GRBsetintparam(GRBgetenv(self._model), c_str("SolutionNumber"),
+                            c_int(i))
         assert st == 0
-        st = GRBgetdblattrelement(self._model, c_str("Xn"), c_int(var.idx), byref(res))
+        st = GRBgetdblattrelement(self._model, c_str("Xn"),
+                                  c_int(var.idx), byref(res))
         assert st == 0
         return res.value
 
-    def get_objective_value_i(self, i : int) -> float:
+    def get_objective_value_i(self, i: int) -> float:
         res = c_double(0)
-        st = GRBgetdblattr( self._model, c_str("PoolObjVal") , byref(res) );
+        st = GRBgetdblattr(self._model, c_str("PoolObjVal"), byref(res))
         assert st == 0
         return res.value
 
@@ -341,32 +386,34 @@ class SolverGurobi(Solver):
 
     def get_cutoff(self) -> float:
         res = c_double(0.0)
-        st = GRBgetdblattr(self._model, c_str("Cutoff", byref(res)))
+        st = GRBgetdblparam(GRBgetenv(self._model), c_str("Cutoff"), byref(res))
         assert st == 0
         return res.value
 
-    def set_cutoff(self, cutoff : float): 
-        st = GRBsetdblattr(self._model, c_str("Cutoff"), c_double(cutoff))
+    def set_cutoff(self, cutoff: float): 
+        st = GRBsetdblparam(GRBgetenv(self._model), c_str("Cutoff"), c_double(cutoff))
         assert st == 0
 
     def get_allowable_gap(self) -> float:
         res = c_double(0.0)
-        st = GRBgetdblattr(self._model, c_str("MIPGapAbs", byref(res)))
+        st = GRBgetdblparam(GRBgetenv(self._model), c_str("MIPGapAbs"), byref(res))
         assert st == 0
         return res.value
 
-    def set_allowable_gap(self, allowable_gap : float):
-        st = GRBsetdblattr(self._model, c_str("MIPGap"), c_double(allowable_gap))
+    def set_allowable_gap(self, allowable_gap: float):
+        st = GRBsetdblparam(GRBgetenv(self._model), c_str("MIPGap"),
+                            c_double(allowable_gap))
         assert st == 0
 
     def get_allowable_ratio_gap(self) -> float:
         res = c_double(0.0)
-        st = GRBgetdblattr(self._model, c_str("MIPGap", byref(res)))
+        st = GRBgetdblparam(GRBgetenv(self._model), c_str("MIPGap"), byref(res))
         assert st == 0
         return res.value
 
-    def set_allowable_ratio_gap(self, allowable_ratio_gap : float):
-        st = GRBsetdblattr(self._model, c_str("MIPGap"), c_double(allowable_ratio_gap))
+    def set_allowable_ratio_gap(self, allowable_ratio_gap: float):
+        st = GRBsetdblparam(GRBgetenv(self._model), c_str("MIPGap"),
+                            c_double(allowable_ratio_gap))
         assert st == 0
 
     def constr_get_expr(self, constr: Constr) -> LinExpr:
