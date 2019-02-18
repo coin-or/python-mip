@@ -713,27 +713,27 @@ class Model:
         self.solver.set_cutoff(value)
 
     @property
-    def allowable_gap(self) -> float:
+    def mip_gap_abs(self) -> float:
         """float: tolerance for the quality of the optimal solution, if a
-        solution with cost c and a lower bound l are available and c-l<allowable_gap,
-        the search will be concluded, see allowable_ratio_gap to determine
+        solution with cost c and a lower bound l are available and c-l<mip_gap_abs,
+        the search will be concluded, see mip_gap to determine
         a percentage value """
-        return self.solver.get_allowable_gap()
+        return self.solver.get_mip_gap_abs()
 
-    @allowable_gap.setter
-    def allowable_gap(self, value):
-        self.solver.set_allowable_gap(value)
+    @mip_gap_abs.setter
+    def mip_gap_abs(self, value):
+        self.solver.set_mip_gap(value)
 
     @property
-    def allowable_ratio_gap(self) -> float:
+    def mip_gap(self) -> float:
         """float: percentage indicating the tolerance for the maximum percentage deviation
         from the optimal solution cost, if a solution with cost c and a lower bound l
-        are available and (c-l)/l < allowable_ratio_gap the search will be concluded."""
-        return self.solver.get_allowable_ratio_gap()
+        are available and (c-l)/l < mip_gap the search will be concluded."""
+        return self.solver.get_mip_gap()
 
-    @allowable_ratio_gap.setter
-    def allowable_ratio_gap(self, value):
-        self.solver.set_allowable_ratio_gap(value)
+    @mip_gap.setter
+    def mip_gap(self, value):
+        self.solver.set_mip_gap(value)
 
     @property
     def max_seconds(self) -> float:
@@ -849,13 +849,13 @@ class Solver:
 
     def set_cutoff(self, cutoff: float): pass
 
-    def get_allowable_gap(self) -> float: pass
+    def get_mip_gap_abs(self) -> float: pass
 
-    def set_allowable_gap(self, allowable_gap: float): pass
+    def set_mip_gap_abs(self, mip_gap_abs: float): pass
 
-    def get_allowable_ratio_gap(self) -> float: pass
+    def get_mip_gap(self) -> float: pass
 
-    def set_allowable_ratio_gap(self, allowable_ratio_gap: float): pass
+    def set_mip_gap(self, mip_gap: float): pass
 
     # Constraint-related getters/setters
 
