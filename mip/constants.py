@@ -26,6 +26,10 @@ GREATER_OR_EQUAL = ">"
 MINIMIZE = "MIN"
 MAXIMIZE = "MAX"
 
+# Search emphasis
+FEASIBILITY = 1
+OPTIMALITY = 2
+
 # variable types
 BINARY = "B"
 CONTINUOUS = "C"

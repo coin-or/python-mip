@@ -24,6 +24,8 @@ class SolverCbc(Solver):
         if sense == MAXIMIZE:
             cbcSetObjSense(self._model, c_double(-1.0))
 
+        self.emphasis = 0
+
     def add_var(self,
                 obj: float = 0,
                 lb: float = 0,
@@ -179,6 +181,15 @@ class SolverCbc(Solver):
                               c_str("mipCutGen"), c_void_p(0))
             self.added_cut_callback = True
 
+        if self.emphasis == FEASIBILITY:
+            cbcSetParameter(self._model, c_str('passf'), c_str('50'))
+            cbcSetParameter(self._model, c_str('proximity'), c_str('on'))
+        if self.emphasis == OPTIMALITY:
+            cbcSetParameter(self._model, c_str('strong'), c_str('10'))
+            cbcSetParameter(self._model, c_str('trust'), c_str('20'))
+            cbcSetParameter(self._model, c_str('lagomory'), c_str('endonly'))
+            cbcSetParameter(self._model, c_str('latwomir'), c_str('endonly'))
+            
         cbcSetParameter(self._model, c_str('maxSavedSolutions'), c_str('10'))
         cbcSolve(self._model)
 
@@ -402,6 +413,12 @@ class SolverCbc(Solver):
         if maxSol != inf:
             cbcSetParameter(m, c_str('maxSolutions'),
                             c_str('{}'.format(maxSol)))
+
+    def get_emphasis(self) -> int:
+        return self.emphasis
+
+    def set_emphasis(self, emph: int):
+        self.emphasis = emph
 
     def __del__(self):
         cbcDeleteModel(self._model)
