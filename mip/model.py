@@ -204,11 +204,11 @@ class LinExpr:
         if self.sense:
             result.append(self.sense + "= ")
             result.append(str(abs(self.const)) if self.const < 0 else "- " +
-                          str(abs(self.const)))
+                                                                      str(abs(self.const)))
         elif self.const != 0:
             result.append(
                 "+ " + str(abs(self.const)) if self.const > 0 else "- " +
-                str(abs(self.const)))
+                                                                   str(abs(self.const)))
 
         return "".join(result)
 
@@ -273,7 +273,7 @@ class Model:
 
     def __init__(self, name: str = "",
                  sense: str = MINIMIZE,
-                 solver_name: str = ''):
+                 solver_name: str = ""):
         """Model constructor
 
         Creates a Mixed-Integer Linear Programming Model. The default model
@@ -336,7 +336,7 @@ class Model:
         if self.solver:
             del self.solver
 
-    def __iadd__(self, other) -> 'Model':
+    def __iadd__(self, other) -> "Model":
         if isinstance(other, LinExpr):
             if len(other.sense) == 0:
                 # adding objective function components
@@ -390,7 +390,7 @@ class Model:
             ub = 1.0
         if len(name.strip()) == 0:
             nc = self.solver.num_cols()
-            name = 'C{:011d}'.format(nc)
+            name = "C{:011d}".format(nc)
         idx = self.solver.add_var(obj, lb, ub, var_type, column, name)
         self.vars.append(Var(self, idx, name))
         self.vars_by_name[name] = self.vars[-1]
@@ -420,7 +420,7 @@ class Model:
         :math:`\displaystyle \sum_{i=0}^{n-1} x_i = y` and name this \
         constraint cons1::
 
-            m += xsum(x[i] for i in range(n)) == y, 'cons1'
+            m += xsum(x[i] for i in range(n)) == y, "cons1"
 
         """
 
@@ -451,25 +451,25 @@ class Model:
 
         # adding constraints
         for c in self.constrs:
-            expr = c.expr  # todo: make copy of constraint's lin_expr
+            expr = c.expr  # todo: make copy of constraint"s lin_expr
             copy.add_constr(lin_expr=expr, name=c.name)
 
-        # setting objective function's constant
+        # setting objective function"s constant
         copy.objective_const = self.get_objective_const()
 
         return copy
 
-    def get_constr_by_name(self, name : str) -> "Constr":
+    def get_constr_by_name(self, name: str) -> "Constr":
         """ Queries a constraint per name
-        
-        Args:  
+
+        Args:
             name(str): constraint name
-        
+
         Returns:
             Constr: constraint
         """
         return self.constrs_by_name.get(name, None)
-        
+
     @property
     def objective(self) -> LinExpr:
         """LinExpr: Objective function of the problem
@@ -494,26 +494,25 @@ class Model:
         """
         return self.solver.get_objective()
 
-
     @objective.setter
-    def objective(self, expr):    
+    def objective(self, expr):
         if isinstance(expr, int) or isinstance(expr, float):
             self.solver.set_objective(LinExpr([], [], expr))
         elif isinstance(expr, Var):
             self.solver.set_objective(LinExpr([expr], [1]))
         elif isinstance(expr, LinExpr):
             self.solver.set_objective(expr)
-            
-    @property       
+
+    @property
     def sense(self) -> str:
         """ The optimization sense
-        
+
         Returns:
             str: the objective function sense, MINIMIZE (default) or (MAXIMIZE)
         """
-        
+
         return self.solver.get_objective_sense()
-    
+
     @sense.setter
     def sense(self, sense: str):
         self.solver.set_objective_sense(sense)
@@ -521,11 +520,11 @@ class Model:
     @property
     def objective_const(self) -> float:
         """ Returns the current constant part of the objective function
-        
+
         float: the constant part in the objective function
         """
         return self.solver.get_objective_const()
-    
+
     @objective_const.setter
     def objective_const(self, const: float) -> None:
         self.solver.set_objective_const(const)
@@ -589,22 +588,22 @@ class Model:
 
         """
         self.cut_generators.append(cuts_generator)
- 
-    @property 
+
+    @property
     def emphasis(self) -> int:
-        """int: defines the main objective of the search, if set to 1 (FEASIBILITY) then 
-        the search process will focus on try to find quickly feasible solutions and 
-        improving them; if set to 2 (OPTIMALITY) then the search process will try to 
+        """int: defines the main objective of the search, if set to 1 (FEASIBILITY) then
+        the search process will focus on try to find quickly feasible solutions and
+        improving them; if set to 2 (OPTIMALITY) then the search process will try to
         find a provable optimal solution, procedures to further improve the lower bounds will
         be activated in this setting, this may increase the time to produce the first
         feasible solutions but will probably pay off in longer runs; the default option
-        if 0, where a balance between optimality and feasibility is sought. 
+        if 0, where a balance between optimality and feasibility is sought.
         """
         return self.solver.get_emphasis()
 
     @emphasis.setter
     def emphasis(self, emph: int):
-        return self.solver.set_emphasis(emph)
+        self.solver.set_emphasis(emph)
 
     def optimize(self,
                  branch_selector: "BranchSelector" = None,
@@ -677,10 +676,9 @@ class Model:
         return self.__mipStart
 
     @start.setter
-    def start(self, start_sol : List[Tuple["Var", float]]):
+    def start(self, start_sol: List[Tuple["Var", float]]):
         self.__mipStart = start_sol
         self.solver.set_start(start_sol)
-
 
     def write(self, path: str) -> None:
         """ Saves the the MIP model
@@ -701,56 +699,56 @@ class Model:
     @property
     def num_rows(self) -> int:
         return len(self.constrs)
-    
+
     @property
     def cutoff(self) -> float:
-        """float: upper limit for the solution cost, solutions with cost > cutoff 
-        will be removed from the search space, a small cutoff value may significantly 
+        """float: upper limit for the solution cost, solutions with cost > cutoff
+        will be removed from the search space, a small cutoff value may significantly
         speedup the search, but if cutoff is set to a value too low
         the model will become infeasible"""
         return self.solver.get_cutoff()
-    
+
     @cutoff.setter
-    def cutoff(self, value : float):
+    def cutoff(self, value: float):
         self.solver.set_cutoff(value)
 
     @property
     def allowable_gap(self) -> float:
-        """float: tolerance for the quality of the optimal solution, if a 
+        """float: tolerance for the quality of the optimal solution, if a
         solution with cost c and a lower bound l are available and c-l<allowable_gap,
-        the search will be concluded, see allowable_ratio_gap to determine 
+        the search will be concluded, see allowable_ratio_gap to determine
         a percentage value """
         return self.solver.get_allowable_gap()
-    
+
     @allowable_gap.setter
     def allowable_gap(self, value):
         self.solver.set_allowable_gap(value)
-    
+
     @property
     def allowable_ratio_gap(self) -> float:
         """float: percentage indicating the tolerance for the maximum percentage deviation
-        from the optimal solution cost, if a solution with cost c and a lower bound l 
+        from the optimal solution cost, if a solution with cost c and a lower bound l
         are available and (c-l)/l < allowable_ratio_gap the search will be concluded."""
         return self.solver.get_allowable_ratio_gap()
-    
+
     @allowable_ratio_gap.setter
     def allowable_ratio_gap(self, value):
         self.solver.set_allowable_ratio_gap(value)
-        
+
     @property
     def max_seconds(self) -> float:
         """float: time limit in seconds for search"""
         return self.solver.get_max_seconds()
-    
+
     @max_seconds.setter
     def max_seconds(self, max_seconds: float):
         self.solver.set_max_seconds(max_seconds)
-        
+
     @property
     def max_nodes(self) -> int:
         """int: maximum number of nodes to be explored in the search tree"""
         return self.solver.get_max_nodes()
-    
+
     @max_nodes.setter
     def max_nodes(self, max_nodes: int):
         self.solver.set_max_nodes(max_nodes)
@@ -759,10 +757,11 @@ class Model:
     def max_solutions(self) -> int:
         """int: solution limit, search will be stopped when max_solutions were found"""
         return self.solver.get_max_solutions()
-    
+
     @max_solutions.setter
     def max_solutions(self, max_solutions: int):
         self.solver.set_max_solutions(max_solutions)
+
 
 class Solver:
 
@@ -801,10 +800,10 @@ class Solver:
     def get_num_solutions(self) -> int: pass
 
     def get_objective_sense(self) -> str: pass
-    
-    def set_objective_sense(self, sense : str): pass
 
-    def set_start(self, start : List[Tuple["Var", float]]) -> None: pass
+    def set_objective_sense(self, sense: str): pass
+
+    def set_start(self, start: List[Tuple["Var", float]]) -> None: pass
 
     def set_objective(self, lin_expr: "LinExpr", sense: str = "") -> None: pass
 
@@ -821,18 +820,18 @@ class Solver:
                               max_nodes: int = inf,
                               max_sol: int = inf):
         pass
-    
+
     def get_max_seconds(self) -> float: pass
 
-    def set_max_seconds(self, max_seconds : float): pass
+    def set_max_seconds(self, max_seconds: float): pass
 
     def get_max_solutions(self) -> int: pass
 
-    def set_max_solutions(self, max_solutions : int): pass
-    
+    def set_max_solutions(self, max_solutions: int): pass
+
     def get_max_nodes(self) -> int: pass
 
-    def set_max_nodes(self, max_nodes : int): pass  
+    def set_max_nodes(self, max_nodes: int): pass
 
     def write(self, file_path: str) -> None: pass
 
@@ -841,22 +840,22 @@ class Solver:
     def num_cols(self) -> int: pass
 
     def num_rows(self) -> int: pass
-    
+
     def get_emphasis(self) -> int: pass
-    
-    def set_emphasis(self, emph : int): pass
-    
-    def get_cutoff(self) -> float:pass
 
-    def set_cutoff(self, cutoff : float): pass
+    def set_emphasis(self, emph: int): pass
 
-    def get_allowable_gap(self) -> float:pass
+    def get_cutoff(self) -> float: pass
 
-    def set_allowable_gap(self, allowable_gap : float): pass
+    def set_cutoff(self, cutoff: float): pass
 
-    def get_allowable_ratio_gap(self) -> float:pass
+    def get_allowable_gap(self) -> float: pass
 
-    def set_allowable_ratio_gap(self, allowable_ratio_gap : float): pass
+    def set_allowable_gap(self, allowable_gap: float): pass
+
+    def get_allowable_ratio_gap(self) -> float: pass
+
+    def set_allowable_ratio_gap(self, allowable_ratio_gap: float): pass
 
     # Constraint-related getters/setters
 
@@ -1087,21 +1086,21 @@ def read_custom_settings() -> str:
     from pathlib import Path
     home = str(Path.home())
     import os
-    configpath = os.path.join(home, '.config')
+    configpath = os.path.join(home, ".config")
     if os.path.isdir(configpath):
-        conffile = os.path.join(configpath, 'python-mip')
+        conffile = os.path.join(configpath, "python-mip")
         if os.path.isfile(conffile):
-            f = open(conffile, 'r')
+            f = open(conffile, "r")
             for line in f:
-                if '=' in line:
-                    cols = line.split('=')
-                    if cols[0].strip().lower() == 'cbc-library':
-                        customCbcLib = cols[1].lstrip().rstrip().replace('"', '')
+                if "=" in line:
+                    cols = line.split("=")
+                    if cols[0].strip().lower() == "cbc-library":
+                        customCbcLib = cols[1].lstrip().rstrip().replace('"', "")
 
 
-print('using python mip package version {}'.format(VERSION))
-customCbcLib = ''
+print("using python mip package version {}".format(VERSION))
+customCbcLib = ""
 read_custom_settings()
-# print('customCbcLib {}'.format(customCbcLib))
+# print("customCbcLib {}".format(customCbcLib))
 
 # vim: ts=4 sw=4 et
