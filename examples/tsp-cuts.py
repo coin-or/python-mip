@@ -63,7 +63,7 @@ model = Model()
 # binary variables indicating if arc (i,j) is used on the route or not
 x = [[model.add_var(
     name='x({},{})'.format(i, j),
-    type=BINARY)
+    var_type=BINARY)
     for j in range(n)]
     for i in range(n)]
 
@@ -104,7 +104,7 @@ for i in range(0, n):
 model.add_cut_generator(SubTourCutGenerator(model, n))
 model.optimize(max_seconds=60, max_nodes=100)
 
-print('best route found has length {}'.format(model.get_objective_value()))
+print('best route found has length {}'.format(model.objective_value))
 
 for i in range(n):
     for j in range(n):

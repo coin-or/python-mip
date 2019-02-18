@@ -54,7 +54,7 @@ model = Model( )
 # binary variables indicating if arc (i,j) is used on the route or not
 x = [ [ model.add_var( 
 	name='x({},{})'.format(i,j),
-           type=BINARY) 
+           var_type=BINARY) 
              for j in range(n) ] 
                for i in range(n) ]
 
@@ -67,10 +67,7 @@ for k in range(n):
 	f.write('x({},{}) 1\n'.format(hsol[k-1]+1, hsol[k]+1))
 f.close()
 
-varsms = [x[hsol[k-1]][hsol[k]] for k in range(n)]
-valuesms = [1.0 for k in range(n)]
-
-model.set_start(varsms, valuesms)
+model.start = [(x[hsol[k-1]][hsol[k]], 1.0) for k in range(n)]
 
 # continuous variable to prevent subtours: each
 # city will have a different "identifier" in the planned route
