@@ -17,7 +17,7 @@ model = Model( solver_name="gurobi" )
 
 # binary variables indicating if arc (i,j) is used on the route or not
 x = [ [ model.add_var(
-           type=BINARY) 
+           var_type=BINARY) 
              for j in range(n) ] 
                for i in range(n) ]
 
@@ -54,20 +54,17 @@ for i in range(0, n):
             continue
         model += \
             y[i]  - (n+1)*x[i][j] >=  y[j] -n, 'noSub({},{})'.format(i,j)
-                 
-    
-model.write('tsp.lp')
-model.optimize( max_seconds=60 )
 
-print('{} routes found'.format(model.get_num_solutions()))
+model.optimize( max_seconds=30 )
 
+print('{} routes found'.format(model.num_solutions))
 
-for k in range(model.get_num_solutions()):
-	print('route {} with length {}'.format(k, model.get_objective_value_i(k)))
-	for i in range(n):
-		for j in range(n):
-			if x[i][j].xi(k) >= 0.98:
-				print('\tarc ({},{})'.format(i,j))
+for k in range(model.num_solutions):
+    print('route {} with length {}'.format(k, model.get_objective_value_i(k)))
+    for i in range(n):
+        for j in range(n):
+            if x[i][j].xi(k) >= 0.98:
+                print('\tarc ({},{})'.format(i,j))
 	
 
 print('finished')        

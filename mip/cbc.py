@@ -22,7 +22,7 @@ class SolverCbc(Solver):
 
         # setting objective sense
         if sense == MAXIMIZE:
-            cbcSetObjSense(self._model, -1.0)
+            cbcSetObjSense(self._model, c_double(-1.0))
 
     def add_var(self,
                 obj: float = 0,
@@ -42,8 +42,8 @@ class SolverCbc(Solver):
             vval[i] = column.coeffs[i]
 
         isInt = \
-            c_char(1) if coltype.upper() == "B" or coltype.upper() == "I" \
-                else c_char(0)
+            c_char(1) if coltype.upper() == "B" or coltype.upper() == "I"\
+            else c_char(0)
 
         idx = int(cbcNumCols(self._model))
 
@@ -59,21 +59,39 @@ class SolverCbc(Solver):
     def set_objective(self, lin_expr: "LinExpr", sense: str = "") -> None:
         # collecting variable coefficients
         for var, coeff in lin_expr.expr.items():
-            cbcSetObjCoeff(self._model, var.idx, coeff)
+            cbcSetObjCoeff(self._model, c_int(var.idx), c_double(coeff))
 
         # objective function constant
         self._objconst = c_double(lin_expr.const)
 
         # setting objective sense
         if sense == MAXIMIZE:
-            cbcSetObjSense(self._model, -1.0)
+            cbcSetObjSense(self._model, c_double(-1.0))
         elif sense == MINIMIZE:
-            cbcSetObjSense(self._model, 1.0)
+            cbcSetObjSense(self._model, c_double(1.0))
 
     def relax(self):
         for var in self.model.vars:
             if cbcIsInteger(self._model, var.idx):
                 cbcSetContinuous(self._model, c_int(var.idx))
+
+    def get_max_seconds(self) -> float:
+        return cbcGetMaxSeconds(self._model)
+
+    def set_max_seconds(self, max_seconds: float):
+        cbcSetMaxSeconds(self._model, c_double(max_seconds))
+
+    def get_max_solutions(self) -> int:
+        return cbcGetMaxSolutions(self._model)
+
+    def set_max_solutions(self, max_solutions: int):
+        cbcSetMaxSolutions(self._model, c_int(max_solutions))
+
+    def get_max_nodes(self) -> int:
+        return cbcGetMaxNodes(self._model)
+
+    def set_max_nodes(self, max_nodes: int):
+        cbcSetMaxNodes(self._model, c_int(max_nodes))
 
     def optimize(self) -> int:
         # get name indexes from an osi problem
@@ -86,7 +104,7 @@ class SolverCbc(Solver):
                 cname = nameSpace.value.decode('utf-8')
                 nameIdx[cname] = i
 
-            return nameIdx;
+            return nameIdx
 
         # cut callback
         def cbc_cut_callback(osiSolver: c_void_p, osiCuts: c_void_p) -> None:
@@ -107,7 +125,7 @@ class SolverCbc(Solver):
                 osiColName(osiSolver, c_int(i), nameSpace, 255)
                 cname = nameSpace.value.decode('utf-8')
                 var = self.model.get_var_by_name(cname)
-                if var == None:
+                if var is None:
                     print('-->> var {} not found'.format(cname))
                 fracSol.append((var, val))
 
@@ -131,7 +149,7 @@ class SolverCbc(Solver):
                     missingVarName = ''
                     for v, c in cut.expr.items():
                         if v.name in nameIdx.keys():
-                            cutIdx.append(nameIdx[v.name]);
+                            cutIdx.append(nameIdx[v.name])
                             cutCoef.append(c)
                         else:
                             hasAllVars = False
@@ -144,21 +162,25 @@ class SolverCbc(Solver):
                             cval[i] = cutCoef[i]
                         sense = c_char(ord(cut.sense))
                         rhs = c_double(-cut.const)
-                        osiCutsAddRowCut(osiCuts, c_int(nz), cidx, cval, sense, rhs);
+                        osiCutsAddRowCut(osiCuts, c_int(nz), cidx, cval,
+                                         sense, rhs)
                         # print('cut add successfully')
                     else:
                         if warningMessages < 5:
-                            print('cut discarded because variable {} does not exists in preprocessed problem.'.format(missingVarName))
+                            print('cut discarded because variable {} does not \
+                            exists in preprocessed problem.'.format(
+                                missingVarName))
                             warningMessages += 1
 
         # adding cut generators
-        if self.model.cut_generators and self.added_cut_callback == False:
+        if self.model.cut_generators and self.added_cut_callback is False:
             self._cutCallback = CBCcallbacktype(cbc_cut_callback)
-            cbcAddCutCallback(self._model, self._cutCallback, c_str("mipCutGen"), c_void_p(0))
+            cbcAddCutCallback(self._model, self._cutCallback,
+                              c_str("mipCutGen"), c_void_p(0))
             self.added_cut_callback = True
 
         cbcSetParameter(self._model, c_str('maxSavedSolutions'), c_str('10'))
-        res = cbcSolve(self._model)
+        cbcSolve(self._model)
 
         if cbcIsAbandoned(self._model):
             return ERROR
@@ -184,6 +206,16 @@ class SolverCbc(Solver):
             return MAXIMIZE
 
         return MINIMIZE
+
+    def set_objective_sense(self, sense: str):
+        if sense.strip().upper() == MAXIMIZE.strip().upper():
+            cbcSetObjSense(self._model, c_double(-1.0))
+        elif sense.strip().upper() == MINIMIZE.strip().upper():
+            cbcSetObjSense(self._model, c_double(1.0))
+        else:
+            raise Exception("Unknown sense: {}, use {} or {}".format(sense,
+                                                                     MAXIMIZE,
+                                                                     MINIMIZE))
 
     def get_objective_value(self) -> float:
         return cbcObjValue(self._model)
@@ -290,7 +322,7 @@ class SolverCbc(Solver):
         else:
             cbcReadLp(self._model, c_str(file_path))
 
-    def set_start(self, start : List[Tuple["Var", float]]) -> None:
+    def set_start(self, start: List[Tuple["Var", float]]) -> None:
         n = len(start)
         count = c_int(n)
         dvalues = (c_double * n)()
@@ -298,7 +330,7 @@ class SolverCbc(Solver):
             dvalues[i] = start[i][1]
         cidxs = (c_int * n)()
         for i in range(n):
-            cidxs[i] = start[i].idx
+            cidxs[i] = start[i][0].idx
 
         cbcSetMIPStartI(self._model, count, cidxs, dvalues)
 
@@ -307,24 +339,24 @@ class SolverCbc(Solver):
 
     def num_rows(self) -> int:
         return cbcNumRows(self._model)
-    
+
     def get_cutoff(self) -> float:
         return cbcGetCutoff(self._model)
-    
-    def set_cutoff(self, cutoff : float):
-        cbcSetCutoff(self._model, cutoff) 
+
+    def set_cutoff(self, cutoff: float):
+        cbcSetCutoff(self._model, c_double(cutoff))
 
     def get_allowable_gap(self) -> float:
         return cbcGetAllowableGap(self._model)
 
-    def set_allowable_gap(self, allowable_gap : float):
-        cbcSetAllowableGap(self._model, allowable_gap)
+    def set_allowable_gap(self, allowable_gap: float):
+        cbcSetAllowableGap(self._model, c_double(allowable_gap))
 
     def get_allowable_ratio_gap(self) -> float:
         return cbcGetAllowableFractionGap(self._model)
 
-    def set_allowable_ratio_gap(self, allowable_ratio_gap : float):
-        cbcSetAllowableFractionGap(self._model, allowable_ratio_gap)    
+    def set_allowable_ratio_gap(self, allowable_ratio_gap: float):
+        cbcSetAllowableFractionGap(self._model, c_double(allowable_ratio_gap))
 
     def constr_get_expr(self, constr: Constr) -> LinExpr:
         numnz = cbcGetRowNz(self._model, constr.idx)
@@ -333,7 +365,8 @@ class SolverCbc(Solver):
         rcoef = cbcGetRowCoeffs(self._model, constr.idx)
 
         rhs = cbcGetRowRHS(self._model, constr.idx)
-        rsense = cbcGetRowSense(self._model, constr.idx).decode('utf-8').upper()
+        rsense = cbcGetRowSense(self._model, constr.idx).\
+            decode('utf-8').upper()
 
         sense = ''
         if (rsense == 'E'):
@@ -367,7 +400,8 @@ class SolverCbc(Solver):
         if maxNodes != inf:
             cbcSetParameter(m, c_str('maxNodes'), c_str('{}'.format(maxNodes)))
         if maxSol != inf:
-            cbcSetParameter(m, c_str('maxSolutions'), c_str('{}'.format(maxSol)))
+            cbcSetParameter(m, c_str('maxSolutions'),
+                            c_str('{}'.format(maxSol)))
 
     def __del__(self):
         cbcDeleteModel(self._model)
@@ -377,7 +411,8 @@ has_cbc = False
 
 try:
     if customCbcLib:
-        print('CBC library path from config file: {}'.format(mip.model.customCbcLib))
+        print('CBC library path from config file: {}'.format(
+            mip.model.customCbcLib))
         cbclib = CDLL(mip.model.customCbcLib)
         print('has cbc')
         has_cbc = True
@@ -517,7 +552,8 @@ if has_cbc:
         method_check = "Cbc_addRow"
         cbcAddRow = cbclib.Cbc_addRow
         cbcAddRow.argtypes = [c_void_p, c_char_p, c_int,
-                              POINTER(c_int), POINTER(c_double), c_char, c_double]
+                              POINTER(c_int), POINTER(c_double), c_char,
+                              c_double]
 
         method_check = "Cbc_setObjCoeff"
         cbcSetObjCoeff = cbclib.Cbc_setObjCoeff
@@ -648,14 +684,16 @@ if has_cbc:
 
         method_check = "Cbc_setMIPStartI"
         cbcSetMIPStartI = cbclib.Cbc_setMIPStartI
-        cbcSetMIPStartI.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double)]
+        cbcSetMIPStartI.argtypes = [c_void_p, c_int, POINTER(c_int),
+                                    POINTER(c_double)]
 
         method_check = "CBCCutCallback"
         CBCcallbacktype = CFUNCTYPE(c_void_p, c_void_p, c_void_p)
 
         method_check = "Cbc_addCutCallback"
-        cbcAddCutCallback = cbclib.Cbc_addCutCallback;
-        cbcAddCutCallback.argtypes = [c_void_p, CBCcallbacktype, c_char_p, c_void_p]
+        cbcAddCutCallback = cbclib.Cbc_addCutCallback
+        cbcAddCutCallback.argtypes = [c_void_p, CBCcallbacktype, c_char_p,
+                                      c_void_p]
 
         method_check = "Osi_getNumCols"
         osiNumCols = cbclib.Osi_getNumCols
@@ -673,8 +711,9 @@ if has_cbc:
 
         method_check = "oc_addRowCut"
         osiCutsAddRowCut = cbclib.OsiCuts_addRowCut
-        osiCutsAddRowCut.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double), c_char, c_double]
-        
+        osiCutsAddRowCut.argtypes = [c_void_p, c_int, POINTER(c_int),
+                                     POINTER(c_double), c_char, c_double]
+
         method_check = "Cbc_getCutoff"
         cbcGetCutoff = cbclib.Cbc_getCutoff
         cbcGetCutoff.argtype = [c_void_p]
@@ -701,7 +740,34 @@ if has_cbc:
         method_check = "Cbc_setAllowableFractionGap"
         cbcSetAllowableFractionGap = cbclib.Cbc_setAllowableFractionGap
         cbcSetAllowableFractionGap.argtype = [c_void_p, c_double]
-        
+
+        method_check = "Cbc_getMaximumSeconds"
+        cbcGetMaxSeconds = cbclib.Cbc_getMaximumSeconds
+        cbcGetMaxSeconds.argtype = [c_void_p]
+        cbcGetMaxSeconds.restype = c_double
+
+        method_check = "Cbc_getMaximumNodes"
+        cbcGetMaxNodes = cbclib.Cbc_getMaximumNodes
+        cbcGetMaxNodes.argtype = [c_void_p]
+        cbcGetMaxNodes.restype = c_int
+
+        method_check = "Cbc_getMaximumSolutions"
+        cbcGetMaxSolutions = cbclib.Cbc_getMaximumSolutions
+        cbcGetMaxSolutions.argtype = [c_void_p]
+        cbcGetMaxSolutions.restype = c_int
+
+        method_check = "Cbc_setMaximumSeconds"
+        cbcSetMaxSeconds = cbclib.Cbc_setMaximumSeconds
+        cbcSetMaxSeconds.argtypes = [c_void_p, c_double]
+
+        method_check = "Cbc_setMaximumNodes"
+        cbcSetMaxNodes = cbclib.Cbc_setMaximumNodes
+        cbcSetMaxNodes.argtypes = [c_void_p, c_int]
+
+        method_check = "Cbc_setMaximumSolutions"
+        cbcSetMaxSolutions = cbclib.Cbc_setMaximumSolutions
+        cbcSetMaxSolutions.argtypes = [c_void_p, c_int]
+
         has_cbc = True
     except:
         print('\nplease install a more updated version of cbc (or cbc trunk),\

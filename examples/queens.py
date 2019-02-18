@@ -17,7 +17,7 @@ if (len(solver)) == 0:
 else:
     queens = Model('queens', MINIMIZE, solver)
 
-x = [[queens.add_var('x({},{})'.format(i, j), type='B')
+x = [[queens.add_var('x({},{})'.format(i, j), var_type='B')
       for j in range(n)] for i in range(n)]
 
 # objective function
