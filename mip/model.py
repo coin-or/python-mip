@@ -68,7 +68,8 @@ class Constr:
 class LinExpr:
     """ A Linear Expression
 
-    Linear expressions are used to enter the objective function and constraints of the model.
+    Linear expressions are used to enter the objective function and the model \
+    constraints.
 
     Consider a model object m, the objective function of m can be specified as:
 
@@ -202,10 +203,12 @@ class LinExpr:
 
         if self.sense:
             result.append(self.sense + "= ")
-            result.append(str(abs(self.const)) if self.const < 0 else "- " + str(abs(self.const)))
+            result.append(str(abs(self.const)) if self.const < 0 else "- " +
+                          str(abs(self.const)))
         elif self.const != 0:
             result.append(
-                "+ " + str(abs(self.const)) if self.const > 0 else "- " + str(abs(self.const)))
+                "+ " + str(abs(self.const)) if self.const > 0 else "- " +
+                str(abs(self.const)))
 
         return "".join(result)
 
@@ -290,17 +293,14 @@ class Model:
         """
         # initializing variables with default values
         self.name = name
-        self.sense = sense
         self.solver_name = solver_name
         self.solver = None
         if "solver_name" in environ:
             solver_name = environ["solver_name"]
         if "solver_name".upper() in environ:
             solver_name = environ["solver_name".upper()]
-            
-        self.__mipStart = []
 
-        
+        self.__mipStart = []
 
         # list of constraints and variables
         self.constrs = []
@@ -330,6 +330,8 @@ class Model:
                 self.solver = SolverCbc(self, name, sense)
                 self.solver_name = CBC
 
+        self.sense = sense
+
     def __del__(self):
         if self.solver:
             del self.solver
@@ -355,7 +357,7 @@ class Model:
                 lb: float = 0.0,
                 ub: float = INF,
                 obj: float = 0.0,
-                type: str = CONTINUOUS,
+                var_type: str = CONTINUOUS,
                 column: "Column" = None) -> "Var":
         """ Creates a new variable
 
@@ -366,7 +368,7 @@ class Model:
             lb (float): variable lower bound, default 0.0
             ub (float): variable upper bound, default infinity
             obj (float): coefficient of this variable in the objective function, default 0
-            type (str): CONTINUOUS ("C"), BINARY ("B") or INTEGER ("I")
+            var_type (str): CONTINUOUS ("C"), BINARY ("B") or INTEGER ("I")
             column (Column): constraints where this variable will appear, necessary \
             only when constraints are already created in the model and a new \
             variable will be created.
@@ -383,13 +385,13 @@ class Model:
 
 
         """
-        if type == BINARY:
+        if var_type == BINARY:
             lb = 0.0
             ub = 1.0
         if len(name.strip()) == 0:
             nc = self.solver.num_cols()
             name = 'C{:011d}'.format(nc)
-        idx = self.solver.add_var(obj, lb, ub, type, column, name)
+        idx = self.solver.add_var(obj, lb, ub, var_type, column, name)
         self.vars.append(Var(self, idx, name))
         self.vars_by_name[name] = self.vars[-1]
         return self.vars[-1]
@@ -401,7 +403,8 @@ class Model:
 
         Args:
             lin_expr (LinExpr): linear expression
-            name (str): optional constraint name, used when saving model to lp or mps files
+            name (str): optional constraint name, used when saving model to\
+            lp or mps files
 
         Examples:
 
@@ -413,7 +416,9 @@ class Model:
 
             m.add_constr( x1 + x2 <= 1 )
 
-        Summation expressions can be used also, to add the constraint :math:`\displaystyle \sum_{i=0}^{n-1} x_i = y` and name this constraint cons1::
+        Summation expressions can be used also, to add the constraint \
+        :math:`\displaystyle \sum_{i=0}^{n-1} x_i = y` and name this \
+        constraint cons1::
 
             m += xsum(x[i] for i in range(n)) == y, 'cons1'
 
@@ -442,7 +447,7 @@ class Model:
 
         # adding variables
         for v in self.vars:
-            copy.add_var(name=v.name, lb=v.lb, ub=v.ub, obj=v.obj, type=v.type)
+            copy.add_var(name=v.name, lb=v.lb, ub=v.ub, obj=v.obj, var_type=v.var_type)
 
         # adding constraints
         for c in self.constrs:
@@ -508,6 +513,10 @@ class Model:
         """
         
         return self.solver.get_objective_sense()
+    
+    @sense.setter
+    def sense(self, sense: str):
+        self.solver.set_objective_sense(sense)
 
     @property
     def objective_const(self) -> float:
@@ -541,8 +550,7 @@ class Model:
         """
         return self.solver.get_num_solutions()
 
-    @property
-    def objective_value_i(self, i: int) -> float:
+    def get_objective_value_i(self, i: int) -> float:
         """ Cost of the i-th solution found
 
         Returns:
@@ -566,8 +574,8 @@ class Model:
         """
         self.solver.relax()
         for v in self.vars:
-            if v.type == BINARY or v.type == INTEGER:
-                v.type = CONTINUOUS
+            if v.var_type == BINARY or v.var_type == INTEGER:
+                v.var_type = CONTINUOUS
 
     def add_cut_generator(self, cuts_generator: "CutsGenerator") -> None:
         """ Adds a cut generator
@@ -712,7 +720,33 @@ class Model:
     @allowable_ratio_gap.setter
     def allowable_ratio_gap(self, value):
         self.solver.set_allowable_ratio_gap(value)
+        
+    @property
+    def max_seconds(self) -> float:
+        """float: time limit in seconds for search"""
+        return self.solver.get_max_seconds()
+    
+    @max_seconds.setter
+    def max_seconds(self, max_seconds: float):
+        self.solver.set_max_seconds(max_seconds)
+        
+    @property
+    def max_nodes(self) -> int:
+        """int: maximum number of nodes to be explored in the search tree"""
+        return self.solver.get_max_nodes()
+    
+    @max_nodes.setter
+    def max_nodes(self, max_nodes: int):
+        self.solver.set_max_nodes(max_nodes)
 
+    @property
+    def max_solutions(self) -> int:
+        """int: solution limit, search will be stopped when max_solutions were found"""
+        return self.solver.get_max_solutions()
+    
+    @max_solutions.setter
+    def max_solutions(self, max_solutions: int):
+        self.solver.set_max_solutions(max_solutions)
 
 class Solver:
 
@@ -728,9 +762,9 @@ class Solver:
                 obj: float = 0,
                 lb: float = 0,
                 ub: float = INF,
-                type: str = CONTINUOUS,
+                var_type: str = CONTINUOUS,
                 column: "Column" = None) -> int:
-        if type == BINARY:
+        if var_type == BINARY:
             lb = 0.0
             ub = 1.0
 
@@ -751,6 +785,8 @@ class Solver:
     def get_num_solutions(self) -> int: pass
 
     def get_objective_sense(self) -> str: pass
+    
+    def set_objective_sense(self, sense : str): pass
 
     def set_start(self, start : List[Tuple["Var", float]]) -> None: pass
 
@@ -769,6 +805,18 @@ class Solver:
                               max_nodes: int = inf,
                               max_sol: int = inf):
         pass
+    
+    def get_max_seconds(self) -> float: pass
+
+    def set_max_seconds(self, max_seconds : float): pass
+
+    def get_max_solutions(self) -> int: pass
+
+    def set_max_solutions(self, max_solutions : int): pass
+    
+    def get_max_nodes(self) -> int: pass
+
+    def set_max_nodes(self, max_nodes : int): pass  
 
     def write(self, file_path: str) -> None: pass
 
