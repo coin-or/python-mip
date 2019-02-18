@@ -589,6 +589,22 @@ class Model:
 
         """
         self.cut_generators.append(cuts_generator)
+ 
+    @property 
+    def emphasis(self) -> int:
+        """int: defines the main objective of the search, if set to 1 (FEASIBILITY) then 
+        the search process will focus on try to find quickly feasible solutions and 
+        improving them; if set to 2 (OPTIMALITY) then the search process will try to 
+        find a provable optimal solution, procedures to further improve the lower bounds will
+        be activated in this setting, this may increase the time to produce the first
+        feasible solutions but will probably pay off in longer runs; the default option
+        if 0, where a balance between optimality and feasibility is sought. 
+        """
+        return self.solver.get_emphasis()
+
+    @emphasis.setter
+    def emphasis(self, emph: int):
+        return self.solver.set_emphasis(emph)
 
     def optimize(self,
                  branch_selector: "BranchSelector" = None,
@@ -825,6 +841,10 @@ class Solver:
     def num_cols(self) -> int: pass
 
     def num_rows(self) -> int: pass
+    
+    def get_emphasis(self) -> int: pass
+    
+    def set_emphasis(self, emph : int): pass
     
     def get_cutoff(self) -> float:pass
 
