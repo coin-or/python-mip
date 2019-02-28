@@ -5,19 +5,17 @@ of Mixed-Integer Linear programs (MIPs). MIP syntax was inspired by
 [Pulp](https://github.com/coin-or/pulp). Just like
 [CyLP](https://github.com/coin-or/CyLP) it also provides access to
 advanced solver features like cut generation, MIPstarts and solution
-Pools. 
-
-Porting Pulp and Gurobi models should be quite easy.
+Pools. Porting Pulp and Gurobi models should be quite easy.
 
 Some of the main features of MIP are:
 
 * high level modeling: write your MIP models in Python as easily as in
   high level languages such as
-  [MathProg](https://en.wikibooks.org/wiki/GLPK/GMPL_(MathProg)): with
-  operator overloading you can easily write linear expressions in Python;
+  [MathProg](https://en.wikibooks.org/wiki/GLPK/GMPL_(MathProg)): 
+  operator overloading makes it easy to write linear expressions in Python;
 
 * full featured:
-    - cut generation: write your cut generator in python and integrate it
+    - cut generation: write your cut generator in Python and integrate it
       into the Branch-and-Cut search;
     - solution pool: query the elite set of solutions found during the
       search;
@@ -42,4 +40,13 @@ Some of the main features of MIP are:
 
 * completely written in modern statically typed Python 3 (requires Python
   3.5 or newer).
+  
+## Documentation
+ 
+The Documentation for Python-MIP is available at:
+https://python-mip.readthedocs.io/en/latest/
+
+A PDF version is also available:
+https://media.readthedocs.org/pdf/python-mip/latest/python-mip.pdf
+ 
 
