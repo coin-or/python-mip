@@ -471,6 +471,10 @@ class Model:
         return self.constrs_by_name.get(name, None)
 
     @property
+    def objective_bound(self) -> float:
+        return self.solver.get_objective_bound()
+
+    @property
     def objective(self) -> LinExpr:
         """LinExpr: Objective function of the problem
 
@@ -784,6 +788,8 @@ class Solver:
             ub = 1.0
 
     def add_constr(self, lin_expr: "LinExpr", name: str = "") -> int: pass
+
+    def get_objective_bound(self) -> float: pass
 
     def get_objective(self) -> LinExpr: pass
 
