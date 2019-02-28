@@ -19,8 +19,8 @@ sys.path.insert(0, os.path.abspath('../mip/'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'python-mip'
-copyright = '2018, Santos, H.G. and Toffolo, T.A.M.'
+project = 'Python-MIP'
+copyright = '2018-2019, Santos, H.G. and Toffolo, T.A.M.'
 author = 'Santos, H.G. and Toffolo, T.A.M.'
 
 # The short X.Y version
@@ -61,7 +61,7 @@ master_doc = 'index'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
