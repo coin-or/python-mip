@@ -19,8 +19,8 @@ sys.path.insert(0, os.path.abspath('../mip/'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'python-mip'
-copyright = '2018, Santos, H.G. and Toffolo, T.A.M.'
+project = 'Python-MIP'
+copyright = '2018-2019, Santos, H.G. and Toffolo, T.A.M.'
 author = 'Santos, H.G. and Toffolo, T.A.M.'
 
 # The short X.Y version
@@ -61,7 +61,7 @@ master_doc = 'index'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -131,7 +131,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'python-mip.tex', 'python-mip Documentation',
+    (master_doc, 'python-mip.tex', 'Python-MIP Documentation',
      'Santos, H.G. and Toffolo, T.A.M.', 'manual'),
 ]
 
@@ -152,8 +152,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'python-mip', 'python-mip Documentation',
-     author, 'python-mip', 'One line description of project.',
+    (master_doc, 'python-mip', 'Python-MIP Documentation',
+     author, 'python-mip', 'Python tools to model and optimize Mixed-Integer Linear Programs.',
      'Miscellaneous'),
 ]
 
