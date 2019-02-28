@@ -21,7 +21,7 @@ and memory efficient.
 
 .. rubric:: Footnotes
 
-.. [#f1] For Gurobi, be sure that the Gurobi dynamic library reachable in
+.. [#f1] For Gurobi, be sure that the Gurobi dynamic library is reachable in
    the directories listed in the `PATH on Windows
    <https://www.computerhope.com/issues/ch000549.htm>`_ /`Library PATH on
    Linux
