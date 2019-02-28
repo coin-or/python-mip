@@ -4,7 +4,8 @@ Python MIP - Mixed-Integer Programming Package Documentation
 .. toctree::
    :maxdepth: 3
    :caption: Contents:
-
+    
+   install
    intro
 
 Classes

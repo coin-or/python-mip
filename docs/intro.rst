@@ -4,10 +4,11 @@ Introduction
 The Python MIP package provides an interface to Mixed-Integer Linear
 Programming solvers. The basic functionality allows the modelling,
 optimization, problem modification, re-optimization and solution query.
-Advanced features such as cut callbacks, MIPStarts and access to the
-solution pool are also available. It comes with the open source COIN-OR
-Branch-and-Cut solver CBC but also works with the commercial solver
-Gurobi.
+Advanced features such as cut callbacks, MIPStarts and access to the solution
+pool are also available. It comes with the open source `COIN-OR
+<https://www.coin-or.org>`_ Branch-and-Cut solver `CBC
+<https://projects.coin-or.org/Cbc>`_ but also works with the commercial solver
+`Gurobi <http://www.gurobi.com/>`_.
 
 As a first example, consider the solution of the 0/1 knapsack problem:
 given a set :math:`I` of items, each one with a weight :math:`w_i`  and
