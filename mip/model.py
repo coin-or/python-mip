@@ -3,6 +3,12 @@
 This module implements abstractions for working with Mixed-Integer Programming
 Models.
 
+The PDF Documentation for Python-MIP is available at:
+https://python-mip.readthedocs.io/en/latest/
+
+A PDF version is also available:
+https://media.readthedocs.org/pdf/python-mip/latest/python-mip.pdf
+
 """
 
 from typing import Dict, List, Tuple
