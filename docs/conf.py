@@ -131,7 +131,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'python-mip.tex', 'python-mip Documentation',
+    (master_doc, 'python-mip.tex', 'Python-MIP Documentation',
      'Santos, H.G. and Toffolo, T.A.M.', 'manual'),
 ]
 
@@ -152,8 +152,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'python-mip', 'python-mip Documentation',
-     author, 'python-mip', 'One line description of project.',
+    (master_doc, 'python-mip', 'Python-MIP Documentation',
+     author, 'python-mip', 'Python tools to model and optimize Mixed-Integer Linear Programs.',
      'Miscellaneous'),
 ]
 
