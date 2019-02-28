@@ -20,9 +20,9 @@ mathematical programming formulation is:
 
 .. math::
    
-    \textrm{\textit{Maximize}: }   &  \\
+    \textrm{Maximize: }   &  \\
                                    &  \sum_{i \in I} p_i \cdot x_i  \\
-    \textrm{\textit{Subject to}: } & \\
+    \textrm{Subject to: } & \\
                                    &  \sum_{i \in I} w_i \cdot x_i \leq c  
 
 The following python code creates, optimizes and prints the optimal solution for the
