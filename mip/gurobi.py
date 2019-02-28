@@ -195,7 +195,6 @@ class SolverGurobi(Solver):
 
                         GRBcbcut(p_cbdata, numnz, cind, cval, sense, rhs)
 
-
             return 0
 
         if self.model.cut_generators:
@@ -343,7 +342,7 @@ class SolverGurobi(Solver):
     def set_objective_const(self, const: float) -> None:
         GRBsetdblattr(self._model, c_str("ObjCon"), c_double(const))
 
-    def set_start(self, start : List[Tuple["Var", float]]) -> None:
+    def set_start(self, start: List[Tuple["Var", float]]) -> None:
         # collecting data
         numnz = len(start)
         cind = (c_int * numnz)()
@@ -390,28 +389,28 @@ class SolverGurobi(Solver):
         assert st == 0
         return res.value
 
-    def set_cutoff(self, cutoff: float): 
+    def set_cutoff(self, cutoff: float):
         st = GRBsetdblparam(GRBgetenv(self._model), c_str("Cutoff"), c_double(cutoff))
         assert st == 0
 
-    def get_allowable_gap(self) -> float:
+    def get_mip_gap_abs(self) -> float:
         res = c_double(0.0)
         st = GRBgetdblparam(GRBgetenv(self._model), c_str("MIPGapAbs"), byref(res))
         assert st == 0
         return res.value
 
-    def set_allowable_gap(self, allowable_gap: float):
-        st = GRBsetdblparam(GRBgetenv(self._model), c_str("MIPGap"),
+    def set_mip_gap_abs(self, allowable_gap: float):
+        st = GRBsetdblparam(GRBgetenv(self._model), c_str("MIPGapAbs"),
                             c_double(allowable_gap))
         assert st == 0
 
-    def get_allowable_ratio_gap(self) -> float:
+    def get_mip_gap(self) -> float:
         res = c_double(0.0)
         st = GRBgetdblparam(GRBgetenv(self._model), c_str("MIPGap"), byref(res))
         assert st == 0
         return res.value
 
-    def set_allowable_ratio_gap(self, allowable_ratio_gap: float):
+    def set_mip_gap(self, allowable_ratio_gap: float):
         st = GRBsetdblparam(GRBgetenv(self._model), c_str("MIPGap"),
                             c_double(allowable_ratio_gap))
         assert st == 0
@@ -462,7 +461,6 @@ class SolverGurobi(Solver):
         st = GRBgetstrattrelement(self._model, c_str('ConstrName'), c_int(idx), byref(vName))
         assert st == 0
         return vName.value.decode('utf-8')
-
 
     def constr_set_expr(self, constr: Constr, value: LinExpr) -> LinExpr:
         raise NotImplementedError("Gurobi: functionality currently unavailable via PyMIP...")
@@ -539,7 +537,6 @@ class SolverGurobi(Solver):
         GRBsetcharattrelement(self._model, c_str("VType"), c_int(var.idx), vtype)
         self._updated = False
 
-
     def var_get_column(self, var: "Var"):
         if not self._updated:
             self.update()
@@ -563,10 +560,9 @@ class SolverGurobi(Solver):
         constr = [self.model.constrs[cind[i]] for i in range(numnz.value)]
         coefs = [float(cval[i]) for i in range(numnz.value)]
 
-        col = Column( constr, coefs )
+        col = Column(constr, coefs)
 
         return col
-
 
     def var_set_column(self, var: "Var", value: Column):
         raise NotImplementedError("Gurobi: functionality currently unavailable via PyMIP...")
@@ -777,7 +773,7 @@ if has_gurobi:
     # get variables
     GRBgetvars = grblib.GRBgetvars
     GRBgetvars.argtypes = [c_void_p, POINTER(c_int), POINTER(c_int),
-        POINTER(c_int), POINTER(c_double), c_int, c_int ]
+                           POINTER(c_int), POINTER(c_double), c_int, c_int]
     GRBgetvars.restype = c_int
 
     # callback functions and constants

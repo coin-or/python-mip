@@ -189,7 +189,7 @@ class SolverCbc(Solver):
             cbcSetParameter(self._model, c_str('trust'), c_str('20'))
             cbcSetParameter(self._model, c_str('lagomory'), c_str('endonly'))
             cbcSetParameter(self._model, c_str('latwomir'), c_str('endonly'))
-            
+
         cbcSetParameter(self._model, c_str('maxSavedSolutions'), c_str('10'))
         cbcSolve(self._model)
 
@@ -357,16 +357,16 @@ class SolverCbc(Solver):
     def set_cutoff(self, cutoff: float):
         cbcSetCutoff(self._model, c_double(cutoff))
 
-    def get_allowable_gap(self) -> float:
+    def get_mip_gap_abs(self) -> float:
         return cbcGetAllowableGap(self._model)
 
-    def set_allowable_gap(self, allowable_gap: float):
+    def set_mip_gap_abs(self, allowable_gap: float):
         cbcSetAllowableGap(self._model, c_double(allowable_gap))
 
-    def get_allowable_ratio_gap(self) -> float:
+    def get_mip_gap(self) -> float:
         return cbcGetAllowableFractionGap(self._model)
 
-    def set_allowable_ratio_gap(self, allowable_ratio_gap: float):
+    def set_mip_gap(self, allowable_ratio_gap: float):
         cbcSetAllowableFractionGap(self._model, c_double(allowable_ratio_gap))
 
     def constr_get_expr(self, constr: Constr) -> LinExpr:
