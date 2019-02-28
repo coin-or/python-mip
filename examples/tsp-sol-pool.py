@@ -61,7 +61,7 @@ model.optimize( max_seconds=30 )
 print('{} routes found'.format(model.num_solutions))
 
 for k in range(model.num_solutions):
-    print('route {} with length {}'.format(k, model.get_objective_value_i(k)))
+    print('route {} with length {}'.format(k, model.objective_values[k]))
     for i in range(n):
         for j in range(n):
             if x[i][j].xi(k) >= 0.98:

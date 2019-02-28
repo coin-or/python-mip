@@ -3,7 +3,7 @@
 This module implements abstractions for working with Mixed-Integer Programming
 Models.
 
-The PDF Documentation for Python-MIP is available at:
+The Documentation for Python-MIP is available at:
 https://python-mip.readthedocs.io/en/latest/
 
 A PDF version is also available:
@@ -414,7 +414,9 @@ class Model:
 
         Examples:
 
-        The following code adds the constraint :math:`x_1 + x_2 \leq 1`::
+        The following code adds the constraint :math:`x_1 + x_2 \leq 1` 
+        (x1 and x2 should be created first using 
+        :func:`add_var<mip.model.Model.add_var>`)::
 
             m += x1 + x2 <= 1
 
@@ -555,13 +557,16 @@ class Model:
         """
         return self.solver.get_num_solutions()
 
-    def get_objective_value_i(self, i: int) -> float:
-        """ Cost of the i-th solution found
+    @property
+    def objective_values(self) -> List[float]:
+        """ List of costs of all solutions in the solution pool
 
         Returns:
-            float: cost of the i-th best solution from the solution pool
+            List[float]: costs of all solutions stored in the solution pool 
+            as an array from 0 (the best solution) to num_solutions-1.
         """
-        return self.solver.get_objective_value_i(i)
+        return [float(self.solver.get_objective_value_i(i))\
+                 for i in range(self.num_solutions)] 
 
     def get_var_by_name(self, name) -> "Var":
         """ Searchers a variable by its name
