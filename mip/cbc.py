@@ -231,6 +231,9 @@ class SolverCbc(Solver):
     def get_objective_value(self) -> float:
         return cbcObjValue(self._model)
 
+    def get_objective_bound(self) -> float:
+        return cbcGetObjBound(self._model)
+
     def var_get_x(self, var: Var) -> float:
         if cbcNumIntegers(self._model) > 0:
             x = cbcBestSolution(self._model)
@@ -784,6 +787,11 @@ if has_cbc:
         method_check = "Cbc_setMaximumSolutions"
         cbcSetMaxSolutions = cbclib.Cbc_setMaximumSolutions
         cbcSetMaxSolutions.argtypes = [c_void_p, c_int]
+
+        method_check = "Cbc_getBestPossibleObjValue"
+        cbcGetObjBound = cbclib.Cbc_getBestPossibleObjValue
+        cbcGetObjBound.argtypes = [c_void_p]
+        cbcGetObjBound.restype = c_double
 
         has_cbc = True
     except:
