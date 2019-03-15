@@ -36,9 +36,9 @@ The following python code creates, optimizes and prints the optimal solution for
     p = [10, 13, 18, 31,  7, 15]
     w = [11, 15, 20, 35, 10, 33]
     c = 40
-    n = len(v)
+    n = len(w)
     m = Model('knapsack', MAXIMIZE)
-    x = [m.add_var(type=BINARY) for i in range(n)]
+    x = [m.add_var(var_type='B') for i in range(n)]
     m += xsum(p[i]*x[i] for i in range(n) )
     m += xsum(w[i]*x[i] for i in range(n) ) <= c
     m.optimize()
