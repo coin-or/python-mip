@@ -104,6 +104,11 @@ class SolverGurobi(Solver):
 
         return idx
 
+    def get_objective_bound(self) -> float:
+        res = c_double()
+        GRBgetdblattr(self._model, c_str("ObjBound"), byref(res))
+        return res.value
+
     def get_objective(self) -> LinExpr:
         res = c_double()
         GRBgetdblattr(self._model, c_str("ObjVal"), byref(res))

@@ -55,10 +55,9 @@ for i in range(0, n):
         model += \
             y[i]  - (n+1)*x[i][j] >=  y[j] -n, 'noSub({},{})'.format(i,j)
 
-model.cutoff = 7000
-model.optimize()
+model.optimize(max_seconds=40)
 
-print('best route found has length {}'.format(model.objective_value))
+print('best route found has length {}, best possible (obj bound is) {}'.format(model.objective_value, model.objective_bound))
 
 for i in range(n):
     for j in range(n):
