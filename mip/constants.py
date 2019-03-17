@@ -1,4 +1,4 @@
-VERSION = '1.0.23'
+VERSION = '1.0.24'
 
 # epsilon number (practical zero)
 EPS = 10e-6
