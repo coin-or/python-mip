@@ -324,14 +324,12 @@ class Model:
         else:
             # checking which solvers are available
             from mip import gurobi
-            from mip import cbc
-
-            # search for the best solver available
             if gurobi.has_gurobi:
                 from mip.gurobi import SolverGurobi
                 self.solver = SolverGurobi(self, name, sense)
                 self.solver_name = GUROBI
-            elif cbc.has_cbc:
+            else:
+                from mip import cbc
                 from mip.cbc import SolverCbc
                 self.solver = SolverCbc(self, name, sense)
                 self.solver_name = CBC
