@@ -648,7 +648,6 @@ try:
     print('gurobi version {}.{} found'.format(majorVersion, minorVersion))
     has_gurobi = True
 except:
-    print('gurobi not found')
     has_gurobi = False
 # create/release environment and model
 
