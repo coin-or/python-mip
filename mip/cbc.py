@@ -429,6 +429,7 @@ class SolverCbc(Solver):
 
 has_cbc = False
 
+
 try:
     if customCbcLib:
         print('CBC library path from config file: {}'.format(
@@ -477,8 +478,7 @@ try:
                         has_cbc = True
                         print('cbc found')
                     except:
-                        print('cbc not found')
-
+                        has_cbc = False
 except:
     has_cbc = False
     print('cbc not found')
