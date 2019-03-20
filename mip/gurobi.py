@@ -210,7 +210,14 @@ class SolverGurobi(Solver):
         status = int(GRBoptimize(self._model))
         if status == 10009:
             raise Exception('gurobi found but license not accepted, please check it')
-
+        
+        status = c_int(0)
+        st = GRBgetintattr(self._model, c_str("Status"), byref(status))
+        if (st):
+            raise Exception('could not check optimization status')
+        
+        status = status.value
+        
         # todo: read solution status (code below is incomplete)
         if status == 1:  # LOADED
             return LOADED
