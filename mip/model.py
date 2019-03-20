@@ -11,7 +11,7 @@ https://media.readthedocs.org/pdf/python-mip/latest/python-mip.pdf
 
 """
 
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
 from mip.constants import *
 from math import inf
