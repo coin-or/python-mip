@@ -354,6 +354,9 @@ class SolverCbc(Solver):
     def num_rows(self) -> int:
         return cbcNumRows(self._model)
 
+    def num_nz(self) -> int:
+        return cbcNumElements(self._model)
+
     def get_cutoff(self) -> float:
         return cbcGetCutoff(self._model)
 
@@ -522,6 +525,11 @@ if has_cbc:
         cbcNumRows = cbclib.Cbc_getNumRows
         cbcNumRows.argtypes = [c_void_p]
         cbcNumRows.restype = c_int
+
+        method_check = "Cbc_getNumElements"
+        cbcNumElements = cbclib.Cbc_getNumElements
+        cbcNumElements.argtypes = [c_void_p]
+        cbcNumElements.restype = c_int
 
         method_check = "Cbc_getRowNz"
         cbcGetRowNz = cbclib.Cbc_getRowNz
