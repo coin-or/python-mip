@@ -707,11 +707,18 @@ class Model:
 
     @property
     def num_cols(self) -> int:
+        """int: number of columns (variables) in the model"""
         return len(self.vars)
 
     @property
     def num_rows(self) -> int:
+        """int: number of rows (constraints) in the model"""
         return len(self.constrs)
+
+    @property 
+    def num_nz(self) -> int:
+        """int: number of non-zeros in the constraint matrix"""
+        return self.solver.num_nz()
 
     @property
     def cutoff(self) -> float:
@@ -855,6 +862,8 @@ class Solver:
     def num_cols(self) -> int: pass
 
     def num_rows(self) -> int: pass
+
+    def num_nz(self) -> int:pass
 
     def get_emphasis(self) -> int: pass
 
