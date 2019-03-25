@@ -18,7 +18,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     keywords = ["Optimization", "Linear Programming", "Integer Programming", "Operations Research"],
-    url="https://github.com/tuliotoffolo/python-mip",
+    url="https://github.com/coin-or/python-mip",
     packages=['mip', 'mip.libraries'],
 	package_data = {'mip.libraries' : ['*', '*.*']},
     classifiers=[
