@@ -395,6 +395,12 @@ class SolverGurobi(Solver):
         assert st == 0
         return res.value
 
+    def num_nz(self) -> int:
+        res = c_int(0)
+        st = GRBgetintattr(self._model, c_str('NumNZs'), byref(res))
+        assert st == 0
+        return res.value
+
     def get_cutoff(self) -> float:
         res = c_double(0.0)
         st = GRBgetdblparam(GRBgetenv(self._model), c_str("Cutoff"), byref(res))
