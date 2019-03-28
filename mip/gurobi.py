@@ -276,6 +276,19 @@ class SolverGurobi(Solver):
                                                                      MAXIMIZE,
                                                                      MINIMIZE))
 
+
+    def set_int_param( param : str, value : int):
+        st = GRBsetintparam(GRBgetenv(self._model), c_str(param), c_int(value))
+        if (st!=0):
+            raise "could not set gurobi int param " + param + " to {}".format(value)
+
+
+    def set_dbl_param( param : str, value : float):
+        st = GRBsetdblparam(GRBgetenv(self._model), c_str(param), c_double(value))
+        if (st!=0):
+            raise "could not set gurobi double param " + param + " to {}".format(value)
+
+
     def get_num_solutions(self) -> int:
         res = c_int(0)
         st = GRBgetintattr(self._model, c_str("SolCount"), byref(res))
