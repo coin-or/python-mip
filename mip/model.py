@@ -336,6 +336,8 @@ class Model:
 
         self.sense = sense
 
+        self.__threads = 0
+
     def __del__(self):
         if self.solver:
             del self.solver
@@ -514,6 +516,19 @@ class Model:
             self.solver.set_objective(expr)
 
     @property
+    def threads(self) -> int:
+        """int: number of threads to be used when solving the problem. 
+        0 uses solver default configuration, -1 uses the number of available
+        processing cores and >=1 uses the specified number of threads.
+        An increased number of threads may improve the solution time but
+        also increases the memory consumption."""
+        return self.__threads
+
+    @threads.setter
+    def threads(self, th : int):
+        self.__threads = th
+
+    @property
     def sense(self) -> str:
         """ The optimization sense
 
@@ -649,6 +664,8 @@ class Model:
             solution exists and NO_SOLUTION_FOUND(5) for the case when an integer solution was not found in the optimization.
 
         """
+        if self.__threads != 0:
+            self.solver.set_num_threads(self.__threads)
         self.solver.set_callbacks(branch_selector, incumbent_updater, lazy_constrs_generator)
         self.solver.set_processing_limits(max_seconds, max_nodes, max_solutions)
 
@@ -709,6 +726,11 @@ class Model:
     def num_cols(self) -> int:
         """int: number of columns (variables) in the model"""
         return len(self.vars)
+
+    @property
+    def num_int(self) -> int:
+        """int: number of integer variables in the model"""
+        return self.solver.num_int()
 
     @property
     def num_rows(self) -> int:
@@ -855,6 +877,8 @@ class Solver:
 
     def set_max_nodes(self, max_nodes: int): pass
 
+    def set_num_threads(self, threads:int): pass
+
     def write(self, file_path: str) -> None: pass
 
     def read(self, file_path: str) -> None: pass
@@ -864,6 +888,8 @@ class Solver:
     def num_rows(self) -> int: pass
 
     def num_nz(self) -> int:pass
+
+    def num_int(self) -> int:pass
 
     def get_emphasis(self) -> int: pass
 

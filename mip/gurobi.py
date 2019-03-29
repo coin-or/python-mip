@@ -43,6 +43,8 @@ class SolverGurobi(Solver):
         elif sense == MINIMIZE:
             GRBsetintattr(self._model, c_str("ModelSense"), 1)
 
+        self.__threads = 0
+
     def __del__(self):
         # freeing Gurobi model and environment
         if self._model:
@@ -50,6 +52,9 @@ class SolverGurobi(Solver):
         if self._env:
             GRBfreeenv(self._env)
 
+    def set_num_threads(self, threads:int):
+        self.__threads = threads
+        
     def add_var(self,
                 obj: float = 0,
                 lb: float = 0,
@@ -163,7 +168,10 @@ class SolverGurobi(Solver):
     def set_max_nodes(self, max_nodes: int):
         st = GRBsetdblparam(GRBgetenv(self._model), c_str("NodeLimit"), c_double(max_nodes))
         assert st == 0
-
+    
+    def set_num_threads(self, threads:int):
+        self.__threads = threads
+    
     def optimize(self) -> int:
         # todo add branch_selector and incumbent_updater callbacks
         def callback(p_model: c_void_p,
@@ -206,6 +214,9 @@ class SolverGurobi(Solver):
             self._callback = GRBcallbacktype(callback)
             GRBsetcallbackfunc(self._model, self._callback, c_void_p(0))
 
+        if self.__threads>=1:
+            self.set_int_param("Threads", self.__threads)
+
         # executing Gurobi to solve the formulation
         status = int(GRBoptimize(self._model))
         if status == 10009:
@@ -217,6 +228,19 @@ class SolverGurobi(Solver):
             raise Exception('could not check optimization status')
         
         status = status.value
+
+        # checking status for MIP optimization which 
+        # finished before the search to be
+        # concluded (time, iteration limit...)
+        if (self.num_int()):
+            if status in [8, 9, 10, 11, 13]:
+                nsols = c_int(0)
+                sts = GRBgetintattr(self._model, c_str("SolCount"), byref(nsols))
+                nsols = nsols.value
+                if nsols>=1:
+                    return FEASIBLE
+                else:
+                    return NO_SOLUTION_FOUND
         
         # todo: read solution status (code below is incomplete)
         if status == 1:  # LOADED
@@ -277,13 +301,13 @@ class SolverGurobi(Solver):
                                                                      MINIMIZE))
 
 
-    def set_int_param( param : str, value : int):
+    def set_int_param(self, param : str, value : int):
         st = GRBsetintparam(GRBgetenv(self._model), c_str(param), c_int(value))
         if (st!=0):
             raise "could not set gurobi int param " + param + " to {}".format(value)
 
 
-    def set_dbl_param( param : str, value : float):
+    def set_dbl_param(self, param : str, value : float):
         st = GRBsetdblparam(GRBgetenv(self._model), c_str(param), c_double(value))
         if (st!=0):
             raise "could not set gurobi double param " + param + " to {}".format(value)
@@ -401,7 +425,14 @@ class SolverGurobi(Solver):
         st = GRBgetintattr(self._model, c_str('NumVars'), byref(res))
         assert st == 0
         return res.value
-
+    
+    def num_int(self) -> int:
+        res = c_int(0)
+        GRBupdatemodel(self._model)
+        st = GRBgetintattr(self._model, c_str('NumIntVars'), byref(res))
+        assert st == 0
+        return res.value
+    
     def num_rows(self) -> int:
         res = c_int(0)
         st = GRBgetintattr(self._model, c_str('NumConstrs'), byref(res))

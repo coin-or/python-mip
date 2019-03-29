@@ -26,6 +26,8 @@ class SolverCbc(Solver):
 
         self.emphasis = 0
 
+        self.__threads = 0
+
     def add_var(self,
                 obj: float = 0,
                 lb: float = 0,
@@ -190,6 +192,12 @@ class SolverCbc(Solver):
             cbcSetParameter(self._model, c_str('lagomory'), c_str('endonly'))
             cbcSetParameter(self._model, c_str('latwomir'), c_str('endonly'))
 
+        if (self.__threads >=1):
+            cbcSetParameter(self._model, c_str('threads'), c_str('{}'.format(self.__threads)))
+        elif self.__threads == -1:
+            import multiprocessing
+            cbcSetParameter(self._model, c_str('threads'), c_str('{}'.format(multiprocessing.cpu_count())))
+
         cbcSetParameter(self._model, c_str('maxSavedSolutions'), c_str('10'))
         cbcSolve(self._model)
 
@@ -351,6 +359,9 @@ class SolverCbc(Solver):
     def num_cols(self) -> int:
         return cbcNumCols(self._model)
 
+    def num_int(self) -> int:
+        return cbcNumIntegers(self._model)
+
     def num_rows(self) -> int:
         return cbcNumRows(self._model)
 
@@ -425,6 +436,9 @@ class SolverCbc(Solver):
 
     def set_emphasis(self, emph: int):
         self.emphasis = emph
+
+    def set_num_threads(self, threads:int):
+        self.__threads = threads
 
     def __del__(self):
         cbcDeleteModel(self._model)
