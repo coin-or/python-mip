@@ -477,6 +477,16 @@ class SolverGurobi(Solver):
                             c_double(allowable_ratio_gap))
         assert st == 0
 
+    def get_verbose(self) -> int:
+        res = c_int(0)
+        st = GRBgetintparam(GRBgetenv(self._model), c_str("OutputFlag"), byref(res))
+        assert st == 0
+        return res.value
+
+    def set_verbose(self, verbose : int):
+        st = GRBsetintparam(GRBgetenv(self._model), c_str("OutputFlag"), c_int(verbose))
+        assert st == 0
+
     def constr_get_expr(self, constr: Constr) -> LinExpr:
         if not self._updated:
             self.update()
