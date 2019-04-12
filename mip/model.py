@@ -516,6 +516,16 @@ class Model:
             self.solver.set_objective(expr)
 
     @property
+    def verbose(self) -> int:
+        """int: 0 to disable solver messages printed on the screen, 1 to enable
+        """
+        return self.solver.get_verbose()
+
+    @verbose.setter
+    def verbose(self, v : int):
+        return self.solver.set_verbose(v)
+
+    @property
     def threads(self) -> int:
         """int: number of threads to be used when solving the problem. 
         0 uses solver default configuration, -1 uses the number of available
@@ -906,6 +916,10 @@ class Solver:
     def get_mip_gap(self) -> float: pass
 
     def set_mip_gap(self, mip_gap: float): pass
+
+    def get_verbose(self) -> int: pass
+
+    def set_verbose(self, verbose : int):pass
 
     # Constraint-related getters/setters
 

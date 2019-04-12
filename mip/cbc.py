@@ -28,6 +28,8 @@ class SolverCbc(Solver):
 
         self.__threads = 0
 
+        self.__verbose = 1
+
     def add_var(self,
                 obj: float = 0,
                 lb: float = 0,
@@ -96,6 +98,12 @@ class SolverCbc(Solver):
 
     def set_max_nodes(self, max_nodes: int):
         cbcSetMaxNodes(self._model, c_int(max_nodes))
+
+    def get_verbose(self) -> int:
+        return self.__verbose
+
+    def set_verbose(self, verbose : int):
+        self.__verbose = verbose
 
     def optimize(self) -> int:
         # get name indexes from an osi problem
@@ -183,6 +191,11 @@ class SolverCbc(Solver):
                               c_str("mipCutGen"), c_void_p(0))
             self.added_cut_callback = True
 
+        if self.__verbose == 0:
+            cbcSetParameter(self._model, c_str('log'), c_str('0'))
+        else:
+            cbcSetParameter(self._model, c_str('log'), c_str('1'))
+
         if self.emphasis == FEASIBILITY:
             cbcSetParameter(self._model, c_str('passf'), c_str('50'))
             cbcSetParameter(self._model, c_str('proximity'), c_str('on'))
@@ -191,6 +204,7 @@ class SolverCbc(Solver):
             cbcSetParameter(self._model, c_str('trust'), c_str('20'))
             cbcSetParameter(self._model, c_str('lagomory'), c_str('endonly'))
             cbcSetParameter(self._model, c_str('latwomir'), c_str('endonly'))
+
 
         if (self.__threads >=1):
             cbcSetParameter(self._model, c_str('threads'), c_str('{}'.format(self.__threads)))
