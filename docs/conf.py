@@ -109,15 +109,20 @@ htmlhelp_basename = 'python-mipdoc'
 
 # -- Options for LaTeX output ------------------------------------------------
 
+latex_engine = 'pdflatex'
+latex_logo = './images/coin-or-logo.png'
 latex_elements = {
-}
+ 'papersize': 'a4paper',
+ 'fncychap': '\\usepackage{fncychap}',
+ 'fontpkg': '\\usepackage{amsmath,amsfonts,amssymb,amsthm}'
+        }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'python-mip.tex', 'Python-MIP Documentation',
-     'Santos, H.G. and Toffolo, T.A.M.', 'manual'),
+        (master_doc, 'python-mip.tex', 'Mixed Integer Linear Programming with Python: The Python-MIP Package',
+     'Haroldo G. Santos \\and Túlio A.M. Toffolo', 'manual'),
 ]
 
 
