@@ -106,7 +106,7 @@ html_static_path = ['_static']
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'python-mipdoc'
 
-latex_engine = "xelatex"
+latex_engine = "lualatex"
 
 # -- Options for LaTeX output ------------------------------------------------
 
