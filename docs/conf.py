@@ -120,16 +120,6 @@ latex_elements = {
     #
     # 'pointsize': '10pt',
 
-    'fontenc': '\\usepackage{fontspec}',
-#    'fontpkg': '''\
-#\\setmainfont{Charter}''',
-'preamble': r'''
-\usepackage{charter}
-\usepackage[defaultsans]{lato}
-\usepackage{inconsolata}
-''',
-'babel': '\usepackage{polyglossia}'
-
     # Additional stuff for the LaTeX preamble.
     #
     # 'preamble': '',
