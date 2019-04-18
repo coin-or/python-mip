@@ -8,11 +8,13 @@ the Python Package Index, installing it is as easy as entering:
    
     pip install mip
 
-in the command prompt. The default installation includes the open source
-MIP Solver `CBC <https://projects.coin-or.org/Cbc>`_, which is used by
-default. Pre-compiled CBC libraries for Windows, Linux and MacOS are
-shipped. If you have the commercial solver `Gurobi <included>`_ installed
-in your computer Python-MIP will automatically use it [#f1]_. 
+in the command prompt. If this command fails, maybe you don't have permission
+to install globally available Python modules. In this case, just add the option
+--user to the command line. The default installation includes the open source
+MIP Solver `CBC <https://projects.coin-or.org/Cbc>`_, which is used by default.
+Pre-compiled CBC libraries for Windows, Linux and MacOS are shipped. If you
+have the commercial solver `Gurobi <included>`_ installed in your computer
+Python-MIP will automatically use it [#f1]_. 
 
 You can execute your Python-MIP applications in the default Python
 interpreter (`CPython <https://en.wikipedia.org/wiki/CPython>`_) or in the
