@@ -106,10 +106,35 @@ html_static_path = ['_static']
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'python-mipdoc'
 
+latex_engine = "xelatex"
 
 # -- Options for LaTeX output ------------------------------------------------
 
 latex_elements = {
+# The paper size ('letterpaper' or 'a4paper').
+'papersize': 'a4paper',
+
+# The font size ('10pt', '11pt' or '12pt').
+'pointsize': '11pt',
+
+# Latex figure (float) alignment
+#'figure_align': 'htbp',
+
+# Don't mangle with UTF-8 chars
+'inputenc': '',
+'utf8extra': '',
+
+
+# Additional stuff for the LaTeX preamble.
+    'preamble': '''
+	% Use some font with UTF-8 support with XeLaTeX
+        \\usepackage{fontspec}
+        \\setsansfont{DejaVu Sans}
+        \\setromanfont{DejaVu Serif}
+        \\setmonofont{DejaVu Sans Mono}
+
+     '''
+
     # The paper size ('letterpaper' or 'a4paper').
     #
     # 'papersize': 'letterpaper',
