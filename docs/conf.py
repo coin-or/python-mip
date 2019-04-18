@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.abspath('../mip/'))
 
 project = 'Python-MIP'
 copyright = '2018-2019, Santos, H.G. and Toffolo, T.A.M.'
-author = 'Santos, H.G. and Toffolo, T.A.M.'
+author = 'Santos, H.G. <haroldo@ufop.edu.br> and Toffolo, T.A.M. <tulio@toffolo.com.br>'
 
 # The short X.Y version
 version = ''
@@ -109,6 +109,8 @@ htmlhelp_basename = 'python-mipdoc'
 
 # -- Options for LaTeX output ------------------------------------------------
 
+latex_engine = 'xelatex'
+
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
     #
@@ -117,6 +119,16 @@ latex_elements = {
     # The font size ('10pt', '11pt' or '12pt').
     #
     # 'pointsize': '10pt',
+
+    'fontenc': '\\usepackage{fontspec}',
+#    'fontpkg': '''\
+#\\setmainfont{Charter}''',
+'preamble': r'''
+\usepackage{charter}
+\usepackage[defaultsans]{lato}
+\usepackage{inconsolata}
+''',
+'babel': '\usepackage{polyglossia}'
 
     # Additional stuff for the LaTeX preamble.
     #
@@ -177,3 +189,6 @@ epub_exclude_files = ['search.html']
 
 
 # -- Extension configuration -------------------------------------------------
+#numfig = True
+#math_numfig = True
+math_eqref_format = "Eq.{number}"
