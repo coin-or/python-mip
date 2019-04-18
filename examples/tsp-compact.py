@@ -23,11 +23,7 @@ x = [ [ model.add_var(
 
 # continuous variable to prevent subtours: each
 # city will have a different "identifier" in the planned route
-y = [ model.add_var(
-       name='y({})'.format(i),
-       lb=0.0,
-       ub=n) 
-         for i in range(n) ]
+y = [ model.add_var() for i in range(n) ]
 
 # objective function: minimize the distance
 model += xsum( d[i][j]*x[i][j]
@@ -35,11 +31,11 @@ model += xsum( d[i][j]*x[i][j]
 
 # constraint : enter each city coming from another city
 for i in range(n):
-    model += xsum( x[j][i] for j in range(n) if j != i ) == 1, 'enter({})'.format(i)
+    model += xsum( x[j][i] for j in range(n) if j != i ) == 1
     
 # constraint : leave each city coming from another city
 for i in range(n):
-    model += xsum( x[i][j] for j in range(n) if j != i ) == 1, 'leave({})'.format(i)
+    model += xsum( x[i][j] for j in range(n) if j != i ) == 1
     
 # no 2 subtours
 for i in range(n):
@@ -48,22 +44,18 @@ for i in range(n):
             model += x[i][j] + x[j][i] <= 1
     
 # subtour elimination
-for i in range(0, n):
-    for j in range(0, n):
-        if i==j or i==0 or j==0:
-            continue
+for i in range(1, n):
+    for j in [x for x in range(1, n) if x!=i]:
         model += \
             y[i]  - (n+1)*x[i][j] >=  y[j] -n, 'noSub({},{})'.format(i,j)
 
 print('model has {} variables, {} of which are integral and {} rows'.format(model.num_cols, model.num_int, model.num_rows))
 
 model.verbose = 0
-st = model.optimize(max_seconds=10)
+st = model.optimize(max_seconds=5)
 
 print('best route found has length {}, best possible (obj bound is) {} st: {}'.format(model.objective_value, model.objective_bound, st))
 
-for i in range(n):
-    for j in range(n):
-        if x[i][j].x >= 0.98:
-            print('arc ({},{})'.format(i,j))
+arcs = [(i,j) for i in range(n) for j in range(n) if x[i][j].x >= 0.99]
+print('optimal route : {}'.format(arcs))
 
