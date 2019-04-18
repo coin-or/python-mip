@@ -5,8 +5,9 @@ Python MIP - Mixed-Integer Programming Package Documentation
    :maxdepth: 3
    :caption: Contents:
     
-   install
    intro
+   install
+   examples
 
 Classes
 =======
