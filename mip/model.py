@@ -1162,7 +1162,7 @@ def read_custom_settings() -> str:
                         customCbcLib = cols[1].lstrip().rstrip().replace('"', "")
 
 
-print("using python mip package version {}".format(VERSION))
+print("Using Python-MIP package version {}".format(VERSION))
 customCbcLib = ""
 read_custom_settings()
 # print("customCbcLib {}".format(customCbcLib))
