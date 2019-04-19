@@ -62,11 +62,6 @@ sure to set your `Path environment variable
 <https://www.computerhope.com/issues/ch000549.htm>`_ to the installation folder
 of this file. 
 
-You can execute your Python-MIP applications in the default Python
-interpreter (`CPython <https://en.wikipedia.org/wiki/CPython>`_) or in the
-`Pypy3 <https://pypy.org>`_ Just-in-Time compiler, which is much faster
-and memory efficient.
-
 Pypy installation (optional)
 ----------------------------
 
