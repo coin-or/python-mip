@@ -12,6 +12,8 @@ Python MIP - Mixed-Integer Programming Package Documentation
 Classes
 =======
 
+.. _chapClasses:
+
 .. automodule:: mip.model
  
 .. autoclass:: Model
