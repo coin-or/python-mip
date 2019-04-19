@@ -7,6 +7,7 @@ Python MIP - Mixed-Integer Programming Package Documentation
     
    intro
    install
+   quickstart
    examples
 
 Classes
