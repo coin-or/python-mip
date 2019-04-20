@@ -185,9 +185,37 @@ found; :code:`FEASIBLE` if a feasible solution was found but there was no
 time to prove whether the current solution was optimal or not; 
 :code:`NO_SOLUTION_FOUND` if in the truncated search no solution was found; 
 :code:`INFEASIBLE`
-or :code:`INT_INFEASIBLE` if no feasible solution exists for the model; :code:``
+or :code:`INT_INFEASIBLE` if no feasible solution exists for the model; 
 :code:`UNBOUNDED` if there are missing constraints or :code:`ERROR` if
 some error occurred during optimization. In the example above, if a feasible
 solution is available (line 8), variables which have value different from zero
 are printed. Observe also that even when no feasible solution is available the
 lower bound is available (line 7).
+
+Performance Tuning
+~~~~~~~~~~~~~~~~~~
+
+Tree search algorithms of MIP solvers deliver a set of improved feasible 
+solutions and lower bounds. Depending on your application you will 
+be more interested in the quick production of feasible solutions than in improved 
+lower bounds that may require expensive computations, even if in the long term
+these computations prove worthy to prove the optimality of the solution found. 
+The model property  :code:`emphasis` provides three different settings:
+
+0. default setting: tries to balance between the search of improved feasible 
+  solutions and improved lower bounds;
+1. feasibility: focus on finding improved feasible solutions in the 
+   first moments of the search process, activates heuristics;
+2. optimality: activates procedures that produced improved lower bounds, focusing
+   in pruning the search tree, even if the production of the first feasible solutions
+   is delayed.
+
+Changing this setting to 1 or 2 triggers activation/deactivation of several
+algorithms that are processed at each node of the search tree that impact the solver
+performance to produce these different behaviors. Even though in average these settings
+change the solver performance as described previously, depending on your formulation
+the impact of these changes may be very different and it is usually worth
+to check the solver behavior with these different settings on your application.
+
+   
+
