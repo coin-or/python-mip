@@ -15,8 +15,8 @@ when loaded, Python-MIP will display its installed version: ::
 
    Using Python-MIP package version 1.0.29
 
-Model 
------
+Creating Models
+---------------
 
 The model class represents the optimization model. The code:
 
@@ -38,7 +38,7 @@ After creating the model, you should include your decision variables, objective
 function and constraints. These tasks will be discussed in the next sections:
 
 Variables 
----------
+~~~~~~~~~
 
 Decision variables are added to the model using the :code:`add_var`
 method. Without parameters, a single variable with domain in 
@@ -82,7 +82,7 @@ the upper bound for this variable to 5:
    vz.ub = 5
 
 Constraints
------------
+~~~~~~~~~~~
 
 Constraints are linear expressions involving variables, a sense, ==, <= or >= for 
 equal, less or equal and greater or equal, respectively  and a constant 
@@ -110,7 +110,7 @@ even indexed items are subjected to the capacity constraint:
     mip += xsum(w[i]*x[i] for i in range(n) if i%2==0) <= c
 
 Objective Function
-------------------
+~~~~~~~~~~~~~~~~~~
 
 By default a model is created with the *Minimize* sense. You can change by
 setting the :code:`sense` model property to :code:`MAXIMIZE`, or just
@@ -122,4 +122,58 @@ multiply the objective function by -1. The following code adds :math:`n`
 
    m += xsum(c[i]*x[i] for i in range(n))
 
+Saving and Loading Models
+-------------------------
 
+Model methods :code:`write` and :code:`read` can be used to save and load,
+respectively, MIP models. Supported file formats for models are the `LP
+file format
+<https://www.ibm.com/support/knowledgecenter/SSSA5P_12.9.0/ilog.odms.cplex.help/CPLEX/GettingStarted/topics/tutorials/InteractiveOptimizer/usingLPformat.html>`_,
+which is more readable and suitable for debugging and the 
+`MPS file format <https://en.wikipedia.org/wiki/MPS_(format)>`_, which is 
+recommended for extended compatibility. When calling the :code:`write` method,
+the file name extension (.lp or .mps) is used to define the file format. 
+Thus, to save our model in the lp file format in the file model.lp we can use:
+
+.. code-block:: python
+
+    m.write('model.lp')
+
+Optimizing 
+----------
+
+MIP solvers execute a Branch-&-Cut (BC) algorithm that in *finite time*
+will provide the optimal solution. This time may be, in many cases, too
+large for your needs. Fortunately, even when the complete tree search is
+too expensive, results are often available in the beginning of the search.
+Sometimes a feasible solution is produced when the first tree nodes are
+processed and a lot of additional effort is spent improving the *dual
+bound*, which is a valid estimate for the cost of the optimal solution.
+When this estimate, the lower bound when minimizing, matches exactly the
+cost of the best solution found, the upper bound, the search is concluded.
+Thus, for practical applications, usually a truncated search is executed.
+The :code:`optimize` method, that executes the optimization of a model,
+accepts optionally processing limits as parameters. The following code
+executes the branch-&-cut algorithm for a maximum processing time of 60
+seconds.
+
+.. code-block:: python
+
+   status = m.optimize(max_seconds=300)
+   if status==OPTIMAL:
+       print('optimal solution cost {} found'.format(m.objective_value))
+   elif status==FEASIBLE:
+       print('sol.cost {} found, best possible: {}'.format(m.objective_value, m.objective_bound))
+
+Additional processing limits may be used: :code:`max_nodes` to restrict
+the maximum number of explored nodes in the search tree and
+:code:`max_solutions`, which stops the BC algorithm after a number of
+feasible solutions are found. 
+
+The :code:`optimize` method returns the status of the BC search:
+:code:`OPTIMAL` if the search was concluded and the optimal solution was
+found; :code:`FEASIBLE` if a feasible solution was found but there was no
+time to prove whether the current solution was optimal or not; :code:`INFEASIBLE`
+or :code:`INT_INFEASIBLE` if no feasible solution exists for the model;
+:code:`UNBOUNDED` if there are missing constraints or :code:`ERROR` if
+some error occurred during optimization.
