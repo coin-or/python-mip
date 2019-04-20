@@ -109,3 +109,17 @@ even indexed items are subjected to the capacity constraint:
 
     mip += xsum(w[i]*x[i] for i in range(n) if i%2==0) <= c
 
+Objective Function
+------------------
+
+By default a model is created with the *Minimize* sense. You can change by
+setting the :code:`sense` model property to :code:`MAXIMIZE`, or just
+multiply the objective function by -1. The following code adds :math:`n`
+:math:`x` variables to the objective function, each one with cost
+:math:`c_i`:
+
+.. code-block:: python
+
+   m += xsum(c[i]*x[i] for i in range(n))
+
+
