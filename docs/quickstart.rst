@@ -139,8 +139,8 @@ Thus, to save our model in the lp file format in the file model.lp we can use:
 
     m.write('model.lp')
 
-Optimizing 
-----------
+Optimizing and Querying Optimization Results
+--------------------------------------------
 
 MIP solvers execute a Branch-&-Cut (BC) algorithm that in *finite time*
 will provide the optimal solution. This time may be, in many cases, too
@@ -154,16 +154,25 @@ cost of the best solution found, the upper bound, the search is concluded.
 Thus, for practical applications, usually a truncated search is executed.
 The :code:`optimize` method, that executes the optimization of a model,
 accepts optionally processing limits as parameters. The following code
-executes the branch-&-cut algorithm for a maximum processing time of 60
+executes the branch-&-cut algorithm for a maximum processing time of 300
 seconds.
 
 .. code-block:: python
+   :linenos:
 
    status = m.optimize(max_seconds=300)
    if status==OPTIMAL:
        print('optimal solution cost {} found'.format(m.objective_value))
    elif status==FEASIBLE:
        print('sol.cost {} found, best possible: {}'.format(m.objective_value, m.objective_bound))
+   elif status==NO_SOLUTION_FOUND:
+       print('no feasible solution found, lower bound is: {}'.format(m.objective_bound))
+   if status==OPTIMAL or status==FEASIBLE:
+       print('solution:')
+       for v in m.vars:
+          if abs(v.x)<=1e-7:
+              continue 
+          print('{} : {}'.format(v.name, v.x))
 
 Additional processing limits may be used: :code:`max_nodes` to restrict
 the maximum number of explored nodes in the search tree and
@@ -173,7 +182,12 @@ feasible solutions are found.
 The :code:`optimize` method returns the status of the BC search:
 :code:`OPTIMAL` if the search was concluded and the optimal solution was
 found; :code:`FEASIBLE` if a feasible solution was found but there was no
-time to prove whether the current solution was optimal or not; :code:`INFEASIBLE`
-or :code:`INT_INFEASIBLE` if no feasible solution exists for the model;
+time to prove whether the current solution was optimal or not; 
+:code:`NO_SOLUTION_FOUND` if in the truncated search no solution was found; 
+:code:`INFEASIBLE`
+or :code:`INT_INFEASIBLE` if no feasible solution exists for the model; :code:``
 :code:`UNBOUNDED` if there are missing constraints or :code:`ERROR` if
-some error occurred during optimization.
+some error occurred during optimization. In the example above, if a feasible
+solution is available (line 8), variables which have value different from zero
+are printed. Observe also that even when no feasible solution is available the
+lower bound is available (line 7).
