@@ -18,6 +18,11 @@ from math import inf
 from builtins import property
 from os import environ
 
+class SolutionNotAvailable(Exception):
+    """Exception that is raised when some method to query some
+    solution property is used but no solution is available"""
+    pass
+
 
 class Column:
     """ A column (variable) in the constraint matrix
@@ -337,6 +342,7 @@ class Model:
         self.sense = sense
 
         self.__threads = 0
+        self.__status = LOADED;
 
     def __del__(self):
         if self.solver:
@@ -679,7 +685,9 @@ class Model:
         self.solver.set_callbacks(branch_selector, incumbent_updater, lazy_constrs_generator)
         self.solver.set_processing_limits(max_seconds, max_nodes, max_solutions)
 
-        return self.solver.optimize()
+        self.__status = self.solver.optimize()
+
+        return self.__status
 
     def read(self, path: str) -> None:
         """ Reads a MIP model
@@ -765,26 +773,26 @@ class Model:
         self.solver.set_cutoff(value)
 
     @property
-    def mip_gap_abs(self) -> float:
+    def max_mip_gap_abs(self) -> float:
         """float: tolerance for the quality of the optimal solution, if a
         solution with cost c and a lower bound l are available and c-l<mip_gap_abs,
         the search will be concluded, see mip_gap to determine
         a percentage value """
         return self.solver.get_mip_gap_abs()
 
-    @mip_gap_abs.setter
-    def mip_gap_abs(self, value):
+    @max_mip_gap_abs.setter
+    def max_mip_gap_abs(self, value):
         self.solver.set_mip_gap(value)
 
     @property
-    def mip_gap(self) -> float:
+    def max_mip_gap(self) -> float:
         """float: percentage indicating the tolerance for the maximum percentage deviation
         from the optimal solution cost, if a solution with cost c and a lower bound l
         are available and (c-l)/l < mip_gap the search will be concluded."""
         return self.solver.get_mip_gap()
 
-    @mip_gap.setter
-    def mip_gap(self, value):
+    @max_mip_gap.setter
+    def max_mip_gap(self, value):
         self.solver.set_mip_gap(value)
 
     @property
@@ -813,6 +821,15 @@ class Model:
     @max_solutions.setter
     def max_solutions(self, max_solutions: int):
         self.solver.set_max_solutions(max_solutions)
+
+    @property
+    def status(self) -> int:
+        """ int: optimization status, which can be OPTIMAL(0), ERROR(-1), INFEASIBLE(1), UNBOUNDED(2). When optimizing problems
+            with integer variables some additional cases may happen, FEASIBLE(3) for the case when a feasible solution was found
+            but optimality was not proved, INT_INFEASIBLE(4) for the case when the lp relaxation is feasible but no feasible integer
+            solution exists and NO_SOLUTION_FOUND(5) for the case when an integer solution was not found in the optimization.
+        """
+        return self.__status
 
 
 class Solver:
@@ -1092,13 +1109,34 @@ class Var:
 
     @property
     def rc(self) -> float:
+        if self.model.status != OPTIMAL:
+            raise SolutionNotAvailable('Solution not available.')
+
         return self.model.solver.var_get_rc(self)
 
     @property
     def x(self) -> float:
+        if self.model.status == LOADED:
+            raise SolutionNotAvailable('Model was not optimized, solution not available.')
+        elif self.model.status == INFEASIBLE or self.model.status==CUTOFF:
+            raise SolutionNotAvailable('Infeasible model, solution not available.')
+        elif self.model.status == UNBOUNDED:
+            raise SolutionNotAvailable('Unbounded model, solution not available.')
+        elif self.model.status == NO_SOLUTION_FOUND:
+            raise SolutionNotAvailable('Solution not found during optimization.')
+
         return self.model.solver.var_get_x(self)
 
     def xi(self, i: int) -> float:
+        if self.model.status == LOADED:
+            raise SolutionNotAvailable('Model was not optimized, solution not available.')
+        elif self.model.status == INFEASIBLE or self.model.status==CUTOFF:
+            raise SolutionNotAvailable('Infeasible model, solution not available.')
+        elif self.model.status == UNBOUNDED:
+            raise SolutionNotAvailable('Unbounded model, solution not available.')
+        elif self.model.status == NO_SOLUTION_FOUND:
+            raise SolutionNotAvailable('Solution not found during optimization.')
+
         return self.model.solver.var_get_xi(self, i)
 
 
