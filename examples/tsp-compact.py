@@ -51,7 +51,6 @@ for i in range(1, n):
 
 print('model has {} variables, {} of which are integral and {} rows'.format(model.num_cols, model.num_int, model.num_rows))
 
-model.verbose = 0
 st = model.optimize(max_seconds=5)
 
 print('best route found has length {}, best possible (obj bound is) {} st: {}'.format(model.objective_value, model.objective_bound, st))
