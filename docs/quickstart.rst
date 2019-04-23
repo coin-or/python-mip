@@ -40,9 +40,10 @@ function and constraints. These tasks will be discussed in the next sections:
 Variables 
 ~~~~~~~~~
 
-Decision variables are added to the model using the :code:`add_var`
-method. Without parameters, a single variable with domain in 
-:math:`\mathbb{R}^+` is created and its reference is returned:
+Decision variables are added to the model using the
+:func:`~mip.model.Model.add_var` method. Without
+parameters, a single variable with domain in :math:`\mathbb{R}^+` is
+created and its reference is returned:
 
 .. code-block:: python
 
