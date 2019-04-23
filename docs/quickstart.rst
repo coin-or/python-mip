@@ -159,7 +159,8 @@ seconds.
 
 .. code-block:: python
    :linenos:
-
+    
+   m.max_gap = 0.05
    status = m.optimize(max_seconds=300)
    if status==OPTIMAL:
        print('optimal solution cost {} found'.format(m.objective_value))
@@ -177,7 +178,12 @@ seconds.
 Additional processing limits may be used: :code:`max_nodes` to restrict
 the maximum number of explored nodes in the search tree and
 :code:`max_solutions`, which stops the BC algorithm after a number of
-feasible solutions are found. 
+feasible solutions are found. It is also wise to specify how tight the
+bounds should be to conclude the search. The model attribute
+:code:`max_gap` specifies the allowable percentage deviation of the upper
+bound from the lower bound for concluding the search. In our example,
+whenever the distance of the lower and upper bounds is less or equal 5\%
+the search can be finished. 
 
 The :code:`optimize` method returns the status of the BC search:
 :code:`OPTIMAL` if the search was concluded and the optimal solution was
@@ -191,6 +197,8 @@ some error occurred during optimization. In the example above, if a feasible
 solution is available (line 8), variables which have value different from zero
 are printed. Observe also that even when no feasible solution is available the
 lower bound is available (line 7).
+
+TODO: solution pool
 
 Performance Tuning
 ~~~~~~~~~~~~~~~~~~
@@ -210,12 +218,14 @@ The model property  :code:`emphasis` provides three different settings:
    in pruning the search tree, even if the production of the first feasible solutions
    is delayed.
 
-Changing this setting to 1 or 2 triggers activation/deactivation of several
-algorithms that are processed at each node of the search tree that impact the solver
-performance to produce these different behaviors. Even though in average these settings
-change the solver performance as described previously, depending on your formulation
-the impact of these changes may be very different and it is usually worth
-to check the solver behavior with these different settings on your application.
+Changing this setting to 1 or 2 triggers the activation/deactivation of
+several algorithms that are processed at each node of the search tree that
+impact the solver performance. Even though in average these settings
+change the solver performance as described previously, depending on your
+formulation the impact of these changes may be very different and it is
+usually worth to check the solver behavior with these different settings
+in your application.
+
 
    
 
