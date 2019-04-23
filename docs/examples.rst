@@ -1,7 +1,7 @@
 .. _chapExamples:
 
-Examples
-========
+Modeling Examples
+=================
 
 This chapter includes commented examples on modeling and solving optimization problems with Python-MIP.
 
@@ -49,6 +49,8 @@ binary decision variables to model m. Line 8 defines the objective
 function of this model and Line 9 adds the capacity constraint. The model
 is optimized in line 10 and the solution, a list of the selected items, is
 computed at line 11.
+
+.. _tsp-label:
 
 The Traveling Salesman Problem
 ------------------------------

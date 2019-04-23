@@ -9,6 +9,7 @@ Python MIP - Mixed-Integer Programming Package Documentation
    install
    quickstart
    examples
+   custom
 
 Classes
 =======
