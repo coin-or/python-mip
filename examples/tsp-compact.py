@@ -26,7 +26,7 @@ x = [ [ model.add_var(
 y = [ model.add_var() for i in range(n) ]
 
 # objective function: minimize the distance
-model += xsum( d[i][j]*x[i][j]
+model.objective = xsum( d[i][j]*x[i][j]
                 for j in range(n) for i in range(n) )
 
 # constraint : enter each city coming from another city
