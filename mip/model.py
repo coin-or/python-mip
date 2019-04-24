@@ -617,8 +617,8 @@ class Model:
         """
         self.solver.relax()
         for v in self.vars:
-            if v.var_type == BINARY or v.var_type == INTEGER:
-                v.var_type = CONTINUOUS
+            if v.type == BINARY or v.type == INTEGER:
+                v.type = CONTINUOUS
 
     def add_cut_generator(self, cuts_generator: "CutsGenerator") -> None:
         """ Adds a cut generator
