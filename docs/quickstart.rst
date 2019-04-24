@@ -24,7 +24,7 @@ The model class represents the optimization model. The code:
 
    m = Model()
 
-Creates an empty Mixed Integer Linear Programming problem settings some
+Creates an empty Mixed Integer Linear Programming problem setting some
 defaults: the optimization sense is set to *Minimize* and the selected
 solver is set to CBC or to Gurobi, if this is installed and configured.
 You can change the model objective sense or force a solver to be selected
@@ -41,9 +41,9 @@ Variables
 ~~~~~~~~~
 
 Decision variables are added to the model using the
-:func:`~mip.model.Model.add_var` method. Without
-parameters, a single variable with domain in :math:`\mathbb{R}^+` is
-created and its reference is returned:
+:meth:`~mip.model.Model.add_var` method. Without parameters, a single
+variable with domain in :math:`\mathbb{R}^+` is created and its reference
+is returned:
 
 .. code-block:: python
 
@@ -58,14 +58,15 @@ variables indicating if specified items were selected or not:
     y = [m.add_var(var_type=BINARY) for i in range(n)]
 
 This code would create binary variables :code:`y[0]`, ..., :code:`y[n-1]`.
-Additional variable types are :code:`CONTINUOUS` (default) and :code:`INTEGER`.
-Some additional properties that can be specified for variables are their lower
-and upper bounds (:code:`lb` and :code:`ub`, respectively) and their names.
-Entering variable names is optional but specially useful if you plan to save you
-model in .LP or .MPS file formats, for instance.  The following code creates a
-variable named :code:`zCost` that is restricted to be integral in the range
-:math:`\{-10,\ldots,10\}`, the reference for this variable is stored in a
-Python variable named :code:`z`.
+Additional variable types are :code:`CONTINUOUS` (default) and
+:code:`INTEGER`. Some additional properties that can be specified for
+variables are their lower and upper bounds (:code:`lb` and :code:`ub`,
+respectively) and their names. Entering variable names is optional but
+specially useful if you plan to save you model (Section
+:numref:`save-label`) in .LP or .MPS file formats, for instance.  The
+following code creates a variable named :code:`zCost` that is restricted
+to be integral in the range :math:`\{-10,\ldots,10\}`, the reference for
+this variable is stored in a Python variable named :code:`z`.
 
 .. code-block:: python
 
@@ -85,19 +86,21 @@ the upper bound for this variable to 5:
 Constraints
 ~~~~~~~~~~~
 
-Constraints are linear expressions involving variables, a sense, ==, <= or >= for 
-equal, less or equal and greater or equal, respectively  and a constant 
-in the right-hand side. The addition of constraint :math:`x+y \leq 10` to model
-:code:`m` can be done with:
+Constraints are linear expressions involving variables, a sense of ==, <=
+or >= for equal, less or equal and greater or equal, respectively  and
+a constant in the right-hand side. The addition of constraint :math:`x+y
+\leq 10` to model :code:`m` can be done with:
 
 .. code-block:: python 
 
     m += x + y <= 10
 
-Summation expressions can be used with the function :code:`xsum`. If for a knapsack problem
-with :math:`n` items, each one with weight :math:`w_i` we would like to select items with 
-binary variables :math:`x_i` respecting the knapsack capacity :math:`c`, then the following 
-code could be used to enter this constraint to our model :code:`m`:
+Summation expressions can be used with the function :code:`xsum`. If for
+a knapsack problem with :math:`n` items, each one with weight :math:`w_i`
+we would like to include a constraint to select items with binary
+variables :math:`x_i` respecting the knapsack capacity :math:`c`, then the
+following code could be used to enter this constraint to our model
+:code:`m`:
 
 .. code-block:: python 
 
@@ -108,37 +111,50 @@ even indexed items are subjected to the capacity constraint:
 
 .. code-block:: python 
 
-    mip += xsum(w[i]*x[i] for i in range(n) if i%2==0) <= c
+    m += xsum(w[i]*x[i] for i in range(n) if i%2==0) <= c
 
 Objective Function
 ~~~~~~~~~~~~~~~~~~
 
 By default a model is created with the *Minimize* sense. You can change by
-setting the :code:`sense` model property to :code:`MAXIMIZE`, or just
-multiply the objective function by -1. The following code adds :math:`n`
-:math:`x` variables to the objective function, each one with cost
-:math:`c_i`:
+setting the :attr:`~mip.model.Model.sense` model property to
+:code:`MAXIMIZE`, or just multiply the objective function by -1. The
+following code adds :math:`n` :math:`x` variables to the objective
+function, each one with cost :math:`c_i` by setting the
+:attr:`~mip.model.Model.objective` attribute of our example model
+:code:`m`:
 
 .. code-block:: python
 
-   m += xsum(c[i]*x[i] for i in range(n))
+   m.objective = xsum(c[i]*x[i] for i in range(n))
 
-Saving and Loading Models
--------------------------
+.. _save-label:
 
-Model methods :code:`write` and :code:`read` can be used to save and load,
-respectively, MIP models. Supported file formats for models are the `LP
-file format
+Saving, Loading and Checking Model Properties
+---------------------------------------------
+
+Model methods :meth:`~mip.model.Model.write` and
+:meth:`~mip.model.Model.read` can be used to save and load, respectively,
+MIP models. Supported file formats for models are the `LP file format
 <https://www.ibm.com/support/knowledgecenter/SSSA5P_12.9.0/ilog.odms.cplex.help/CPLEX/GettingStarted/topics/tutorials/InteractiveOptimizer/usingLPformat.html>`_,
-which is more readable and suitable for debugging and the 
-`MPS file format <https://en.wikipedia.org/wiki/MPS_(format)>`_, which is 
-recommended for extended compatibility. When calling the :code:`write` method,
-the file name extension (.lp or .mps) is used to define the file format. 
-Thus, to save our model in the lp file format in the file model.lp we can use:
+which is more readable and suitable for debugging and the `MPS file format
+<https://en.wikipedia.org/wiki/MPS_(format)>`_, which is recommended for
+extended compatibility, since it is an older and more widely adopted
+format. When calling the  :meth:`~mip.model.Model.write` method, the file
+name extension (.lp or .mps) is used to define the file format. Thus, to
+save our model in the lp file format in the file model.lp we can use:
 
 .. code-block:: python
 
     m.write('model.lp')
+
+After a model is read, you can query its attributes, like the number of
+variables, constraints and non-zeros in the constraint matrix:
+
+.. code-block:: python
+
+   m.read('model.lp')
+   print('model has {} vars, {} constraints and {} nzs'.format(m.num_cols, m.num_rows, m.num_nz))
 
 Optimizing and Querying Optimization Results
 --------------------------------------------
@@ -150,13 +166,13 @@ too expensive, results are often available in the beginning of the search.
 Sometimes a feasible solution is produced when the first tree nodes are
 processed and a lot of additional effort is spent improving the *dual
 bound*, which is a valid estimate for the cost of the optimal solution.
-When this estimate, the lower bound when minimizing, matches exactly the
+When this estimate, the lower bound for minimization, matches exactly the
 cost of the best solution found, the upper bound, the search is concluded.
-Thus, for practical applications, usually a truncated search is executed.
-The :code:`optimize` method, that executes the optimization of a model,
-accepts optionally processing limits as parameters. The following code
-executes the branch-&-cut algorithm for a maximum processing time of 300
-seconds.
+For practical applications, usually a truncated search is executed. The
+:meth:`~mip.model.Model.optimize` method, that executes the optimization
+of a model, accepts optionally processing limits as parameters. The
+following code executes the branch-&-cut algorithm for a maximum
+processing time of 300 seconds.
 
 .. code-block:: python
    :linenos:
@@ -184,7 +200,7 @@ bounds should be to conclude the search. The model attribute
 :code:`max_gap` specifies the allowable percentage deviation of the upper
 bound from the lower bound for concluding the search. In our example,
 whenever the distance of the lower and upper bounds is less or equal 5\%
-the search can be finished. 
+(line 1) the search can be finished. 
 
 The :code:`optimize` method returns the status of the BC search:
 :code:`OPTIMAL` if the search was concluded and the optimal solution was
@@ -196,10 +212,11 @@ or :code:`INT_INFEASIBLE` if no feasible solution exists for the model;
 :code:`UNBOUNDED` if there are missing constraints or :code:`ERROR` if
 some error occurred during optimization. In the example above, if a feasible
 solution is available (line 8), variables which have value different from zero
-are printed. Observe also that even when no feasible solution is available the
-lower bound is available (line 7).
+are printed. Observe also that even when no feasible solution is available
+the lower bound is available (line 8).
 
-TODO: solution pool
+TODO: solution pool 
+TODO: enumerations
 
 Performance Tuning
 ~~~~~~~~~~~~~~~~~~
