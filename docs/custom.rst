@@ -51,14 +51,14 @@ only violated sub-tour elimination constraints.
 
 As an example, consider the following graph:
 
-.. image:: ./images/tspG.pdf
+.. image:: ./images/tspG.png
     :width: 45%
     :align: center
 
 The optimal LP relaxation of the previous formulation without the sub-tour
 elimination constraints has cost 237:
 
-.. image:: ./images/tspRoot.pdf
+.. image:: ./images/tspRoot.png
     :width: 45%
     :align: center
 
@@ -70,7 +70,7 @@ this case we only need to include the additional constraints:
 Optimizing with these two additional constraints the objective value 
 increases to 244 and the following new solution is generated:
 
-.. image:: ./images/tspNo2Sub.pdf
+.. image:: ./images/tspNo2Sub.png
     :width: 45%
     :align: center
 
@@ -81,7 +81,7 @@ with elements *outside* :math:`S` (:math:`N\setminus S`), one for entering this
 subset and another for leaving.  Arcs connecting :math:`S` to the remaining
 nodes are shown bellow:
 
-.. image:: ./images/tspC.pdf
+.. image:: ./images/tspC.png
     :width: 45%
     :align: center
 
