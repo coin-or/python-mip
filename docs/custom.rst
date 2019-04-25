@@ -159,4 +159,6 @@ previous Section to separate inequalities for your application you can combine
 it with the complete BC algorithm implemented in the solver engine using
 callbacks. Cut generation callbacks (CGC) are called at each node of the search
 tree where a fractional solution is found. In Python-MIP, CGC are implemented
-extending the CutsGenerator class.
+extending the :class:`~mip.model.CutsGenerator` class.
+    
+
