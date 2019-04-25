@@ -1,34 +1,40 @@
+.. _chapCustom:
+
 Developing Customized Branch-&-Cut algorithms
 =============================================
 
-This chapter discusses some features of Python-MIP that allow the
-development of improved Branch-&-Cut algorithms by linking application
-specific routines to the generic algorithm included in the solver engine.
-We start providing an introduction to cutting planes in the next section.
+This chapter discusses some features of Python-MIP that allow the development
+of improved Branch-&-Cut algorithms by linking application specific routines to
+the generic algorithm included in the solver engine. We start providing an
+introduction to cutting planes and cut separation routines in the next section,
+following with a section describing how these routines can be embedded in the
+Branch-&-Cut solver engine using the generic cut callbacks of Python-MIP.
 
 Cutting Planes
 ~~~~~~~~~~~~~~
 
 In many applications there are strong formulations that require an
 exponential number of constraints. These formulations cannot be direct
-handled by the MIP Solver: entering all these constraints at once is
-usually not practical. Using cut generators you can interface with the MIP
-solver so that at each node of the search tree you can insert only the
-violated inequalities, called *cuts*. The problem of discovering these
-violated inequalities is called the *Separation Problem*. As an example,
-consider the Traveling Salesman Problem. The  compact formulation
-(:numref:`tsp-label`) is a rather *weak* formulation. Dual bounds produced
-at the root node of the search tree are distant from the optimal solution
-cost and improving these bounds requires a potentially intractable number
-of branchings. In this case, the culprit are the subtour elimination
-constraints involving variables :math:`x` and :math:`y`. A much stronger
-TSP formulation can be written as follows: consider a graph
-:math:`G=(N,A)` where :math:`N` is the set of nodes and :math:`A` is the
-set of directed edges with associated traveling costs :math:`c_a \in A`.
-Selection of arcs is done with binary variables :math:`x_a \,\,\, \forall
-a \in A`. Consider also that edges arriving and leaving a node :math:`n`
-are indicated in :math:`A^+_n` and :math:`A^-_n`, respectively. The
-complete formulation follows:
+handled by the MIP Solver: entering all these constraints at once is usually
+not practical. In the *Cutting Planes* method the LP relaxation is solved and
+only constraints which are *violated* are inserted. The model is re-optimized
+and at each iteration a stronger formulation is obtained until no more violated
+inequalities are found. The problem of discovering which are the missing
+violated constraints is also an optimization problem (finding the most violated
+inequality) and it is called the *Separation Problem*.
+
+As an example, consider the Traveling Salesman Problem. The  compact
+formulation (:numref:`tsp-label`) is a *weak* formulation: dual bounds produced
+at the root node of the search tree are distant from the optimal solution cost
+and improving these bounds requires a potentially intractable number of
+branchings. In this case, the culprit are the subtour elimination constraints
+involving variables :math:`x` and :math:`y`. A much stronger TSP formulation
+can be written as follows: consider a graph :math:`G=(N,A)` where :math:`N` is
+the set of nodes and :math:`A` is the set of directed edges with associated
+traveling costs :math:`c_a \in A`. Selection of arcs is done with binary
+variables :math:`x_a \,\,\, \forall a \in A`. Consider also that edges arriving
+and leaving a node :math:`n` are indicated in :math:`A^+_n` and :math:`A^-_n`,
+respectively. The complete formulation follows:
 
 
 .. math::
@@ -42,14 +48,11 @@ complete formulation follows:
  S \subset I \\
      & x_a \in \{0,1\} \,\,\, \forall a \in A
 
-The third type of constraint, named sub-tour elimination constraints, is
-stated for *every subset* of nodes. As the number of these constraints is
-:math:`O(2^{|N|})`, this formulation is not practical to be directly
-handled by the MIP solver. In the *Cutting Plane* method, one can start
-solving the formulation with the two first constraint types and insert
-only violated sub-tour elimination constraints.
-
-As an example, consider the following graph:
+The third constraints are sub-tour elimination constraints. Since these
+constraints are stated for *every subset* of nodes, the number of these
+constraints is :math:`O(2^{|N|})`. These are the constraints that will be
+separated by our cutting pane algorithm. As an example, consider the following
+graph:
 
 .. image:: ./images/tspG.png
     :width: 45%
@@ -144,5 +147,16 @@ graph in the sets :math:`S \subset N` and :math:`N \setminus S` generates
 the violated inequality added ad line 31. The process repeats while new
 violated inequalities are generated.
 
- 
+Cut Callback 
+~~~~~~~~~~~~
 
+The cutting plane method has some limitations: even though the first rounds of
+cuts improve significantly the lower bound, the overall number of iterations
+needed to obtain the optimal integer solution may be too large. Better results
+can be obtained with the Branch-&-Cut algorithm, where cut generation is
+combined with branching. If you have an algorithm like the one included in the
+previous Section to separate inequalities for your application you can combine
+it with the complete BC algorithm implemented in the solver engine using
+callbacks. Cut generation callbacks (CGC) are called at each node of the search
+tree where a fractional solution is found. In Python-MIP, CGC are implemented
+extending the CutsGenerator class.
