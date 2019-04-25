@@ -30,9 +30,11 @@ line of code.
 
 This document is organized as follows: in the :ref:`next Chapter
 <chapInstall>` installation and configuration instructions for different
-platforms are presented. Following, commented examples are included in
-:ref:`Chapter
-3 <chapExamples>`. Finally, the detailed reference information for the 
-main classes is included in :ref:`Chapter 4 <chapClasses>`.
+platforms are presented. In :ref:`Chapter 3 <chapQuick>` an overview of some
+common model creation and optimization code included. Commented examples are included in
+:ref:`Chapter 4 <chapExamples>`. :ref:`Chapter 5 <chapCustom>` includes some common solver
+customizations that can be do to improve the performance of application
+specific solvers. Finally, the detailed reference information for the 
+main classes is included in :ref:`Chapter 6 <chapClasses>`.
 
 

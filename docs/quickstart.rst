@@ -1,3 +1,5 @@
+.. _chapQuick:
+
 Quick start
 ===========
 
