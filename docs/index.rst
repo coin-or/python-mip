@@ -18,14 +18,25 @@ Classes
 
 .. automodule:: mip.model
  
+Model
+-----
+
 .. autoclass:: Model
     :members:
 
+Var
+---
+.. autoclass:: Var
+    :members:
+
+LinExpr
+-------
+.. autoclass:: LinExpr
+    :members:
 
 
-Indices and tables
-==================
+CutsGenerator
+-------------
+.. autoclass:: CutsGenerator
+    :members:
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

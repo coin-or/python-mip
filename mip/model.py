@@ -1,16 +1,3 @@
-"""MIP Model
-
-This module implements abstractions for working with Mixed-Integer Programming
-Models.
-
-The Documentation for Python-MIP is available at:
-https://python-mip.readthedocs.io/en/latest/
-
-A PDF version is also available:
-https://media.readthedocs.org/pdf/python-mip/latest/python-mip.pdf
-
-"""
-
 from typing import List, Tuple
 
 from mip.constants import *
@@ -77,27 +64,28 @@ class Constr:
 
 
 class LinExpr:
-    """ A Linear Expression
-
+    """
     Linear expressions are used to enter the objective function and the model \
-    constraints.
+    constraints. These expressions are created using operators and variables.
 
     Consider a model object m, the objective function of m can be specified as:
+    
+    .. code:: python
 
-    m += 10*x1 + 7*x4
+     m.objective = 10*x1 + 7*x4
 
-    summation can also be used:
+    In the example bellow, a constraint is added to the model
 
-    m += xsum(3*x[i] i in range(n)) - xsum(x[i] i in range(m))
-
-    If not specified in the construction of the model object, it is assumed
-    that the model is a minimization one.
+    .. code:: python
+    
+     m += xsum(3*x[i] i in range(n)) - xsum(x[i] i in range(m))
 
     A constraint is just a linear expression with the addition of a sense (==,
     <= or >=) and a right hand side, e.g.:
 
-    m += x1 + x2 + x3 == 1
-
+    .. code:: python
+    
+     m += x1 + x2 + x3 == 1
     """
 
     def __init__(self,
@@ -239,14 +227,18 @@ class LinExpr:
         return result
 
     def add_const(self, const: float) -> None:
+        """adds a constant value to the linear expression, in the case of a constraint
+        this correspond to the right-hand-side"""
         self.const += const
 
     def add_expr(self, expr: "LinExpr", coeff: float = 1) -> None:
+        """extends a linear expression with the contents of another"""
         self.const += expr.const * coeff
         for var, coeff_var in expr.expr.items():
             self.add_var(var, coeff_var * coeff)
 
     def add_term(self, expr, coeff: float = 1) -> None:
+        """extends a linear expression with another multiplied by a constant value coeff"""
         if isinstance(expr, Var):
             self.add_var(expr, coeff)
         elif isinstance(expr, LinExpr):
@@ -255,6 +247,7 @@ class LinExpr:
             self.add_const(expr)
 
     def add_var(self, var: "Var", coeff: float = 1) -> None:
+        """adds a variable with a coefficient to the constraint"""
         if var in self.expr:
             if -EPS <= self.expr[var] + coeff <= EPS:
                 del self.expr[var]
@@ -980,6 +973,12 @@ class Solver:
 
 
 class Var:
+    """
+    Objects of class Var are decision variables of a model. The creation
+    of variables is performed calling the :meth:`~mip.model.Model.add_var`
+    method of the Model class.
+
+    """
 
     def __init__(self,
                  model: Model,
@@ -1068,6 +1067,7 @@ class Var:
 
     @property
     def lb(self) -> float:
+        """float: the variable lower bound"""
         return self.model.solver.var_get_lb(self)
 
     @lb.setter
@@ -1076,6 +1076,7 @@ class Var:
 
     @property
     def ub(self) -> float:
+        """float: the variable upper bound"""
         return self.model.solver.var_get_ub(self)
 
     @ub.setter
@@ -1084,6 +1085,7 @@ class Var:
 
     @property
     def obj(self) -> float:
+        """float: coefficient of a variable in the objective function"""
         return self.model.solver.var_get_obj(self)
 
     @obj.setter
@@ -1092,6 +1094,7 @@ class Var:
 
     @property
     def type(self) -> str:
+        """str: variable type ('B') BINARY, ('C') CONTINUOUS and ('I') INTEGER"""
         return self.model.solver.var_get_type(self)
 
     @type.setter
@@ -1101,6 +1104,7 @@ class Var:
 
     @property
     def column(self) -> Column:
+        "Column: coefficients of variable in constraints"
         return self.model.solver.var_get_column(self)
 
     @column.setter
@@ -1109,6 +1113,7 @@ class Var:
 
     @property
     def rc(self) -> float:
+        "float: reduced cost, only available after a linear programming model (no integer variables) is optimized"
         if self.model.status != OPTIMAL:
             raise SolutionNotAvailable('Solution not available.')
 
@@ -1116,6 +1121,7 @@ class Var:
 
     @property
     def x(self) -> float:
+        """float: solution value"""
         if self.model.status == LOADED:
             raise SolutionNotAvailable('Model was not optimized, solution not available.')
         elif self.model.status == INFEASIBLE or self.model.status==CUTOFF:
@@ -1128,6 +1134,7 @@ class Var:
         return self.model.solver.var_get_x(self)
 
     def xi(self, i: int) -> float:
+        """solution value for this variable in the i-th solution from the solution pool"""
         if self.model.status == LOADED:
             raise SolutionNotAvailable('Model was not optimized, solution not available.')
         elif self.model.status == INFEASIBLE or self.model.status==CUTOFF:
@@ -1140,19 +1147,32 @@ class Var:
         return self.model.solver.var_get_xi(self, i)
 
 
+class CutsGenerator:
+    """abstract class for implementing cut generators"""
+    def __init__(self, model: Model):
+        self.model = model
+
+    def generate_cuts(self, relax_solution: List[Tuple[Var, float]]) -> List[LinExpr]:
+        """Method called by the solve engine to generate cuts
+
+           After analyzing the contents of the fractional solution in relax_solution, one 
+           or mode cuts (LinExpr) may be generated and returned. These cuts are added to the
+           relaxed model.
+
+        Args:
+            relax_solution(List[Tuple[Var, float]]): a list of tuples(variable,value) indicating the values of variables in the current fractional solution variables at zero are not included.
+
+        Note: take care not to query the value of the fractional solution using the :code:`x`
+        methods from original references to problem variables, use the contents of :code:`relax_solution` instead.
+        """
+        raise NotImplementedError()
+
+
 class BranchSelector:
     def __init__(self, model: Model):
         self.model = model
 
     def select_branch(self, relax_solution: List[Tuple[Var, float]]) -> Tuple[Var, int]:
-        raise NotImplementedError()
-
-
-class CutsGenerator:
-    def __init__(self, model: Model):
-        self.model = model
-
-    def generate_cuts(self, relax_solution: List[Tuple[Var, float]]) -> List[LinExpr]:
         raise NotImplementedError()
 
 

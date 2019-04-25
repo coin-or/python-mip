@@ -40,6 +40,7 @@ release = ''
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx_autodoc_typehints',
     'sphinx.ext.mathjax',
 	'sphinx.ext.napoleon',
 ]
@@ -170,3 +171,5 @@ epub_exclude_files = ['search.html']
 #numfig = True
 #math_numfig = True
 math_eqref_format = "Eq.{number}"
+
+add_module_names = False
