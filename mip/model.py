@@ -263,6 +263,14 @@ class LinExpr:
         copy.sense = self.sense
         return copy
 
+    def __hash__(self):
+        hashEl = [v.idx for v in self.expr.keys()]
+        for c in self.expr.values():
+            hashEl.append(c)
+        hashEl.append(self.const)
+        hashEl.append(self.sense)
+        return hash(hashEl)
+
 
 class Model:
     """ Mixed Integer Programming Model
