@@ -2,10 +2,11 @@ Developing Customized Branch-&-Cut algorithms
 =============================================
 
 This chapter discusses some features of Python-MIP that allow the
-development of improved Branch-&-Cut algorithms by adding application
-specific routines to the generic algorithm included in the solvers.
+development of improved Branch-&-Cut algorithms by linking application
+specific routines to the generic algorithm included in the solver engine.
+We start providing an introduction to cutting planes in the next section.
 
-Cut generators
+Cutting Planes
 ~~~~~~~~~~~~~~
 
 In many applications there are strong formulations that require an
@@ -50,14 +51,14 @@ only violated sub-tour elimination constraints.
 
 As an example, consider the following graph:
 
-.. image:: tspG.pdf
+.. image:: ./images/tspG.pdf
     :width: 45%
     :align: center
 
 The optimal LP relaxation of the previous formulation without the sub-tour
 elimination constraints has cost 237:
 
-.. image:: tspRoot.pdf
+.. image:: ./images/tspRoot.pdf
     :width: 45%
     :align: center
 
@@ -66,32 +67,82 @@ include only two nodes. Forbidding sub-tours of size 2 is quite easy: in
 this case we only need to include the additional constraints:
 :math:`x_{(d,e)}+x_{(e,d)}\leq 1` and :math:`x_{(c,f)}+x_{(f,c)}\leq 1`.
 
-Optimizing with these two additional constraints out objective value would
-increase to 244 and the following new solution would be generated:
+Optimizing with these two additional constraints the objective value 
+increases to 244 and the following new solution is generated:
 
-.. image:: tspNo2Sub.pdf
+.. image:: ./images/tspNo2Sub.pdf
     :width: 45%
     :align: center
 
-Now there are sub-tours of size 3 and 4. Let's consider the sub-tour
-defined by nodes :math:`S=\{a,b,g\}`. To eliminate this sub-tour we need
-to include a constraint stating that elements *in* :math:`S` should have
-two arcs linking with elements *outside* :math:`S` (:math:`N\setminus S`), one for
-entering this subset and another for leaving.
-Arcs connecting :math:`S` to the remaining nodes are show bellow:
+Now there are sub-tours of size 3 and 4. Let's consider the sub-tour defined by
+nodes :math:`S=\{a,b,g\}`. To eliminate this sub-tour we need to include a
+constraint stating that elements *in* :math:`S` should have two arcs linking
+with elements *outside* :math:`S` (:math:`N\setminus S`), one for entering this
+subset and another for leaving.  Arcs connecting :math:`S` to the remaining
+nodes are shown bellow:
 
-.. image:: tspC.pdf
+.. image:: ./images/tspC.pdf
     :width: 45%
     :align: center
 
 Our cut, in this case, would be :math:`x_{(a,d)} + x_{(d,a)} + x_{(d,b)} + x_{(b,d)} + x_{(a,c)} + x_{(c,a)} + x_{(g,e)} + x_{(e,g)} + x_{(g,f)} + x_{(f,g)} + x_{(b,e)} + x_{(e,b)} \geq 2`. 
-Adding it to our model increases the objective value to 261 and generates the following solution, now with fractional values
-for some variables:
+Adding it to our model increases the objective value to 261, s significant
+improvement. In our example, the visual identification of the isolated subset is 
+easy, but how to automatically identify these subsets efficiently in the general case ?
+A subset is a *cut* in a Graph. To identify the most isolated subset we just have to 
+solve the `Minimum cut problem in graphs <https://en.wikipedia.org/wiki/Minimum_cut>`_. 
+In python you can use the `networkx min-cut module <https://networkx.github.io/documentation/networkx-1.10/reference/generated/networkx.algorithms.flow.minimum_cut.html>`_. 
+The following code implements a cutting plane algorithm for the assimetric traveling 
+salesman problem:
 
-.. image:: tspSt1.pdf
-    :width: 45%
-    :align: center
+.. code-block:: python
+ :linenos:
 
+ from mip.model import *
+ from itertools import product
+ from networkx import minimum_cut,DiGraph
+ N =['a', 'b', 'c', 'd', 'e', 'f', 'g']
+ A ={('a','d'):56,('d','a'):67,('a','b'):49,('b','a'):50,('d','b'):39,('b','d'):37,('c','f'):35,
+     ('f','c'):35,('g','b'):35,('b','g'):35,('g','b'):35,('b','g'):25,('a','c'):80,('c','a'):99,
+     ('e','f'):20,('f','e'):20,('g','e'):38,('e','g'):49,('g','f'):37,('f','g'):32,('b','e'):21,
+     ('e','b'):30,('a','g'):47,('g','a'):68,('d','c'):37,('c','d'):52,('d','e'):15,('e','d'):20}
+ Aout = {n:[a for a in A if a[0]==n] for n in N}
+ Ain  = {n:[a for a in A if a[1]==n] for n in N}
+ m = Model()
+ x = {a:m.add_var(name='x({},{})'.format(a[0], a[1]), var_type=BINARY) for a in A}
+ m.objective = xsum(c*x[a] for a,c in A.items())
+ for n in N:
+   m += xsum(x[a] for a in Aout[n]) == 1, 'out({})'.format(n)
+   m += xsum(x[a] for a in Ain[n]) == 1, 'in({})'.format(n)
+ newConstraints=True
+ m.relax()
+ while newConstraints:
+   m.optimize()
+   print('objective value : {}'.format(m.objective_value))
+   G = DiGraph()
+   for a in A:
+     G.add_edge(a[0], a[1], capacity=x[a].x)
+   newConstraints=False
+   for (n1,n2) in [(i,j) for (i,j) in product(N,N) if i!=j]:
+     cut_value, (S,NS) = minimum_cut(G, n1, n2)
+     if (cut_value<=0.99):
+       m += xsum(x[a] for a in A if (a[0] in S and a[1] in NS)or(a[1] in S and a[0] in NS))>=2
+       newConstraints = True 
 
+Lines 5-8 are the input data. Nodes are labeled with letters in a list
+:code:`N` and a dictionary :code:`A` is used to store the weighted
+directed graph. Lines 9 and 10 store output and input arcs per node. The
+mapping of binary variables :math:`x_a` to arcs is made also using
+a dictionary in line 12. Line 13 sets the objective function and the
+following tree lines include constraints enforcing one entering and one
+leaving arc to be selected for each node. On line 18 we relax the
+integrality constraints of variables so that the optimization performed in
+line 20 will only solve the LP relaxation and the separation routine can
+be executed. Our separation routine is executed for each pair or nodes at
+line 28 and whenever two disconnected nodes are found the partition of the
+graph in the sets :math:`S \subset N` and :math:`N \setminus S` generates
+the violated inequality added ad line 31. The process repeats while new
+violated inequalities are generated.
 
+ 
 

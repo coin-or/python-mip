@@ -121,7 +121,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-        (master_doc, 'python-mip.tex', 'Mixed Integer Linear Programming with Python: The Python-MIP Package',
+        (master_doc, 'python-mip.tex', 'Mixed Integer Linear Programming with Python',
      'Haroldo G. Santos \\and Túlio A.M. Toffolo', 'manual'),
 ]
 
