@@ -4,48 +4,39 @@ from mip.model import *
 from mip.constants import *
 import networkx as nx
 from math import floor
-
+from itertools import product
 
 class SubTourCutGenerator(CutsGenerator):
-    def __init__(self, model: "Model", n: int):
+    """Class to separate sub-tour elimination constraints"""
+    def __init__(self, model: Model, n: int):
         super().__init__(model)
         self.n = n
 
     def generate_cuts(self, relax_solution: List[Tuple[Var, float]]) -> List[LinExpr]:
+        """assumes that variable names have the format x(i,j)"""
         G = nx.DiGraph()
-        for i, (v, x) in enumerate(relax_solution):
-            if 'x(' not in v.name:
-                continue
-            strarc = v.name.split('(')[1].split(')')[0]
-            if abs(x) < 1e-6:
-                continue
-            ui = int(strarc.split(',')[0].strip())
-            vi = int(strarc.split(',')[1].strip())
-            G.add_edge(ui, vi, capacity=int(floor(x * 10000.0)))
-
+        # only x variables
+        r = [(v,f) for (v,f) in relax_solution if 'x(' in v.name]
+        # getting tails and heads of arcs
+        U = [int(v.name.split('(')[1].split(',')[0]) for v,f in r]
+        V = [int(v.name.split(')')[0].split(',')[1]) for v,f in r]
+        for i in range(len(U)):
+            G.add_edge(U[i], V[i], capacity=r[i][1])
         cuts = []
+        for (u,v) in [(u,v) for (u,v) in product(range(n),range(n)) if u!=v]:
+            val, (S,NS) = nx.minimum_cut(G, u, v)
+            if min(len(S), len(NS))<=2:
+                continue
+            # checking violation
+            if val > 0.99:
+                continue
+            arcsInS = [(v,f) for i,(v,f) in enumerate(r) if U[i] in S and V[i] in S]
+            sumArcsInS = sum(f for v,f in arcsInS)
+            if sumArcsInS > len(S)-1:
+                cut = xsum(1.0*v for v,fm in arcsInS) <= len(S)-1
+                print(cut)
+                cuts.append(cut)
 
-        for u in range(self.n):
-            for v in range(self.n):
-                if u == v: continue
-                val, part = nx.minimum_cut(G, u, v)
-                # checking violation
-                if val >= 9999:
-                    continue
-
-                reachable, nonreachable = part
-
-                cutvars = list()
-
-                for u in reachable:
-                    for v in nonreachable:
-                        var = model.get_var_by_name('x({},{})'.format(u, v))
-                        if var != None:
-                            cutvars.append(var) 
-                if len(cutvars):
-                    cuts.append(xsum(1.0*var for var in cutvars) >= 1)
-
-        #print("Cuts: ", cuts)
         return cuts
 
 
@@ -59,6 +50,7 @@ d = inst.d
 print('solving TSP with {} cities'.format(inst.n))
 
 model = Model()
+model.threads = 1
 
 # binary variables indicating if arc (i,j) is used on the route or not
 x = [[model.add_var(
