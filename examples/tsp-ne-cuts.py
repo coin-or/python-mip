@@ -39,7 +39,7 @@ while newConstraints:
     for (n1,n2) in [(i,j) for (i,j) in product(N,N) if i!=j]:
         cut_value, (S,NS) = minimum_cut(G, n1, n2)
         if (cut_value<=0.99):
-            m += xsum(x[a] for a in A if (a[0] in S and a[1] in NS) or (a[1] in S and a[0] in NS)) >= 2
+            m += xsum(x[a] for a in A if (a[0] in S and a[1] in S)) <= len(S)-1
             newConstraints = True
 
         
