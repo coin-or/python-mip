@@ -7,37 +7,27 @@ from math import floor
 from itertools import product
 
 class SubTourCutGenerator(CutsGenerator):
-    """Class to separate sub-tour elimination constraints"""
-    def __init__(self, model: Model, n: int):
+    def __init__(self, model: Model):
         super().__init__(model)
-        self.n = n
 
     def generate_cuts(self, relax_solution: List[Tuple[Var, float]]) -> List[LinExpr]:
-        """assumes that variable names have the format x(i,j)"""
         G = nx.DiGraph()
-        # only x variables
         r = [(v,f) for (v,f) in relax_solution if 'x(' in v.name]
-        # getting tails and heads of arcs
         U = [int(v.name.split('(')[1].split(',')[0]) for v,f in r]
         V = [int(v.name.split(')')[0].split(',')[1]) for v,f in r]
+        UV = {u for u in (U+V)}
         for i in range(len(U)):
             G.add_edge(U[i], V[i], capacity=r[i][1])
-        cuts = []
-        for (u,v) in [(u,v) for (u,v) in product(range(n),range(n)) if u!=v]:
-            val, (S,NS) = nx.minimum_cut(G, u, v)
-            if min(len(S), len(NS))<=2:
-                continue
-            # checking violation
-            if val > 0.99:
-                continue
-            arcsInS = [(v,f) for i,(v,f) in enumerate(r) if U[i] in S and V[i] in S]
-            sumArcsInS = sum(f for v,f in arcsInS)
-            if sumArcsInS > len(S)-1:
-                cut = xsum(1.0*v for v,fm in arcsInS) <= len(S)-1
-                print(cut)
-                cuts.append(cut)
-
-        return cuts
+        cp = CutPool()
+        for u in UV:
+            for v in [v for v in UV if v!=u]:
+                val, (S,NS) = nx.minimum_cut(G, u, v)
+                if val<=0.99:
+                    arcsInS = [(v,f) for i,(v,f) in enumerate(r) if U[i] in S and V[i] in S]
+                    if sum(f for v,f in arcsInS) >= (len(S)-1)+1e-4:
+                        cut = xsum(1.0*v for v,fm in arcsInS) <= len(S)-1
+                        cp.add(cut)
+        return cp.cuts
 
 
 if len(argv) <= 1:
@@ -93,8 +83,8 @@ for i in range(0, n):
         model += \
             y[i] - (n + 1) * x[i][j] >= y[j] - n, 'noSub({},{})'.format(i, j)
 
-model.add_cut_generator(SubTourCutGenerator(model, n))
-model.optimize(max_seconds=60, max_nodes=100)
+model.add_cut_generator(SubTourCutGenerator(model))
+model.optimize()
 
 print('best route found has length {}'.format(model.objective_value))
 

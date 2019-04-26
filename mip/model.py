@@ -4,6 +4,7 @@ from mip.constants import *
 from math import inf
 from builtins import property
 from os import environ
+from collections import defaultdict
 
 class SolutionNotAvailable(Exception):
     """Exception that is raised when some method to query some
@@ -263,13 +264,29 @@ class LinExpr:
         copy.sense = self.sense
         return copy
 
+    def equals(self:"LinExpr", other:"LinExpr") -> bool:
+        """returns true if a linear expression equals to another, false otherwise"""
+        if (self.const != other.const):
+            return False
+        if (self.sense != other.sense):
+            return False
+        if (len(self.expr)!=len(other.expr)):
+            return False
+        for i,(v,c) in enumerate(self.expr.items()):
+            if v not in self.expr:
+                return False
+            oc = self.expr[v]
+            if ( abs(c-oc)>1e-12 ):
+                return False;
+        return True
+
     def __hash__(self):
         hashEl = [v.idx for v in self.expr.keys()]
         for c in self.expr.values():
             hashEl.append(c)
         hashEl.append(self.const)
         hashEl.append(self.sense)
-        return hash(hashEl)
+        return hash(tuple(hashEl))
 
 
 class Model:
@@ -1174,6 +1191,33 @@ class CutsGenerator:
         methods from original references to problem variables, use the contents of :code:`relax_solution` instead.
         """
         raise NotImplementedError()
+
+
+class CutPool:
+    def __init__(self : "CutPool"):
+        """Stores a list list of different cuts, repeated cuts are discarded."""
+        self.__cuts = []
+
+        # positions for each hash code to speedup 
+        # the search of repeated cuts
+        self.__pos = defaultdict( list )
+
+    def add(self : "CutPool", cut : "LinExpr") -> bool:
+        """tries to add a cut to the pool, returns true if this is a new cut, false if it is a repeated one"""
+        hcode = hash(cut)
+        l = self.__pos[hcode]
+        for p in l:
+            if self.__cuts[p].equals(cut):
+                return False
+
+        self.__pos[hcode].append(len(self.__cuts))
+        self.__cuts.append(cut)
+
+        return True
+
+    @property
+    def cuts(self : "CutPool") -> List["LinExpr"]:
+        return self.__cuts
 
 
 class BranchSelector:
