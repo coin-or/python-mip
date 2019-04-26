@@ -4,4 +4,5 @@
 - inst logo
 - doc of var and LinExpr
 - thr safety grb
+- AVX optional in CBC
 
