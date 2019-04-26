@@ -5,6 +5,7 @@ from mip.constants import *
 import networkx as nx
 from math import floor
 from itertools import product
+from random import shuffle
 
 class SubTourCutGenerator(CutsGenerator):
     def __init__(self, model: Model):
@@ -15,7 +16,8 @@ class SubTourCutGenerator(CutsGenerator):
         r = [(v,f) for (v,f) in relax_solution if 'x(' in v.name]
         U = [int(v.name.split('(')[1].split(',')[0]) for v,f in r]
         V = [int(v.name.split(')')[0].split(',')[1]) for v,f in r]
-        UV = {u for u in (U+V)}
+        UV = list({u for u in (U+V)})
+        shuffle(UV)
         for i in range(len(U)):
             G.add_edge(U[i], V[i], capacity=r[i][1])
         cp = CutPool()
@@ -26,7 +28,11 @@ class SubTourCutGenerator(CutsGenerator):
                     arcsInS = [(v,f) for i,(v,f) in enumerate(r) if U[i] in S and V[i] in S]
                     if sum(f for v,f in arcsInS) >= (len(S)-1)+1e-4:
                         cut = xsum(1.0*v for v,fm in arcsInS) <= len(S)-1
-                        cp.add(cut)
+                        added = cp.add(cut)
+                        if added:
+                            break # find cut for next city
+                        if len(cp.cuts)>10:
+                            return cp.cuts
         return cp.cuts
 
 
@@ -40,7 +46,7 @@ d = inst.d
 print('solving TSP with {} cities'.format(inst.n))
 
 model = Model()
-model.threads = 1
+model.threads = 4
 
 # binary variables indicating if arc (i,j) is used on the route or not
 x = [[model.add_var(
