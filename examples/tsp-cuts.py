@@ -31,7 +31,7 @@ class SubTourCutGenerator(CutsGenerator):
                         added = cp.add(cut)
                         if added:
                             break # find cut for next city
-                        if len(cp.cuts)>10:
+                        if len(cp.cuts)>256:
                             return cp.cuts
         return cp.cuts
 
