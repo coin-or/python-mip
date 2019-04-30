@@ -5,7 +5,7 @@ from mip.constants import *
 import networkx as nx
 from math import floor
 from itertools import product
-from random import shuffle
+from random import shuffle, seed
 
 class SubTourCutGenerator(CutsGenerator):
     def __init__(self, model: Model):
@@ -40,6 +40,7 @@ if len(argv) <= 1:
     print('enter instance name.')
     exit(1)
 
+seed(0)
 inst = TSPData(argv[1])
 n = inst.n
 d = inst.d

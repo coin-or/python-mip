@@ -205,6 +205,18 @@ class SolverCbc(Solver):
             cbcSetParameter(self._model, c_str('lagomory'), c_str('endonly'))
             cbcSetParameter(self._model, c_str('latwomir'), c_str('endonly'))
 
+        if self.model.cuts == 0:
+            cbcSetParameter(self._model, c_str('cuts'), c_str('off'))
+        
+        if self.model.cuts >= 1:
+            cbcSetParameter(self._model, c_str('cuts'), c_str('on'))
+        if self.model.cuts >= 2:
+            cbcSetParameter(self._model, c_str('lagomory'), c_str('endcleanroot'))
+            cbcSetParameter(self._model, c_str('latwomir'), c_str('endcleanroot'))
+            cbcSetParameter(self._model, c_str('passC'), c_str('-25'))
+        if self.model.cuts >= 3:
+            cbcSetParameter(self._model, c_str('passC'), c_str('-35'))
+            cbcSetParameter(self._model, c_str('lift'), c_str('ifmove'))
 
         if (self.__threads >=1):
             cbcSetParameter(self._model, c_str('threads'), c_str('{}'.format(self.__threads)))
