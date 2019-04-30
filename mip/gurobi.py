@@ -216,6 +216,8 @@ class SolverGurobi(Solver):
 
         if self.__threads>=1:
             self.set_int_param("Threads", self.__threads)
+        
+        self.set_int_param("Cuts", self.model.cuts)
 
         # executing Gurobi to solve the formulation
         status = int(GRBoptimize(self._model))
