@@ -3,7 +3,8 @@
 Modeling Examples
 =================
 
-This chapter includes commented examples on modeling and solving optimization problems with Python-MIP.
+This chapter includes commented examples on modeling and solving optimization
+problems with Python-MIP.
 
 The 0/1 Knapsack Problem
 ------------------------
@@ -38,7 +39,8 @@ The following python code creates, optimizes and prints the optimal solution for
     n = len(w) 
     m = Model('knapsack', MAXIMIZE)
     x = [m.add_var(var_type='B') for i in range(n)] 
-    m += xsum(p[i]*x[i] for i in range(n) ) m += xsum(w[i]*x[i] for i in range(n) ) <= c
+    m += xsum(p[i]*x[i] for i in range(n) ) 
+    m += xsum(w[i]*x[i] for i in range(n) ) <= c
     m.optimize() 
     selected=[i for i in range(n) if x[i].x>=0.99]
     print('selected items: {}'.format(selected))
@@ -156,5 +158,4 @@ trip has length 547 and is depicted bellow:
 .. image:: ./images/belgium-tourism-14-opt-547.png
     :width: 60%
     :align: center
-
 
