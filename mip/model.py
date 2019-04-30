@@ -361,6 +361,7 @@ class Model:
 
         self.__threads = 0
         self.__status = LOADED;
+        self.__cuts = 1
 
     def __del__(self):
         if self.solver:
@@ -666,6 +667,22 @@ class Model:
     @emphasis.setter
     def emphasis(self, emph: int):
         self.solver.set_emphasis(emph)
+
+    @property
+    def cuts(self) -> int:
+        """int: controls the generation of cutting planes, 0 disables completely, 1 (default) generates
+        cutting planes in a moderate way, 2 generates cutting planes aggressively and 3 generates 
+        even more cutting planes. Cutting planes usually improve the LP relaxation bound but also make the 
+        solution time of the LP relaxation larger, so the overall effect is hard to predict and it is
+        usually a good option to try different settings for this parameter.
+        """
+        return self.__cuts
+
+    @cuts.setter
+    def cuts(self, cuts : int):
+        if cuts<0 or cuts>3:
+            print('Warning: invalid value ({}) for parameter cuts, keeping old setting.'.format(self.__cuts))
+        self.__cuts = cuts
 
     def optimize(self,
                  branch_selector: "BranchSelector" = None,
