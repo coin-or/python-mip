@@ -69,7 +69,7 @@ class LinExpr:
     Linear expressions are used to enter the objective function and the model \
     constraints. These expressions are created using operators and variables.
 
-    Consider a model object m, the objective function of m can be specified as:
+    Consider a model object m, the objective function of :code:`m` can be specified as:
     
     .. code:: python
 
@@ -227,18 +227,18 @@ class LinExpr:
         result.sense = ">"
         return result
 
-    def add_const(self, const: float) -> None:
+    def add_const(self, const: float):
         """adds a constant value to the linear expression, in the case of a constraint
         this correspond to the right-hand-side"""
         self.const += const
 
-    def add_expr(self, expr: "LinExpr", coeff: float = 1) -> None:
+    def add_expr(self, expr: "LinExpr", coeff: float = 1):
         """extends a linear expression with the contents of another"""
         self.const += expr.const * coeff
         for var, coeff_var in expr.expr.items():
             self.add_var(var, coeff_var * coeff)
 
-    def add_term(self, expr, coeff: float = 1) -> None:
+    def add_term(self, expr, coeff: float = 1):
         """extends a linear expression with another multiplied by a constant value coeff"""
         if isinstance(expr, Var):
             self.add_var(expr, coeff)
@@ -247,7 +247,7 @@ class LinExpr:
         elif isinstance(expr, float) or isinstance(expr, int):
             self.add_const(expr)
 
-    def add_var(self, var: "Var", coeff: float = 1) -> None:
+    def add_var(self, var: "Var", coeff: float = 1):
         """adds a variable with a coefficient to the constraint"""
         if var in self.expr:
             if -EPS <= self.expr[var] + coeff <= EPS:
@@ -390,9 +390,7 @@ class Model:
                 obj: float = 0.0,
                 var_type: str = CONTINUOUS,
                 column: "Column" = None) -> "Var":
-        """ Creates a new variable
-
-        Adds a new variable to the model.
+        """ Creates a new variable in the model, returning its reference
 
         Args:
             name (str): variable name (optional)
@@ -406,11 +404,11 @@ class Model:
 
         Examples:
 
-            To add a variable x which is continuous and greater or equal to zero to model m::
+            To add a variable :code:`x` which is continuous and greater or equal to zero to model :code:`m`::
 
                 x = m.add_var()
 
-            The following code creates a vector of binary variables x[0], ..., x[n-1] to model m::
+            The following code creates a vector of binary variables :code:`x[0], ..., x[n-1]` to model :code:`m`::
 
                 x = [m.add_var(type=BINARY) for i in range(n)]
 
@@ -451,7 +449,7 @@ class Model:
 
         Summation expressions can be used also, to add the constraint \
         :math:`\displaystyle \sum_{i=0}^{n-1} x_i = y` and name this \
-        constraint cons1::
+        constraint :code:`cons1`::
 
             m += xsum(x[i] for i in range(n)) == y, "cons1"
 
@@ -471,7 +469,7 @@ class Model:
             solver_name(str): solver name (optional)
 
         Returns:
-            Model: clone of current model
+            clone of current model
 
         """
         if not solver_name:
@@ -493,13 +491,13 @@ class Model:
         return copy
 
     def get_constr_by_name(self, name: str) -> "Constr":
-        """ Queries a constraint per name
+        """ Queries a constraint by its name
 
         Args:
             name(str): constraint name
 
         Returns:
-            Constr: constraint
+            constraint
         """
         return self.constrs_by_name.get(name, None)
 
@@ -509,14 +507,12 @@ class Model:
 
     @property
     def objective(self) -> LinExpr:
-        """LinExpr: Objective function of the problem
-
-        The objective function of the problem as a linear expression.
+        """The objective function of the problem as a linear expression.
 
         Examples:
 
-            The following code adds all x variables x[0], ..., x[n-1], to
-            the objective function of model m with weight w::
+            The following code adds all :code:`x` variables :code:`x[0], ..., x[n-1]`, to
+            the objective function of model :code:`m` with the same cost :code:`w`::
 
                 m.objective = xsum(w*x[i] for i in range(n))
 
@@ -542,7 +538,7 @@ class Model:
 
     @property
     def verbose(self) -> int:
-        """int: 0 to disable solver messages printed on the screen, 1 to enable
+        """0 to disable solver messages printed on the screen, 1 to enable
         """
         return self.solver.get_verbose()
 
@@ -552,9 +548,9 @@ class Model:
 
     @property
     def threads(self) -> int:
-        """int: number of threads to be used when solving the problem. 
+        """number of threads to be used when solving the problem. 
         0 uses solver default configuration, -1 uses the number of available
-        processing cores and >=1 uses the specified number of threads.
+        processing cores and :math:`\geq 1` uses the specified number of threads.
         An increased number of threads may improve the solution time but
         also increases the memory consumption."""
         return self.__threads
@@ -568,7 +564,7 @@ class Model:
         """ The optimization sense
 
         Returns:
-            str: the objective function sense, MINIMIZE (default) or (MAXIMIZE)
+            the objective function sense, MINIMIZE (default) or (MAXIMIZE)
         """
 
         return self.solver.get_objective_sense()
@@ -579,9 +575,7 @@ class Model:
 
     @property
     def objective_const(self) -> float:
-        """ Returns the current constant part of the objective function
-
-        float: the constant part in the objective function
+        """Returns the constant part of the objective function
         """
         return self.solver.get_objective_const()
 
@@ -591,40 +585,36 @@ class Model:
 
     @property
     def objective_value(self) -> float:
-        """ Objective function value
-
-        Returns:
-            float: returns the objective function value of the solution found.
-
+        """Objective function value of the solution found
         """
         return self.solver.get_objective_value()
 
     @property
     def num_solutions(self) -> int:
-        """ Number of solutions found during the MIP search
+        """Number of solutions found during the MIP search
 
         Returns:
-            int: number of solutions stored in the solution pool
+            number of solutions stored in the solution pool
 
         """
         return self.solver.get_num_solutions()
 
     @property
     def objective_values(self) -> List[float]:
-        """ List of costs of all solutions in the solution pool
+        """List of costs of all solutions in the solution pool
 
         Returns:
-            List[float]: costs of all solutions stored in the solution pool 
-            as an array from 0 (the best solution) to num_solutions-1.
+            costs of all solutions stored in the solution pool 
+            as an array from 0 (the best solution) to :attr:`~mip.model.Model.num_solutions`-1.
         """
         return [float(self.solver.get_objective_value_i(i))\
                  for i in range(self.num_solutions)] 
 
-    def get_var_by_name(self, name) -> "Var":
-        """ Searchers a variable by its name
+    def get_var_by_name(self, name: str) -> "Var":
+        """Searchers a variable by its name
 
         Returns:
-            Var: a reference to a variable
+            a reference to the variable
         """
         return self.vars_by_name.get(name, None)
 
@@ -639,7 +629,7 @@ class Model:
             if v.type == BINARY or v.type == INTEGER:
                 v.type = CONTINUOUS
 
-    def add_cut_generator(self, cuts_generator: "CutsGenerator") -> None:
+    def add_cut_generator(self, cuts_generator: "CutsGenerator"):
         """ Adds a cut generator
 
         Cut generators are called whenever a solution where one or more
@@ -654,7 +644,7 @@ class Model:
 
     @property
     def emphasis(self) -> int:
-        """int: defines the main objective of the search, if set to 1 (FEASIBILITY) then
+        """defines the main objective of the search, if set to 1 (FEASIBILITY) then
         the search process will focus on try to find quickly feasible solutions and
         improving them; if set to 2 (OPTIMALITY) then the search process will try to
         find a provable optimal solution, procedures to further improve the lower bounds will
@@ -670,7 +660,7 @@ class Model:
 
     @property
     def cuts(self) -> int:
-        """int: controls the generation of cutting planes, 0 disables completely, 1 (default) generates
+        """controls the generation of cutting planes, 0 disables completely, 1 (default) generates
         cutting planes in a moderate way, 2 generates cutting planes aggressively and 3 generates 
         even more cutting planes. Cutting planes usually improve the LP relaxation bound but also make the 
         solution time of the LP relaxation larger, so the overall effect is hard to predict and it is
@@ -709,7 +699,7 @@ class Model:
             max_solutions (float): Maximum number of solutions (default: inf)
 
         Returns:
-            int: optimization status, which can be OPTIMAL(0), ERROR(-1), INFEASIBLE(1), UNBOUNDED(2). When optimizing problems
+            optimization status, which can be OPTIMAL(0), ERROR(-1), INFEASIBLE(1), UNBOUNDED(2). When optimizing problems
             with integer variables some additional cases may happen, FEASIBLE(3) for the case when a feasible solution was found
             but optimality was not proved, INT_INFEASIBLE(4) for the case when the lp relaxation is feasible but no feasible integer
             solution exists and NO_SOLUTION_FOUND(5) for the case when an integer solution was not found in the optimization.
@@ -724,10 +714,8 @@ class Model:
 
         return self.__status
 
-    def read(self, path: str) -> None:
-        """ Reads a MIP model
-
-        Reads a MIP model in .lp or .mps file format.
+    def read(self, path: str):
+        """Reads a MIP model in :code:`.lp` or :code:`.mps` file format.
 
         Args:
             path(str): file name
@@ -746,16 +734,13 @@ class Model:
 
     @property
     def start(self) -> List[Tuple["Var", float]]:
-        """ Enter an initial feasible solution
+        """Initial feasible solution
 
-        Enters an initial feasible solution. Only the main binary/integer decision variables.
-        Auxiliary or continuous variables are automatically computed.
-
-        Args:
-            start_sol: list of tuples Var,float indicating non-zero variables
-            and their values in the initial feasible solution
-
-        """
+        Enters an initial feasible solution. Only the main binary/integer
+        decision variables which appear with non-zero values in the initial
+        feasible solution need to be informed. Auxiliary or continuous
+        variables are automatically computed.  
+        """ 
         return self.__mipStart
 
     @start.setter
@@ -763,41 +748,38 @@ class Model:
         self.__mipStart = start_sol
         self.solver.set_start(start_sol)
 
-    def write(self, path: str) -> None:
-        """ Saves the the MIP model
+    def write(self, path: str):
+        """Saves the the MIP model, use the extension :code:`.lp` or :code:`.mps` in the file
+        name to specify the file format.
 
         Args:
             path(str): file name
-
-        Saves the the MIP model, use the extension ".lp" or ".mps" in the file
-        name to specify the file format.
-
         """
         self.solver.write(path)
 
     @property
     def num_cols(self) -> int:
-        """int: number of columns (variables) in the model"""
+        """number of columns (variables) in the model"""
         return len(self.vars)
 
     @property
     def num_int(self) -> int:
-        """int: number of integer variables in the model"""
+        """number of integer variables in the model"""
         return self.solver.num_int()
 
     @property
     def num_rows(self) -> int:
-        """int: number of rows (constraints) in the model"""
+        """number of rows (constraints) in the model"""
         return len(self.constrs)
 
     @property 
     def num_nz(self) -> int:
-        """int: number of non-zeros in the constraint matrix"""
+        """number of non-zeros in the constraint matrix"""
         return self.solver.num_nz()
 
     @property
     def cutoff(self) -> float:
-        """float: upper limit for the solution cost, solutions with cost > cutoff
+        """upper limit for the solution cost, solutions with cost > cutoff
         will be removed from the search space, a small cutoff value may significantly
         speedup the search, but if cutoff is set to a value too low
         the model will become infeasible"""
@@ -809,8 +791,8 @@ class Model:
 
     @property
     def max_mip_gap_abs(self) -> float:
-        """float: tolerance for the quality of the optimal solution, if a
-        solution with cost c and a lower bound l are available and c-l<mip_gap_abs,
+        """tolerance for the quality of the optimal solution, if a
+        solution with cost :math:`c` and a lower bound :math:`l` are available and :math:`c-l<` :code:`mip_gap_abs`,
         the search will be concluded, see mip_gap to determine
         a percentage value """
         return self.solver.get_mip_gap_abs()
@@ -821,9 +803,9 @@ class Model:
 
     @property
     def max_mip_gap(self) -> float:
-        """float: percentage indicating the tolerance for the maximum percentage deviation
-        from the optimal solution cost, if a solution with cost c and a lower bound l
-        are available and (c-l)/l < mip_gap the search will be concluded."""
+        """value indicating the tolerance for the maximum percentage deviation
+        from the optimal solution cost, if a solution with cost :math:`c` and a lower bound :math:`l`
+        are available and :math:`(c-l)/l <` :code:`max_mip_gap` the search will be concluded."""
         return self.solver.get_mip_gap()
 
     @max_mip_gap.setter
@@ -832,7 +814,7 @@ class Model:
 
     @property
     def max_seconds(self) -> float:
-        """float: time limit in seconds for search"""
+        """time limit in seconds for search"""
         return self.solver.get_max_seconds()
 
     @max_seconds.setter
@@ -841,7 +823,7 @@ class Model:
 
     @property
     def max_nodes(self) -> int:
-        """int: maximum number of nodes to be explored in the search tree"""
+        """maximum number of nodes to be explored in the search tree"""
         return self.solver.get_max_nodes()
 
     @max_nodes.setter
@@ -850,7 +832,7 @@ class Model:
 
     @property
     def max_solutions(self) -> int:
-        """int: solution limit, search will be stopped when max_solutions were found"""
+        """solution limit, search will be stopped when :code:`max_solutions` were found"""
         return self.solver.get_max_solutions()
 
     @max_solutions.setter
@@ -859,7 +841,7 @@ class Model:
 
     @property
     def status(self) -> int:
-        """ int: optimization status, which can be OPTIMAL(0), ERROR(-1), INFEASIBLE(1), UNBOUNDED(2). When optimizing problems
+        """ optimization status, which can be OPTIMAL(0), ERROR(-1), INFEASIBLE(1), UNBOUNDED(2). When optimizing problems
             with integer variables some additional cases may happen, FEASIBLE(3) for the case when a feasible solution was found
             but optimality was not proved, INT_INFEASIBLE(4) for the case when the lp relaxation is feasible but no feasible integer
             solution exists and NO_SOLUTION_FOUND(5) for the case when an integer solution was not found in the optimization.
@@ -1109,7 +1091,7 @@ class Var:
 
     @property
     def lb(self) -> float:
-        """float: the variable lower bound"""
+        """the variable lower bound"""
         return self.model.solver.var_get_lb(self)
 
     @lb.setter
@@ -1118,7 +1100,7 @@ class Var:
 
     @property
     def ub(self) -> float:
-        """float: the variable upper bound"""
+        """the variable upper bound"""
         return self.model.solver.var_get_ub(self)
 
     @ub.setter
@@ -1127,7 +1109,7 @@ class Var:
 
     @property
     def obj(self) -> float:
-        """float: coefficient of a variable in the objective function"""
+        """coefficient of a variable in the objective function"""
         return self.model.solver.var_get_obj(self)
 
     @obj.setter
@@ -1136,26 +1118,26 @@ class Var:
 
     @property
     def type(self) -> str:
-        """str: variable type ('B') BINARY, ('C') CONTINUOUS and ('I') INTEGER"""
+        """variable type ('B') BINARY, ('C') CONTINUOUS and ('I') INTEGER"""
         return self.model.solver.var_get_type(self)
 
     @type.setter
-    def type(self, value: str) -> None:
+    def type(self, value: str):
         assert value in (BINARY, CONTINUOUS, INTEGER)
         self.model.solver.var_set_type(self, value)
 
     @property
     def column(self) -> Column:
-        "Column: coefficients of variable in constraints"
+        "coefficients of variable in constraints"
         return self.model.solver.var_get_column(self)
 
     @column.setter
-    def column(self, value: Column) -> None:
+    def column(self, value: Column):
         self.model.solver.var_set_column(self, value)
 
     @property
     def rc(self) -> float:
-        "float: reduced cost, only available after a linear programming model (no integer variables) is optimized"
+        "reduced cost, only available after a linear programming model (no integer variables) is optimized"
         if self.model.status != OPTIMAL:
             raise SolutionNotAvailable('Solution not available.')
 
@@ -1163,7 +1145,7 @@ class Var:
 
     @property
     def x(self) -> float:
-        """float: solution value"""
+        """solution value"""
         if self.model.status == LOADED:
             raise SolutionNotAvailable('Model was not optimized, solution not available.')
         elif self.model.status == INFEASIBLE or self.model.status==CUTOFF:
@@ -1176,7 +1158,7 @@ class Var:
         return self.model.solver.var_get_x(self)
 
     def xi(self, i: int) -> float:
-        """solution value for this variable in the i-th solution from the solution pool"""
+        """solution value for this variable in the :math:`i`-th solution from the solution pool"""
         if self.model.status == LOADED:
             raise SolutionNotAvailable('Model was not optimized, solution not available.')
         elif self.model.status == INFEASIBLE or self.model.status==CUTOFF:
@@ -1197,14 +1179,14 @@ class CutsGenerator:
     def generate_cuts(self, relax_solution: List[Tuple[Var, float]]) -> List[LinExpr]:
         """Method called by the solve engine to generate cuts
 
-           After analyzing the contents of the fractional solution in relax_solution, one 
-           or mode cuts (LinExpr) may be generated and returned. These cuts are added to the
+           After analyzing the contents of the fractional solution in :code:`relax_solution`, one 
+           or mode cuts (:class:`~mip.model.LinExpr`) may be generated and returned. These cuts are added to the
            relaxed model.
 
         Args:
-            relax_solution(List[Tuple[Var, float]]): a list of tuples(variable,value) indicating the values of variables in the current fractional solution variables at zero are not included.
+            relax_solution(List[Tuple[Var, float]]): a list of tuples (variable,value) indicating the values of variables in the current fractional solution. Variables at zero are not included.
 
-        Note: take care not to query the value of the fractional solution using the :code:`x`
+        Note: take care not to query the value of the fractional solution in the cut generation method using the :code:`x`
         methods from original references to problem variables, use the contents of :code:`relax_solution` instead.
         """
         raise NotImplementedError()
