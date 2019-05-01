@@ -24,4 +24,4 @@ g++ -shared -Ofast -fPIC -o cbc-c-linux-x86-64.so \
 -L./CoinUtils/src/.libs/ -L./Cgl/src/.libs/ -L./Clp/src/OsiClp/.libs/ -L./Clp/src/.libs/ \
 -L./ThirdParty/Lapack/.libs/ -L./ThirdParty/Blas/.libs/ \
  -lCbcSolver -lCbc -lpthread -lrt -lCgl -lOsiClp -lClpSolver -lClp -lOsi -lCoinUtils \
- -lcoinlapack -lcoinblas
+ -lcoinlapack -lcoinblas -lgfortran -lquadmath -lm -static-libgcc -static-libstdc++ -static-libgfortran
