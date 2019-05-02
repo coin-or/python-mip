@@ -119,7 +119,7 @@ class SolverCbc(Solver):
             return nameIdx
 
         # cut callback
-        def cbc_cut_callback(osiSolver: c_void_p, osiCuts: c_void_p) -> None:
+        def cbc_cut_callback(osiSolver: c_void_p, osiCuts: c_void_p):
             global warningMessages
             # getting fractional solution
             fracSol = []
@@ -147,8 +147,8 @@ class SolverCbc(Solver):
             cval = (c_double * n)()
 
             # calling cut generators
-            for cg in self.model.cut_generators:
-                cuts = cg.generate_cuts(fracSol)
+            if self.model.cuts_generator != None:
+                cuts = self.model.cuts_generator.generate_cuts(fracSol)
 
                 if cuts and not nameIdx:
                     nameIdx = cbc_get_osi_name_indexes(osiSolver)
@@ -185,7 +185,7 @@ class SolverCbc(Solver):
                             warningMessages += 1
 
         # adding cut generators
-        if self.model.cut_generators and self.added_cut_callback is False:
+        if self.model.cuts_generator!=None and self.added_cut_callback is False:
             self._cutCallback = CBCcallbacktype(cbc_cut_callback)
             cbcAddCutCallback(self._model, self._cutCallback,
                               c_str("mipCutGen"), c_void_p(0))
