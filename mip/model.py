@@ -13,10 +13,8 @@ class SolutionNotAvailable(Exception):
 
 
 class Column:
-    """ A column (variable) in the constraint matrix
-
-        To create a column see Model.add_var
-
+    """A column contains all the non-zero entries of a variable in the constraint matrix. 
+    To create a variable see :meth:`~mip.model.model.add_var`
     """
 
     def __init__(self,
@@ -29,15 +27,18 @@ class Column:
 class Constr:
     """ A row (constraint) in the constraint matrix
 
-        a constraint can be added to the model using the overloaded operator
-        +=, e.g., if m is a model:
+        A constraint can be added to the model using the overloaded operator
+        +=, e.g., if :code:`m` is a model:
 
-        m += 3*x1 + 4*x2 <= 5
+        .. code:: python
+
+          m += 3*x1 + 4*x2 <= 5
 
         summation expressions are also supported:
 
-        m += xsum(x[i] for i in range(n)) == 1
+        .. code:: python
 
+          m += xsum(x[i] for i in range(n)) == 1
     """
 
     def __init__(self, model: "Model", idx: int, name: str = ""):
@@ -605,7 +606,7 @@ class Model:
 
         Returns:
             costs of all solutions stored in the solution pool 
-            as an array from 0 (the best solution) to :attr:`~mip.model.Model.num_solutions`-1.
+            as an array from 0 (the best solution) to :attr:`~mip.model.model.num_solutions`-1.
         """
         return [float(self.solver.get_objective_value_i(i))\
                  for i in range(self.num_solutions)] 
