@@ -178,7 +178,7 @@ class SolverGurobi(Solver):
                      p_cbdata: c_void_p,
                      where: int,
                      p_usrdata: c_void_p) -> int:
-            if self.model.cut_generators and where == 5:  # MIPNODE == 5
+            if self.model.cuts_generator != None and where == 5:  # MIPNODE == 5
                 # obtaining relaxation solution and "translating" it
                 solution = (c_double * self._num_vars)()
                 GRBcbget(p_cbdata, where, GRB_CB_MIPNODE_REL, solution)
@@ -188,29 +188,28 @@ class SolverGurobi(Solver):
                         relax_solution.append((self.model.vars[i], solution[i]))
 
                 # calling cut generators
-                for cg in self.model.cut_generators:
-                    cuts = cg.generate_cuts(relax_solution)
-                    # adding cuts
-                    for lin_expr in cuts:
-                        # collecting linear expression data
-                        numnz = len(lin_expr.expr)
-                        cind = (c_int * numnz)()
-                        cval = (c_double * numnz)()
+                cuts = self.model.cuts_generator.generate_cuts(relax_solution)
+                # adding cuts
+                for lin_expr in cuts:
+                    # collecting linear expression data
+                    numnz = len(lin_expr.expr)
+                    cind = (c_int * numnz)()
+                    cval = (c_double * numnz)()
 
-                        # collecting variable coefficients
-                        for i, (var, coeff) in enumerate(lin_expr.expr.items()):
-                            cind[i] = var.idx
-                            cval[i] = coeff
+                    # collecting variable coefficients
+                    for i, (var, coeff) in enumerate(lin_expr.expr.items()):
+                        cind[i] = var.idx
+                        cval[i] = coeff
 
-                        # constraint sense and rhs
-                        sense = c_char(ord(lin_expr.sense))
-                        rhs = c_double(-lin_expr.const)
+                    # constraint sense and rhs
+                    sense = c_char(ord(lin_expr.sense))
+                    rhs = c_double(-lin_expr.const)
 
-                        GRBcbcut(p_cbdata, numnz, cind, cval, sense, rhs)
+                    GRBcbcut(p_cbdata, numnz, cind, cval, sense, rhs)
 
             return 0
 
-        if self.model.cut_generators:
+        if self.model.cuts_generator != None:
             self._callback = GRBcallbacktype(callback)
             GRBsetcallbackfunc(self._model, self._callback, c_void_p(0))
 
