@@ -90,7 +90,7 @@ for i in range(0, n):
         model += \
             y[i] - (n + 1) * x[i][j] >= y[j] - n, 'noSub({},{})'.format(i, j)
 
-model.add_cut_generator(SubTourCutGenerator(model))
+model.cuts_generator = SubTourCutGenerator(model)
 model.optimize()
 
 print('best route found has length {}'.format(model.objective_value))

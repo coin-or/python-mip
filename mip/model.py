@@ -337,7 +337,7 @@ class Model:
         self.constrs_by_name = {}
         self.vars = []
         self.vars_by_name = {}
-        self.cut_generators = []
+        self.__cuts_generator = None
 
         if solver_name.upper() == GUROBI:
             from mip.gurobi import SolverGurobi
@@ -630,18 +630,17 @@ class Model:
             if v.type == BINARY or v.type == INTEGER:
                 v.type = CONTINUOUS
 
-    def add_cut_generator(self, cuts_generator: "CutsGenerator"):
-        """ Adds a cut generator
-
-        Cut generators are called whenever a solution where one or more
+    @property
+    def cuts_generator(self : "Model") -> "CutsGenerator":
+        """Cut generator callback. Cut generators are called whenever a solution where one or more
         integer variables appear with continuous values. A cut generator will
         try to produce one or more inequalities to remove this fractional point.
-
-        Args:
-            cuts_generator : CutsGenerator
-
         """
-        self.cut_generators.append(cuts_generator)
+        return self.__cuts_generator
+
+    @cuts_generator.setter
+    def cuts_generator(self : "Model", cuts_generator : "CutsGenerator"):
+        self.__cuts_generator = cuts_generator
 
     @property
     def emphasis(self) -> int:
@@ -676,9 +675,6 @@ class Model:
         self.__cuts = cuts
 
     def optimize(self,
-                 branch_selector: "BranchSelector" = None,
-                 incumbent_updater: "IncumbentUpdater" = None,
-                 lazy_constrs_generator: "LazyConstrsGenerator" = None,
                  max_seconds: float = inf,
                  max_nodes: int = inf,
                  max_solutions: int = inf) -> int:
@@ -686,15 +682,11 @@ class Model:
 
         Optimizes current model, optionally specifying processing limits.
 
-        To optimize model m within a processing time limit of 300 seconds::
+        To optimize model :code:`m` within a processing time limit of 300 seconds::
 
             m.optimize(max_seconds=300)
 
         Args:
-            branch_selector (BranchSelector): Callback to select branch (an object of a class inheriting from BranchSelector must be passed)
-            cuts_generator (CutsGenerator): Callback to generate cuts (an object of a class inheriting from CutsGenerator must be passed)
-            incumbent_updater (IncumbentUpdater): Callback to update incumbent solution (an object of a class inheriting from IncumbentUpdater must be passed)
-            lazy_constrs_generator (LazyConstrsGenerator): Callback to include lazy generated constraints (an object of a class inheriting from LazyConstrsGenerator must be passed)
             max_seconds (float): Maximum runtime in seconds (default: inf)
             max_nodes (float): Maximum number of nodes (default: inf)
             max_solutions (float): Maximum number of solutions (default: inf)
@@ -708,7 +700,7 @@ class Model:
         """
         if self.__threads != 0:
             self.solver.set_num_threads(self.__threads)
-        self.solver.set_callbacks(branch_selector, incumbent_updater, lazy_constrs_generator)
+        #self.solver.set_callbacks(branch_selector, incumbent_updater, lazy_constrs_generator)
         self.solver.set_processing_limits(max_seconds, max_nodes, max_solutions)
 
         self.__status = self.solver.optimize()
@@ -1195,7 +1187,8 @@ class CutsGenerator:
 
 class CutPool:
     def __init__(self : "CutPool"):
-        """Stores a list list of different cuts, repeated cuts are discarded."""
+        """Stores a list list of different cuts, repeated cuts are discarded.
+        """
         self.__cuts = []
 
         # positions for each hash code to speedup 
@@ -1203,7 +1196,11 @@ class CutPool:
         self.__pos = defaultdict( list )
 
     def add(self : "CutPool", cut : "LinExpr") -> bool:
-        """tries to add a cut to the pool, returns true if this is a new cut, false if it is a repeated one"""
+        """tries to add a cut to the pool, returns true if this is a new cut, false if it is a repeated one
+
+        Args:
+            cut(LinExpr): a constraint
+        """
         hcode = hash(cut)
         l = self.__pos[hcode]
         for p in l:

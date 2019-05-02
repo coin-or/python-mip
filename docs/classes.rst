@@ -36,3 +36,8 @@ CutsGenerator
 .. autoclass:: CutsGenerator
     :members:
 
+CutPool
+-------
+.. autoclass:: CutPool
+    :members:
+
