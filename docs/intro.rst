@@ -23,18 +23,19 @@ Python-MIP eases the development of high-performance MIP based solvers for
 custom applications by providing a tight integration with the
 branch-and-cut algorithms of the supported solvers. Strong formulations
 with an exponential number of constraints can be handled by the inclusion
-of cut generators. Heuristics can be integrated to provide initial
-feasible solutions to the MIP solver (MIPStarts). These features can be
-used in both solver engines, CBC and GUROBI, without changing a single
-line of code.
+of :ref:`Cut Generators <cut-generation-label>`. Heuristics can be
+integrated for :ref:`providing initial feasible solutions
+<mipstart-label>` to the MIP solver. These features can be used in both
+solver engines, CBC and GUROBI, without changing a single line of code.
 
 This document is organized as follows: in the :ref:`next Chapter
 <chapInstall>` installation and configuration instructions for different
 platforms are presented. In :ref:`Chapter 3 <chapQuick>` an overview of some
 common model creation and optimization code included. Commented examples are included in
-:ref:`Chapter 4 <chapExamples>`. :ref:`Chapter 5 <chapCustom>` includes some common solver
-customizations that can be do to improve the performance of application
-specific solvers. Finally, the detailed reference information for the 
-main classes is included in :ref:`Chapter 6 <chapClasses>`.
+:ref:`Chapter 4 <chapExamples>`. :ref:`Chapter 5 <chapCustom>` includes
+some common solver customizations that can be done to improve the
+performance of application specific solvers. Finally, the detailed
+reference information for the main classes is included in :ref:`Chapter
+6 <chapClasses>`.
 
 
