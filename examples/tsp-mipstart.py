@@ -10,7 +10,7 @@ if len(argv) <= 1:
     exit(1)
 
 # simple heuristic to generate an initial feasible solution
-def gen_ini_sol( n : int, d: List[List[float]] ):
+def gen_ini_sol( n : int, d: List[List[float]] ) -> List[int]:
 	sol = [0, n-1]
 	out = set(range(1,n-1))
 
