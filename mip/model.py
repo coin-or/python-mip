@@ -333,8 +333,6 @@ class Model:
         self.solver_name = solver_name
         self.solver = None
 
-        self.__sense = sense
-
         # reading solver_name from an environment variable (if applicable)
         if not self.solver_name and "solver_name" in environ:
             self.solver_name = environ["solver_name"]
@@ -344,20 +342,20 @@ class Model:
         # creating a solver instance
         if self.solver_name.upper() == GUROBI:
             from mip.gurobi import SolverGurobi
-            self.solver = SolverGurobi(self, self.name, self.__sense)
+            self.solver = SolverGurobi(self, self.name, sense)
         elif self.solver_name.upper() == CBC:
             from mip.cbc import SolverCbc
-            self.solver = SolverCbc(self, self.name, self.__sense)
+            self.solver = SolverCbc(self, self.name, sense)
         else:
             # checking which solvers are available
             from mip import gurobi
             if gurobi.has_gurobi:
                 from mip.gurobi import SolverGurobi
-                self.solver = SolverGurobi(self, self.name, self.__sense)
+                self.solver = SolverGurobi(self, self.name, sense)
                 self.solver_name = GUROBI
             else:
                 from mip.cbc import SolverCbc
-                self.solver = SolverCbc(self, self.name, self.__sense)
+                self.solver = SolverCbc(self, self.name, sense)
                 self.solver_name = CBC
 
         # list of constraints and variables
@@ -467,7 +465,7 @@ class Model:
         """
 
         if isinstance(lin_expr, bool):
-            return None  # empty constraint
+            raise InvalidLinExpr("A boolean (true/false) cannot be used as a constraint.")
         idx = self.solver.add_constr(lin_expr, name)
         self.constrs.append(Constr(self, idx, name))
         self.constrs_by_name[name] = self.constrs[-1]
@@ -480,22 +478,24 @@ class Model:
         will be instantiated to implement the formulation.
         """
         # creating a new solver instance
+        sense = self.sense
+
         if self.solver_name.upper() == GUROBI:
             from mip.gurobi import SolverGurobi
-            self.solver = SolverGurobi(self, self.name, self.__sense)
+            self.solver = SolverGurobi(self, self.name, sense)
         elif self.solver_name.upper() == CBC:
             from mip.cbc import SolverCbc
-            self.solver = SolverCbc(self, self.name, self.__sense)
+            self.solver = SolverCbc(self, self.name, sense)
         else:
             # checking which solvers are available
             from mip import gurobi
             if gurobi.has_gurobi:
                 from mip.gurobi import SolverGurobi
-                self.solver = SolverGurobi(self, self.name, self.__sense)
+                self.solver = SolverGurobi(self, self.name, sense)
                 self.solver_name = GUROBI
             else:
                 from mip.cbc import SolverCbc
-                self.solver = SolverCbc(self, self.name, self.__sense)
+                self.solver = SolverCbc(self, self.name, sense)
                 self.solver_name = CBC
 
         # list of constraints and variables
@@ -530,7 +530,10 @@ class Model:
 
         # adding constraints
         for c in self.constrs:
-            expr = c.expr  # todo: make copy of constraint"s lin_expr
+            orig_expr = c.expr
+            expr = LinExpr(const=orig_expr.const, sense=orig_expr.sense)
+            for (var, value) in orig_expr.expr.items():
+                expr.add_term(self.vars[var.idx], value)
             copy.add_constr(lin_expr=expr, name=c.name)
 
         # setting objective function"s constant
@@ -610,7 +613,6 @@ class Model:
         for i in range(n_rows):
             self.constrs.append(Constr(self, i, self.solver.constr_get_name(i)))
             self.constrs_by_name[self.constrs[-1].name] = self.constrs[-1]
-        self.sense = self.solver.get_objective_sense()
 
     def relax(self):
         """ Relax integrality constraints of variables
@@ -774,8 +776,8 @@ class Model:
         """controls the generation of cutting planes, 0 disables completely, 1 (default) generates
         cutting planes in a moderate way, 2 generates cutting planes aggressively and 3 generates
         even more cutting planes. Cutting planes usually improve the LP relaxation bound but also make the
-        solution time of the LP relaxation larger, so the overall effect is hard to predict and it is
-        usually a good option to try different settings for this parameter.
+        solution time of the LP relaxation larger, so the overall effect is hard to predict and experimenting
+        different values for this parameter may be beneficial.
         """
         return self.__cuts
 
@@ -1021,9 +1023,9 @@ class Solver:
 
     def var_set_obj(self, var: "Var", value: float) -> None: pass
 
-    def var_get_type(self, var: "Var") -> str: pass
+    def var_get_var_type(self, var: "Var") -> str: pass
 
-    def var_set_type(self, var: "Var", value: str) -> None: pass
+    def var_set_var_type(self, var: "Var", value: str) -> None: pass
 
     def var_get_column(self, var: "Var") -> Column: pass
 
@@ -1159,14 +1161,14 @@ class Var:
         self.model.solver.var_set_obj(self, value)
 
     @property
-    def type(self) -> str:
+    def var_type(self) -> str:
         """variable type ('B') BINARY, ('C') CONTINUOUS and ('I') INTEGER"""
-        return self.model.solver.var_get_type(self)
+        return self.model.solver.var_get_var_type(self)
 
-    @type.setter
-    def type(self, value: str):
+    @var_type.setter
+    def var_type(self, value: str):
         assert value in (BINARY, CONTINUOUS, INTEGER)
-        self.model.solver.var_set_type(self, value)
+        self.model.solver.var_set_var_type(self, value)
 
     @property
     def column(self) -> Column:

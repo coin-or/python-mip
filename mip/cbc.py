@@ -310,7 +310,7 @@ class SolverCbc(Solver):
     def var_get_obj(self, var: Var) -> float:
         return float(cbcGetObjCoeff(self._model)[var.idx])
 
-    def var_get_type(self, var: "Var") -> str:
+    def var_get_var_type(self, var: "Var") -> str:
         isInt = cbcIsInteger(self._model, c_int(var.idx))
         if isInt:
             lb = self.var_get_lb(var)
