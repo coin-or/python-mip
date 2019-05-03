@@ -19,7 +19,7 @@ def optimize( problemName : str, cnvs ):
 
     # binary variables indicating if arc (i,j) is used on the route or not
     x = [ [ model.add_var(
-            type=BINARY) 
+            var_type=BINARY) 
                 for j in range(n) ] 
                 for i in range(n) ]
 
