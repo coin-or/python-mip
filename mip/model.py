@@ -6,6 +6,13 @@ from builtins import property
 from os import environ
 from collections import defaultdict
 
+
+class InvalidLinExpr(Exception):
+    """Exception that is raised when an invalid
+    linear expression is created"""
+    pass
+
+
 class SolutionNotAvailable(Exception):
     """Exception that is raised when some method to query some
     solution property is used but no solution is available"""
@@ -13,7 +20,7 @@ class SolutionNotAvailable(Exception):
 
 
 class Column:
-    """A column contains all the non-zero entries of a variable in the constraint matrix. 
+    """A column contains all the non-zero entries of a variable in the constraint matrix.
     To create a variable see :meth:`~mip.model.model.add_var`
     """
 
@@ -71,7 +78,7 @@ class LinExpr:
     constraints. These expressions are created using operators and variables.
 
     Consider a model object m, the objective function of :code:`m` can be specified as:
-    
+
     .. code:: python
 
      m.objective = 10*x1 + 7*x4
@@ -79,14 +86,14 @@ class LinExpr:
     In the example bellow, a constraint is added to the model
 
     .. code:: python
-    
+
      m += xsum(3*x[i] i in range(n)) - xsum(x[i] i in range(m))
 
     A constraint is just a linear expression with the addition of a sense (==,
     <= or >=) and a right hand side, e.g.:
 
     .. code:: python
-    
+
      m += x1 + x2 + x3 == 1
     """
 
@@ -265,36 +272,36 @@ class LinExpr:
         copy.sense = self.sense
         return copy
 
-    def equals(self:"LinExpr", other:"LinExpr") -> bool:
+    def equals(self: "LinExpr", other: "LinExpr") -> bool:
         """returns true if a linear expression equals to another, false otherwise"""
-        if (self.const != other.const):
+        if self.const != other.const:
             return False
-        if (self.sense != other.sense):
+        if self.sense != other.sense:
             return False
-        if (len(self.expr)!=len(other.expr)):
+        if len(self.expr) != len(other.expr):
             return False
-        for i,(v,c) in enumerate(self.expr.items()):
+        for i, (v, c) in enumerate(self.expr.items()):
             if v not in self.expr:
                 return False
             oc = self.expr[v]
-            if ( abs(c-oc)>1e-12 ):
-                return False;
+            if abs(c - oc) > 1e-12:
+                return False
         return True
 
     def __hash__(self):
-        hashEl = [v.idx for v in self.expr.keys()]
+        hash_el = [v.idx for v in self.expr.keys()]
         for c in self.expr.values():
-            hashEl.append(c)
-        hashEl.append(self.const)
-        hashEl.append(self.sense)
-        return hash(tuple(hashEl))
+            hash_el.append(c)
+        hash_el.append(self.const)
+        hash_el.append(self.sense)
+        return hash(tuple(hash_el))
 
 
 class Model:
     """ Mixed Integer Programming Model
 
     This is the main class, providing methods for building, optimizing,
-    querying optimization results and reoptimizing Mixed-Integer Programming
+    querying optimization results and re-optimizing Mixed-Integer Programming
     Models.
 
     To check how models are created please see the examples included.
@@ -353,7 +360,6 @@ class Model:
                 self.solver = SolverGurobi(self, name, sense)
                 self.solver_name = GUROBI
             else:
-                from mip import cbc
                 from mip.cbc import SolverCbc
                 self.solver = SolverCbc(self, name, sense)
                 self.solver_name = CBC
@@ -361,7 +367,7 @@ class Model:
         self.sense = sense
 
         self.__threads = 0
-        self.__status = LOADED;
+        self.__status = OptimizationStatus.LOADED
         self.__cuts = 1
 
     def __del__(self):
@@ -438,8 +444,8 @@ class Model:
 
         Examples:
 
-        The following code adds the constraint :math:`x_1 + x_2 \leq 1` 
-        (x1 and x2 should be created first using 
+        The following code adds the constraint :math:`x_1 + x_2 \leq 1`
+        (x1 and x2 should be created first using
         :func:`add_var<mip.model.Model.add_var>`)::
 
             m += x1 + x2 <= 1
@@ -487,7 +493,7 @@ class Model:
             copy.add_constr(lin_expr=expr, name=c.name)
 
         # setting objective function"s constant
-        copy.objective_const = self.get_objective_const()
+        copy.objective_const = self.objective_const
 
         return copy
 
@@ -544,12 +550,12 @@ class Model:
         return self.solver.get_verbose()
 
     @verbose.setter
-    def verbose(self, v : int):
-        return self.solver.set_verbose(v)
+    def verbose(self, v: int) -> None:
+        self.solver.set_verbose(v)
 
     @property
     def threads(self) -> int:
-        """number of threads to be used when solving the problem. 
+        """number of threads to be used when solving the problem.
         0 uses solver default configuration, -1 uses the number of available
         processing cores and :math:`\geq 1` uses the specified number of threads.
         An increased number of threads may improve the solution time but
@@ -557,7 +563,7 @@ class Model:
         return self.__threads
 
     @threads.setter
-    def threads(self, th : int):
+    def threads(self, th: int):
         self.__threads = th
 
     @property
@@ -605,11 +611,11 @@ class Model:
         """List of costs of all solutions in the solution pool
 
         Returns:
-            costs of all solutions stored in the solution pool 
+            costs of all solutions stored in the solution pool
             as an array from 0 (the best solution) to :attr:`~mip.model.model.num_solutions`-1.
         """
-        return [float(self.solver.get_objective_value_i(i))\
-                 for i in range(self.num_solutions)] 
+        return [float(self.solver.get_objective_value_i(i))
+                for i in range(self.num_solutions)]
 
     def get_var_by_name(self, name: str) -> "Var":
         """Searchers a variable by its name
@@ -631,7 +637,7 @@ class Model:
                 v.type = CONTINUOUS
 
     @property
-    def cuts_generator(self : "Model") -> "CutsGenerator":
+    def cuts_generator(self: "Model") -> "CutsGenerator":
         """Cut generator callback. Cut generators are called whenever a solution where one or more
         integer variables appear with continuous values. A cut generator will
         try to produce one or more inequalities to remove this fractional point.
@@ -639,7 +645,7 @@ class Model:
         return self.__cuts_generator
 
     @cuts_generator.setter
-    def cuts_generator(self : "Model", cuts_generator : "CutsGenerator"):
+    def cuts_generator(self: "Model", cuts_generator: "CutsGenerator"):
         self.__cuts_generator = cuts_generator
 
     @property
@@ -661,16 +667,16 @@ class Model:
     @property
     def cuts(self) -> int:
         """controls the generation of cutting planes, 0 disables completely, 1 (default) generates
-        cutting planes in a moderate way, 2 generates cutting planes aggressively and 3 generates 
-        even more cutting planes. Cutting planes usually improve the LP relaxation bound but also make the 
+        cutting planes in a moderate way, 2 generates cutting planes aggressively and 3 generates
+        even more cutting planes. Cutting planes usually improve the LP relaxation bound but also make the
         solution time of the LP relaxation larger, so the overall effect is hard to predict and it is
         usually a good option to try different settings for this parameter.
         """
         return self.__cuts
 
     @cuts.setter
-    def cuts(self, cuts : int):
-        if cuts<0 or cuts>3:
+    def cuts(self, cuts: int):
+        if cuts < 0 or cuts > 3:
             print('Warning: invalid value ({}) for parameter cuts, keeping old setting.'.format(self.__cuts))
         self.__cuts = cuts
 
@@ -700,7 +706,7 @@ class Model:
         """
         if self.__threads != 0:
             self.solver.set_num_threads(self.__threads)
-        #self.solver.set_callbacks(branch_selector, incumbent_updater, lazy_constrs_generator)
+        # self.solver.set_callbacks(branch_selector, incumbent_updater, lazy_constrs_generator)
         self.solver.set_processing_limits(max_seconds, max_nodes, max_solutions)
 
         self.__status = self.solver.optimize()
@@ -732,8 +738,8 @@ class Model:
         Enters an initial feasible solution. Only the main binary/integer
         decision variables which appear with non-zero values in the initial
         feasible solution need to be informed. Auxiliary or continuous
-        variables are automatically computed.  
-        """ 
+        variables are automatically computed.
+        """
         return self.__mipStart
 
     @start.setter
@@ -765,7 +771,7 @@ class Model:
         """number of rows (constraints) in the model"""
         return len(self.constrs)
 
-    @property 
+    @property
     def num_nz(self) -> int:
         """number of non-zeros in the constraint matrix"""
         return self.solver.num_nz()
@@ -833,7 +839,7 @@ class Model:
         self.solver.set_max_solutions(max_solutions)
 
     @property
-    def status(self) -> int:
+    def status(self) -> OptimizationStatus:
         """ optimization status, which can be OPTIMAL(0), ERROR(-1), INFEASIBLE(1), UNBOUNDED(2). When optimizing problems
             with integer variables some additional cases may happen, FEASIBLE(3) for the case when a feasible solution was found
             but optimality was not proved, INT_INFEASIBLE(4) for the case when the lp relaxation is feasible but no feasible integer
@@ -857,10 +863,8 @@ class Solver:
                 lb: float = 0,
                 ub: float = INF,
                 var_type: str = CONTINUOUS,
-                column: "Column" = None) -> int:
-        if var_type == BINARY:
-            lb = 0.0
-            ub = 1.0
+                column: "Column" = None) -> None:
+        pass
 
     def add_constr(self, lin_expr: "LinExpr", name: str = "") -> int: pass
 
@@ -914,7 +918,7 @@ class Solver:
 
     def set_max_nodes(self, max_nodes: int): pass
 
-    def set_num_threads(self, threads:int): pass
+    def set_num_threads(self, threads: int): pass
 
     def write(self, file_path: str) -> None: pass
 
@@ -924,9 +928,9 @@ class Solver:
 
     def num_rows(self) -> int: pass
 
-    def num_nz(self) -> int:pass
+    def num_nz(self) -> int: pass
 
-    def num_int(self) -> int:pass
+    def num_int(self) -> int: pass
 
     def get_emphasis(self) -> int: pass
 
@@ -946,7 +950,7 @@ class Solver:
 
     def get_verbose(self) -> int: pass
 
-    def set_verbose(self, verbose : int):pass
+    def set_verbose(self, verbose: int): pass
 
     # Constraint-related getters/setters
 
@@ -1121,7 +1125,7 @@ class Var:
 
     @property
     def column(self) -> Column:
-        "coefficients of variable in constraints"
+        """coefficients of variable in constraints"""
         return self.model.solver.var_get_column(self)
 
     @column.setter
@@ -1130,8 +1134,8 @@ class Var:
 
     @property
     def rc(self) -> float:
-        "reduced cost, only available after a linear programming model (no integer variables) is optimized"
-        if self.model.status != OPTIMAL:
+        """reduced cost, only available after a linear programming model (no integer variables) is optimized"""
+        if self.model.status != OptimizationStatus.OPTIMAL:
             raise SolutionNotAvailable('Solution not available.')
 
         return self.model.solver.var_get_rc(self)
@@ -1139,26 +1143,26 @@ class Var:
     @property
     def x(self) -> float:
         """solution value"""
-        if self.model.status == LOADED:
+        if self.model.status == OptimizationStatus.LOADED:
             raise SolutionNotAvailable('Model was not optimized, solution not available.')
-        elif self.model.status == INFEASIBLE or self.model.status==CUTOFF:
+        elif self.model.status == OptimizationStatus.INFEASIBLE or self.model.status == OptimizationStatus.CUTOFF:
             raise SolutionNotAvailable('Infeasible model, solution not available.')
-        elif self.model.status == UNBOUNDED:
+        elif self.model.status == OptimizationStatus.UNBOUNDED:
             raise SolutionNotAvailable('Unbounded model, solution not available.')
-        elif self.model.status == NO_SOLUTION_FOUND:
+        elif self.model.status == OptimizationStatus.NO_SOLUTION_FOUND:
             raise SolutionNotAvailable('Solution not found during optimization.')
 
         return self.model.solver.var_get_x(self)
 
     def xi(self, i: int) -> float:
         """solution value for this variable in the :math:`i`-th solution from the solution pool"""
-        if self.model.status == LOADED:
+        if self.model.status == OptimizationStatus.LOADED:
             raise SolutionNotAvailable('Model was not optimized, solution not available.')
-        elif self.model.status == INFEASIBLE or self.model.status==CUTOFF:
+        elif self.model.status == OptimizationStatus.INFEASIBLE or self.model.status == OptimizationStatus.CUTOFF:
             raise SolutionNotAvailable('Infeasible model, solution not available.')
-        elif self.model.status == UNBOUNDED:
+        elif self.model.status == OptimizationStatus.UNBOUNDED:
             raise SolutionNotAvailable('Unbounded model, solution not available.')
-        elif self.model.status == NO_SOLUTION_FOUND:
+        elif self.model.status == OptimizationStatus.NO_SOLUTION_FOUND:
             raise SolutionNotAvailable('Solution not found during optimization.')
 
         return self.model.solver.var_get_xi(self, i)
@@ -1166,13 +1170,14 @@ class Var:
 
 class CutsGenerator:
     """abstract class for implementing cut generators"""
+
     def __init__(self, model: Model):
         self.model = model
 
     def generate_cuts(self, relax_solution: List[Tuple[Var, float]]) -> List[LinExpr]:
         """Method called by the solve engine to generate cuts
 
-           After analyzing the contents of the fractional solution in :code:`relax_solution`, one 
+           After analyzing the contents of the fractional solution in :code:`relax_solution`, one
            or mode cuts (:class:`~mip.model.LinExpr`) may be generated and returned. These cuts are added to the
            relaxed model.
 
@@ -1186,24 +1191,24 @@ class CutsGenerator:
 
 
 class CutPool:
-    def __init__(self : "CutPool"):
+    def __init__(self: "CutPool"):
         """Stores a list list of different cuts, repeated cuts are discarded.
         """
         self.__cuts = []
 
-        # positions for each hash code to speedup 
+        # positions for each hash code to speedup
         # the search of repeated cuts
-        self.__pos = defaultdict( list )
+        self.__pos = defaultdict(list)
 
-    def add(self : "CutPool", cut : "LinExpr") -> bool:
+    def add(self: "CutPool", cut: "LinExpr") -> bool:
         """tries to add a cut to the pool, returns true if this is a new cut, false if it is a repeated one
 
         Args:
             cut(LinExpr): a constraint
         """
         hcode = hash(cut)
-        l = self.__pos[hcode]
-        for p in l:
+        bucket = self.__pos[hcode]
+        for p in bucket:
             if self.__cuts[p].equals(cut):
                 return False
 
@@ -1213,7 +1218,7 @@ class CutPool:
         return True
 
     @property
-    def cuts(self : "CutPool") -> List["LinExpr"]:
+    def cuts(self: "CutPool") -> List["LinExpr"]:
         return self.__cuts
 
 
@@ -1252,7 +1257,7 @@ def xsum(terms) -> LinExpr:
 quicksum = xsum
 
 
-def read_custom_settings() -> str:
+def read_custom_settings() -> None:
     global customCbcLib
     from pathlib import Path
     home = str(Path.home())
