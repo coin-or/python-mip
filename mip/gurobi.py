@@ -581,7 +581,7 @@ class SolverGurobi(Solver):
         GRBsetdblattrelement(self._model, c_str("Obj"), c_int(var.idx), c_double(value))
         self._updated = False
 
-    def var_get_type(self, var: "Var") -> str:
+    def var_get_var_type(self, var: "Var") -> str:
         if not self._updated:
             self.update()
 
@@ -597,7 +597,7 @@ class SolverGurobi(Solver):
 
         raise ValueError("Gurobi: invalid variable type returned...")
 
-    def var_set_type(self, var: "Var", value: str) -> None:
+    def var_set_var_type(self, var: "Var", value: str) -> None:
         if value == BINARY:
             vtype = c_char(ord("B"))
         elif value == CONTINUOUS:
