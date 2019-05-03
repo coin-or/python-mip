@@ -54,7 +54,7 @@ class SolverGurobi(Solver):
 
     def set_num_threads(self, threads:int):
         self.__threads = threads
-        
+
     def add_var(self,
                 obj: float = 0,
                 lb: float = 0,
@@ -168,11 +168,11 @@ class SolverGurobi(Solver):
     def set_max_nodes(self, max_nodes: int):
         st = GRBsetdblparam(GRBgetenv(self._model), c_str("NodeLimit"), c_double(max_nodes))
         assert st == 0
-    
+
     def set_num_threads(self, threads:int):
         self.__threads = threads
-    
-    def optimize(self) -> int:
+
+    def optimize(self) -> OptimizationStatus:
         # todo add branch_selector and incumbent_updater callbacks
         def callback(p_model: c_void_p,
                      p_cbdata: c_void_p,
@@ -215,22 +215,22 @@ class SolverGurobi(Solver):
 
         if self.__threads>=1:
             self.set_int_param("Threads", self.__threads)
-        
+
         self.set_int_param("Cuts", self.model.cuts)
 
         # executing Gurobi to solve the formulation
         status = int(GRBoptimize(self._model))
         if status == 10009:
             raise Exception('gurobi found but license not accepted, please check it')
-        
+
         status = c_int(0)
         st = GRBgetintattr(self._model, c_str("Status"), byref(status))
         if (st):
             raise Exception('could not check optimization status')
-        
+
         status = status.value
 
-        # checking status for MIP optimization which 
+        # checking status for MIP optimization which
         # finished before the search to be
         # concluded (time, iteration limit...)
         if (self.num_int()):
@@ -239,41 +239,41 @@ class SolverGurobi(Solver):
                 sts = GRBgetintattr(self._model, c_str("SolCount"), byref(nsols))
                 nsols = nsols.value
                 if nsols>=1:
-                    return FEASIBLE
+                    return OptimizationStatus.FEASIBLE
                 else:
-                    return NO_SOLUTION_FOUND
-        
+                    return OptimizationStatus.NO_SOLUTION_FOUND
+
         # todo: read solution status (code below is incomplete)
         if status == 1:  # LOADED
-            return LOADED
+            return OptimizationStatus.LOADED
         elif status == 2:  # OPTIMAL
-            return OPTIMAL
+            return OptimizationStatus.OPTIMAL
         elif status == 3:  # INFEASIBLE
-            return INFEASIBLE
+            return OptimizationStatus.INFEASIBLE
         elif status == 4:  # INF_OR_UNBD
-            return UNBOUNDED
+            return OptimizationStatus.UNBOUNDED
         elif status == 5:  # UNBOUNDED
-            return UNBOUNDED
+            return OptimizationStatus.UNBOUNDED
         elif status == 6:  # CUTOFF
-            return CUTOFF
+            return OptimizationStatus.CUTOFF
         elif status == 7:  # ITERATION_LIMIT
-            return -10000
+            return OptimizationStatus.OTHER
         elif status == 8:  # NODE_LIMIT
-            return -10000
+            return OptimizationStatus.OTHER
         elif status == 9:  # TIME_LIMIT
-            return -10000
+            return OptimizationStatus.OTHER
         elif status == 10:  # SOLUTION_LIMIT
-            return FEASIBLE
+            return OptimizationStatus.FEASIBLE
         elif status == 11:  # INTERRUPTED
-            return -10000
+            return OptimizationStatus.OTHER
         elif status == 12:  # NUMERIC
-            return -10000
+            return OptimizationStatus.OTHER
         elif status == 13:  # SUBOPTIMAL
-            return FEASIBLE
+            return OptimizationStatus.FEASIBLE
         elif status == 14:  # INPROGRESS
-            return -10000
+            return OptimizationStatus.OTHER
         elif status == 15:  # USER_OBJ_LIMIT
-            return FEASIBLE
+            return OptimizationStatus.FEASIBLE
 
         self._updated = True
         return status
@@ -426,14 +426,14 @@ class SolverGurobi(Solver):
         st = GRBgetintattr(self._model, c_str('NumVars'), byref(res))
         assert st == 0
         return res.value
-    
+
     def num_int(self) -> int:
         res = c_int(0)
         GRBupdatemodel(self._model)
         st = GRBgetintattr(self._model, c_str('NumIntVars'), byref(res))
         assert st == 0
         return res.value
-    
+
     def num_rows(self) -> int:
         res = c_int(0)
         st = GRBgetintattr(self._model, c_str('NumConstrs'), byref(res))
@@ -656,24 +656,24 @@ class SolverGurobi(Solver):
         assert st == 0
         return vName.value.decode('utf-8')
 
-    def get_emphasis(self) -> int:
+    def get_emphasis(self) -> SearchEmphasis:
         fc = c_int(0)
         st = GRBgetintparam(GRBgetenv(self._model), c_str("MIPFocus"),
                             byref(fc))
         assert st == 0
         if fc == 1:
-            return FEASIBILITY
+            return SearchEmphasis.FEASIBILITY
         elif fc == 3 or fc == 2:
-            return OPTIMALITY
+            return SearchEmphasis.OPTIMALITY
 
         return 0
 
-    def set_emphasis(self, emph: int):
-        if emph == FEASIBILITY:
+    def set_emphasis(self, emph: SearchEmphasis):
+        if emph == SearchEmphasis.FEASIBILITY:
             st = GRBsetintparam(GRBgetenv(self._model), c_str("MIPFocus"),
                                 c_int(1))
             assert st == 0
-        elif emph == OPTIMALITY:
+        elif emph == SearchEmphasis.OPTIMALITY:
             st = GRBsetintparam(GRBgetenv(self._model), c_str("MIPFocus"),
                                 c_int(2))
             assert st == 0
