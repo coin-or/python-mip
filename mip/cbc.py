@@ -196,10 +196,10 @@ class SolverCbc(Solver):
         else:
             cbcSetParameter(self._model, c_str('log'), c_str('1'))
 
-        if self.emphasis == OptimizationStatus.FEASIBILITY:
+        if self.emphasis == SearchEmphasis.FEASIBILITY:
             cbcSetParameter(self._model, c_str('passf'), c_str('50'))
             cbcSetParameter(self._model, c_str('proximity'), c_str('on'))
-        if self.emphasis == OptimizationStatus.OPTIMALITY:
+        if self.emphasis == SearchEmphasis.OPTIMALITY:
             cbcSetParameter(self._model, c_str('strong'), c_str('10'))
             cbcSetParameter(self._model, c_str('trust'), c_str('20'))
             cbcSetParameter(self._model, c_str('lagomory'), c_str('endonly'))
