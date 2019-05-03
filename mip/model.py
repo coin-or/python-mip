@@ -649,7 +649,7 @@ class Model:
         self.__cuts_generator = cuts_generator
 
     @property
-    def emphasis(self) -> int:
+    def emphasis(self) -> SearchEmphasis:
         """defines the main objective of the search, if set to 1 (FEASIBILITY) then
         the search process will focus on try to find quickly feasible solutions and
         improving them; if set to 2 (OPTIMALITY) then the search process will try to
@@ -661,7 +661,7 @@ class Model:
         return self.solver.get_emphasis()
 
     @emphasis.setter
-    def emphasis(self, emph: int):
+    def emphasis(self, emph: SearchEmphasis):
         self.solver.set_emphasis(emph)
 
     @property
@@ -683,7 +683,7 @@ class Model:
     def optimize(self,
                  max_seconds: float = inf,
                  max_nodes: int = inf,
-                 max_solutions: int = inf) -> int:
+                 max_solutions: int = inf) -> OptimizationStatus:
         """ Optimizes current model
 
         Optimizes current model, optionally specifying processing limits.
@@ -876,7 +876,7 @@ class Solver:
 
     def relax(self): pass
 
-    def optimize(self) -> int: pass
+    def optimize(self) -> OptimizationStatus: pass
 
     def get_objective_value(self) -> float: pass
 
@@ -932,9 +932,9 @@ class Solver:
 
     def num_int(self) -> int: pass
 
-    def get_emphasis(self) -> int: pass
+    def get_emphasis(self) -> SearchEmphasis: pass
 
-    def set_emphasis(self, emph: int): pass
+    def set_emphasis(self, emph: SearchEmphasis): pass
 
     def get_cutoff(self) -> float: pass
 
