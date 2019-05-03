@@ -24,7 +24,7 @@ class SolverCbc(Solver):
         if sense == MAXIMIZE:
             cbcSetObjSense(self._model, c_double(-1.0))
 
-        self.emphasis = 0
+        self.emphasis = SearchEmphasis.DEFAULT
 
         self.__threads = 0
 
@@ -48,8 +48,8 @@ class SolverCbc(Solver):
             vval[i] = column.coeffs[i]
 
         isInt = \
-            c_char(1) if coltype.upper() == "B" or coltype.upper() == "I"\
-            else c_char(0)
+            c_char(1) if coltype.upper() == "B" or coltype.upper() == "I" \
+                else c_char(0)
 
         idx = int(cbcNumCols(self._model))
 
@@ -102,10 +102,10 @@ class SolverCbc(Solver):
     def get_verbose(self) -> int:
         return self.__verbose
 
-    def set_verbose(self, verbose : int):
+    def set_verbose(self, verbose: int):
         self.__verbose = verbose
 
-    def optimize(self) -> int:
+    def optimize(self) -> OptimizationStatus:
         # get name indexes from an osi problem
         def cbc_get_osi_name_indexes(osiSolver: c_void_p) -> Dict[str, int]:
             nameIdx = {}
@@ -185,7 +185,7 @@ class SolverCbc(Solver):
                             warningMessages += 1
 
         # adding cut generators
-        if self.model.cuts_generator!=None and self.added_cut_callback is False:
+        if self.model.cuts_generator != None and self.added_cut_callback is False:
             self._cutCallback = CBCcallbacktype(cbc_cut_callback)
             cbcAddCutCallback(self._model, self._cutCallback,
                               c_str("mipCutGen"), c_void_p(0))
@@ -196,10 +196,10 @@ class SolverCbc(Solver):
         else:
             cbcSetParameter(self._model, c_str('log'), c_str('1'))
 
-        if self.emphasis == FEASIBILITY:
+        if self.emphasis == OptimizationStatus.FEASIBILITY:
             cbcSetParameter(self._model, c_str('passf'), c_str('50'))
             cbcSetParameter(self._model, c_str('proximity'), c_str('on'))
-        if self.emphasis == OPTIMALITY:
+        if self.emphasis == OptimizationStatus.OPTIMALITY:
             cbcSetParameter(self._model, c_str('strong'), c_str('10'))
             cbcSetParameter(self._model, c_str('trust'), c_str('20'))
             cbcSetParameter(self._model, c_str('lagomory'), c_str('endonly'))
@@ -207,7 +207,7 @@ class SolverCbc(Solver):
 
         if self.model.cuts == 0:
             cbcSetParameter(self._model, c_str('cuts'), c_str('off'))
-        
+
         if self.model.cuts >= 1:
             cbcSetParameter(self._model, c_str('cuts'), c_str('on'))
         if self.model.cuts >= 2:
@@ -218,7 +218,7 @@ class SolverCbc(Solver):
             cbcSetParameter(self._model, c_str('passC'), c_str('-35'))
             cbcSetParameter(self._model, c_str('lift'), c_str('ifmove'))
 
-        if (self.__threads >=1):
+        if (self.__threads >= 1):
             cbcSetParameter(self._model, c_str('threads'), c_str('{}'.format(self.__threads)))
         elif self.__threads == -1:
             import multiprocessing
@@ -228,22 +228,22 @@ class SolverCbc(Solver):
         cbcSolve(self._model)
 
         if cbcIsAbandoned(self._model):
-            return ERROR
+            return OptimizationStatus.ERROR
 
         if cbcIsProvenOptimal(self._model):
-            return OPTIMAL
+            return OptimizationStatus.OPTIMAL
 
         if cbcIsProvenInfeasible(self._model):
-            return INFEASIBLE
+            return OptimizationStatus.INFEASIBLE
 
         if cbcIsContinuousUnbounded(self._model):
-            return UNBOUNDED
+            return OptimizationStatus.UNBOUNDED
 
         if cbcNumIntegers(self._model):
             if cbcBestSolution(self._model):
-                return FEASIBLE
+                return OptimizationStatus.FEASIBLE
 
-        return INFEASIBLE
+        return OptimizationStatus.INFEASIBLE
 
     def get_objective_sense(self) -> str:
         obj = cbcGetObjSense(self._model)
@@ -419,7 +419,7 @@ class SolverCbc(Solver):
         rcoef = cbcGetRowCoeffs(self._model, constr.idx)
 
         rhs = cbcGetRowRHS(self._model, constr.idx)
-        rsense = cbcGetRowSense(self._model, constr.idx).\
+        rsense = cbcGetRowSense(self._model, constr.idx). \
             decode('utf-8').upper()
 
         sense = ''
@@ -457,13 +457,13 @@ class SolverCbc(Solver):
             cbcSetParameter(m, c_str('maxSolutions'),
                             c_str('{}'.format(maxSol)))
 
-    def get_emphasis(self) -> int:
+    def get_emphasis(self) -> SearchEmphasis:
         return self.emphasis
 
-    def set_emphasis(self, emph: int):
+    def set_emphasis(self, emph: SearchEmphasis):
         self.emphasis = emph
 
-    def set_num_threads(self, threads:int):
+    def set_num_threads(self, threads: int):
         self.__threads = threads
 
     def __del__(self):
@@ -471,7 +471,6 @@ class SolverCbc(Solver):
 
 
 has_cbc = False
-
 
 try:
     if customCbcLib:

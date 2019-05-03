@@ -44,9 +44,11 @@ class OptimizationStatus(Enum):
     NO_SOLUTION_FOUND = 5
     LOADED = 6
     CUTOFF = 7
+    OTHER = 10000
 
 
 # search emphasis
 class SearchEmphasis(Enum):
+    DEFAULT = 0
     FEASIBILITY = 1
     OPTIMALITY = 2

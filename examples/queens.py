@@ -2,12 +2,12 @@ from mip.model import *
 from sys import stdout, argv
 from time import process_time
 
-n = 200
+n = 10
 
 # can force a solver to be used with -solver=solverName option
 solver = ""
 
-for arg in (argv):
+for arg in argv:
     if "-solver=" in arg:
         solver = arg.split('=')[1]
         print('trying to load {} solver'.format(solver))
