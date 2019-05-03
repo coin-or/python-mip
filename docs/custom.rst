@@ -213,7 +213,7 @@ extending the :class:`~mip.model.CutsGenerator` class.
      model += xsum(x[i][j] for j in range(n) if j != i) == 1, 'leave({})'.format(i)
  for (i,j) in [(i,j) for (i,j) in product(range(1,n), range(1,n)) if i!=j]:
          model += y[i] - (n + 1) * x[i][j] >= y[j] - n, 'noSub({},{})'.format(i, j)
- model.add_cut_generator(SubTourCutGenerator(model))
+ model.cuts_generator = SubTourCutGenerator(model)
  model.optimize()
  arcs = [(i,j) for i in range(n) for j in range(n) if x[i][j].x >= 0.99]
  print('optimal route : {}'.format(arcs))
