@@ -332,43 +332,46 @@ class Model:
         self.name = name
         self.solver_name = solver_name
         self.solver = None
-        if "solver_name" in environ:
-            solver_name = environ["solver_name"]
-        if "solver_name".upper() in environ:
-            solver_name = environ["solver_name".upper()]
 
-        self.__mipStart = []
+        self.__sense = sense
+
+        # reading solver_name from an environment variable (if applicable)
+        if not self.solver_name and "solver_name" in environ:
+            self.solver_name = environ["solver_name"]
+        if not self.solver_name and "solver_name".upper() in environ:
+            self.solver_name = environ["solver_name".upper()]
+
+        # creating a solver instance
+        if self.solver_name.upper() == GUROBI:
+            from mip.gurobi import SolverGurobi
+            self.solver = SolverGurobi(self, self.name, self.__sense)
+        elif self.solver_name.upper() == CBC:
+            from mip.cbc import SolverCbc
+            self.solver = SolverCbc(self, self.name, self.__sense)
+        else:
+            # checking which solvers are available
+            from mip import gurobi
+            if gurobi.has_gurobi:
+                from mip.gurobi import SolverGurobi
+                self.solver = SolverGurobi(self, self.name, self.__sense)
+                self.solver_name = GUROBI
+            else:
+                from mip.cbc import SolverCbc
+                self.solver = SolverCbc(self, self.name, self.__sense)
+                self.solver_name = CBC
 
         # list of constraints and variables
         self.constrs = []
         self.constrs_by_name = {}
         self.vars = []
         self.vars_by_name = {}
-        self.__cuts_generator = None
 
-        if solver_name.upper() == GUROBI:
-            from mip.gurobi import SolverGurobi
-            self.solver = SolverGurobi(self, name, sense)
-        elif solver_name.upper() == CBC:
-            from mip.cbc import SolverCbc
-            self.solver = SolverCbc(self, name, sense)
-        else:
-            # checking which solvers are available
-            from mip import gurobi
-            if gurobi.has_gurobi:
-                from mip.gurobi import SolverGurobi
-                self.solver = SolverGurobi(self, name, sense)
-                self.solver_name = GUROBI
-            else:
-                from mip.cbc import SolverCbc
-                self.solver = SolverCbc(self, name, sense)
-                self.solver_name = CBC
-
-        self.sense = sense
-
-        self.__threads = 0
-        self.__status = OptimizationStatus.LOADED
+        # initializing additional control variables
         self.__cuts = 1
+        self.__cuts_generator = None
+        self.__mipStart = []
+        self.__status = OptimizationStatus.LOADED
+        self.__threads = 0
 
     def __del__(self):
         if self.solver:
@@ -417,9 +420,7 @@ class Model:
 
             The following code creates a vector of binary variables :code:`x[0], ..., x[n-1]` to model :code:`m`::
 
-                x = [m.add_var(type=BINARY) for i in range(n)]
-
-
+                x = [m.add_var(var_type=BINARY) for i in range(n)]
         """
         if var_type == BINARY:
             lb = 0.0
@@ -460,6 +461,9 @@ class Model:
 
             m += xsum(x[i] for i in range(n)) == y, "cons1"
 
+        Which is equivalent to::
+
+            m.add_constr( xsum(x[i] for i in range(n)) == y, "cons1" )
         """
 
         if isinstance(lin_expr, bool):
@@ -469,6 +473,44 @@ class Model:
         self.constrs_by_name[name] = self.constrs[-1]
         return self.constrs[-1]
 
+    def clear(self) -> None:
+        """Clears the model
+
+        All variables, constraints and parameters will be reset. In addition, a new solver instance
+        will be instantiated to implement the formulation.
+        """
+        # creating a new solver instance
+        if self.solver_name.upper() == GUROBI:
+            from mip.gurobi import SolverGurobi
+            self.solver = SolverGurobi(self, self.name, self.__sense)
+        elif self.solver_name.upper() == CBC:
+            from mip.cbc import SolverCbc
+            self.solver = SolverCbc(self, self.name, self.__sense)
+        else:
+            # checking which solvers are available
+            from mip import gurobi
+            if gurobi.has_gurobi:
+                from mip.gurobi import SolverGurobi
+                self.solver = SolverGurobi(self, self.name, self.__sense)
+                self.solver_name = GUROBI
+            else:
+                from mip.cbc import SolverCbc
+                self.solver = SolverCbc(self, self.name, self.__sense)
+                self.solver_name = CBC
+
+        # list of constraints and variables
+        self.constrs = []
+        self.constrs_by_name = {}
+        self.vars = []
+        self.vars_by_name = {}
+
+        # initializing additional control variables
+        self.__cuts = 1
+        self.__cuts_generator = None
+        self.__mipStart = []
+        self.__status = OptimizationStatus.LOADED
+        self.__threads = 0
+
     def copy(self, solver_name: str = None) -> "Model":
         """ Creates a copy of the current model
 
@@ -477,7 +519,6 @@ class Model:
 
         Returns:
             clone of current model
-
         """
         if not solver_name:
             solver_name = self.solver_name
@@ -507,6 +548,89 @@ class Model:
             constraint
         """
         return self.constrs_by_name.get(name, None)
+
+    def get_var_by_name(self, name: str) -> "Var":
+        """Searchers a variable by its name
+
+        Returns:
+            a reference to the variable
+        """
+        return self.vars_by_name.get(name, None)
+
+    def optimize(self,
+                 max_seconds: float = inf,
+                 max_nodes: int = inf,
+                 max_solutions: int = inf) -> OptimizationStatus:
+        """ Optimizes current model
+
+        Optimizes current model, optionally specifying processing limits.
+
+        To optimize model :code:`m` within a processing time limit of 300 seconds::
+
+            m.optimize(max_seconds=300)
+
+        Args:
+            max_seconds (float): Maximum runtime in seconds (default: inf)
+            max_nodes (float): Maximum number of nodes (default: inf)
+            max_solutions (float): Maximum number of solutions (default: inf)
+
+        Returns:
+            optimization status, which can be OPTIMAL(0), ERROR(-1), INFEASIBLE(1), UNBOUNDED(2). When optimizing problems
+            with integer variables some additional cases may happen, FEASIBLE(3) for the case when a feasible solution was found
+            but optimality was not proved, INT_INFEASIBLE(4) for the case when the lp relaxation is feasible but no feasible integer
+            solution exists and NO_SOLUTION_FOUND(5) for the case when an integer solution was not found in the optimization.
+
+        """
+        if self.__threads != 0:
+            self.solver.set_num_threads(self.__threads)
+        # self.solver.set_callbacks(branch_selector, incumbent_updater, lazy_constrs_generator)
+        self.solver.set_processing_limits(max_seconds, max_nodes, max_solutions)
+
+        self.__status = self.solver.optimize()
+
+        return self.__status
+
+    def read(self, path: str):
+        """Reads a MIP model in :code:`.lp` or :code:`.mps` format.
+
+        Note: all variables, constraints and parameters from the current model will be cleared.
+
+        Args:
+            path(str): file name
+        """
+        self.clear()
+        self.solver.read(path)
+
+        # updating model from solver instance
+        n_cols = self.solver.num_cols()
+        n_rows = self.solver.num_rows()
+        for i in range(n_cols):
+            self.vars.append(Var(self, i, self.solver.var_get_name(i)))
+            self.vars_by_name[self.vars[-1].name] = self.vars[-1]
+        for i in range(n_rows):
+            self.constrs.append(Constr(self, i, self.solver.constr_get_name(i)))
+            self.constrs_by_name[self.constrs[-1].name] = self.constrs[-1]
+        self.sense = self.solver.get_objective_sense()
+
+    def relax(self):
+        """ Relax integrality constraints of variables
+
+        Changes the type of all integer and binary variables to
+        continuous. Bounds are preserved.
+        """
+        self.solver.relax()
+        for v in self.vars:
+            if v.type == BINARY or v.type == INTEGER:
+                v.type = CONTINUOUS
+
+    def write(self, path: str):
+        """Saves the MIP model, using the extension :code:`.lp` or :code:`.mps` to
+        specify the file format.
+
+        Args:
+            path(str): file name
+        """
+        self.solver.write(path)
 
     @property
     def objective_bound(self) -> float:
@@ -617,25 +741,6 @@ class Model:
         return [float(self.solver.get_objective_value_i(i))
                 for i in range(self.num_solutions)]
 
-    def get_var_by_name(self, name: str) -> "Var":
-        """Searchers a variable by its name
-
-        Returns:
-            a reference to the variable
-        """
-        return self.vars_by_name.get(name, None)
-
-    def relax(self):
-        """ Relax integrality constraints of variables
-
-        Changes the type of all integer and binary variables to
-        continuous. Bounds are preserved.
-        """
-        self.solver.relax()
-        for v in self.vars:
-            if v.type == BINARY or v.type == INTEGER:
-                v.type = CONTINUOUS
-
     @property
     def cuts_generator(self: "Model") -> "CutsGenerator":
         """Cut generator callback. Cut generators are called whenever a solution where one or more
@@ -680,57 +785,6 @@ class Model:
             print('Warning: invalid value ({}) for parameter cuts, keeping old setting.'.format(self.__cuts))
         self.__cuts = cuts
 
-    def optimize(self,
-                 max_seconds: float = inf,
-                 max_nodes: int = inf,
-                 max_solutions: int = inf) -> OptimizationStatus:
-        """ Optimizes current model
-
-        Optimizes current model, optionally specifying processing limits.
-
-        To optimize model :code:`m` within a processing time limit of 300 seconds::
-
-            m.optimize(max_seconds=300)
-
-        Args:
-            max_seconds (float): Maximum runtime in seconds (default: inf)
-            max_nodes (float): Maximum number of nodes (default: inf)
-            max_solutions (float): Maximum number of solutions (default: inf)
-
-        Returns:
-            optimization status, which can be OPTIMAL(0), ERROR(-1), INFEASIBLE(1), UNBOUNDED(2). When optimizing problems
-            with integer variables some additional cases may happen, FEASIBLE(3) for the case when a feasible solution was found
-            but optimality was not proved, INT_INFEASIBLE(4) for the case when the lp relaxation is feasible but no feasible integer
-            solution exists and NO_SOLUTION_FOUND(5) for the case when an integer solution was not found in the optimization.
-
-        """
-        if self.__threads != 0:
-            self.solver.set_num_threads(self.__threads)
-        # self.solver.set_callbacks(branch_selector, incumbent_updater, lazy_constrs_generator)
-        self.solver.set_processing_limits(max_seconds, max_nodes, max_solutions)
-
-        self.__status = self.solver.optimize()
-
-        return self.__status
-
-    def read(self, path: str):
-        """Reads a MIP model in :code:`.lp` or :code:`.mps` file format.
-
-        Args:
-            path(str): file name
-
-        """
-        self.solver.read(path)
-        n_cols = self.solver.num_cols()
-        n_rows = self.solver.num_rows()
-        for i in range(n_cols):
-            self.vars.append(Var(self, i, self.solver.var_get_name(i)))
-            self.vars_by_name[self.vars[-1].name] = self.vars[-1]
-        for i in range(n_rows):
-            self.constrs.append(Constr(self, i, self.solver.constr_get_name(i)))
-            self.constrs_by_name[self.constrs[-1].name] = self.constrs[-1]
-        self.sense = self.solver.get_objective_sense()
-
     @property
     def start(self) -> List[Tuple["Var", float]]:
         """Initial feasible solution
@@ -746,15 +800,6 @@ class Model:
     def start(self, start_sol: List[Tuple["Var", float]]):
         self.__mipStart = start_sol
         self.solver.set_start(start_sol)
-
-    def write(self, path: str):
-        """Saves the the MIP model, use the extension :code:`.lp` or :code:`.mps` in the file
-        name to specify the file format.
-
-        Args:
-            path(str): file name
-        """
-        self.solver.write(path)
 
     @property
     def num_cols(self) -> int:
