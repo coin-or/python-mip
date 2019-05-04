@@ -104,7 +104,25 @@ class SolverCbc(Solver):
 
     def set_verbose(self, verbose: int):
         self.__verbose = verbose
+        
+    def var_set_var_type(self, var: "Var", value: str):
+        cv =  var.var_type
+        if (value == cv):
+            return        
+        if cv == CONTINUOUS:
+            if value == INTEGER or value == BINARY:
+                cbcSetInteger(self._model, c_int(var.idx))    
+        elif cv == INTEGER or cv == BINARY:
+            if value == CONTINUOUS:
+                cbcSetContinuous(self._model, c_int(var.idx))
 
+        if value==BINARY:
+            # checking bounds
+            if var.lb != 0.0:
+                var.lb = 0.0
+            if var.ub != 1.0:
+                var.ub = 1.0
+ 
     def optimize(self) -> OptimizationStatus:
         # get name indexes from an osi problem
         def cbc_get_osi_name_indexes(osiSolver: c_void_p) -> Dict[str, int]:
@@ -740,6 +758,10 @@ if has_cbc:
         method_check = "Cbc_setContinuous"
         cbcSetContinuous = cbclib.Cbc_setContinuous
         cbcSetContinuous.argtypes = [c_void_p, c_int]
+
+        method_check = "Cbc_setInteger"
+        cbcSetInteger = cbclib.Cbc_setInteger
+        cbcSetInteger.argtypes = [c_void_p, c_int]
 
         method_check = "Cbc_setParameter"
         cbcSetParameter = cbclib.Cbc_setParameter
