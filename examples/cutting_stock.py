@@ -38,15 +38,15 @@ def cg():
     # creating pricing variables
     a = []
     for i in range(m):
-        a.append(pricing.add_var(obj=0, type=INTEGER, name='a_%d' % (i + 1)))
+        a.append(pricing.add_var(obj=0, var_type=INTEGER, name='a_%d' % (i + 1)))
 
     # creating pricing constraint
-    pricing += xsum(w[i] * a[i] for i in range(m)) <= L, 'bar_length'
+    pricing.add_constr(xsum(w[i] * a[i] for i in range(m)) <= L, 'bar_length')
 
     pricing.write('pricing.lp')
 
     new_vars = True
-    while (new_vars):
+    while new_vars:
 
         ##########
         # STEP 1: solving restricted master problem
@@ -73,7 +73,7 @@ def cg():
         pricing.optimize()
 
         # printing pricing solution
-        z_val = pricing.get_objective()
+        z_val = pricing.objective_value
         print('Pricing:')
         print('    z =  {z_val}'.format(**locals()))
         print('    a = ', end='')
@@ -86,7 +86,7 @@ def cg():
 
         # checking if columns with negative reduced cost were produced and
         # adding them into the restricted master problem
-        if pricing.get_objective_value() < - EPS:
+        if pricing.objective_value < - EPS:
             coeffs = [a[i].x for i in range(m)]
             column = Column(constraints, coeffs)
             lambdas.append(master.add_var(obj=1, column=column, name='lambda_%d' % (len(lambdas) + 1)))
@@ -99,7 +99,7 @@ def cg():
             new_vars = False
 
         pricing.write('pricing.lp')
-        # pdb.set_trace()
+        pdb.set_trace()
 
     print_solution(master)
 
@@ -117,14 +117,14 @@ def kantorovich():
 
     # creating the model (note that the linear relaxation is solved)
     model = Model(SOLVER)
-    x = {(i, j): model.add_var(obj=0, type=CONTINUOUS, name="x[%d,%d]" % (i, j)) for i in range(m) for j in range(N)}
-    y = {j: model.add_var(obj=1, type=CONTINUOUS, name="y[%d]" % j) for j in range(N)}
+    x = {(i, j): model.add_var(obj=0, var_type=CONTINUOUS, name="x[%d,%d]" % (i, j)) for i in range(m) for j in range(N)}
+    y = {j: model.add_var(obj=1, var_type=CONTINUOUS, name="y[%d]" % j) for j in range(N)}
 
     # constraints
     for i in range(m):
-        model += xsum(x[i, j] for j in range(N)) >= b[i]
+        model.add_constr(xsum(x[i, j] for j in range(N)) >= b[i])
     for j in range(N):
-        model += xsum(w[i] * x[i, j] for i in range(m)) <= L * y[j]
+        model.add_constr(xsum(w[i] * x[i, j] for i in range(m)) <= L * y[j])
 
     # additional constraint to reduce symmetry
     for j in range(1, N):
@@ -135,8 +135,8 @@ def kantorovich():
     print_solution(model)
 
 
-def print_solution(model):
-    objective = model.get_objective()
+def print_solution(model: Model):
+    objective = model.objective_value
     print('')
     print('Objective:\n    {objective:.3}'.format(**locals()))
     print('Solution:')
