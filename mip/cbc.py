@@ -112,7 +112,7 @@ class SolverCbc(Solver):
         if cv == CONTINUOUS:
             if value == INTEGER or value == BINARY:
                 cbcSetInteger(self._model, c_int(var.idx))    
-        elif cv == INTEGER or cv == BINARY:
+        else:
             if value == CONTINUOUS:
                 cbcSetContinuous(self._model, c_int(var.idx))
 
