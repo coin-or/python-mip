@@ -36,6 +36,11 @@ CutsGenerator
 .. autoclass:: CutsGenerator
     :members:
 
+IncumbentUpdater
+----------------
+.. autoclass:: IncumbentUpdater
+    :members:
+
 CutPool
 -------
 .. autoclass:: CutPool
