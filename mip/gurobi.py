@@ -52,15 +52,12 @@ class SolverGurobi(Solver):
         if self._env:
             GRBfreeenv(self._env)
 
-    def set_num_threads(self, threads:int):
-        self.__threads = threads
-        
     def add_var(self,
                 obj: float = 0,
                 lb: float = 0,
                 ub: float = float("inf"),
-                type: str = "C",
-                column: "Column" = None,
+                var_type: str = CONTINUOUS,
+                column: Column = None,
                 name: str = "") -> int:
         # collecting column data
         numnz = 0 if column is None else len(column.constrs)
@@ -73,7 +70,7 @@ class SolverGurobi(Solver):
             vval[i] = column.coeffs[i]
 
         # variable type
-        vtype = c_char(ord(type))
+        vtype = c_char(ord(var_type))
 
         # variable index
         idx = self._num_vars
@@ -168,26 +165,28 @@ class SolverGurobi(Solver):
     def set_max_nodes(self, max_nodes: int):
         st = GRBsetdblparam(GRBgetenv(self._model), c_str("NodeLimit"), c_double(max_nodes))
         assert st == 0
-    
+
     def set_num_threads(self, threads:int):
         self.__threads = threads
-    
-    def optimize(self) -> int:
+
+    def optimize(self) -> OptimizationStatus:
         # todo add branch_selector and incumbent_updater callbacks
         def callback(p_model: c_void_p,
                      p_cbdata: c_void_p,
                      where: int,
                      p_usrdata: c_void_p) -> int:
-            if self.model.cuts_generator != None and where == 5:  # MIPNODE == 5
+
+            # adding cuts
+            if self.model.cuts_generator and where == 5:  # MIPNODE == 5
                 # obtaining relaxation solution and "translating" it
-                solution = (c_double * self._num_vars)()
-                GRBcbget(p_cbdata, where, GRB_CB_MIPNODE_REL, solution)
+                cb_solution = (c_double * self._num_vars)()
+                GRBcbget(p_cbdata, where, GRB_CB_MIPNODE_REL, cb_solution)
                 relax_solution = []
                 for i in range(self._num_vars):
-                    if solution[i] <= -EPS or solution[i] >= EPS:
-                        relax_solution.append((self.model.vars[i], solution[i]))
+                    if cb_solution[i] <= -EPS or cb_solution[i] >= EPS:
+                        relax_solution.append((self.model.vars[i], cb_solution[i]))
 
-                # calling cut generators
+                # calling cuts generator
                 cuts = self.model.cuts_generator.generate_cuts(relax_solution)
                 # adding cuts
                 for lin_expr in cuts:
@@ -207,6 +206,36 @@ class SolverGurobi(Solver):
 
                     GRBcbcut(p_cbdata, numnz, cind, cval, sense, rhs)
 
+            # adding lazy constraints
+            elif self.model.lazy_constrs_generator and where == 4: # MIPSOL == 4
+                # obtaining relaxation solution and "translating" it
+                cb_solution = (c_double * self._num_vars)()
+                GRBcbget(p_cbdata, where, GRB_CB_MIPSOL_SOL, cb_solution)
+                solution = []
+                for i in range(self._num_vars):
+                    if cb_solution[i] <= -EPS or cb_solution[i] >= EPS:
+                        solution.append((self.model.vars[i], cb_solution[i]))
+
+                # calling constraint generator
+                constrs = self.model.lazy_constrs_generator.generate_lazy_constrs(solution)
+                # adding cuts
+                for lin_expr in constrs:
+                    # collecting linear expression data
+                    numnz = len(lin_expr.expr)
+                    cind = (c_int * numnz)()
+                    cval = (c_double * numnz)()
+
+                    # collecting variable coefficients
+                    for i, (var, coeff) in enumerate(lin_expr.expr.items()):
+                        cind[i] = var.idx
+                        cval[i] = coeff
+
+                    # constraint sense and rhs
+                    sense = c_char(ord(lin_expr.sense))
+                    rhs = c_double(-lin_expr.const)
+
+                    GRBcblazy(p_cbdata, numnz, cind, cval, sense, rhs)
+
             return 0
 
         if self.model.cuts_generator != None:
@@ -215,22 +244,22 @@ class SolverGurobi(Solver):
 
         if self.__threads>=1:
             self.set_int_param("Threads", self.__threads)
-        
+
         self.set_int_param("Cuts", self.model.cuts)
 
         # executing Gurobi to solve the formulation
         status = int(GRBoptimize(self._model))
         if status == 10009:
             raise Exception('gurobi found but license not accepted, please check it')
-        
+
         status = c_int(0)
         st = GRBgetintattr(self._model, c_str("Status"), byref(status))
         if (st):
             raise Exception('could not check optimization status')
-        
+
         status = status.value
 
-        # checking status for MIP optimization which 
+        # checking status for MIP optimization which
         # finished before the search to be
         # concluded (time, iteration limit...)
         if (self.num_int()):
@@ -239,41 +268,41 @@ class SolverGurobi(Solver):
                 sts = GRBgetintattr(self._model, c_str("SolCount"), byref(nsols))
                 nsols = nsols.value
                 if nsols>=1:
-                    return FEASIBLE
+                    return OptimizationStatus.FEASIBLE
                 else:
-                    return NO_SOLUTION_FOUND
-        
+                    return OptimizationStatus.NO_SOLUTION_FOUND
+
         # todo: read solution status (code below is incomplete)
         if status == 1:  # LOADED
-            return LOADED
+            return OptimizationStatus.LOADED
         elif status == 2:  # OPTIMAL
-            return OPTIMAL
+            return OptimizationStatus.OPTIMAL
         elif status == 3:  # INFEASIBLE
-            return INFEASIBLE
+            return OptimizationStatus.INFEASIBLE
         elif status == 4:  # INF_OR_UNBD
-            return UNBOUNDED
+            return OptimizationStatus.UNBOUNDED
         elif status == 5:  # UNBOUNDED
-            return UNBOUNDED
+            return OptimizationStatus.UNBOUNDED
         elif status == 6:  # CUTOFF
-            return CUTOFF
+            return OptimizationStatus.CUTOFF
         elif status == 7:  # ITERATION_LIMIT
-            return -10000
+            return OptimizationStatus.OTHER
         elif status == 8:  # NODE_LIMIT
-            return -10000
+            return OptimizationStatus.OTHER
         elif status == 9:  # TIME_LIMIT
-            return -10000
+            return OptimizationStatus.OTHER
         elif status == 10:  # SOLUTION_LIMIT
-            return FEASIBLE
+            return OptimizationStatus.FEASIBLE
         elif status == 11:  # INTERRUPTED
-            return -10000
+            return OptimizationStatus.OTHER
         elif status == 12:  # NUMERIC
-            return -10000
+            return OptimizationStatus.OTHER
         elif status == 13:  # SUBOPTIMAL
-            return FEASIBLE
+            return OptimizationStatus.FEASIBLE
         elif status == 14:  # INPROGRESS
-            return -10000
+            return OptimizationStatus.OTHER
         elif status == 15:  # USER_OBJ_LIMIT
-            return FEASIBLE
+            return OptimizationStatus.FEASIBLE
 
         self._updated = True
         return status
@@ -426,14 +455,14 @@ class SolverGurobi(Solver):
         st = GRBgetintattr(self._model, c_str('NumVars'), byref(res))
         assert st == 0
         return res.value
-    
+
     def num_int(self) -> int:
         res = c_int(0)
         GRBupdatemodel(self._model)
         st = GRBgetintattr(self._model, c_str('NumIntVars'), byref(res))
         assert st == 0
         return res.value
-    
+
     def num_rows(self) -> int:
         res = c_int(0)
         st = GRBgetintattr(self._model, c_str('NumConstrs'), byref(res))
@@ -581,7 +610,7 @@ class SolverGurobi(Solver):
         GRBsetdblattrelement(self._model, c_str("Obj"), c_int(var.idx), c_double(value))
         self._updated = False
 
-    def var_get_type(self, var: "Var") -> str:
+    def var_get_var_type(self, var: "Var") -> str:
         if not self._updated:
             self.update()
 
@@ -597,7 +626,7 @@ class SolverGurobi(Solver):
 
         raise ValueError("Gurobi: invalid variable type returned...")
 
-    def var_set_type(self, var: "Var", value: str) -> None:
+    def var_set_var_type(self, var: "Var", value: str) -> None:
         if value == BINARY:
             vtype = c_char(ord("B"))
         elif value == CONTINUOUS:
@@ -656,24 +685,24 @@ class SolverGurobi(Solver):
         assert st == 0
         return vName.value.decode('utf-8')
 
-    def get_emphasis(self) -> int:
+    def get_emphasis(self) -> SearchEmphasis:
         fc = c_int(0)
         st = GRBgetintparam(GRBgetenv(self._model), c_str("MIPFocus"),
                             byref(fc))
         assert st == 0
         if fc == 1:
-            return FEASIBILITY
+            return SearchEmphasis.FEASIBILITY
         elif fc == 3 or fc == 2:
-            return OPTIMALITY
+            return SearchEmphasis.OPTIMALITY
 
         return 0
 
-    def set_emphasis(self, emph: int):
-        if emph == FEASIBILITY:
+    def set_emphasis(self, emph: SearchEmphasis):
+        if emph == SearchEmphasis.FEASIBILITY:
             st = GRBsetintparam(GRBgetenv(self._model), c_str("MIPFocus"),
                                 c_int(1))
             assert st == 0
-        elif emph == OPTIMALITY:
+        elif emph == SearchEmphasis.OPTIMALITY:
             st = GRBsetintparam(GRBgetenv(self._model), c_str("MIPFocus"),
                                 c_int(2))
             assert st == 0
@@ -863,6 +892,10 @@ if has_gurobi:
     GRBcbget = grblib.GRBcbget
     GRBcbget.restype = c_int
     GRBcbget.argtypes = [c_void_p, c_int, c_int, c_void_p]
+
+    GRBcblazy = grblib.GRBcblazy
+    GRBcblazy.restype = c_int
+    GRBcblazy.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double), c_char, c_double]
 
     GRBcbsolution = grblib.GRBcbsolution
     GRBcbsolution.restype = c_int
