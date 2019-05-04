@@ -890,6 +890,55 @@ class Model:
         """
         return self.__status
 
+    def remove(self, objects):
+        """removes variable(s) and/or constraint(s) from the model
+
+        Args:
+            objects: can be a Var, a Constr or a list of these objects
+        """
+        if isinstance(objects, Var):
+            self.solver.remove_vars([objects.idx])
+        elif isinstance(objects, Constr):
+            self.solver.remove_constrs([objects.idx])
+        elif isinstance(objects, list):
+            vlist = []
+            clist = []
+            for o in objects:
+                if isinstance(o, Var):
+                    vlist.append(o.idx)
+                elif isinstance(o, Constr):
+                    clist.append(o.idx)
+                else:
+                    raise "Cannot handle removal of object of type " + \
+                        type(o) + " from model."
+
+            if vlist:
+                vlist.sort()
+                for idx in vlist:
+                    self.vars_by_name.pop(self.vars[idx].name(), None)
+                newvl1 = self.vars[0:vlist[0]]
+                rset = set(vlist)
+                newvl2 = []
+                for v in self.vars[vlist[0]:-1]:
+                    if v.idx not in rset:
+                        newvl2.append(self.vars[v])
+                        newvl2[-1].idx = len(newvl2)-1
+                self.vars = newvl1 + newvl2
+                self.solver.remove_vars(vlist)
+            if clist:
+                clist.sort()
+                for idx in clist:
+                    self.constrs_by_name.pop(self.constrs[idx].name(), None)
+                newcl1 = self.constrs[0:clist[0]]
+                rset = set(clist)
+                newcl2 = []
+                for c in self.constrs[clist[0]:-1]:
+                    if c.idx not in rset:
+                        newcl2.append(self.constrs[c])
+                        newcl2[-1].idx = len(newcl2)-1
+                self.constrs = newcl1 + newcl2
+                self.solver.remove_constrs(clist)
+
 
 class Solver:
 
@@ -1005,6 +1054,8 @@ class Solver:
 
     def constr_get_pi(self, constr: Constr) -> float: pass
 
+    def remove_constrs(self, varsList: List[Constr]): pass
+
     # Variable-related getters/setters
 
     def var_get_lb(self, var: "Var") -> float: pass
@@ -1034,6 +1085,8 @@ class Solver:
     def var_get_xi(self, var: "Var", i: int) -> float: pass
 
     def var_get_name(self, idx: int) -> str: pass
+
+    def remove_vars(self, varsList: List[Var]): pass
 
 
 class Var:
