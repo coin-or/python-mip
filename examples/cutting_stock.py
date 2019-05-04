@@ -99,7 +99,7 @@ def cg():
             new_vars = False
 
         pricing.write('pricing.lp')
-        # pdb.set_trace()
+        pdb.set_trace()
 
     print_solution(master)
 

@@ -2,10 +2,10 @@ from mip.model import *
 from sys import stdout, argv
 from time import process_time
 
-n = 10
+n = 100
 
 # can force a solver to be used with -solver=solverName option
-solver = CBC
+solver = None
 
 for arg in argv:
     if "-solver=" in arg:
@@ -39,7 +39,6 @@ for p, k in enumerate(range(2 - n, n - 2 + 1)):
 for p, k in enumerate(range(3, n + n)):
     queens += xsum(x[i][j] for i in range(n) for j in range(n) if i + j == k) <= 1, 'diag2({})'.format(p)
 
-queens.read('queens.lp')
 queens.optimize()
 
 stdout.write('\n')
