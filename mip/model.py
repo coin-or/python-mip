@@ -1,22 +1,9 @@
-from typing import List, Tuple
-
+from mip.callbacks import *
 from mip.constants import *
+from mip.exceptions import *
 from math import inf
 from builtins import property
 from os import environ
-from collections import defaultdict
-
-
-class InvalidLinExpr(Exception):
-    """Exception that is raised when an invalid
-    linear expression is created"""
-    pass
-
-
-class SolutionNotAvailable(Exception):
-    """Exception that is raised when some method to query some
-    solution property is used but no solution is available"""
-    pass
 
 
 class Column:
@@ -68,7 +55,7 @@ class Constr:
         return self.model.solver.constr_get_expr(self)
 
     @expr.setter
-    def expr(self, value: "LinExpr") -> None:
+    def expr(self, value: "LinExpr"):
         self.model.solver.constr_set_expr(self, value)
 
 
@@ -367,7 +354,8 @@ class Model:
         # initializing additional control variables
         self.__cuts = 1
         self.__cuts_generator = None
-        self.__mipStart = []
+        self.__lazy_constrs_generator = None
+        self.__start = None
         self.__status = OptimizationStatus.LOADED
         self.__threads = 0
 
@@ -471,7 +459,7 @@ class Model:
         self.constrs_by_name[name] = self.constrs[-1]
         return self.constrs[-1]
 
-    def clear(self) -> None:
+    def clear(self):
         """Clears the model
 
         All variables, constraints and parameters will be reset. In addition, a new solver instance
@@ -507,7 +495,7 @@ class Model:
         # initializing additional control variables
         self.__cuts = 1
         self.__cuts_generator = None
-        self.__mipStart = []
+        self.__start = []
         self.__status = OptimizationStatus.LOADED
         self.__threads = 0
 
@@ -661,13 +649,13 @@ class Model:
         return self.solver.get_objective()
 
     @objective.setter
-    def objective(self, expr):
-        if isinstance(expr, int) or isinstance(expr, float):
-            self.solver.set_objective(LinExpr([], [], expr))
-        elif isinstance(expr, Var):
-            self.solver.set_objective(LinExpr([expr], [1]))
-        elif isinstance(expr, LinExpr):
-            self.solver.set_objective(expr)
+    def objective(self, objective):
+        if isinstance(objective, int) or isinstance(objective, float):
+            self.solver.set_objective(LinExpr([], [], objective))
+        elif isinstance(objective, Var):
+            self.solver.set_objective(LinExpr([objective], [1]))
+        elif isinstance(objective, LinExpr):
+            self.solver.set_objective(objective)
 
     @property
     def verbose(self) -> int:
@@ -676,8 +664,8 @@ class Model:
         return self.solver.get_verbose()
 
     @verbose.setter
-    def verbose(self, v: int) -> None:
-        self.solver.set_verbose(v)
+    def verbose(self, verbose: int):
+        self.solver.set_verbose(verbose)
 
     @property
     def threads(self) -> int:
@@ -689,8 +677,8 @@ class Model:
         return self.__threads
 
     @threads.setter
-    def threads(self, th: int):
-        self.__threads = th
+    def threads(self, threads: int):
+        self.__threads = threads
 
     @property
     def sense(self) -> str:
@@ -713,8 +701,8 @@ class Model:
         return self.solver.get_objective_const()
 
     @objective_const.setter
-    def objective_const(self, const: float) -> None:
-        self.solver.set_objective_const(const)
+    def objective_const(self, objective_const: float):
+        self.solver.set_objective_const(objective_const)
 
     @property
     def objective_value(self) -> float:
@@ -744,7 +732,7 @@ class Model:
                 for i in range(self.num_solutions)]
 
     @property
-    def cuts_generator(self: "Model") -> "CutsGenerator":
+    def cuts_generator(self) -> CutsGenerator:
         """Cut generator callback. Cut generators are called whenever a solution where one or more
         integer variables appear with continuous values. A cut generator will
         try to produce one or more inequalities to remove this fractional point.
@@ -752,8 +740,16 @@ class Model:
         return self.__cuts_generator
 
     @cuts_generator.setter
-    def cuts_generator(self: "Model", cuts_generator: "CutsGenerator"):
+    def cuts_generator(self, cuts_generator: CutsGenerator):
         self.__cuts_generator = cuts_generator
+
+    @property
+    def lazy_constrs_generator(self) -> "LazyConstrsGenerator":
+        return self.__lazy_constrs_generator
+
+    @lazy_constrs_generator.setter
+    def lazy_constrs_generator(self, lazy_constrs_generator: "LazyConstrsGenerator"):
+        self.__lazy_constrs_generator = lazy_constrs_generator
 
     @property
     def emphasis(self) -> SearchEmphasis:
@@ -768,8 +764,8 @@ class Model:
         return self.solver.get_emphasis()
 
     @emphasis.setter
-    def emphasis(self, emph: SearchEmphasis):
-        self.solver.set_emphasis(emph)
+    def emphasis(self, emphasis: SearchEmphasis):
+        self.solver.set_emphasis(emphasis)
 
     @property
     def cuts(self) -> int:
@@ -796,12 +792,12 @@ class Model:
         feasible solution need to be informed. Auxiliary or continuous
         variables are automatically computed.
         """
-        return self.__mipStart
+        return self.__start
 
     @start.setter
-    def start(self, start_sol: List[Tuple["Var", float]]):
-        self.__mipStart = start_sol
-        self.solver.set_start(start_sol)
+    def start(self, start: List[Tuple["Var", float]]):
+        self.__start = start
+        self.solver.set_start(start)
 
     @property
     def num_cols(self) -> int:
@@ -832,8 +828,8 @@ class Model:
         return self.solver.get_cutoff()
 
     @cutoff.setter
-    def cutoff(self, value: float):
-        self.solver.set_cutoff(value)
+    def cutoff(self, cutoff: float):
+        self.solver.set_cutoff(cutoff)
 
     @property
     def max_mip_gap_abs(self) -> float:
@@ -844,8 +840,8 @@ class Model:
         return self.solver.get_mip_gap_abs()
 
     @max_mip_gap_abs.setter
-    def max_mip_gap_abs(self, value):
-        self.solver.set_mip_gap(value)
+    def max_mip_gap_abs(self, max_mip_gap_abs: float):
+        self.solver.set_mip_gap(max_mip_gap_abs)
 
     @property
     def max_mip_gap(self) -> float:
@@ -855,8 +851,8 @@ class Model:
         return self.solver.get_mip_gap()
 
     @max_mip_gap.setter
-    def max_mip_gap(self, value):
-        self.solver.set_mip_gap(value)
+    def max_mip_gap(self, max_mip_gap: float):
+        self.solver.set_mip_gap(max_mip_gap)
 
     @property
     def max_seconds(self) -> float:
@@ -910,7 +906,7 @@ class Solver:
                 lb: float = 0,
                 ub: float = INF,
                 var_type: str = CONTINUOUS,
-                column: "Column" = None) -> None:
+                column: "Column" = None):
         pass
 
     def add_constr(self, lin_expr: "LinExpr", name: str = "") -> int: pass
@@ -935,16 +931,16 @@ class Solver:
 
     def set_objective_sense(self, sense: str): pass
 
-    def set_start(self, start: List[Tuple["Var", float]]) -> None: pass
+    def set_start(self, start: List[Tuple["Var", float]]): pass
 
-    def set_objective(self, lin_expr: "LinExpr", sense: str = "") -> None: pass
+    def set_objective(self, lin_expr: "LinExpr", sense: str = ""): pass
 
-    def set_objective_const(self, const: float) -> None: pass
+    def set_objective_const(self, const: float): pass
 
     def set_callbacks(self,
                       branch_selector: "BranchSelector" = None,
                       incumbent_updater: "IncumbentUpdater" = None,
-                      lazy_constrs_generator: "LazyConstrsGenerator" = None) -> None:
+                      lazy_constrs_generator: "LazyConstrsGenerator" = None):
         pass
 
     def set_processing_limits(self,
@@ -967,9 +963,9 @@ class Solver:
 
     def set_num_threads(self, threads: int): pass
 
-    def write(self, file_path: str) -> None: pass
+    def write(self, file_path: str): pass
 
-    def read(self, file_path: str) -> None: pass
+    def read(self, file_path: str): pass
 
     def num_cols(self) -> int: pass
 
@@ -1013,23 +1009,23 @@ class Solver:
 
     def var_get_lb(self, var: "Var") -> float: pass
 
-    def var_set_lb(self, var: "Var", value: float) -> None: pass
+    def var_set_lb(self, var: "Var", value: float): pass
 
     def var_get_ub(self, var: "Var") -> float: pass
 
-    def var_set_ub(self, var: "Var", value: float) -> None: pass
+    def var_set_ub(self, var: "Var", value: float): pass
 
     def var_get_obj(self, var: "Var") -> float: pass
 
-    def var_set_obj(self, var: "Var", value: float) -> None: pass
+    def var_set_obj(self, var: "Var", value: float): pass
 
     def var_get_var_type(self, var: "Var") -> str: pass
 
-    def var_set_var_type(self, var: "Var", value: str) -> None: pass
+    def var_set_var_type(self, var: "Var", value: str): pass
 
     def var_get_column(self, var: "Var") -> Column: pass
 
-    def var_set_column(self, var: "Var", value: Column) -> None: pass
+    def var_set_column(self, var: "Var", value: Column): pass
 
     def var_get_rc(self, var: "Var") -> float: pass
 
@@ -1139,7 +1135,7 @@ class Var:
         return self.model.solver.var_get_lb(self)
 
     @lb.setter
-    def lb(self, value: float) -> None:
+    def lb(self, value: float):
         self.model.solver.var_set_lb(self, value)
 
     @property
@@ -1148,7 +1144,7 @@ class Var:
         return self.model.solver.var_get_ub(self)
 
     @ub.setter
-    def ub(self, value: float) -> None:
+    def ub(self, value: float):
         self.model.solver.var_set_ub(self, value)
 
     @property
@@ -1157,7 +1153,7 @@ class Var:
         return self.model.solver.var_get_obj(self)
 
     @obj.setter
-    def obj(self, value: float) -> None:
+    def obj(self, value: float):
         self.model.solver.var_set_obj(self, value)
 
     @property
@@ -1215,84 +1211,6 @@ class Var:
         return self.model.solver.var_get_xi(self, i)
 
 
-class CutsGenerator:
-    """abstract class for implementing cut generators"""
-
-    def __init__(self, model: Model):
-        self.model = model
-
-    def generate_cuts(self, relax_solution: List[Tuple[Var, float]]) -> List[LinExpr]:
-        """Method called by the solve engine to generate cuts
-
-           After analyzing the contents of the fractional solution in :code:`relax_solution`, one
-           or mode cuts (:class:`~mip.model.LinExpr`) may be generated and returned. These cuts are added to the
-           relaxed model.
-
-        Args:
-            relax_solution(List[Tuple[Var, float]]): a list of tuples (variable,value) indicating the values of variables in the current fractional solution. Variables at zero are not included.
-
-        Note: take care not to query the value of the fractional solution in the cut generation method using the :code:`x`
-        methods from original references to problem variables, use the contents of :code:`relax_solution` instead.
-        """
-        raise NotImplementedError()
-
-
-class CutPool:
-    def __init__(self: "CutPool"):
-        """Stores a list list of different cuts, repeated cuts are discarded.
-        """
-        self.__cuts = []
-
-        # positions for each hash code to speedup
-        # the search of repeated cuts
-        self.__pos = defaultdict(list)
-
-    def add(self: "CutPool", cut: "LinExpr") -> bool:
-        """tries to add a cut to the pool, returns true if this is a new cut, false if it is a repeated one
-
-        Args:
-            cut(LinExpr): a constraint
-        """
-        hcode = hash(cut)
-        bucket = self.__pos[hcode]
-        for p in bucket:
-            if self.__cuts[p].equals(cut):
-                return False
-
-        self.__pos[hcode].append(len(self.__cuts))
-        self.__cuts.append(cut)
-
-        return True
-
-    @property
-    def cuts(self: "CutPool") -> List["LinExpr"]:
-        return self.__cuts
-
-
-class BranchSelector:
-    def __init__(self, model: Model):
-        self.model = model
-
-    def select_branch(self, relax_solution: List[Tuple[Var, float]]) -> Tuple[Var, int]:
-        raise NotImplementedError()
-
-
-class IncumbentUpdater:
-    def __init__(self, model: Model):
-        self.model = model
-
-    def update_incumbent(self, solution: List[Tuple[Var, float]]) -> List[Tuple[Var, float]]:
-        raise NotImplementedError()
-
-
-class LazyConstrsGenerator:
-    def __init(self, model: Model):
-        self.model = model
-
-    def generate_lazy_constrs(self, solution: List[Tuple[Var, float]]) -> List[LinExpr]:
-        raise NotImplementedError()
-
-
 def xsum(terms) -> LinExpr:
     result = LinExpr()
     for term in terms:
@@ -1304,16 +1222,16 @@ def xsum(terms) -> LinExpr:
 quicksum = xsum
 
 
-def read_custom_settings() -> None:
+def read_custom_settings():
     global customCbcLib
     from pathlib import Path
     home = str(Path.home())
     import os
-    configpath = os.path.join(home, ".config")
-    if os.path.isdir(configpath):
-        conffile = os.path.join(configpath, "python-mip")
-        if os.path.isfile(conffile):
-            f = open(conffile, "r")
+    config_path = os.path.join(home, ".config")
+    if os.path.isdir(config_path):
+        config_file = os.path.join(config_path, "python-mip")
+        if os.path.isfile(config_file):
+            f = open(config_file, "r")
             for line in f:
                 if "=" in line:
                     cols = line.split("=")
@@ -1324,6 +1242,5 @@ def read_custom_settings() -> None:
 print("Using Python-MIP package version {}".format(VERSION))
 customCbcLib = ""
 read_custom_settings()
-# print("customCbcLib {}".format(customCbcLib))
 
 # vim: ts=4 sw=4 et
