@@ -104,7 +104,7 @@ class SolverCbc(Solver):
 
     def set_verbose(self, verbose: int):
         self.__verbose = verbose
-        
+
     def var_set_var_type(self, var: "Var", value: str):
         cv =  var.var_type
         if (value == cv):
@@ -484,6 +484,20 @@ class SolverCbc(Solver):
     def set_num_threads(self, threads: int):
         self.__threads = threads
 
+    def remove_constrs(self, constrsList: List[int]):
+        idx = (c_int * len(constrsList))()
+        for i in range(len(constrsList)):
+            idx[i] = constrsList[i]
+
+        cbcDeleteRows(self._model, c_int(len(constrsList)), idx)
+
+    def remove_vars(self, colList: List[int]):
+        idx = (c_int * len(colList))()
+        for i in range(len(colList)):
+            idx[i] = colList[i]
+
+        cbcDeleteCols(self._model, c_int(len(colList)), idx)
+
     def __del__(self):
         cbcDeleteModel(self._model)
 
@@ -861,6 +875,14 @@ if has_cbc:
         cbcGetObjBound = cbclib.Cbc_getBestPossibleObjValue
         cbcGetObjBound.argtypes = [c_void_p]
         cbcGetObjBound.restype = c_double
+
+        method_check = "Cbc_deleteRows"
+        cbcDeleteRows = cbclib.Cbc_deleteRows
+        cbcDeleteRows.argtypes = [c_void_p, c_int, POINTER(c_int)]
+
+        method_check = "Cbc_deleteCols"
+        cbcDeleteCols = cbclib.Cbc_deleteCols
+        cbcDeleteCols.argtypes = [c_void_p, c_int, POINTER(c_int)]
 
         has_cbc = True
     except:

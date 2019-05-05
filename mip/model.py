@@ -915,7 +915,7 @@ class Model:
             if vlist:
                 vlist.sort()
                 for idx in vlist:
-                    self.vars_by_name.pop(self.vars[idx].name(), None)
+                    self.vars_by_name.pop(self.vars[idx].name, None)
                 newvl1 = self.vars[0:vlist[0]]
                 rset = set(vlist)
                 newvl2 = []
@@ -928,7 +928,7 @@ class Model:
             if clist:
                 clist.sort()
                 for idx in clist:
-                    self.constrs_by_name.pop(self.constrs[idx].name(), None)
+                    self.constrs_by_name.pop(self.constrs[idx].name, None)
                 newcl1 = self.constrs[0:clist[0]]
                 rset = set(clist)
                 newcl2 = []
@@ -1054,7 +1054,7 @@ class Solver:
 
     def constr_get_pi(self, constr: Constr) -> float: pass
 
-    def remove_constrs(self, varsList: List[Constr]): pass
+    def remove_constrs(self, constrsList: List[int]): pass
 
     # Variable-related getters/setters
 
@@ -1086,7 +1086,7 @@ class Solver:
 
     def var_get_name(self, idx: int) -> str: pass
 
-    def remove_vars(self, varsList: List[Var]): pass
+    def remove_vars(self, varsList: List[int]): pass
 
 
 class Var:
