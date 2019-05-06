@@ -21,7 +21,8 @@ class Column:
 class Constr:
     """ A row (constraint) in the constraint matrix
 
-        A constraint can be added to the model using the overloaded operator
+        A constraint is a specific :class:`~mip.model.LinExpr`. Constraints
+        can be added to the model using the overloaded operator
         +=, e.g., if :code:`m` is a model:
 
         .. code:: python
@@ -48,10 +49,14 @@ class Constr:
 
     @property
     def pi(self) -> float:
+        """value for the dual variable of this constraint in the optimal
+        solution of a linear programming model, cannot be evaluated for
+        problems with integer variables"""
         return self.model.solver.constr_get_pi(self)
 
     @property
     def expr(self) -> "LinExpr":
+        """contents of the constraint"""
         return self.model.solver.constr_get_expr(self)
 
     @expr.setter
@@ -87,16 +92,16 @@ class LinExpr:
     def __init__(self,
                  variables: List["Var"] = None,
                  coeffs: List[float] = None,
-                 const: float = 0,
+                 const: float = 0.0,
                  sense: str = ""):
-        self.const = const
-        self.expr = {}
-        self.sense = sense
+        self.__const = const
+        self.__expr = {}
+        self.__sense = sense
 
         if variables:
             assert len(variables) == len(coeffs)
             for i in range(len(coeffs)):
-                if coeffs[i] == 0:
+                if abs(coeffs[i]) <= 1e-12:
                     continue
                 self.add_var(variables[i], coeffs[i])
 
@@ -147,15 +152,15 @@ class LinExpr:
     def __mul__(self, other) -> "LinExpr":
         assert isinstance(other, int) or isinstance(other, float)
         result = self.copy()
-        result.const *= other
-        for var in result.expr.keys():
-            result.expr[var] *= other
+        result.__const *= other
+        for var in result.__expr.keys():
+            result.__expr[var] *= other
 
-        # if constraint sense will change
-        if self.sense == GREATER_OR_EQUAL and other <= -1e-8:
-            self.sense = LESS_OR_EQUAL
-        if self.sense == LESS_OR_EQUAL and other <= -1e-8:
-            self.sense = GREATER_OR_EQUAL
+        # if constraint __sense will change
+        if self.__sense == GREATER_OR_EQUAL and other <= -1e-8:
+            self.__sense = LESS_OR_EQUAL
+        if self.__sense == LESS_OR_EQUAL and other <= -1e-8:
+            self.__sense = GREATER_OR_EQUAL
 
         return result
 
@@ -164,24 +169,24 @@ class LinExpr:
 
     def __imul__(self, other) -> "LinExpr":
         assert isinstance(other, int) or isinstance(other, float)
-        self.const *= other
-        for var in self.expr.keys():
-            self.expr[var] *= other
+        self.__const *= other
+        for var in self.__expr.keys():
+            self.__expr[var] *= other
         return self
 
     def __truediv__(self, other) -> "LinExpr":
         assert isinstance(other, int) or isinstance(other, float)
         result = self.copy()
-        result.const /= other
-        for var in result.expr.keys():
-            result.expr[var] /= other
+        result.__const /= other
+        for var in result.__expr.keys():
+            result.__expr[var] /= other
         return result
 
     def __itruediv__(self, other) -> "LinExpr":
         assert isinstance(other, int) or isinstance(other, float)
-        self.const /= other
-        for var in self.expr.keys():
-            self.expr[var] /= other
+        self.__const /= other
+        for var in self.__expr.keys():
+            self.__expr[var] /= other
         return self
 
     def __neg__(self) -> "LinExpr":
@@ -190,98 +195,122 @@ class LinExpr:
     def __str__(self) -> str:
         result = []
 
-        if self.expr:
-            for var, coeff in self.expr.items():
+        if self.__expr:
+            for var, coeff in self.__expr.items():
                 result.append("+ " if coeff >= 0 else "- ")
                 result.append(str(abs(coeff)) if abs(coeff) != 1 else "")
                 result.append("{var} ".format(**locals()))
 
-        if self.sense:
-            result.append(self.sense + "= ")
-            result.append(str(abs(self.const)) if self.const < 0 else "- " +
-                                                                      str(abs(self.const)))
-        elif self.const != 0:
+        if self.__sense:
+            result.append(self.__sense + "= ")
+            result.append(str(abs(self.__const)) if self.__const < 0 else "- " +
+                                                                      str(abs(self.__const)))
+        elif self.__const != 0:
             result.append(
-                "+ " + str(abs(self.const)) if self.const > 0 else "- " +
-                                                                   str(abs(self.const)))
+                "+ " + str(abs(self.__const)) if self.__const > 0 else "- " +
+                                                                   str(abs(self.__const)))
 
         return "".join(result)
 
     def __eq__(self, other) -> "LinExpr":
         result = self - other
-        result.sense = "="
+        result.__sense = "="
         return result
 
     def __le__(self, other) -> "LinExpr":
         result = self - other
-        result.sense = "<"
+        result.__sense = "<"
         return result
 
     def __ge__(self, other) -> "LinExpr":
         result = self - other
-        result.sense = ">"
+        result.__sense = ">"
         return result
 
-    def add_const(self, const: float):
+    def add_const(self, __const: float):
         """adds a constant value to the linear expression, in the case of a constraint
         this correspond to the right-hand-side"""
-        self.const += const
+        self.__const += __const
 
-    def add_expr(self, expr: "LinExpr", coeff: float = 1):
+    def add_expr(self, __expr: "LinExpr", coeff: float = 1):
         """extends a linear expression with the contents of another"""
-        self.const += expr.const * coeff
-        for var, coeff_var in expr.expr.items():
+        self.__const += __expr.__const * coeff
+        for var, coeff_var in __expr.__expr.items():
             self.add_var(var, coeff_var * coeff)
 
-    def add_term(self, expr, coeff: float = 1):
+    def add_term(self, __expr, coeff: float = 1):
         """extends a linear expression with another multiplied by a constant value coeff"""
-        if isinstance(expr, Var):
-            self.add_var(expr, coeff)
-        elif isinstance(expr, LinExpr):
-            self.add_expr(expr, coeff)
-        elif isinstance(expr, float) or isinstance(expr, int):
-            self.add_const(expr)
+        if isinstance(__expr, Var):
+            self.add_var(__expr, coeff)
+        elif isinstance(__expr, LinExpr):
+            self.add_expr(__expr, coeff)
+        elif isinstance(__expr, float) or isinstance(__expr, int):
+            self.add_const(__expr)
 
     def add_var(self, var: "Var", coeff: float = 1):
         """adds a variable with a coefficient to the constraint"""
-        if var in self.expr:
-            if -EPS <= self.expr[var] + coeff <= EPS:
-                del self.expr[var]
+        if var in self.__expr:
+            if -EPS <= self.__expr[var] + coeff <= EPS:
+                del self.__expr[var]
             else:
-                self.expr[var] += coeff
+                self.__expr[var] += coeff
         else:
-            self.expr[var] = coeff
+            self.__expr[var] = coeff
 
     def copy(self) -> "LinExpr":
         copy = LinExpr()
-        copy.const = self.const
-        copy.expr = self.expr.copy()
-        copy.sense = self.sense
+        copy.__const = self.__const
+        copy.__expr = self.__expr.copy()
+        copy.__sense = self.__sense
         return copy
 
     def equals(self: "LinExpr", other: "LinExpr") -> bool:
         """returns true if a linear expression equals to another, false otherwise"""
-        if self.const != other.const:
+        if self.__const != other.__const:
             return False
-        if self.sense != other.sense:
+        if self.__sense != other.__sense:
             return False
-        if len(self.expr) != len(other.expr):
+        if len(self.__expr) != len(other.__expr):
             return False
-        for i, (v, c) in enumerate(self.expr.items()):
-            if v not in self.expr:
+        for i, (v, c) in enumerate(self.__expr.items()):
+            if v not in self.__expr:
                 return False
-            oc = self.expr[v]
+            oc = self.__expr[v]
             if abs(c - oc) > 1e-12:
                 return False
         return True
 
     def __hash__(self):
-        hash_el = [v.idx for v in self.expr.keys()]
-        for c in self.expr.values():
+        hash_el = [v.idx for v in self.__expr.keys()]
+        for c in self.__expr.values():
             hash_el.append(c)
-        hash_el.append(self.const)
-        hash_el.append(self.sense)
+        hash_el.append(self.__const)
+        hash_el.append(self.__sense)
         return hash(tuple(hash_el))
+
+    @property
+    def const(self) -> float:
+        """constant part of the linear expression"""
+        return self.__const
+
+    @property
+    def expr(self) -> dict:
+        """the non-constant part of the linear expression
+
+        Dictionary with pairs: (variable, coefficient) where coefficient
+        is a float.
+        """
+        return self.__expr
+
+    @property
+    def sense(self) -> str:
+        """sense of the linear expression
+
+        sense can be EQUAL("="), LESS_OR_EQUAL("<"), GREATER_OR_EQUAL(">") or
+        empty ("") if this is an affine expression, such as the objective
+        function
+        """
+        return self.__sense
 
 
 class Model:
@@ -294,7 +323,7 @@ class Model:
     To check how models are created please see the examples included.
 
     """
-
+ 
     def __init__(self, name: str = "",
                  sense: str = MINIMIZE,
                  solver_name: str = ""):
