@@ -1,7 +1,6 @@
 from mip.model import *
 from ctypes import *
 from ctypes.util import *
-from math import inf
 
 
 class SolverGurobi(Solver):
@@ -76,7 +75,8 @@ class SolverGurobi(Solver):
         idx = self._num_vars
         self._num_vars += 1
 
-        GRBaddvar(self._model, c_int(numnz), vind, vval, c_double(obj), c_double(lb), c_double(ub),
+        GRBaddvar(self._model, c_int(numnz), vind, vval, c_double(obj),
+                  c_double(lb), c_double(ub),
                   vtype, c_str(name))
         self._updated = False
 
@@ -636,7 +636,8 @@ class SolverGurobi(Solver):
         else:
             raise ValueError("Gurobi: invalid variable type...")
 
-        GRBsetcharattrelement(self._model, c_str("VType"), c_int(var.idx), vtype)
+        GRBsetcharattrelement(self._model, c_str("VType"), c_int(var.idx),
+                              vtype)
         self._updated = False
 
     def var_get_column(self, var: "Var"):

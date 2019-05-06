@@ -36,32 +36,58 @@ class Constr:
           m += xsum(x[i] for i in range(n)) == 1
     """
 
-    def __init__(self, model: "Model", idx: int, name: str = ""):
-        self.model = model
+    def __init__(self, model: "Model", idx: int):
+        self.__model = model
         self.idx = idx
-        self.name = name  # discuss this var
 
     def __hash__(self) -> int:
         return self.idx
 
     def __str__(self) -> str:
-        return self.name
+        if self.name:
+            res = self.name+':'
+        else:
+            res = 'constr({}): '.format(self.idx+1)
+        line = ''
+        lenLine = 0
+        for (var, val) in self.expr.expr.items():
+            astr = ' {:+} {}'.format(val, var.name)
+            lenLine += len(astr)
+            line += astr
+
+            if lenLine > 75:
+                line += '\n\t'
+                lenLine = 0
+        res += line
+        rhs = self.expr.const*-1.0
+        if self.expr.sense == '=':
+            res += ' = {}'.format(rhs)
+        elif self.expr.sense == '<':
+            res += ' <= {}'.format(rhs)
+        elif self.expr.sense == '>':
+            res += ' <= {}'.format(rhs)
+
+        return res
 
     @property
     def pi(self) -> float:
         """value for the dual variable of this constraint in the optimal
-        solution of a linear programming model, cannot be evaluated for
+        solution of a linear programming __model, cannot be evaluated for
         problems with integer variables"""
-        return self.model.solver.constr_get_pi(self)
+        return self.__model.solver.constr_get_pi(self)
 
     @property
     def expr(self) -> "LinExpr":
         """contents of the constraint"""
-        return self.model.solver.constr_get_expr(self)
+        return self.__model.solver.constr_get_expr(self)
 
     @expr.setter
     def expr(self, value: "LinExpr"):
-        self.model.solver.constr_set_expr(self, value)
+        self.__model.solver.constr_set_expr(self, value)
+
+    @property
+    def name(self) -> str:
+        return self.__model.solver.constr_get_name(self.idx)
 
 
 class LinExpr:
@@ -69,7 +95,8 @@ class LinExpr:
     Linear expressions are used to enter the objective function and the model \
     constraints. These expressions are created using operators and variables.
 
-    Consider a model object m, the objective function of :code:`m` can be specified as:
+    Consider a model object m, the objective function of :code:`m` can be
+    specified as:
 
     .. code:: python
 
@@ -203,12 +230,12 @@ class LinExpr:
 
         if self.__sense:
             result.append(self.__sense + "= ")
-            result.append(str(abs(self.__const)) if self.__const < 0 else "- " +
-                                                                      str(abs(self.__const)))
+            result.append(str(abs(self.__const)) if self.__const < 0 else
+                          "- " + str(abs(self.__const)))
         elif self.__const != 0:
             result.append(
-                "+ " + str(abs(self.__const)) if self.__const > 0 else "- " +
-                                                                   str(abs(self.__const)))
+                "+ " + str(abs(self.__const)) if self.__const > 0
+                else "- " + str(abs(self.__const)))
 
         return "".join(result)
 
@@ -239,7 +266,8 @@ class LinExpr:
             self.add_var(var, coeff_var * coeff)
 
     def add_term(self, __expr, coeff: float = 1):
-        """extends a linear expression with another multiplied by a constant value coeff"""
+        """extends a linear expression with another multiplied by a constant
+        value coefficient"""
         if isinstance(__expr, Var):
             self.add_var(__expr, coeff)
         elif isinstance(__expr, LinExpr):
@@ -265,14 +293,15 @@ class LinExpr:
         return copy
 
     def equals(self: "LinExpr", other: "LinExpr") -> bool:
-        """returns true if a linear expression equals to another, false otherwise"""
-        if self.__const != other.__const:
-            return False
+        """returns true if a linear expression equals to another,
+        false otherwise"""
         if self.__sense != other.__sense:
             return False
         if len(self.__expr) != len(other.__expr):
             return False
-        for i, (v, c) in enumerate(self.__expr.items()):
+        if abs(self.__const-other.__const) >= 1e-12:
+            return False
+        for (v, c) in self.__expr.items():
             if v not in self.__expr:
                 return False
             oc = self.__expr[v]
@@ -323,7 +352,7 @@ class Model:
     To check how models are created please see the examples included.
 
     """
- 
+
     def __init__(self, name: str = "",
                  sense: str = MINIMIZE,
                  solver_name: str = ""):
@@ -421,19 +450,22 @@ class Model:
             name (str): variable name (optional)
             lb (float): variable lower bound, default 0.0
             ub (float): variable upper bound, default infinity
-            obj (float): coefficient of this variable in the objective function, default 0
+            obj (float): coefficient of this variable in the objective
+              function, default 0
             var_type (str): CONTINUOUS ("C"), BINARY ("B") or INTEGER ("I")
-            column (Column): constraints where this variable will appear, necessary \
-            only when constraints are already created in the model and a new \
-            variable will be created.
+            column (Column): constraints where this variable will appear,
+                necessary only when constraints are already created in
+                the model and a new variable will be created.
 
         Examples:
 
-            To add a variable :code:`x` which is continuous and greater or equal to zero to model :code:`m`::
+            To add a variable :code:`x` which is continuous and greater or
+            equal to zero to model :code:`m`::
 
                 x = m.add_var()
 
-            The following code creates a vector of binary variables :code:`x[0], ..., x[n-1]` to model :code:`m`::
+            The following code creates a vector of binary variables
+            :code:`x[0], ..., x[n-1]` to model :code:`m`::
 
                 x = [m.add_var(var_type=BINARY) for i in range(n)]
         """
@@ -444,7 +476,7 @@ class Model:
             nc = self.solver.num_cols()
             name = "C{:011d}".format(nc)
         idx = self.solver.add_var(obj, lb, ub, var_type, column, name)
-        self.vars.append(Var(self, idx, name))
+        self.vars.append(Var(self, idx))
         self.vars_by_name[name] = self.vars[-1]
         return self.vars[-1]
 
@@ -482,17 +514,19 @@ class Model:
         """
 
         if isinstance(lin_expr, bool):
-            raise InvalidLinExpr("A boolean (true/false) cannot be used as a constraint.")
+            raise InvalidLinExpr("A boolean (true/false) cannot be \
+            used as a constraint.")
         idx = self.solver.add_constr(lin_expr, name)
-        self.constrs.append(Constr(self, idx, name))
+        self.constrs.append(Constr(self, idx))
         self.constrs_by_name[name] = self.constrs[-1]
         return self.constrs[-1]
 
     def clear(self):
         """Clears the model
 
-        All variables, constraints and parameters will be reset. In addition, a new solver instance
-        will be instantiated to implement the formulation.
+        All variables, constraints and parameters will be reset. In addition,
+        a new solver instance will be instantiated to implement the
+        formulation.
         """
         # creating a new solver instance
         sense = self.sense
@@ -543,7 +577,8 @@ class Model:
 
         # adding variables
         for v in self.vars:
-            copy.add_var(name=v.name, lb=v.lb, ub=v.ub, obj=v.obj, var_type=v.var_type)
+            copy.add_var(name=v.name, lb=v.lb, ub=v.ub, obj=v.obj,
+                         var_type=v.var_type)
 
         # adding constraints
         for c in self.constrs:
@@ -585,7 +620,8 @@ class Model:
 
         Optimizes current model, optionally specifying processing limits.
 
-        To optimize model :code:`m` within a processing time limit of 300 seconds::
+        To optimize model :code:`m` within a processing time limit of
+        300 seconds::
 
             m.optimize(max_seconds=300)
 
@@ -595,10 +631,14 @@ class Model:
             max_solutions (float): Maximum number of solutions (default: inf)
 
         Returns:
-            optimization status, which can be OPTIMAL(0), ERROR(-1), INFEASIBLE(1), UNBOUNDED(2). When optimizing problems
-            with integer variables some additional cases may happen, FEASIBLE(3) for the case when a feasible solution was found
-            but optimality was not proved, INT_INFEASIBLE(4) for the case when the lp relaxation is feasible but no feasible integer
-            solution exists and NO_SOLUTION_FOUND(5) for the case when an integer solution was not found in the optimization.
+            optimization status, which can be OPTIMAL(0), ERROR(-1),
+            INFEASIBLE(1), UNBOUNDED(2). When optimizing problems
+            with integer variables some additional cases may happen,
+            FEASIBLE(3) for the case when a feasible solution was found
+            but optimality was not proved, INT_INFEASIBLE(4) for the case
+            when the lp relaxation is feasible but no feasible integer
+            solution exists and NO_SOLUTION_FOUND(5) for the case when
+            an integer solution was not found in the optimization.
 
         """
         if self.__threads != 0:
@@ -1128,11 +1168,9 @@ class Var:
 
     def __init__(self,
                  model: Model,
-                 idx: int,
-                 name: str = ""):
-        self.model = model
+                 idx: int):
+        self.__model = model
         self.idx = idx
-        self.name = name  # discuss this var
 
     def __hash__(self) -> int:
         return self.idx
@@ -1208,89 +1246,94 @@ class Var:
                 return LinExpr([self], [1], -1 * other, sense=">")
             return LinExpr([self], [1], sense=">")
 
+    @property
+    def name(self) -> str:
+        """variable name"""
+        return self.__model.solver.var_get_name(self.idx)
+
     def __str__(self) -> str:
         return self.name
 
     @property
     def lb(self) -> float:
         """the variable lower bound"""
-        return self.model.solver.var_get_lb(self)
+        return self.__model.solver.var_get_lb(self)
 
     @lb.setter
     def lb(self, value: float):
-        self.model.solver.var_set_lb(self, value)
+        self.__model.solver.var_set_lb(self, value)
 
     @property
     def ub(self) -> float:
         """the variable upper bound"""
-        return self.model.solver.var_get_ub(self)
+        return self.__model.solver.var_get_ub(self)
 
     @ub.setter
     def ub(self, value: float):
-        self.model.solver.var_set_ub(self, value)
+        self.__model.solver.var_set_ub(self, value)
 
     @property
     def obj(self) -> float:
         """coefficient of a variable in the objective function"""
-        return self.model.solver.var_get_obj(self)
+        return self.__model.solver.var_get_obj(self)
 
     @obj.setter
     def obj(self, value: float):
-        self.model.solver.var_set_obj(self, value)
+        self.__model.solver.var_set_obj(self, value)
 
     @property
     def var_type(self) -> str:
         """variable type ('B') BINARY, ('C') CONTINUOUS and ('I') INTEGER"""
-        return self.model.solver.var_get_var_type(self)
+        return self.__model.solver.var_get_var_type(self)
 
     @var_type.setter
     def var_type(self, value: str):
         assert value in (BINARY, CONTINUOUS, INTEGER)
-        self.model.solver.var_set_var_type(self, value)
+        self.__model.solver.var_set_var_type(self, value)
 
     @property
     def column(self) -> Column:
         """coefficients of variable in constraints"""
-        return self.model.solver.var_get_column(self)
+        return self.__model.solver.var_get_column(self)
 
     @column.setter
     def column(self, value: Column):
-        self.model.solver.var_set_column(self, value)
+        self.__model.solver.var_set_column(self, value)
 
     @property
     def rc(self) -> float:
-        """reduced cost, only available after a linear programming model (no integer variables) is optimized"""
-        if self.model.status != OptimizationStatus.OPTIMAL:
+        """reduced cost, only available after a linear programming __model (no integer variables) is optimized"""
+        if self.__model.status != OptimizationStatus.OPTIMAL:
             raise SolutionNotAvailable('Solution not available.')
 
-        return self.model.solver.var_get_rc(self)
+        return self.__model.solver.var_get_rc(self)
 
     @property
     def x(self) -> float:
         """solution value"""
-        if self.model.status == OptimizationStatus.LOADED:
+        if self.__model.status == OptimizationStatus.LOADED:
             raise SolutionNotAvailable('Model was not optimized, solution not available.')
-        elif self.model.status == OptimizationStatus.INFEASIBLE or self.model.status == OptimizationStatus.CUTOFF:
-            raise SolutionNotAvailable('Infeasible model, solution not available.')
-        elif self.model.status == OptimizationStatus.UNBOUNDED:
-            raise SolutionNotAvailable('Unbounded model, solution not available.')
-        elif self.model.status == OptimizationStatus.NO_SOLUTION_FOUND:
+        elif self.__model.status == OptimizationStatus.INFEASIBLE or self.__model.status == OptimizationStatus.CUTOFF:
+            raise SolutionNotAvailable('Infeasible __model, solution not available.')
+        elif self.__model.status == OptimizationStatus.UNBOUNDED:
+            raise SolutionNotAvailable('Unbounded __model, solution not available.')
+        elif self.__model.status == OptimizationStatus.NO_SOLUTION_FOUND:
             raise SolutionNotAvailable('Solution not found during optimization.')
 
-        return self.model.solver.var_get_x(self)
+        return self.__model.solver.var_get_x(self)
 
     def xi(self, i: int) -> float:
         """solution value for this variable in the :math:`i`-th solution from the solution pool"""
-        if self.model.status == OptimizationStatus.LOADED:
+        if self.__model.status == OptimizationStatus.LOADED:
             raise SolutionNotAvailable('Model was not optimized, solution not available.')
-        elif self.model.status == OptimizationStatus.INFEASIBLE or self.model.status == OptimizationStatus.CUTOFF:
-            raise SolutionNotAvailable('Infeasible model, solution not available.')
-        elif self.model.status == OptimizationStatus.UNBOUNDED:
-            raise SolutionNotAvailable('Unbounded model, solution not available.')
-        elif self.model.status == OptimizationStatus.NO_SOLUTION_FOUND:
+        elif self.__model.status == OptimizationStatus.INFEASIBLE or self.__model.status == OptimizationStatus.CUTOFF:
+            raise SolutionNotAvailable('Infeasible __model, solution not available.')
+        elif self.__model.status == OptimizationStatus.UNBOUNDED:
+            raise SolutionNotAvailable('Unbounded __model, solution not available.')
+        elif self.__model.status == OptimizationStatus.NO_SOLUTION_FOUND:
             raise SolutionNotAvailable('Solution not found during optimization.')
 
-        return self.model.solver.var_get_xi(self, i)
+        return self.__model.solver.var_get_xi(self, i)
 
 
 class CutsGenerator:
