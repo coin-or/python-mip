@@ -14,6 +14,7 @@ class SolverCbc(Solver):
         super().__init__(model, name, sense)
 
         self._model = cbcNewModel()
+        cbcStoreNameIndexes(self._model, c_char(ord("1")))
 
         self._objconst = 0.0
 
@@ -108,10 +109,10 @@ class SolverCbc(Solver):
     def var_set_var_type(self, var: "Var", value: str):
         cv =  var.var_type
         if (value == cv):
-            return        
+            return
         if cv == CONTINUOUS:
             if value == INTEGER or value == BINARY:
-                cbcSetInteger(self._model, c_int(var.idx))    
+                cbcSetInteger(self._model, c_int(var.idx))
         else:
             if value == CONTINUOUS:
                 cbcSetContinuous(self._model, c_int(var.idx))
@@ -122,7 +123,7 @@ class SolverCbc(Solver):
                 var.lb = 0.0
             if var.ub != 1.0:
                 var.ub = 1.0
- 
+
     def optimize(self) -> OptimizationStatus:
         # get name indexes from an osi problem
         def cbc_get_osi_name_indexes(osiSolver: c_void_p) -> Dict[str, int]:
@@ -137,7 +138,8 @@ class SolverCbc(Solver):
             return nameIdx
 
         # cut callback
-        def cbc_cut_callback(osiSolver: c_void_p, osiCuts: c_void_p):
+        def cbc_cut_callback(osiSolver: c_void_p, osiCuts: c_void_p,
+                             appData: c_void_p):
             global warningMessages
             # getting fractional solution
             fracSol = []
@@ -154,7 +156,7 @@ class SolverCbc(Solver):
 
                 osiColName(osiSolver, c_int(i), nameSpace, 255)
                 cname = nameSpace.value.decode('utf-8')
-                var = self.model.get_var_by_name(cname)
+                var = self.model.var_by_name(cname)
                 if var is None:
                     print('-->> var {} not found'.format(cname))
                 fracSol.append((var, val))
@@ -324,6 +326,12 @@ class SolverCbc(Solver):
         nameSpace = create_string_buffer(256)
         cbcGetColName(self._model, c_int(idx), nameSpace, 255)
         return nameSpace.value.decode('utf-8')
+
+    def var_get_index(self, name: str) -> int:
+        return cbcGetColNameIndex(self._model, c_str(name))
+
+    def constr_get_index(self, name: str) -> int:
+        return cbcGetRowNameIndex(self._model, c_str(name))
 
     def var_get_obj(self, var: Var) -> float:
         return float(cbcGetObjCoeff(self._model)[var.idx])
@@ -791,7 +799,7 @@ if has_cbc:
                                     POINTER(c_double)]
 
         method_check = "CBCCutCallback"
-        CBCcallbacktype = CFUNCTYPE(c_void_p, c_void_p, c_void_p)
+        CBCcallbacktype = CFUNCTYPE(None, c_void_p, c_void_p, c_void_p)
 
         method_check = "Cbc_addCutCallback"
         cbcAddCutCallback = cbclib.Cbc_addCutCallback
@@ -883,6 +891,24 @@ if has_cbc:
         method_check = "Cbc_deleteCols"
         cbcDeleteCols = cbclib.Cbc_deleteCols
         cbcDeleteCols.argtypes = [c_void_p, c_int, POINTER(c_int)]
+
+        method_check = "Cbc_storeNameIndexes"
+        cbcStoreNameIndexes = cbclib.Cbc_storeNameIndexes
+        cbcStoreNameIndexes.argtypes = [c_void_p, c_char]
+
+        method_check = "Cbc_storeNameIndexes"
+        cbcStoreNameIndexes = cbclib.Cbc_storeNameIndexes
+        cbcStoreNameIndexes.argtypes = [c_void_p, c_char]
+
+        method_check = "Cbc_getColNameIndex"
+        cbcGetColNameIndex = cbclib.Cbc_getColNameIndex
+        cbcGetColNameIndex.argtypes = [c_void_p, c_char_p]
+        cbcGetColNameIndex.restype = c_int
+
+        method_check = "Cbc_getRowNameIndex"
+        cbcGetRowNameIndex = cbclib.Cbc_getRowNameIndex
+        cbcGetRowNameIndex.argtypes = [c_void_p, c_char_p]
+        cbcGetRowNameIndex.restype = c_int
 
         has_cbc = True
     except:
