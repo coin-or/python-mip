@@ -50,7 +50,7 @@ class SolverCbc(Solver):
 
         isInt = \
             c_char(1) if coltype.upper() == "B" or coltype.upper() == "I" \
-                else c_char(0)
+            else c_char(0)
 
         idx = int(cbcNumCols(self._model))
 
@@ -107,7 +107,7 @@ class SolverCbc(Solver):
         self.__verbose = verbose
 
     def var_set_var_type(self, var: "Var", value: str):
-        cv =  var.var_type
+        cv = var.var_type
         if (value == cv):
             return
         if cv == CONTINUOUS:
@@ -117,7 +117,7 @@ class SolverCbc(Solver):
             if value == CONTINUOUS:
                 cbcSetContinuous(self._model, c_int(var.idx))
 
-        if value==BINARY:
+        if value == BINARY:
             # checking bounds
             if var.lb != 0.0:
                 var.lb = 0.0
@@ -167,7 +167,7 @@ class SolverCbc(Solver):
             cval = (c_double * n)()
 
             # calling cut generators
-            if self.model.cuts_generator != None:
+            if self.model.cuts_generator is not None:
                 cuts = self.model.cuts_generator.generate_cuts(fracSol)
 
                 if cuts and not nameIdx:
@@ -205,7 +205,8 @@ class SolverCbc(Solver):
                             warningMessages += 1
 
         # adding cut generators
-        if self.model.cuts_generator != None and self.added_cut_callback is False:
+        m = self.model
+        if m.cuts_generator is not None and self.added_cut_callback is False:
             self._cutCallback = CBCcallbacktype(cbc_cut_callback)
             cbcAddCutCallback(self._model, self._cutCallback,
                               c_str("mipCutGen"), c_void_p(0))
@@ -231,18 +232,22 @@ class SolverCbc(Solver):
         if self.model.cuts >= 1:
             cbcSetParameter(self._model, c_str('cuts'), c_str('on'))
         if self.model.cuts >= 2:
-            cbcSetParameter(self._model, c_str('lagomory'), c_str('endcleanroot'))
-            cbcSetParameter(self._model, c_str('latwomir'), c_str('endcleanroot'))
+            cbcSetParameter(self._model, c_str('lagomory'),
+                            c_str('endcleanroot'))
+            cbcSetParameter(self._model, c_str('latwomir'),
+                            c_str('endcleanroot'))
             cbcSetParameter(self._model, c_str('passC'), c_str('-25'))
         if self.model.cuts >= 3:
             cbcSetParameter(self._model, c_str('passC'), c_str('-35'))
             cbcSetParameter(self._model, c_str('lift'), c_str('ifmove'))
 
         if (self.__threads >= 1):
-            cbcSetParameter(self._model, c_str('threads'), c_str('{}'.format(self.__threads)))
+            cbcSetParameter(self._model, c_str('threads'),
+                            c_str('{}'.format(self.__threads)))
         elif self.__threads == -1:
             import multiprocessing
-            cbcSetParameter(self._model, c_str('threads'), c_str('{}'.format(multiprocessing.cpu_count())))
+            cbcSetParameter(self._model, c_str('threads'),
+                            c_str('{}'.format(multiprocessing.cpu_count())))
 
         cbcSetParameter(self._model, c_str('maxSavedSolutions'), c_str('10'))
         cbcSolve(self._model)
