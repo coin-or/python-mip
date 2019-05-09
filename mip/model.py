@@ -2,9 +2,10 @@ from mip.callbacks import *
 from mip.constants import *
 from mip.exceptions import *
 from math import inf
+from typing import List, Tuple
 from builtins import property
 from os import environ
-
+from collections.abc import Sequence
 
 class Column:
     """A column contains all the non-zero entries of a variable in the constraint matrix.
@@ -49,15 +50,15 @@ class Constr:
         else:
             res = 'constr({}): '.format(self.idx+1)
         line = ''
-        lenLine = 0
+        len_line = 0
         for (var, val) in self.expr.expr.items():
             astr = ' {:+} {}'.format(val, var.name)
-            lenLine += len(astr)
+            len_line += len(astr)
             line += astr
 
-            if lenLine > 75:
+            if len_line > 75:
                 line += '\n\t'
-                lenLine = 0
+                len_line = 0
         res += line
         rhs = self.expr.const*-1.0
         if self.expr.sense == '=':
@@ -87,6 +88,7 @@ class Constr:
 
     @property
     def name(self) -> str:
+        """constraint name"""
         return self.__model.solver.constr_get_name(self.idx)
 
 
@@ -177,7 +179,7 @@ class LinExpr:
         return self
 
     def __mul__(self, other) -> "LinExpr":
-        assert isinstance(other, int) or isinstance(other, float)
+        assert isinstance(other, (float, int))
         result = self.copy()
         result.__const *= other
         for var in result.__expr.keys():
@@ -195,14 +197,14 @@ class LinExpr:
         return self.__mul__(other)
 
     def __imul__(self, other) -> "LinExpr":
-        assert isinstance(other, int) or isinstance(other, float)
+        assert isinstance(other, (int, float))
         self.__const *= other
         for var in self.__expr.keys():
             self.__expr[var] *= other
         return self
 
     def __truediv__(self, other) -> "LinExpr":
-        assert isinstance(other, int) or isinstance(other, float)
+        assert isinstance(other, (int, float))
         result = self.copy()
         result.__const /= other
         for var in result.__expr.keys():
@@ -255,8 +257,8 @@ class LinExpr:
         return result
 
     def add_const(self, __const: float):
-        """adds a constant value to the linear expression, in the case of a constraint
-        this correspond to the right-hand-side"""
+        """adds a constant value to the linear expression, in the case of
+        a constraint this correspond to the right-hand-side"""
         self.__const += __const
 
     def add_expr(self, __expr: "LinExpr", coeff: float = 1):
@@ -404,10 +406,8 @@ class Model:
                 self.solver_name = CBC
 
         # list of constraints and variables
-        self.constrs = []
-        self.constrs_by_name = {}
-        self.vars = []
-        self.vars_by_name = {}
+        self.constrs = ConstrList(self)
+        self.vars = VarList(self)
 
         # initializing additional control variables
         self.__cuts = 1
@@ -476,9 +476,7 @@ class Model:
             nc = self.solver.num_cols()
             name = "C{:011d}".format(nc)
         idx = self.solver.add_var(obj, lb, ub, var_type, column, name)
-        self.vars.append(Var(self, idx))
-        self.vars_by_name[name] = self.vars[-1]
-        return self.vars[-1]
+        return Var(model=self, idx=idx)
 
     def add_constr(self, lin_expr: "LinExpr", name: str = "") -> Constr:
         """ Creates a new constraint (row)
@@ -517,9 +515,7 @@ class Model:
             raise InvalidLinExpr("A boolean (true/false) cannot be \
             used as a constraint.")
         idx = self.solver.add_constr(lin_expr, name)
-        self.constrs.append(Constr(self, idx))
-        self.constrs_by_name[name] = self.constrs[-1]
-        return self.constrs[-1]
+        return idx
 
     def clear(self):
         """Clears the model
@@ -550,10 +546,8 @@ class Model:
                 self.solver_name = CBC
 
         # list of constraints and variables
-        self.constrs = []
-        self.constrs_by_name = {}
-        self.vars = []
-        self.vars_by_name = {}
+        self.constrs = ConstrList(self)
+        self.vars = VarList(self)
 
         # initializing additional control variables
         self.__cuts = 1
@@ -593,24 +587,30 @@ class Model:
 
         return copy
 
-    def get_constr_by_name(self, name: str) -> "Constr":
+    def constr_by_name(self, name: str) -> "Constr":
         """ Queries a constraint by its name
 
         Args:
             name(str): constraint name
 
         Returns:
-            constraint
+            constraint or None if not found
         """
-        return self.constrs_by_name.get(name, None)
+        cidx = self.solver.constr_get_index(name)
+        if cidx < 0 or cidx > len(self.constrs):
+            return None
+        return self.constrs[cidx]
 
-    def get_var_by_name(self, name: str) -> "Var":
+    def var_by_name(self, name: str) -> "Var":
         """Searchers a variable by its name
 
         Returns:
-            a reference to the variable
+            Variable or None if not found
         """
-        return self.vars_by_name.get(name, None)
+        v = self.solver.var_get_index(name)
+        if v < 0 or v > len(self.vars):
+            return None
+        return self.vars[v]
 
     def optimize(self,
                  max_seconds: float = inf,
@@ -653,23 +653,14 @@ class Model:
     def read(self, path: str):
         """Reads a MIP model in :code:`.lp` or :code:`.mps` format.
 
-        Note: all variables, constraints and parameters from the current model will be cleared.
+        Note: all variables, constraints and parameters from the current model
+        will be cleared.
 
         Args:
             path(str): file name
         """
         self.clear()
         self.solver.read(path)
-
-        # updating model from solver instance
-        n_cols = self.solver.num_cols()
-        n_rows = self.solver.num_rows()
-        for i in range(n_cols):
-            self.vars.append(Var(self, i, self.solver.var_get_name(i)))
-            self.vars_by_name[self.vars[-1].name] = self.vars[-1]
-        for i in range(n_rows):
-            self.constrs.append(Constr(self, i, self.solver.constr_get_name(i)))
-            self.constrs_by_name[self.constrs[-1].name] = self.constrs[-1]
 
     def relax(self):
         """ Relax integrality constraints of variables
@@ -801,7 +792,7 @@ class Model:
                 for i in range(self.num_solutions)]
 
     @property
-    def cuts_generator(self) -> CutsGenerator:
+    def cuts_generator(self) -> "CutsGenerator":
         """Cut generator callback. Cut generators are called whenever a solution where one or more
         integer variables appear with continuous values. A cut generator will
         try to produce one or more inequalities to remove this fractional point.
@@ -809,7 +800,7 @@ class Model:
         return self.__cuts_generator
 
     @cuts_generator.setter
-    def cuts_generator(self, cuts_generator: CutsGenerator):
+    def cuts_generator(self, cuts_generator: "CutsGenerator"):
         self.__cuts_generator = cuts_generator
 
     @property
@@ -871,7 +862,7 @@ class Model:
     @property
     def num_cols(self) -> int:
         """number of columns (variables) in the model"""
-        return len(self.vars)
+        return self.solver.num_cols()
 
     @property
     def num_int(self) -> int:
@@ -881,7 +872,7 @@ class Model:
     @property
     def num_rows(self) -> int:
         """number of rows (constraints) in the model"""
-        return len(self.constrs)
+        return self.solver.num_rows()
 
     @property
     def num_nz(self) -> int:
@@ -978,34 +969,13 @@ class Model:
                 elif isinstance(o, Constr):
                     clist.append(o.idx)
                 else:
-                    raise "Cannot handle removal of object of type " + \
-                        type(o) + " from model."
-
+                    raise Exception("Cannot handle removal of object of type "
+                                    + type(o) + " from model.")
             if vlist:
                 vlist.sort()
-                for idx in vlist:
-                    self.vars_by_name.pop(self.vars[idx].name, None)
-                newvl1 = self.vars[0:vlist[0]]
-                rset = set(vlist)
-                newvl2 = []
-                for v in self.vars[vlist[0]:-1]:
-                    if v.idx not in rset:
-                        newvl2.append(self.vars[v])
-                        newvl2[-1].idx = len(newvl2)-1
-                self.vars = newvl1 + newvl2
                 self.solver.remove_vars(vlist)
             if clist:
                 clist.sort()
-                for idx in clist:
-                    self.constrs_by_name.pop(self.constrs[idx].name, None)
-                newcl1 = self.constrs[0:clist[0]]
-                rset = set(clist)
-                newcl2 = []
-                for c in self.constrs[clist[0]:-1]:
-                    if c.idx not in rset:
-                        newcl2.append(self.constrs[c])
-                        newcl2[-1].idx = len(newcl2)-1
-                self.constrs = newcl1 + newcl2
                 self.solver.remove_constrs(clist)
 
 
@@ -1125,6 +1095,8 @@ class Solver:
 
     def remove_constrs(self, constrsList: List[int]): pass
 
+    def constr_get_index(self, name: str) -> int: pass
+
     # Variable-related getters/setters
 
     def var_get_lb(self, var: "Var") -> float: pass
@@ -1156,6 +1128,8 @@ class Solver:
     def var_get_name(self, idx: int) -> str: pass
 
     def remove_vars(self, varsList: List[int]): pass
+
+    def var_get_index(self, name: str) -> int: pass
 
 
 class Var:
@@ -1344,7 +1318,7 @@ class CutsGenerator:
     def generate_cuts(self, relax_solution: List[Tuple[Var, float]]) -> List[LinExpr]:
         """Method called by the solve engine to generate cuts
 
-           After analyzing the contents of the fractional solution in :code:`relax_solution`, one 
+           After analyzing the contents of the fractional solution in :code:`relax_solution`, one
            or mode cuts (:class:`~mip.model.LinExpr`) may be generated and returned. These cuts are added to the
            relaxed model.
 
@@ -1363,7 +1337,7 @@ class CutPool:
         """
         self.__cuts = []
 
-        # positions for each hash code to speedup 
+        # positions for each hash code to speedup
         # the search of repeated cuts
         self.__pos = defaultdict( list )
 
@@ -1385,8 +1359,40 @@ class CutPool:
         return True
 
     @property
-    def cuts(self : "CutPool") -> List["LinExpr"]:
+    def cuts(self: "CutPool") -> List["LinExpr"]:
         return self.__cuts
+
+
+class VarList(Sequence):
+    def __init__(self, model: Model):
+        self.__model = model
+
+    def __getitem__(self, index: int) -> Var:
+        if index >= len(self) or index < -len(self):
+            raise IndexError
+        if index < 0:
+            index = len(self)+index
+        assert index >= 0 and index < len(self)
+        return Var(self.__model, index)
+
+    def __len__(self) -> int:
+        return self.__model.solver.num_cols()
+
+
+class ConstrList(Sequence):
+    def __init__(self, model: Model):
+        self.__model = model
+
+    def __getitem__(self, index: int) -> Constr:
+        if index >= len(self) or index < -len(self):
+            raise IndexError
+        if index < 0:
+            index = len(self)+index
+        assert index >= 0 and index < len(self)
+        return Constr(self.__model, index)
+
+    def __len__(self) -> int:
+        return self.__model.solver.num_rows()
 
 
 class BranchSelector:
@@ -1398,15 +1404,15 @@ class BranchSelector:
 
 
 class IncumbentUpdater:
-    """To receive notifications whenever a new integer feasible solution is found. 
-    Optionally a new improved solution can be generated (using some local search heuristic) 
+    """To receive notifications whenever a new integer feasible solution is found.
+    Optionally a new improved solution can be generated (using some local search heuristic)
     and returned to the MIP solver.
     """
     def __init__(self, model: Model):
         self.model = model
 
-    def update_incumbent(self, 
-            objective_value : float, 
+    def update_incumbent(self,
+            objective_value : float,
             best_bound : float,
             solution: List[Tuple[Var, float]]) -> List[Tuple[Var, float]]:
         """method that is called when a new integer feasible solution is found

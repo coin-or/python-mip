@@ -49,7 +49,7 @@ class CutsGenerator:
     def __init__(self, model: "Model"):
         self.model = model
 
-    def generate_cuts(self, relax_solution: List[Tuple["Var", float]]) -> List["LinExpr"]:
+    def generate_cuts(self, relax_solution: List[Tuple[str, float]]) -> List["LinExpr"]:
         """Method called by the solve engine to generate cuts
 
            After analyzing the contents of the fractional solution in :code:`relax_solution`, one
@@ -57,7 +57,8 @@ class CutsGenerator:
            relaxed model.
 
         Args:
-            relax_solution(List[Tuple[Var, float]]): a list of tuples (variable,value) indicating the values of variables in the current fractional solution. Variables at zero are not included.
+            relax_solution(List[Tuple[str, float]]): a list of tuples (str,value) indicating the values
+            of variables in the current fractional solution. Variables at zero are not included.
 
         Note: take care not to query the value of the fractional solution in the cut generation method using the :code:`x`
         methods from original references to problem variables, use the contents of :code:`relax_solution` instead.
