@@ -3,7 +3,7 @@
 int main(int argc, char **argv)
 {
     Cbc_Model *m = Cbc_newModel();
-    Cbc_readLp(m, "/home/haroldo/air04.mps");
+    Cbc_readMps(m, "/home/haroldo/air04.mps");
     Cbc_solve(m);
     Cbc_deleteModel(m);
 }
