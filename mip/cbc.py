@@ -14,7 +14,7 @@ class SolverCbc(Solver):
         super().__init__(model, name, sense)
 
         self._model = cbcNewModel()
-        cbcStoreNameIndexes(self._model, c_char(ord("1")))
+        cbcStoreNameIndexes(self._model, c_char(1))
 
         self._objconst = 0.0
 
@@ -821,8 +821,15 @@ if has_cbc:
 
         #typedef int (COINLINKAGE_CB *cbc_incumbent_callback)(void *cbcModel, double obj, int nz, char **vnames, double *x, void *appData);
         method_check = "cbc_incumbent_callback"
-        CBCinccallbacktype = CFUNCTYPE(c_void_p, c_double, c_int, POINTER(c_char_p), POINTER(c_double), c_void_p())
+        CBCinccallbacktype = CFUNCTYPE(c_int,
+                                       c_void_p,
+                                       c_double,
+                                       c_int,
+                                       POINTER(c_char_p),
+                                       POINTER(c_double),
+                                       c_void_p)
 
+        method_check = "Cbc_addIncCallback"
         cbcAddIncCallback = cbclib.Cbc_addIncCallback
         cbcAddIncCallback.argtypes = [c_void_p, CBCinccallbacktype, c_void_p]
 
@@ -911,10 +918,6 @@ if has_cbc:
         method_check = "Cbc_deleteCols"
         cbcDeleteCols = cbclib.Cbc_deleteCols
         cbcDeleteCols.argtypes = [c_void_p, c_int, POINTER(c_int)]
-
-        method_check = "Cbc_storeNameIndexes"
-        cbcStoreNameIndexes = cbclib.Cbc_storeNameIndexes
-        cbcStoreNameIndexes.argtypes = [c_void_p, c_char]
 
         method_check = "Cbc_storeNameIndexes"
         cbcStoreNameIndexes = cbclib.Cbc_storeNameIndexes
