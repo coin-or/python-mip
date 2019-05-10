@@ -27,7 +27,7 @@ def gen_model(n, solver, f):
     st = time.time()
     queens = Model('queens', MINIMIZE, solver_name=solver)
 
-    x = [[queens.add_var('x({},{})'.format(i, j), type='B', obj=-1.0)
+    x = [[queens.add_var('x({},{})'.format(i, j), var_type='B', obj=-1.0)
           for j in range(n)] for i in range(n)]
 
     # one per row
