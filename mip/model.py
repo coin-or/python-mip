@@ -1350,28 +1350,6 @@ class BranchSelector:
         raise NotImplementedError()
 
 
-class IncumbentUpdater:
-    """To receive notifications whenever a new integer feasible solution is found.
-    Optionally a new improved solution can be generated (using some local search heuristic)
-    and returned to the MIP solver.
-    """
-    def __init__(self, model: Model):
-        self.model = model
-
-    def update_incumbent(self,
-            objective_value : float,
-            best_bound : float,
-            solution: List[Tuple[Var, float]]) -> List[Tuple[Var, float]]:
-        """method that is called when a new integer feasible solution is found
-
-        Args:
-            objective_value(float): cost of the new solution found
-            best_bound(float): current lower bound for the optimal solution cost
-            solution(List[Tuple[Var,float]]): non-zero variables in the solution
-        """
-        raise NotImplementedError()
-
-
 class LazyConstrsGenerator:
     def __init(self, model: Model):
         self.model = model
