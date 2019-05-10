@@ -20,6 +20,7 @@ class SolverCbc(Solver):
 
         # to not add cut generators twice when reoptimizing
         self.added_cut_callback = False
+        self.added_inc_callback = False
 
         # setting objective sense
         if sense == MAXIMIZE:
@@ -137,6 +138,13 @@ class SolverCbc(Solver):
 
             return nameIdx
 
+        # incumbent callback
+
+        def cbc_inc_callback(cbcModel: c_void_p, obj: c_double, nz: c_int,
+                             colNames: POINTER(c_char_p()), colValues: POINTER(c_double),
+                             appData: c_void_p):
+            return
+
         # cut callback
         def cbc_cut_callback(osiSolver: c_void_p, osiCuts: c_void_p,
                              appData: c_void_p):
@@ -207,7 +215,7 @@ class SolverCbc(Solver):
         # adding cut generators
         m = self.model
         if m.cuts_generator is not None and self.added_cut_callback is False:
-            self._cutCallback = CBCcallbacktype(cbc_cut_callback)
+            self._cutCallback = CBCcutcallbacktype(cbc_cut_callback)
             cbcAddCutCallback(self._model, self._cutCallback,
                               c_str("mipCutGen"), c_void_p(0))
             self.added_cut_callback = True
@@ -804,12 +812,19 @@ if has_cbc:
                                     POINTER(c_double)]
 
         method_check = "CBCCutCallback"
-        CBCcallbacktype = CFUNCTYPE(None, c_void_p, c_void_p, c_void_p)
+        CBCcutcallbacktype = CFUNCTYPE(None, c_void_p, c_void_p, c_void_p)
 
         method_check = "Cbc_addCutCallback"
         cbcAddCutCallback = cbclib.Cbc_addCutCallback
-        cbcAddCutCallback.argtypes = [c_void_p, CBCcallbacktype, c_char_p,
+        cbcAddCutCallback.argtypes = [c_void_p, CBCcutcallbacktype, c_char_p,
                                       c_void_p]
+
+        #typedef int (COINLINKAGE_CB *cbc_incumbent_callback)(void *cbcModel, double obj, int nz, char **vnames, double *x, void *appData);
+        method_check = "cbc_incumbent_callback"
+        CBCinccallbacktype = CFUNCTYPE(c_void_p, c_double, c_int, POINTER(c_char_p), POINTER(c_double), c_void_p())
+
+        cbcAddIncCallback = cbclib.Cbc_addIncCallback
+        cbcAddIncCallback.argtypes = [c_void_p, CBCinccallbacktype, c_void_p]
 
         method_check = "Osi_getNumCols"
         osiNumCols = cbclib.Osi_getNumCols
