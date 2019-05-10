@@ -77,7 +77,7 @@ class IncumbentUpdater:
     found. Optionally a new improved solution can be generated (using some
     local search heuristic) and returned to the MIP solver.
     """
-    def __init__(self, model: Model):
+    def __init__(self, model: "Model"):
         self.model = model
 
     def update_incumbent(self, objective_value: float, best_bound: float,
