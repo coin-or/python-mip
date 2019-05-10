@@ -81,8 +81,8 @@ class IncumbentUpdater:
         self.model = model
 
     def update_incumbent(self, objective_value: float, best_bound: float,
-                         solution: List[Tuple[Var, float]]) \
-            -> List[Tuple[Var, float]]:
+                         solution: List[Tuple["Var", float]]) \
+            -> List[Tuple["Var", float]]:
         """method that is called when a new integer feasible solution is found
 
         Args:
