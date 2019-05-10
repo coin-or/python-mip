@@ -141,7 +141,7 @@ class SolverCbc(Solver):
         # incumbent callback
 
         def cbc_inc_callback(cbcModel: c_void_p, obj: c_double, nz: c_int,
-                             colNames: POINTER(c_char_p()), colValues: POINTER(c_double),
+                             colNames: POINTER(c_char_p), colValues: POINTER(c_double),
                              appData: c_void_p):
             return
 
