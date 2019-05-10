@@ -4,7 +4,6 @@ from time import process_time
 import time
 import timeout_decorator
 
-Solvers = ['cbc', 'gurobi']
 N = range(100, 1001, 100)
 
 TIMEOUT = 1000
@@ -55,11 +54,10 @@ def gen_model(n, solver, f):
     modelNz = queens.num_nz
 
 
-for solver in Solvers:
-    f = open('queens-{}.csv'.format(solver), 'w')
-    for n in N:
-        gen_model(n, solver, f)
-        f.write('{},{},{},{},{:.4f}\n'.format(n, modelCols,
-                                              modelRows, modelNz, execTime))
-        f.flush()
-    f.close()
+f = open('queens-mip-{}.csv'.format(argv[1]), 'w')
+for n in N:
+    gen_model(n, argv[1], f)
+    f.write('{},{},{},{},{:.4f}\n'.format(n, modelCols,
+                                          modelRows, modelNz, execTime))
+    f.flush()
+f.close()

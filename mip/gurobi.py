@@ -640,7 +640,7 @@ check your license.')
              self.__n_modified_cols + self.__n_modified_rows) == 0
                 and self.__updated):
             return
-        print('GUROBI UPDATE')
+        #print('GUROBI UPDATE')
         GRBupdatemodel(self._model)
         self.__n_cols_buffer = 0
         self.__n_int_buffer = 0
