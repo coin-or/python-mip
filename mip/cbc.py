@@ -5,6 +5,7 @@ from ctypes.util import *
 from typing import Dict
 from sys import platform
 from os.path import dirname
+from array import array
 
 warningMessages = 0
 
@@ -378,13 +379,9 @@ class SolverCbc(Solver):
     def add_constr(self, lin_expr: "LinExpr", name: str = "") -> int:
         # collecting linear expression data
         numnz = len(lin_expr.expr)
-        cind = (c_int * numnz)()
-        cval = (c_double * numnz)()
 
-        # collecting variable coefficients
-        for i, (var, coeff) in enumerate(lin_expr.expr.items()):
-            cind[i] = var.idx
-            cval[i] = coeff
+        cind = array("i", [var.idx for var in lin_expr.expr.keys()])
+        cval = array("d", [coef for coef in lin_expr.expr.values()])
 
         # constraint sense and rhs
         sense = c_char(ord(lin_expr.sense))
@@ -393,7 +390,10 @@ class SolverCbc(Solver):
         # constraint index
         idx = int(cbcNumRows(self._model))
 
-        cbcAddRow(self._model, c_str(name), numnz, cind, cval, sense, rhs)
+        cbcAddRow(self._model, c_str(name), numnz,
+                  cast(cind.buffer_info()[0], POINTER(c_int)),
+                  cast(cval.buffer_info()[0], POINTER(c_double)),
+                  sense, rhs)
 
         return idx
 
