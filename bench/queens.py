@@ -4,7 +4,7 @@ from time import process_time
 import time
 import timeout_decorator
 
-N = range(100, 1001, 100)
+N = range(100, 401, 100)
 
 TIMEOUT = 1000
 execTime = TIMEOUT
