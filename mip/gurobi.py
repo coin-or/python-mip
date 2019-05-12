@@ -1,6 +1,7 @@
 from mip.model import *
 from ctypes import *
 from ctypes.util import *
+from array import array
 
 
 class SolverGurobi(Solver):
@@ -95,13 +96,16 @@ check your license.')
 
         # collecting linear expression data
         numnz = len(lin_expr.expr)
-        cind = (c_int * numnz)()
-        cval = (c_double * numnz)()
+        cind = array("i", [var.idx for var in lin_expr.expr.keys()])
+        cval = array("d", [coef for coef in lin_expr.expr.values()])
 
+        #cind[:] = [var.idx for var in lin_expr.expr.keys()]
+        #cval[:] = [coef for coef in lin_expr.expr.values()]
         # collecting variable coefficients
-        for i, (var, coeff) in enumerate(lin_expr.expr.items()):
-            cind[i] = var.idx
-            cval[i] = coeff
+        #for i, (var, coeff) in enumerate(lin_expr.expr.items()):
+        #    cind[i] = var.idx
+        #    cval[i] = coeff
+
 
         # constraint sense and rhs
         sense = c_char(ord(lin_expr.sense))
@@ -110,7 +114,10 @@ check your license.')
         if not name:
             name = 'r({})'.format(self.num_rows())
 
-        error = GRBaddconstr(self._model, numnz, cind, cval, sense,
+        error = GRBaddconstr(self._model, numnz,
+                             cast(cind.buffer_info()[0], POINTER(c_int)),
+                             cast(cval.buffer_info()[0], POINTER(c_double)),
+                             sense,
                              rhs, c_str(name))
         if error != 0:
             raise Exception('Error adding constraint {} to the model'.format(
