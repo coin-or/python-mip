@@ -1,3 +1,4 @@
+from array import array
 from mip.model import *
 from ctypes import *
 from ctypes.util import *
@@ -61,8 +62,10 @@ class SolverGurobi(Solver):
                 name: str = "") -> int:
         # collecting column data
         numnz = 0 if column is None else len(column.constrs)
-        vind = (c_int * numnz)()
-        vval = (c_double * numnz)()
+        vind = array("i", [0] * numnz)
+        vind_address, vind_size = vind.buffer_info()
+        vval = array("d", [0] * numnz)
+        vval_address, vval_size = vval.buffer_info()
 
         # collecting column coefficients
         for i in range(numnz):
@@ -76,7 +79,7 @@ class SolverGurobi(Solver):
         idx = self._num_vars
         self._num_vars += 1
 
-        GRBaddvar(self._model, c_int(numnz), vind, vval, c_double(obj), c_double(lb), c_double(ub),
+        GRBaddvar(self._model, c_int(numnz), cast(vind_address, POINTER(c_int)), cast(vval_address, POINTER(c_double)), c_double(obj), c_double(lb), c_double(ub),
                   vtype, c_str(name))
         self._updated = False
 
@@ -84,9 +87,16 @@ class SolverGurobi(Solver):
 
     def add_constr(self, lin_expr: LinExpr, name: str = "") -> int:
         # collecting linear expression data
+        # numnz = len(lin_expr.expr)
+        # cind = (c_int * numnz)()
+        # cval = (c_double * numnz)()
+
+        # experimental: using array library instead of regular ctypes array
         numnz = len(lin_expr.expr)
-        cind = (c_int * numnz)()
-        cval = (c_double * numnz)()
+        cind = array("i", [0] * numnz)
+        cind_address, cind_size = cind.buffer_info()
+        cval = array("d", [0] * numnz)
+        cval_address, cval_size = cval.buffer_info()
 
         # collecting variable coefficients
         for i, (var, coeff) in enumerate(lin_expr.expr.items()):
@@ -101,7 +111,7 @@ class SolverGurobi(Solver):
         idx = self._num_constrs
         self._num_constrs += 1
 
-        GRBaddconstr(self._model, numnz, cind, cval, sense, rhs, c_str(name))
+        GRBaddconstr(self._model, numnz, cast(cind_address, POINTER(c_int)), cast(cval_address, POINTER(c_double)), sense, rhs, c_str(name))
         self._updated = False
 
         return idx
@@ -166,7 +176,7 @@ class SolverGurobi(Solver):
         st = GRBsetdblparam(GRBgetenv(self._model), c_str("NodeLimit"), c_double(max_nodes))
         assert st == 0
 
-    def set_num_threads(self, threads:int):
+    def set_num_threads(self, threads: int):
         self.__threads = threads
 
     def optimize(self) -> OptimizationStatus:
@@ -207,7 +217,7 @@ class SolverGurobi(Solver):
                     GRBcbcut(p_cbdata, numnz, cind, cval, sense, rhs)
 
             # adding lazy constraints
-            elif self.model.lazy_constrs_generator and where == 4: # MIPSOL == 4
+            elif self.model.lazy_constrs_generator and where == 4:  # MIPSOL == 4
                 # obtaining relaxation solution and "translating" it
                 cb_solution = (c_double * self._num_vars)()
                 GRBcbget(p_cbdata, where, GRB_CB_MIPSOL_SOL, cb_solution)
@@ -242,7 +252,7 @@ class SolverGurobi(Solver):
             self._callback = GRBcallbacktype(callback)
             GRBsetcallbackfunc(self._model, self._callback, c_void_p(0))
 
-        if self.__threads>=1:
+        if self.__threads >= 1:
             self.set_int_param("Threads", self.__threads)
 
         self.set_int_param("Cuts", self.model.cuts)
@@ -267,7 +277,7 @@ class SolverGurobi(Solver):
                 nsols = c_int(0)
                 sts = GRBgetintattr(self._model, c_str("SolCount"), byref(nsols))
                 nsols = nsols.value
-                if nsols>=1:
+                if nsols >= 1:
                     return OptimizationStatus.FEASIBLE
                 else:
                     return OptimizationStatus.NO_SOLUTION_FOUND
@@ -330,18 +340,15 @@ class SolverGurobi(Solver):
                                                                      MAXIMIZE,
                                                                      MINIMIZE))
 
-
-    def set_int_param(self, param : str, value : int):
+    def set_int_param(self, param: str, value: int):
         st = GRBsetintparam(GRBgetenv(self._model), c_str(param), c_int(value))
-        if (st!=0):
+        if (st != 0):
             raise "could not set gurobi int param " + param + " to {}".format(value)
 
-
-    def set_dbl_param(self, param : str, value : float):
+    def set_dbl_param(self, param: str, value: float):
         st = GRBsetdblparam(GRBgetenv(self._model), c_str(param), c_double(value))
-        if (st!=0):
+        if (st != 0):
             raise "could not set gurobi double param " + param + " to {}".format(value)
-
 
     def get_num_solutions(self) -> int:
         res = c_int(0)
@@ -513,7 +520,7 @@ class SolverGurobi(Solver):
         assert st == 0
         return res.value
 
-    def set_verbose(self, verbose : int):
+    def set_verbose(self, verbose: int):
         st = GRBsetintparam(GRBgetenv(self._model), c_str("OutputFlag"), c_int(verbose))
         assert st == 0
 
