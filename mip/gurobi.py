@@ -197,19 +197,17 @@ check your license.')
                 for lin_expr in cuts:
                     # collecting linear expression data
                     numnz = len(lin_expr.expr)
-                    cind = (c_int * numnz)()
-                    cval = (c_double * numnz)()
-
-                    # collecting variable coefficients
-                    for i, (var, coeff) in enumerate(lin_expr.expr.items()):
-                        cind[i] = var.idx
-                        cval[i] = coeff
+                    cind = array("i", [var.idx for var in lin_expr.expr.keys()])
+                    cval = array("d", [coef for coef in lin_expr.expr.values()])
 
                     # constraint sense and rhs
                     sense = c_char(ord(lin_expr.sense))
                     rhs = c_double(-lin_expr.const)
 
-                    GRBcbcut(p_cbdata, numnz, cind, cval, sense, rhs)
+                    GRBcbcut(p_cbdata, numnz,
+                             cast(cind.buffer_info()[0], POINTER(c_int)),
+                             cast(cval.buffer_info()[0], POINTER(c_double)),
+                             sense, rhs)
 
             # adding lazy constraints
             elif self.model.lazy_constrs_generator and where == 4:  # MIPSOL==4

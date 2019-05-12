@@ -141,8 +141,10 @@ class SolverCbc(Solver):
 
         # incumbent callback
 
-        def cbc_inc_callback(cbcModel: c_void_p, obj: c_double, nz: c_int,
-                             colNames: POINTER(c_char_p), colValues: POINTER(c_double),
+        def cbc_inc_callback(cbcModel: c_void_p,
+                             obj: c_double, nz: c_int,
+                             colNames: POINTER(c_char_p),
+                             colValues: POINTER(c_double),
                              appData: c_void_p):
             return
 
@@ -172,8 +174,6 @@ class SolverCbc(Solver):
 
             # storing names and indexes to translate cuts
             nameIdx = {}
-            cidx = (c_int * n)()
-            cval = (c_double * n)()
 
             # calling cut generators
             if self.model.cuts_generator is not None:
@@ -198,12 +198,13 @@ class SolverCbc(Solver):
                             break
                     if hasAllVars:
                         nz = len(cutIdx)
-                        for i, ci in enumerate(cutIdx):
-                            cidx[i] = ci
-                            cval[i] = cutCoef[i]
+                        cidx = array("i", cutIdx)
+                        cval = array("d", cutCoef)
                         sense = c_char(ord(cut.sense))
                         rhs = c_double(-cut.const)
-                        osiCutsAddRowCut(osiCuts, c_int(nz), cidx, cval,
+                        osiCutsAddRowCut(osiCuts, c_int(nz),
+                                         cast(cidx.buffer_info()[0], POINTER(c_int)),
+                                         cast(cval.buffer_info()[0], POINTER(c_double)),
                                          sense, rhs)
                         # print('cut add successfully')
                     else:
@@ -819,7 +820,6 @@ if has_cbc:
         cbcAddCutCallback.argtypes = [c_void_p, CBCcutcallbacktype, c_char_p,
                                       c_void_p]
 
-        #typedef int (COINLINKAGE_CB *cbc_incumbent_callback)(void *cbcModel, double obj, int nz, char **vnames, double *x, void *appData);
         method_check = "cbc_incumbent_callback"
         CBCinccallbacktype = CFUNCTYPE(c_int,
                                        c_void_p,
