@@ -7,10 +7,11 @@ from builtins import property
 from os import environ
 from collections.abc import Sequence
 
+
 class Column:
-    """A column contains all the non-zero entries of a variable in the constraint matrix.
-    To create a variable see :meth:`~mip.model.model.add_var`
-    """
+    """A column contains all the non-zero entries of a variable in the
+    constraint matrix. To create a variable see
+    :meth:`~mip.model.model.add_var` """
 
     def __init__(self,
                  constrs: List["Constr"] = None,
@@ -643,8 +644,10 @@ class Model:
         """
         if self.__threads != 0:
             self.solver.set_num_threads(self.__threads)
-        # self.solver.set_callbacks(branch_selector, incumbent_updater, lazy_constrs_generator)
-        self.solver.set_processing_limits(max_seconds, max_nodes, max_solutions)
+        # self.solver.set_callbacks(branch_selector,
+        # incumbent_updater, lazy_constrs_generator)
+        self.solver.set_processing_limits(max_seconds,
+                                          max_nodes, max_solutions)
 
         self.__status = self.solver.optimize()
 
@@ -674,8 +677,8 @@ class Model:
                 v.type = CONTINUOUS
 
     def write(self, path: str):
-        """Saves the MIP model, using the extension :code:`.lp` or :code:`.mps` to
-        specify the file format.
+        """Saves the MIP model, using the extension :code:`.lp` or
+        :code:`.mps` to specify the file format.
 
         Args:
             path(str): file name
@@ -692,8 +695,9 @@ class Model:
 
         Examples:
 
-            The following code adds all :code:`x` variables :code:`x[0], ..., x[n-1]`, to
-            the objective function of model :code:`m` with the same cost :code:`w`::
+            The following code adds all :code:`x` variables :code:`x[0],
+            ..., x[n-1]`, to the objective function of model :code:`m`
+            with the same cost :code:`w`::
 
                 m.objective = xsum(w*x[i] for i in range(n))
 
@@ -704,7 +708,6 @@ class Model:
 
             Note that the only difference of adding a constraint is the lack of
             a sense and a rhs.
-
         """
         return self.solver.get_objective()
 
@@ -731,9 +734,9 @@ class Model:
     def threads(self) -> int:
         """number of threads to be used when solving the problem.
         0 uses solver default configuration, -1 uses the number of available
-        processing cores and :math:`\geq 1` uses the specified number of threads.
-        An increased number of threads may improve the solution time but
-        also increases the memory consumption."""
+        processing cores and :math:`\geq 1` uses the specified number of
+        threads. An increased number of threads may improve the solution
+        time but also increases the memory consumption."""
         return self.__threads
 
     @threads.setter
@@ -786,16 +789,18 @@ class Model:
 
         Returns:
             costs of all solutions stored in the solution pool
-            as an array from 0 (the best solution) to :attr:`~mip.model.model.num_solutions`-1.
+            as an array from 0 (the best solution) to
+            :attr:`~mip.model.model.num_solutions`-1.
         """
         return [float(self.solver.get_objective_value_i(i))
                 for i in range(self.num_solutions)]
 
     @property
     def cuts_generator(self) -> "CutsGenerator":
-        """Cut generator callback. Cut generators are called whenever a solution where one or more
-        integer variables appear with continuous values. A cut generator will
-        try to produce one or more inequalities to remove this fractional point.
+        """Cut generator callback. Cut generators are called whenever a
+        solution where one or more integer variables appear with
+        continuous values. A cut generator will try to produce
+        one or more inequalities to remove this fractional point.
         """
         return self.__cuts_generator
 
@@ -808,18 +813,21 @@ class Model:
         return self.__lazy_constrs_generator
 
     @lazy_constrs_generator.setter
-    def lazy_constrs_generator(self, lazy_constrs_generator: "LazyConstrsGenerator"):
+    def lazy_constrs_generator(self,
+                               lazy_constrs_generator: "LazyConstrsGenerator"):
         self.__lazy_constrs_generator = lazy_constrs_generator
 
     @property
     def emphasis(self) -> SearchEmphasis:
-        """defines the main objective of the search, if set to 1 (FEASIBILITY) then
-        the search process will focus on try to find quickly feasible solutions and
-        improving them; if set to 2 (OPTIMALITY) then the search process will try to
-        find a provable optimal solution, procedures to further improve the lower bounds will
-        be activated in this setting, this may increase the time to produce the first
-        feasible solutions but will probably pay off in longer runs; the default option
-        if 0, where a balance between optimality and feasibility is sought.
+        """defines the main objective of the search, if set to 1 (FEASIBILITY)
+        then the search process will focus on try to find quickly feasible
+        solutions and improving them; if set to 2 (OPTIMALITY) then the
+        search process will try to find a provable optimal solution,
+        procedures to further improve the lower bounds will be activated in
+        this setting, this may increase the time to produce the first
+        feasible solutions but will probably pay off in longer runs;
+        the default option if 0, where a balance between optimality and
+        feasibility is sought.
         """
         return self.solver.get_emphasis()
 
@@ -829,10 +837,13 @@ class Model:
 
     @property
     def cuts(self) -> int:
-        """controls the generation of cutting planes, 0 disables completely, 1 (default) generates
-        cutting planes in a moderate way, 2 generates cutting planes aggressively and 3 generates
-        even more cutting planes. Cutting planes usually improve the LP relaxation bound but also make the
-        solution time of the LP relaxation larger, so the overall effect is hard to predict and experimenting
+        """controls the generation of cutting planes, 0 disables completely,
+        1 (default) generates cutting planes in a moderate way,
+        2 generates cutting planes aggressively and
+        3 generates
+        even more cutting planes. Cutting planes usually improve the LP
+        relaxation bound but also make the solution time of the LP relaxation
+        larger, so the overall effect is hard to predict and experimenting
         different values for this parameter may be beneficial.
         """
         return self.__cuts
@@ -840,7 +851,8 @@ class Model:
     @cuts.setter
     def cuts(self, cuts: int):
         if cuts < 0 or cuts > 3:
-            print('Warning: invalid value ({}) for parameter cuts, keeping old setting.'.format(self.__cuts))
+            print('Warning: invalid value ({}) for parameter cuts, \
+                  keeping old setting.'.format(self.__cuts))
         self.__cuts = cuts
 
     @property
@@ -882,9 +894,9 @@ class Model:
     @property
     def cutoff(self) -> float:
         """upper limit for the solution cost, solutions with cost > cutoff
-        will be removed from the search space, a small cutoff value may significantly
-        speedup the search, but if cutoff is set to a value too low
-        the model will become infeasible"""
+        will be removed from the search space, a small cutoff value may
+        significantly speedup the search, but if cutoff is set to a value too
+        low the model will become infeasible"""
         return self.solver.get_cutoff()
 
     @cutoff.setter
@@ -894,7 +906,8 @@ class Model:
     @property
     def max_mip_gap_abs(self) -> float:
         """tolerance for the quality of the optimal solution, if a
-        solution with cost :math:`c` and a lower bound :math:`l` are available and :math:`c-l<` :code:`mip_gap_abs`,
+        solution with cost :math:`c` and a lower bound :math:`l` are available
+        and :math:`c-l<` :code:`mip_gap_abs`,
         the search will be concluded, see mip_gap to determine
         a percentage value """
         return self.solver.get_mip_gap_abs()
@@ -906,8 +919,9 @@ class Model:
     @property
     def max_mip_gap(self) -> float:
         """value indicating the tolerance for the maximum percentage deviation
-        from the optimal solution cost, if a solution with cost :math:`c` and a lower bound :math:`l`
-        are available and :math:`(c-l)/l <` :code:`max_mip_gap` the search will be concluded."""
+        from the optimal solution cost, if a solution with cost :math:`c` and
+        a lower bound :math:`l` are available and
+        :math:`(c-l)/l <` :code:`max_mip_gap` the search will be concluded."""
         return self.solver.get_mip_gap()
 
     @max_mip_gap.setter
@@ -934,7 +948,8 @@ class Model:
 
     @property
     def max_solutions(self) -> int:
-        """solution limit, search will be stopped when :code:`max_solutions` were found"""
+        """solution limit, search will be stopped when :code:`max_solutions`
+        were found"""
         return self.solver.get_max_solutions()
 
     @max_solutions.setter
@@ -943,10 +958,14 @@ class Model:
 
     @property
     def status(self) -> OptimizationStatus:
-        """ optimization status, which can be OPTIMAL(0), ERROR(-1), INFEASIBLE(1), UNBOUNDED(2). When optimizing problems
-            with integer variables some additional cases may happen, FEASIBLE(3) for the case when a feasible solution was found
-            but optimality was not proved, INT_INFEASIBLE(4) for the case when the lp relaxation is feasible but no feasible integer
-            solution exists and NO_SOLUTION_FOUND(5) for the case when an integer solution was not found in the optimization.
+        """ optimization status, which can be OPTIMAL(0), ERROR(-1),
+        INFEASIBLE(1), UNBOUNDED(2). When optimizing problems
+        with integer variables some additional cases may happen, FEASIBLE(3)
+        for the case when a feasible solution was found but optimality was
+        not proved, INT_INFEASIBLE(4) for the case when the lp relaxation is
+        feasible but no feasible integer solution exists and
+        NO_SOLUTION_FOUND(5) for the case when an integer solution was not
+        found in the optimization.
         """
         return self.__status
 
@@ -1276,7 +1295,8 @@ class Var:
 
     @property
     def rc(self) -> float:
-        """reduced cost, only available after a linear programming __model (no integer variables) is optimized"""
+        """reduced cost, only available after a linear programming __model (no
+        integer variables) is optimized"""
         if self.__model.status != OptimizationStatus.OPTIMAL:
             raise SolutionNotAvailable('Solution not available.')
 
@@ -1286,26 +1306,37 @@ class Var:
     def x(self) -> float:
         """solution value"""
         if self.__model.status == OptimizationStatus.LOADED:
-            raise SolutionNotAvailable('Model was not optimized, solution not available.')
-        elif self.__model.status == OptimizationStatus.INFEASIBLE or self.__model.status == OptimizationStatus.CUTOFF:
-            raise SolutionNotAvailable('Infeasible __model, solution not available.')
+            raise SolutionNotAvailable('Model was not optimized, \
+                solution not available.')
+        elif (self.__model.status == OptimizationStatus.INFEASIBLE
+              or self.__model.status == OptimizationStatus.CUTOFF):
+            raise SolutionNotAvailable('Infeasible __model, \
+                solution not available.')
         elif self.__model.status == OptimizationStatus.UNBOUNDED:
-            raise SolutionNotAvailable('Unbounded __model, solution not available.')
+            raise SolutionNotAvailable('Unbounded __model, solution not \
+                available.')
         elif self.__model.status == OptimizationStatus.NO_SOLUTION_FOUND:
-            raise SolutionNotAvailable('Solution not found during optimization.')
+            raise SolutionNotAvailable('Solution not found \
+                during optimization.')
 
         return self.__model.solver.var_get_x(self)
 
     def xi(self, i: int) -> float:
-        """solution value for this variable in the :math:`i`-th solution from the solution pool"""
+        """solution value for this variable in the :math:`i`-th solution from
+        the solution pool"""
         if self.__model.status == OptimizationStatus.LOADED:
-            raise SolutionNotAvailable('Model was not optimized, solution not available.')
-        elif self.__model.status == OptimizationStatus.INFEASIBLE or self.__model.status == OptimizationStatus.CUTOFF:
-            raise SolutionNotAvailable('Infeasible __model, solution not available.')
+            raise SolutionNotAvailable('Model was not optimized, \
+                solution not available.')
+        elif (self.__model.status == OptimizationStatus.INFEASIBLE or
+              self.__model.status == OptimizationStatus.CUTOFF):
+            raise SolutionNotAvailable('Infeasible __model, \
+                solution not available.')
         elif self.__model.status == OptimizationStatus.UNBOUNDED:
-            raise SolutionNotAvailable('Unbounded __model, solution not available.')
+            raise SolutionNotAvailable('Unbounded __model, \
+                solution not available.')
         elif self.__model.status == OptimizationStatus.NO_SOLUTION_FOUND:
-            raise SolutionNotAvailable('Solution not found during optimization.')
+            raise SolutionNotAvailable('Solution not found \
+                during optimization.')
 
         return self.__model.solver.var_get_xi(self, i)
 
@@ -1346,7 +1377,9 @@ class BranchSelector:
     def __init__(self, model: Model):
         self.model = model
 
-    def select_branch(self, relax_solution: List[Tuple[Var, float]]) -> Tuple[Var, int]:
+    def select_branch(self,
+                      relax_solution: List[Tuple[Var, float]]
+                      ) -> Tuple[Var, int]:
         raise NotImplementedError()
 
 
@@ -1354,7 +1387,8 @@ class LazyConstrsGenerator:
     def __init(self, model: Model):
         self.model = model
 
-    def generate_lazy_constrs(self, solution: List[Tuple[Var, float]]) -> List[LinExpr]:
+    def generate_lazy_constrs(self, solution: List[Tuple[Var, float]]
+                              ) -> List[LinExpr]:
         raise NotImplementedError()
 
 
@@ -1383,7 +1417,8 @@ def read_custom_settings():
                 if "=" in line:
                     cols = line.split("=")
                     if cols[0].strip().lower() == "cbc-library":
-                        customCbcLib = cols[1].lstrip().rstrip().replace('"', "")
+                        customCbcLib = cols[1].\
+                            lstrip().rstrip().replace('"', "")
 
 
 print("Using Python-MIP package version {}".format(VERSION))
