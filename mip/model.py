@@ -417,6 +417,8 @@ class Model:
         self.__start = None
         self.__status = OptimizationStatus.LOADED
         self.__threads = 0
+        self.__n_cols = 0
+        self.__n_rows = 0
 
     def __del__(self):
         if self.solver:
@@ -476,13 +478,14 @@ class Model:
         if len(name.strip()) == 0:
             nc = self.solver.num_cols()
             name = "C{:011d}".format(nc)
-        idx = self.solver.add_var(obj, lb, ub, var_type, column, name)
-        return Var(model=self, idx=idx)
+        self.solver.add_var(obj, lb, ub, var_type, column, name)
+        self.__n_cols += 1
+        return Var(self, self.__n_cols-1)
 
-    def add_constr(self, lin_expr: "LinExpr", name: str = "") -> Constr:
+    def add_constr(self, lin_expr: "LinExpr", name: str = "") -> "Constr":
         """ Creates a new constraint (row)
 
-        Adds a new constraint to the model
+        Adds a new constraint to the model, returning its reference
 
         Args:
             lin_expr (LinExpr): linear expression
@@ -515,8 +518,9 @@ class Model:
         if isinstance(lin_expr, bool):
             raise InvalidLinExpr("A boolean (true/false) cannot be \
             used as a constraint.")
-        idx = self.solver.add_constr(lin_expr, name)
-        return idx
+        self.__n_rows += 1
+        self.solver.add_constr(lin_expr, name)
+        return Constr(self, self.__n_rows-1)
 
     def clear(self):
         """Clears the model
@@ -527,6 +531,9 @@ class Model:
         """
         # creating a new solver instance
         sense = self.sense
+
+        self.__n_cols = 0
+        self.__n_rows = 0
 
         if self.solver_name.upper() == GUROBI:
             from mip.gurobi import SolverGurobi
@@ -664,6 +671,8 @@ class Model:
         """
         self.clear()
         self.solver.read(path)
+        self.__n_cols = self.solver.num_cols()
+        self.__n_rows = self.solver.num_rows()
 
     def relax(self):
         """ Relax integrality constraints of variables
@@ -874,7 +883,7 @@ class Model:
     @property
     def num_cols(self) -> int:
         """number of columns (variables) in the model"""
-        return self.solver.num_cols()
+        return self.__n_cols
 
     @property
     def num_int(self) -> int:
@@ -884,7 +893,7 @@ class Model:
     @property
     def num_rows(self) -> int:
         """number of rows (constraints) in the model"""
-        return self.solver.num_rows()
+        return self.__n_rows
 
     @property
     def num_nz(self) -> int:
@@ -993,9 +1002,11 @@ class Model:
             if vlist:
                 vlist.sort()
                 self.solver.remove_vars(vlist)
+                self.__n_cols -= len(vlist)
             if clist:
                 clist.sort()
                 self.solver.remove_constrs(clist)
+                self.__n_rows -= len(clist)
 
 
 class Solver:
@@ -1016,7 +1027,8 @@ class Solver:
                 column: "Column" = None):
         pass
 
-    def add_constr(self, lin_expr: "LinExpr", name: str = "") -> int: pass
+    def add_constr(self, lin_expr: "LinExpr", name: str = ""):
+        pass
 
     def get_objective_bound(self) -> float: pass
 
