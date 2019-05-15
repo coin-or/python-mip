@@ -62,7 +62,7 @@ check your license.')
                 ub: float = float("inf"),
                 var_type: str = CONTINUOUS,
                 column: Column = None,
-                name: str = "") -> int:
+                name: str = ""):
         # collecting column data
         numnz = 0 if column is None else len(column.constrs)
         vind = (c_int * numnz)()
@@ -89,9 +89,7 @@ check your license.')
         if vtype == BINARY or vtype == INTEGER:
             self.__n_int_buffer += 1
 
-        return self.num_cols()-1
-
-    def add_constr(self, lin_expr: LinExpr, name: str = "") -> int:
+    def add_constr(self, lin_expr: LinExpr, name: str = ""):
         self.flush_cols()
 
         # collecting linear expression data
@@ -123,8 +121,6 @@ check your license.')
             raise Exception('Error adding constraint {} to the model'.format(
                 name))
         self.__n_rows_buffer += 1
-
-        return self.num_rows()-1
 
     def get_objective_bound(self) -> float:
         return self.get_dbl_attr("ObjBound")

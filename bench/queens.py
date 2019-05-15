@@ -3,8 +3,10 @@ from sys import stdout, argv
 from time import process_time
 import time
 import timeout_decorator
+import os
+import vmprof
 
-N = range(100, 401, 100)
+N = range(100, 1001, 100)
 
 TIMEOUT = 1000
 execTime = TIMEOUT
@@ -55,9 +57,17 @@ def gen_model(n, solver, f):
 
 
 f = open('queens-mip-{}.csv'.format(argv[1]), 'w')
+
+PROFILE_FILE = 'queens-mip-{}.dat'.format(argv[1])
+flags = os.O_RDWR | os.O_CREAT | os.O_TRUNC
+outfd = os.open(PROFILE_FILE, flags)
+vmprof.enable(outfd, period=0.01)
+
 for n in N:
     gen_model(n, argv[1], f)
     f.write('{},{},{},{},{:.4f}\n'.format(n, modelCols,
                                           modelRows, modelNz, execTime))
     f.flush()
 f.close()
+
+vmprof.disable()
