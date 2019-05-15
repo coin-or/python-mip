@@ -39,7 +39,7 @@ class SolverCbc(Solver):
                 ub: float = float("inf"),
                 coltype: str = "C",
                 column: "Column" = None,
-                name: str = "") -> int:
+                name: str = ""):
         # collecting column data
         numnz = 0 if column is None else len(column.constrs)
         vind = (c_int * numnz)()
@@ -53,14 +53,9 @@ class SolverCbc(Solver):
         isInt = \
             c_char(1) if coltype.upper() == "B" or coltype.upper() == "I" \
             else c_char(0)
-
-        idx = int(cbcNumCols(self._model))
-
         cbcAddCol(self._model, c_str(name),
                   c_double(lb), c_double(ub), c_double(obj),
                   isInt, numnz, vind, vval)
-
-        return idx
 
     def get_objective_const(self) -> float:
         return self._objconst
@@ -377,7 +372,7 @@ class SolverCbc(Solver):
 
         return col
 
-    def add_constr(self, lin_expr: "LinExpr", name: str = "") -> int:
+    def add_constr(self, lin_expr: "LinExpr", name: str = ""):
         # collecting linear expression data
         numnz = len(lin_expr.expr)
 
@@ -389,14 +384,10 @@ class SolverCbc(Solver):
         rhs = c_double(-lin_expr.const)
 
         # constraint index
-        idx = int(cbcNumRows(self._model))
-
         cbcAddRow(self._model, c_str(name), numnz,
                   cast(cind.buffer_info()[0], POINTER(c_int)),
                   cast(cval.buffer_info()[0], POINTER(c_double)),
                   sense, rhs)
-
-        return idx
 
     def write(self, file_path: str):
         if ".mps" in file_path.lower():
