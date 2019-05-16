@@ -7,29 +7,25 @@ from sys import maxsize
 from typing import List, Tuple
 from os.path import isfile
 
-
-ffi = FFI()
-CData = ffi.CData
-has_gurobi = False
-os_is_64_bit = maxsize > 2**32
-INF = float('inf')
-MAX_NAME_SIZE = 512  # for variables and constraints
-
 try:
     found = False
     lib_path = None
 
-    for major_ver in reversed(range(2, 12)):
+    for major_ver in reversed(range(6, 10)):
         for minor_ver in reversed(range(0, 11)):
             lib_path = find_library('gurobi{}{}'.format(major_ver,
                                                         minor_ver))
             if lib_path is not None:
                 break
+        if lib_path is not None:
+            break
 
     if lib_path is None:
         raise Exception("""Gurobi not found. Plase check if the
         Gurobi dynamic loadable library if reachable
         """)
+    ffi = FFI()
+
     grblib = ffi.dlopen(lib_path)
     print('gurobi version {}.{} found'.format(major_ver,
                                               minor_ver))
@@ -37,10 +33,19 @@ try:
 except Exception:
     has_gurobi = False
 
+
 if has_gurobi:
+    CData = ffi.CData
+    os_is_64_bit = maxsize > 2**32
+    INF = float('inf')
+    MAX_NAME_SIZE = 512  # for variables and constraints
+
     ffi.cdef("""
-        typedef void * GRBmodel;
-        typedef void * GRBenv;
+        typedef struct _GRBmodel GRBmodel;
+        typedef struct _GRBenv GRBenv;
+
+        typedef int(*gurobi_callback)(GRBmodel *model, void *cbdata,
+                                      int where, void *usrdata);
 
         int GRBloadenv(GRBenv **envP, const char *logfilename);
 
@@ -138,6 +143,25 @@ if has_gurobi:
 
         int GRBsetcharattrlist(GRBmodel *model, const char *attrname,
             int len, int *ind, char *newvalues);
+
+        int GRBsetcallbackfunc(GRBmodel *model,
+                     gurobi_callback grbcb,
+                     void  *usrdata);
+
+        int GRBcbget(void *cbdata, int where, int what, void *resultP);
+
+        int GRBcbsetparam(void *cbdata, const char *paramname,
+            const char *newvalue);
+
+        int GRBcbsolution(void *cbdata, const double *solution,
+            double *objvalP);
+
+        int GRBcbcut(void *cbdata, int cutlen, const int *cutind,
+            const double *cutval,
+            char cutsense, double cutrhs);
+
+        int GRBcblazy(void *cbdata, int lazylen, const int *lazyind,
+            const double *lazyval, char lazysense, double lazyrhs);
     """)
 
     GRBloadenv = grblib.GRBloadenv
@@ -155,33 +179,27 @@ if has_gurobi:
     GRBreadmodel = grblib.GRBreadmodel
     GRBgetconstrbyname = grblib.GRBgetconstrbyname
     GRBupdatemodel = grblib.GRBupdatemodel
-
-
-"""
-    GRBcallbacktype = CFUNCTYPE(c_int, c_void_p, c_void_p, c_int, c_void_p)
-
-    GRBsetcallbackfunc = grblib.GRBsetcallbackfunc
-    GRBsetcallbackfunc.restype = c_int
-    GRBsetcallbackfunc.argtypes = [c_void_p, GRBcallbacktype, c_void_p]
-
-    GRBcbcut = grblib.GRBcbcut
-    GRBcbcut.restype = c_int
-    GRBcbcut.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double),
-                         c_char, c_double]
-
+    GRBgetcharattrelement = grblib.GRBgetcharattrelement
+    GRBgetconstrs = grblib.GRBgetconstrs
+    GRBgetdblattrelement = grblib.GRBgetdblattrelement
+    GRBgetvars = grblib.GRBgetvars
+    GRBsetcharattrelement = grblib.GRBsetcharattrelement
+    GRBsetdblattrelement = grblib.GRBsetdblattrelement
+    GRBsetintattr = grblib.GRBsetintattr
+    GRBsetdblattr = grblib.GRBsetdblattr
+    GRBgetintattr = grblib.GRBgetintattr
+    GRBgetintparam = grblib.GRBgetintparam
+    GRBsetintparam = grblib.GRBsetintparam
+    GRBgetdblattr = grblib.GRBgetdblattr
+    GRBsetdblparam = grblib.GRBsetdblparam
+    GRBgetdblparam = grblib.GRBgetdblparam
+    GRBgetstrattrelement = grblib.GRBgetstrattrelement
     GRBcbget = grblib.GRBcbget
-    GRBcbget.restype = c_int
-    GRBcbget.argtypes = [c_void_p, c_int, c_int, c_void_p]
-
-    GRBcblazy = grblib.GRBcblazy
-    GRBcblazy.restype = c_int
-    GRBcblazy.argtypes = [c_void_p, c_int, POINTER(c_int), POINTER(c_double),
-                          c_char, c_double]
-
+    GRBcbsetparam = grblib.GRBcbsetparam
     GRBcbsolution = grblib.GRBcbsolution
-    GRBcbsolution.restype = c_int
-    GRBcbsolution.argtypes = [c_void_p, POINTER(c_double), POINTER(c_double)]
- """
+    GRBcbcut = grblib.GRBcbcut
+    GRBcblazy = grblib.GRBcblazy
+    GRBsetcallbackfunc = grblib.GRBsetcallbackfunc
 
 
 GRB_CB_PRE_COLDEL = 1000
@@ -233,21 +251,23 @@ class SolverGurobi(Solver):
         self._model = ffi.NULL
         self._callback = None
 
-        self._env = ffi.new("void *")
+        self._env = ffi.new("GRBenv **")
 
         # creating Gurobi environment
-        st = GRBloadenv(ffi.addressof(self._env), ''.encode('utf-8'))
+        st = GRBloadenv(self._env, ''.encode('utf-8'))
         if st != 0:
             raise Exception('Gurobi environment could not be loaded,\
 check your license.')
+        self._env = self._env[0]
 
         # creating Gurobi model
-        self._model = ffi.new("void *")
-        st = GRBnewmodel(self._env, ffi.addressof(self._model),
+        self._model = ffi.new("GRBmodel **")
+        st = GRBnewmodel(self._env, self._model,
                          name.encode('utf-8'), 0,
                          ffi.NULL, ffi.NULL, ffi.NULL, ffi.NULL, ffi.NULL)
         if st != 0:
             raise Exception('Could not create Gurobi model')
+        self._model = self._model[0]
 
         # setting objective sense
         if sense == MAXIMIZE:
@@ -380,49 +400,55 @@ check your license.')
         self.__threads = threads
 
     def optimize(self) -> OptimizationStatus:
+
         # todo add branch_selector and incumbent_updater callbacks
-        def callback(p_model: c_void_p,
-                     p_cbdata: c_void_p,
+        @ffi.callback("""
+           int (void *, void *, int, void *)
+        """)
+        def callback(p_model: CData,
+                     p_cbdata: CData,
                      where: int,
-                     p_usrdata: c_void_p) -> int:
+                     p_usrdata: CData) -> int:
 
             # adding cuts
             if self.model.cuts_generator and where == 5:  # MIPNODE == 5
                 # obtaining relaxation solution and "translating" it
-                cb_solution = (c_double * self.num_cols())()
+                cb_solution = ffi.new('double[{}]'.format(self.num_cols))
                 GRBcbget(p_cbdata, where, GRB_CB_MIPNODE_REL, cb_solution)
                 relax_solution = []
                 for i in range(self.num_cols()):
-                    if cb_solution[i] <= -EPS or cb_solution[i] >= EPS:
+                    if abs(cb_solution[i]) > 1e-8:
                         relax_solution.append((self.model.vars[i],
                                                cb_solution[i]))
+                if len(relax_solution) == 0:
+                    return
 
                 # calling cuts generator
                 cuts = self.model.cuts_generator.generate_cuts(relax_solution)
                 # adding cuts
                 for lin_expr in cuts:
                     # collecting linear expression data
-                    numnz = len(lin_expr.expr)
-                    cind = array("i", [var.idx for var in lin_expr.expr.keys()])
-                    cval = array("d", [coef for coef in lin_expr.expr.values()])
+                    nz = len(lin_expr.expr)
+                    cind = ffi.new('int[]', [var.idx
+                                             for var in lin_expr.expr.keys()])
+                    cval = ffi.new('double[]',
+                                   [coef for coef in lin_expr.expr.values()])
 
                     # constraint sense and rhs
-                    sense = c_char(ord(lin_expr.sense))
-                    rhs = c_double(-lin_expr.const)
+                    sense = lin_expr.sense.encode('utf-8')
+                    rhs = -lin_expr.const
 
-                    GRBcbcut(p_cbdata, numnz,
-                             cast(cind.buffer_info()[0], POINTER(c_int)),
-                             cast(cval.buffer_info()[0], POINTER(c_double)),
-                             sense, rhs)
+                    GRBcbcut(p_cbdata, nz,
+                             cind, cval, sense, rhs)
 
             # adding lazy constraints
             elif self.model.lazy_constrs_generator and where == 4:  # MIPSOL==4
                 # obtaining relaxation solution and "translating" it
-                cb_solution = (c_double * self.num_cols())()
+                cb_solution = ffi.new('double[{}]'.format(self.num_cols))
                 GRBcbget(p_cbdata, where, GRB_CB_MIPSOL_SOL, cb_solution)
                 solution = []
                 for i in range(self.num_cols()):
-                    if cb_solution[i] <= -EPS or cb_solution[i] >= EPS:
+                    if abs(cb_solution[i]) > 1e-8:
                         solution.append((self.model.vars[i], cb_solution[i]))
 
                 # calling constraint generator
@@ -431,27 +457,22 @@ check your license.')
                 # adding cuts
                 for lin_expr in constrs:
                     # collecting linear expression data
-                    numnz = len(lin_expr.expr)
-                    cind = (c_int * numnz)()
-                    cval = (c_double * numnz)()
-
-                    # collecting variable coefficients
-                    for i, (var, coeff) in enumerate(lin_expr.expr.items()):
-                        cind[i] = var.idx
-                        cval[i] = coeff
-
+                    nz = len(lin_expr.expr)
+                    cind = ffi.new('int[]', [var.idx for
+                                             var in lin_expr.expr.keys()])
+                    cval = ffi.new('double[]', [c for c in
+                                                lin_expr.expr.values()])
                     # constraint sense and rhs
-                    sense = c_char(ord(lin_expr.sense))
-                    rhs = c_double(-lin_expr.const)
+                    sense = lin_expr.sense.encode('utf-8')
+                    rhs = -lin_expr.const
 
-                    GRBcblazy(p_cbdata, numnz, cind, cval, sense, rhs)
+                    GRBcblazy(p_cbdata, nz, cind, cval, sense, rhs)
 
             return 0
 
         self.update()
         if self.model.cuts_generator is not None:
-            self._callback = GRBcallbacktype(callback)
-            GRBsetcallbackfunc(self._model, self._callback, c_void_p(0))
+            GRBsetcallbackfunc(self._model, callback, ffi.NULL)
 
         if self.__threads >= 1:
             self.set_int_param("Threads", self.__threads)
@@ -636,12 +657,13 @@ check your license.')
         if not isfile(file_path):
             raise Exception('File {} does not exists'.format(file_path))
         GRBfreemodel(self._model)
-        self._model = ffi.new('void *')
-        st = GRBreadModel(self._env, file_path.encode('utf-8'),
-                          ffi.addressof(self._model))
+        self._model = ffi.new('void **')
+        st = GRBreadmodel(self._env, file_path.encode('utf-8'),
+                          self._model)
         if st != 0:
             raise Exception('Could not read model {}, check contents'.format(
                             file_path))
+        self._model = self._model[0]
 
     def num_cols(self) -> int:
         return self.get_int_attr("NumVars")+self.__n_cols_buffer
@@ -803,7 +825,7 @@ check your license.')
         nnz = ffi.new('int*')
 
         # obtaining number of non-zeros
-        error = GRBgetvars(self._model, nz, ffi.NULL, ffi.NULL, ffi.NULL,
+        error = GRBgetvars(self._model, nnz, ffi.NULL, ffi.NULL, ffi.NULL,
                            var.idx, 1)
         if error != 0:
             raise Exception('Error querying gurobi model information')
@@ -924,7 +946,7 @@ check your license.')
         return res.value
 
     def set_int_param(self, name: str, value: int):
-        error = GRBsetintparam(self._model,
+        error = GRBsetintparam(self._env,
                                name.encode('utf-8'), value)
         if error != 0:
             raise Exception("Error mofifying int parameter {} to value {}".
@@ -939,7 +961,7 @@ check your license.')
         return res[0]
 
     def set_dbl_param(self, param: str, value: float):
-        error = GRBsetdblparam(self._model, param.encode('utf-8'),
+        error = GRBsetdblparam(self._env, param.encode('utf-8'),
                                value)
         if error != 0:
             raise Exception("Error setting gurobi double param " +
@@ -947,7 +969,7 @@ check your license.')
 
     def get_dbl_param(self, param: str) -> float:
         res = ffi.new('double *')
-        error = GRBgetdblparam(self._mode, param.encode('utf-8'),
+        error = GRBgetdblparam(self._env, param.encode('utf-8'),
                                res)
         if error != 0:
             raise Exception("Error getting gurobi double parameter {}".

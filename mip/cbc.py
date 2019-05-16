@@ -230,6 +230,14 @@ if has_cbc:
     int Cbc_getColNameIndex(Cbc_Model *model, const char *name);
 
     int Cbc_getRowNameIndex(Cbc_Model *model, const char *name);
+
+    void Cbc_addCutCallback(
+        void *model, cbc_cut_callback cutcb,
+        const char *name, void *appData );
+
+    void Cbc_addIncCallback(
+        void *model, cbc_incumbent_callback inccb,
+        void *appData );
     """)
 
 CHAR_ONE = "{}".format(chr(1)).encode("utf-8")
