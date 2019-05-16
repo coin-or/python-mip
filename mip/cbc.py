@@ -5,7 +5,7 @@ from mip.constants import MAXIMIZE, SearchEmphasis, CONTINUOUS, BINARY, \
     OptimizationStatus
 from typing import Dict, List, Tuple
 from sys import platform, maxsize
-from os.path import dirname
+from os.path import dirname, isfile
 import os
 from cffi import FFI
 
@@ -645,6 +645,9 @@ class SolverCbc(Solver):
                 to indicate the file format")
 
     def read(self, file_path: str) -> None:
+        if not isfile(file_path):
+            raise Exception('File {} does not exists'.format(file_path))
+
         fpstr = file_path.encode("utf-8")
         if ".mps" in file_path.lower():
             cbclib.Cbc_readMps(self._model, fpstr)
