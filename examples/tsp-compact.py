@@ -5,8 +5,8 @@
    of the ACM 7(4). 1960.
 """
 
-from tspdata import TSPData
 from sys import argv
+from tspdata import TSPData
 from mip.model import *
 
 if len(argv) <= 1:
@@ -21,7 +21,7 @@ model = Model()
 
 # binary variables indicating if arc (i,j) is used on the route or not
 x = [[model.add_var(
-      name='x({},{})'.format(i, j), var_type=BINARY)
+    name='x({},{})'.format(i, j), var_type=BINARY)
       for j in range(n)] for i in range(n)]
 
 # continuous variable to prevent subtours: each
