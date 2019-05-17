@@ -371,7 +371,7 @@ class SolverCbc(Solver):
             for i in range(n):
                 cbclib.Osi_getColName(osi_solver, i, self.__name_spacec,
                                       MAX_NAME_SIZE)
-                cname = self.__name_spacec.decode('utf-8')
+                cname = ffi.string(self.__name_spacec).decode('utf-8')
                 nameIdx[cname] = i
 
             return nameIdx
@@ -385,6 +385,9 @@ class SolverCbc(Solver):
             return
 
         # cut callback
+        @ffi.callback("""
+            void (void *osi_solver, void *osi_cuts, void *app_data)
+        """)
         def cbc_cut_callback(osi_solver: CData, osi_cuts: CData,
                              app_data: CData):
             global warningMessages
@@ -406,7 +409,7 @@ class SolverCbc(Solver):
 
                 nnz += 1
                 cbclib.Osi_getColName(osi_solver, i, namespc, MAX_NAME_SIZE)
-                cname = namespc.decode('utf-8')
+                cname = ffi.string(namespc).decode('utf-8')
                 var = self.model.var_by_name(cname)
                 if var is None and warningMessages == 1:
                     print('-->> var {} not found'.format(cname))
@@ -444,7 +447,7 @@ class SolverCbc(Solver):
                         nz = len(cut_idx)
                         cidx = ffi.new("int[]", cut_idx)
                         cval = ffi.new("double[]", cut_coef)
-                        sense = cut.sense
+                        sense = cut.sense.encode('utf-8')
                         rhs = -cut.const
                         cbclib.OsiCuts_addRowCut(
                             osi_cuts, nz, cidx, cval, sense, rhs)
@@ -585,10 +588,10 @@ class SolverCbc(Solver):
     def var_get_name(self, idx: int) -> str:
         namep = self.__name_space
         cbclib.Cbc_getColName(self._model, idx, namep, MAX_NAME_SIZE)
-        return namep.decode('utf-8')
+        return ffi.string(namep).decode('utf-8')
 
     def var_get_index(self, name: str) -> int:
-        return cbclib.Cbc_getColNameIndex(name.encode("utf-8"))
+        return cbclib.Cbc_getColNameIndex(self._model, name.encode("utf-8"))
 
     def constr_get_index(self, name: str) -> int:
         return cbclib.Cbc_getRowNameIndex(name.encode("utf-8"))
@@ -668,7 +671,7 @@ class SolverCbc(Solver):
     def set_start(self, start: List[Tuple[Var, float]]) -> None:
         n = len(start)
         dv = ffi.new("double[]", [start[i][1] for i in range(n)])
-        iv = ffi.new("int[]", [start[i][0] for i in range(n)])
+        iv = ffi.new("int[]", [start[i][0].idx for i in range(n)])
         mdl = self._model
         cbclib.Cbc_setMIPStartI(mdl, n, iv, dv)
 
