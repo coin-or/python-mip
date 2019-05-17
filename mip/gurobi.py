@@ -403,7 +403,7 @@ check your license.')
 
         # todo add branch_selector and incumbent_updater callbacks
         @ffi.callback("""
-           int (void *, void *, int, void *)
+           int (GRBmodel *, void *, int, void *)
         """)
         def callback(p_model: CData,
                      p_cbdata: CData,
@@ -413,7 +413,7 @@ check your license.')
             # adding cuts
             if self.model.cuts_generator and where == 5:  # MIPNODE == 5
                 # obtaining relaxation solution and "translating" it
-                cb_solution = ffi.new('double[{}]'.format(self.num_cols))
+                cb_solution = ffi.new('double[{}]'.format(self.model.num_cols))
                 GRBcbget(p_cbdata, where, GRB_CB_MIPNODE_REL, cb_solution)
                 relax_solution = []
                 for i in range(self.num_cols()):
@@ -421,7 +421,7 @@ check your license.')
                         relax_solution.append((self.model.vars[i],
                                                cb_solution[i]))
                 if len(relax_solution) == 0:
-                    return
+                    return 0
 
                 # calling cuts generator
                 cuts = self.model.cuts_generator.generate_cuts(relax_solution)
@@ -977,10 +977,10 @@ check your license.')
         return res[0]
 
     def get_str_attr_element(self, attr: str, index: int) -> str:
-        vName = ffi.new('char *')
+        vName = ffi.new('char **')
         error = GRBgetstrattrelement(self._model, attr.encode('utf-8'), index,
-                                     ffi.addressof(vName))
+                                     vName)
         if error != 0:
             raise Exception('Error getting str attribute {} index {}'.
                             format(attr, index))
-        return vName.decode('utf-8')
+        return ffi.string(vName[0]).decode('utf-8')
