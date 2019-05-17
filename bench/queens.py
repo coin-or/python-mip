@@ -58,10 +58,10 @@ def gen_model(n, solver, f):
 
 f = open('queens-mip-{}.csv'.format(argv[1]), 'w')
 
-PROFILE_FILE = 'queens-mip-{}.dat'.format(argv[1])
-flags = os.O_RDWR | os.O_CREAT | os.O_TRUNC
-outfd = os.open(PROFILE_FILE, flags)
-vmprof.enable(outfd, period=0.01)
+#PROFILE_FILE = 'queens-mip-{}.dat'.format(argv[1])
+#flags = os.O_RDWR | os.O_CREAT | os.O_TRUNC
+#outfd = os.open(PROFILE_FILE, flags)
+#vmprof.enable(outfd, period=0.01)
 
 for n in N:
     gen_model(n, argv[1], f)
@@ -70,4 +70,4 @@ for n in N:
     f.flush()
 f.close()
 
-vmprof.disable()
+#vmprof.disable()
