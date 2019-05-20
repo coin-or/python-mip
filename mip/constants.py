@@ -1,4 +1,4 @@
-VERSION = '1.0.30'
+VERSION = '1.1.1'
 
 from enum import Enum
 

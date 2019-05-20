@@ -57,7 +57,7 @@ def gen_model(n):
     modelRows = queens.NumConstrs
 
 
-f = open('queens-gurobi-cpython.csv', 'w')
+f = open('queens-gurobipy-cpython.csv', 'w')
 
 for n in N:
     gen_model(n)

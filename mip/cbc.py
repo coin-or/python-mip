@@ -68,6 +68,8 @@ if has_cbc:
 
     int Cbc_getNumCols(Cbc_Model *model);
 
+    int Cbc_getNumRows(Cbc_Model *model);
+
     int Cbc_getNumIntegers(Cbc_Model *model);
 
     int Cbc_getNumElements(Cbc_Model *model);
