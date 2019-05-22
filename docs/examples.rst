@@ -159,3 +159,63 @@ trip has length 547 and is depicted bellow:
     :width: 60%
     :align: center
 
+
+Frequency Assignment
+--------------------
+
+The design of wireless networks, such as cell phone networks, involves
+assigning communication frequencies to devices. These communication
+frequencies can be separated into channels. The geographical area covered
+by a network can be divided into hexagonal cells, where each cell has
+a base station that covers a given area. Each cell requires a different
+number of channels, based on usage statistics and each cell has a set of
+neighbor cells, based on the geographical distances. The design of an
+efficient mobile network involves selecting subsets of channels avoiding
+interference between calls in the same cell and in neighboring cells.
+Also, for economical reasons, the total bandwidth in use must be
+minimized, i.e., the total number of different channels used. One of the
+first real cases discusses in literature are the Philadelphia
+:cite:`Ande73` instances, with the structure depicted bellow:
+
+
+.. image:: ./images/philadelphia.png
+    :width: 60%
+    :align: center
+
+
+Each cell has a demand with the required number of channels draw at the
+center of the hexagon, and an identifier at the top left corner. Also, in
+this example, each cell has a set of at most 6 adjacent neighboring cells
+(distance 1). The largest demand (77) occurs on cell 8. This cell has the
+following adjacent cells, with distance 1: (1, 2, 7, 9, 15, 16) neighbors
+of neighbors have distance 2 and so on. A generalization of this problem
+(not restricted to the hexagonal topology), is the Bandwidth Multicoloring
+Problem (BMCP), which has the following input data:
+
+:math:`N`:
+    set of cells, numbered from 1 to :math:`n`;
+
+:math:`r_i \in \mathbb{Z}^+`:
+    demand of cell :math:`i \in N`, i.e. required number of channels;
+
+:math:`d_{i,j} \in \mathbb{Z}^+`:
+    minimum distance between channels assigned to nodes :math:`i` and :math:`j`,
+    :math:`d_{i,i}` indicates the minimum distance between different channels 
+    allocated to the same cell.
+
+Given an upper limit :math:`\overline{u}` on the maximum number of channels
+available, the BMPC can be formally stated as the combinatorial optimization
+problem of defining subsets of channels :math:`C_1, \ldots, C_n` while
+minimizing the used bandwidth and avoiding interference:
+
+.. math::
+
+     \textrm{Minimize:} & \\ 
+                       & \max_{c \in C_1 \cup C_2, \ldots, C_n}c  \\
+     \textrm{Subject to:} & \\
+            \mid c_1 - c_2 \mid & \geq d_{i,j} \,\,\, \forall (i,j) \in N \times N, (c_1, c_2) \in C_i \times C_j \\
+             C_i & \subseteq \{1, \ldots, \overline{u} \} \,\,\, \forall i \in N \\
+             \mid C_i \mid &  = r_i \,\,\, \forall i \in N
+
+
+This problem can be formulated as a mixed integer program considering binary
