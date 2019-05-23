@@ -5,6 +5,7 @@ from math import inf
 from typing import List, Tuple
 from builtins import property
 from os import environ
+from os.path import isfile
 from collections.abc import Sequence
 
 
@@ -661,18 +662,55 @@ class Model:
         return self.__status
 
     def read(self, path: str):
-        """Reads a MIP model in :code:`.lp` or :code:`.mps` format.
+        """Reads a MIP model or an initial feasible solution.
 
-        Note: all variables, constraints and parameters from the current model
-        will be cleared.
+           One of  the following file name extensions should be used
+           to define the contents of what will be loaded:
+
+           :code:`.lp`
+             mip model stored in the `LP file format <https://www.ibm.com/support/knowledgecenter/SSSA5P_12.9.0/ilog.odms.cplex.help/CPLEX/GettingStarted/topics/tutorials/InteractiveOptimizer/usingLPformat.html>`_
+
+           :code:`.mps`
+             mip model stored in the `MPS file format <https://en.wikipedia.org/wiki/MPS_(format)>`_
+
+           :code:`.sol`
+             initial feasible solution
+
+        Note: if a new problem is readed, all variables, constraints
+        and parameters from the current model will be cleared.
 
         Args:
             path(str): file name
         """
-        self.clear()
-        self.solver.read(path)
-        self.__n_cols = self.solver.num_cols()
-        self.__n_rows = self.solver.num_rows()
+        if not isfile(file_path):
+            raise OSError(2, 'File {} does not exists'.format(file_path))
+
+        if file_path.lower().endswith('.sol') or \
+           file_path.lower().endswith('.mst'):
+            mip_start = load_mipstart(file_path)
+            if not mip_start:
+                raise Exception('File {} does not contains a valid feasible \
+                                 solution.'.format(file_path))
+            var_list = []
+            for name, value in mip_start:
+                var = self.model.var_by_name(name)
+                if var is not None:
+                    self.var_list.append(var, value)
+            if not var_list:
+                raise Exception('Invalid variable(s) name(s) in \
+                                 mipstart file {}'.format(file_path))
+
+            self.model.start = var_list
+
+        elif file_path.lower().endswith('.lp') or \
+                file_path.lower().endswith('.mps'):
+            self.clear()
+            self.solver.read(file_path)
+            self.__n_cols = self.solver.num_cols()
+            self.__n_rows = self.solver.num_rows()
+        else:
+            raise Exception('Use .lp, .mps, .sol or .mst as file extension \
+                             to indicate the file format.')
 
     def relax(self):
         """ Relax integrality constraints of variables
@@ -685,14 +723,38 @@ class Model:
             if v.type == BINARY or v.type == INTEGER:
                 v.type = CONTINUOUS
 
-    def write(self, path: str):
-        """Saves the MIP model, using the extension :code:`.lp` or
-        :code:`.mps` to specify the file format.
+    def write(self, file_path: str):
+        """Saves a MIP model or an initial feasible solution.
+
+           One of  the following file name extensions should be used
+           to define the contents of what will be saved:
+
+           :code:`.lp`
+             mip model stored in the `LP file format <https://www.ibm.com/support/knowledgecenter/SSSA5P_12.9.0/ilog.odms.cplex.help/CPLEX/GettingStarted/topics/tutorials/InteractiveOptimizer/usingLPformat.html>`_
+
+           :code:`.mps`
+             mip model stored in the `MPS file format <https://en.wikipedia.org/wiki/MPS_(format)>`_
+
+           :code:`.sol`
+             initial feasible solution
 
         Args:
-            path(str): file name
+            file_path(str): file name
         """
-        self.solver.write(path)
+        if file_path.lower().endswith('.sol') or \
+           file_path.lower().endswith('.mst'):
+            if self.start:
+                save_mipstart(self.start, file_path)
+            else:
+                mip_start = [(var, var.x) for var in self.vars
+                            if abs(var.x) >= 1e-8]
+                save_mipstart(mip_start, file_path)
+        elif file_path.lower().endswith('.lp') or \
+                file_path.lower().endswith('.mps'):
+            self.solver.write(file_path)
+        else:
+            raise Exception('Use .lp, .mps, .sol or .mst as file extension \
+                             to indicate the file format.')
 
     @property
     def objective_bound(self) -> float:
@@ -1413,6 +1475,27 @@ def xsum(terms) -> LinExpr:
 
 # function aliases
 quicksum = xsum
+
+
+def save_mipstart(sol: List[Tuple[Var, float]], file_name: str, obj=0.0):
+    f = open(file_name, 'w')
+    f.write('Feasible solution - objective {}\n'.format(obj))
+    for i, (var, val) in enumerate(sol):
+        f.write('{} {} {} {}\n'.format(i, var.name, val, var.obj))
+    f.close()
+
+
+def load_mipstart(file_name: str) -> \
+                   List[Tuple[str, float]]:
+    f = open(file_name, 'w')
+    result = []
+    line = f.next()
+    for line in f:
+        line = line.rstrip().lstrip().lower()
+        line = ' '.join(line.split())
+        lc = line.split(' ')
+        result.append(lc[1], float(lc[2]))
+    return result
 
 
 def read_custom_settings():
