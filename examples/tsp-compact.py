@@ -7,7 +7,8 @@
 
 from sys import argv
 from tspdata import TSPData
-from mip.model import *
+from mip.model import Model, xsum
+from mip.constants import BINARY
 
 if len(argv) <= 1:
     print('enter instance name.')

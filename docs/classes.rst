@@ -3,8 +3,10 @@ Classes
 
 .. _chapClasses:
 
+.. automodule:: mip.constants
+.. automodule:: mip.exceptions
 .. automodule:: mip.model
- 
+
 Model
 -----
 
@@ -31,6 +33,16 @@ Column
 .. autoclass:: Column
     :members:
 
+VarList
+-------
+.. autoclass:: VarList
+    :members:
+
+ConstrList
+----------
+.. autoclass:: ConstrList
+    :members:
+
 CutsGenerator
 -------------
 .. autoclass:: CutsGenerator
@@ -44,5 +56,10 @@ IncumbentUpdater
 CutPool
 -------
 .. autoclass:: CutPool
+    :members:
+
+OptimizationStatus
+------------------
+.. autoclass:: OptimizationStatus
     :members:
 
