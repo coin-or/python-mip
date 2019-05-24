@@ -473,17 +473,9 @@ class Model:
 
                 x = [m.add_var(var_type=BINARY) for i in range(n)]
         """
-        if var_type == BINARY:
-            lb = 0.0
-            ub = 1.0
-        if len(name.strip()) == 0:
-            nc = self.solver.num_cols()
-            name = "C{:011d}".format(nc)
-        self.solver.add_var(obj, lb, ub, var_type, column, name)
-        self.__n_cols += 1
-        return Var(self, self.__n_cols-1)
+        return self.vars.add(name, lb, ub, obj, var_type, column)
 
-    def add_constr(self, lin_expr: "LinExpr", name: str = "") -> "Constr":
+    def add_constr(self, lin_expr: LinExpr, name: str = "") -> "Constr":
         """ Creates a new constraint (row)
 
         Adds a new constraint to the model, returning its reference
@@ -519,9 +511,7 @@ class Model:
         if isinstance(lin_expr, bool):
             raise InvalidLinExpr("A boolean (true/false) cannot be \
             used as a constraint.")
-        self.__n_rows += 1
-        self.solver.add_constr(lin_expr, name)
-        return Constr(self, self.__n_rows-1)
+        return self.constrs.add(lin_expr, name)
 
     def clear(self):
         """Clears the model
@@ -1416,35 +1406,60 @@ class Var:
 
 
 class VarList(Sequence):
+    """ List of model variables
+    """
+
     def __init__(self, model: Model):
         self.__model = model
+        self.__vars = []
 
-    def __getitem__(self, index: int) -> Var:
-        if index >= len(self) or index < -len(self):
-            raise IndexError
-        if index < 0:
-            index = len(self)+index
-        assert index >= 0 and index < len(self)
-        return Var(self.__model, index)
+    def add(self, name: str = "",
+            lb: float = 0.0,
+            ub: float = INF,
+            obj: float = 0.0,
+            var_type: str = CONTINUOUS,
+            column: Column = None) -> Var:
+        if not name:
+            name = 'var({})'.format(len(self.__vars))
+        if var_type == BINARY:
+            lb = 0.0
+            ub = 1.0
+        new_var = Var(self.__model, len(self.__vars))
+        self.__model.solver.add_var(obj, lb, ub, var_type, column, name)
+        self.__vars.append(new_var)
+        return new_var
+
+    def __getitem__(self, key):
+        if (isinstance(key, str)):
+            return self.__model.var_by_name(key)
+        return self.__vars[key]
 
     def __len__(self) -> int:
-        return self.__model.solver.num_cols()
+        return len(self.__vars)
 
 
 class ConstrList(Sequence):
     def __init__(self, model: Model):
         self.__model = model
+        self.__constrs = []
 
-    def __getitem__(self, index: int) -> Constr:
-        if index >= len(self) or index < -len(self):
-            raise IndexError
-        if index < 0:
-            index = len(self)+index
-        assert index >= 0 and index < len(self)
-        return Constr(self.__model, index)
+    def __getitem__(self, key):
+        if (isinstance(key, str)):
+            return self.__model.constr_by_name(key)
+        return self.__constrs[key]
+
+    def add(self,
+            lin_expr: LinExpr,
+            name: str = '') -> Constr:
+        if not name:
+            name = 'constr({})'.format(len(self.__constrs))
+        new_constr = Constr(self.__model, len(self.__constrs))
+        self.__model.solver.add_constr(lin_expr, name)
+        self.__constrs.append(new_constr)
+        return new_constr
 
     def __len__(self) -> int:
-        return self.__model.solver.num_rows()
+        return len(self.__constrs)
 
 
 class BranchSelector:
