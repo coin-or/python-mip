@@ -111,7 +111,7 @@ if has_gurobi:
 
         int GRBsetdblparam(GRBenv *env, const char *paramname, double value);
 
-        int GRBsetobjectiven(GRBmodel *model, int index, 
+        int GRBsetobjectiven(GRBmodel *model, int index,
                         int priority, double weight,
                         double abstol, double reltol, const char *name,
                         double constant, int lnz, int *lind, double *lval);
@@ -312,9 +312,6 @@ check your license.')
         else:
             vind = ffi.NULL
             vval = ffi.NULL
-
-        if not name:
-            name = 'x({})'.format(self.num_cols())
 
         # variable type
         vtype = var_type.encode('utf-8')
