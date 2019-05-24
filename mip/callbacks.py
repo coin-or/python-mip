@@ -1,6 +1,6 @@
 from collections import defaultdict
-from mip.model import *
 from typing import List, Tuple
+from mip.model import *
 
 
 class BranchSelector:
@@ -40,7 +40,7 @@ class CutsGenerator:
 
 
 class CutPool:
-    def __init__(self: "CutPool"):
+    def __init__(self):
         """Stores a list list of different cuts, repeated cuts are discarded.
         """
         self.__cuts = []
@@ -98,5 +98,6 @@ class LazyConstrsGenerator:
     def __init(self, model: "Model"):
         self.model = model
 
-    def generate_lazy_constrs(self, solution: List[Tuple["Var", float]]) -> List["LinExpr"]:
+    def generate_lazy_constrs(self, solution: List[Tuple["Var", float]]
+                              ) -> List["LinExpr"]:
         raise NotImplementedError()

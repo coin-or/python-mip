@@ -58,7 +58,8 @@ The Traveling Salesman Problem
 ------------------------------
 
 The traveling salesman problem (TSP) is one of the most studied combinatorial
-optimization problems. To to illustrate this problem, consider that you
+optimization problems, with the first computational studies dating back to the 50s :cite:`Dantz54,Appleg06`. 
+To to illustrate this problem, consider that you
 will spend some time in Belgium and wish to visit some of its main tourist
 attractions, depicted in the map bellow:
 
