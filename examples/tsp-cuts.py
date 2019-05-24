@@ -4,18 +4,19 @@ is dinamically improved with cutting planes, sub-tour elimination inequalities,
 using a CutsGenerator implementation. Cut generation is called from the
 solver engine whenever a fractional solution is generated."""
 
-from tspdata import TSPData
 from sys import argv
-from mip.model import *
-import networkx as nx
 from typing import List, Tuple
+import networkx as nx
+from tspdata import TSPData
+from mip.model import Model, xsum, CutsGenerator, LinExpr, Var, BINARY
+from mip.callbacks import CutPool
 
 
 class SubTourCutGenerator(CutsGenerator):
     """Class to generate cutting planes for the TSP"""
-    def __init__(self, m: Model, F: List[Tuple[int, int]]):
-        super().__init__(m)
-        self.F = F
+    def __init__(self, model: Model, Fl: List[Tuple[int, int]]):
+        super().__init__(model)
+        self.F = Fl
 
     def generate_cuts(self, rsol: List[Tuple[Var, float]]) -> List[LinExpr]:
         """receives a fractional solution   rs and returns cutting planes"""
@@ -52,7 +53,7 @@ print('solving TSP with {} cities'.format(inst.n))
 m = Model()
 # binary variables indicating if arc (i,j) is used on the route or not
 x = [[m.add_var(name='x({},{})'.format(i, j),
-      var_type=BINARY) for j in range(n)] for i in range(n)]
+                var_type=BINARY) for j in range(n)] for i in range(n)]
 
 # continuous variable to prevent subtours: each
 # city will have a different "identifier" in the planned route
