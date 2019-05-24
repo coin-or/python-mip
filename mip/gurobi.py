@@ -663,7 +663,7 @@ check your license.')
         self._model = self._model[0]
 
     def num_cols(self) -> int:
-        return self.get_int_attr("NumVars")+self.__n_cols_buffer
+        return self.get_int_attr("NumVars") + self.__n_cols_buffer
 
     def num_int(self) -> int:
         return self.get_int_attr("NumIntVars") + self.__n_int_buffer

@@ -935,7 +935,7 @@ class Model:
     @property
     def num_cols(self) -> int:
         """number of columns (variables) in the model"""
-        return self.__n_cols
+        return len(self.vars)
 
     @property
     def num_int(self) -> int:
@@ -945,7 +945,7 @@ class Model:
     @property
     def num_rows(self) -> int:
         """number of rows (constraints) in the model"""
-        return self.__n_rows
+        return len(self.constrs)
 
     @property
     def num_nz(self) -> int:
