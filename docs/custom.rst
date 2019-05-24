@@ -16,7 +16,7 @@ Cutting Planes
 In many applications there are `strong formulations <https://www.researchgate.net/publication/227062257_Strong_formulations_for_mixed_integer_programming_A_survey>`_ 
 that include an exponential number of constraints. These formulations cannot be direct
 handled by the MIP Solver: entering all these constraints at once is usually
-not practical. In the `Cutting Planes <https://en.wikipedia.org/wiki/Cutting-plane_method>`_ 
+not practical. In the `Cutting Planes <https://en.wikipedia.org/wiki/Cutting-plane_method>`_ :cite:`Dantz54`
 method the LP relaxation is solved and only constraints which are *violated* are inserted. The model is re-optimized
 and at each iteration a stronger formulation is obtained until no more violated
 inequalities are found. The problem of discovering which are the missing

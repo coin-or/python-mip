@@ -1,12 +1,13 @@
-from mip.callbacks import *
-from mip.constants import *
-from mip.exceptions import *
 from math import inf
 from typing import List, Tuple
 from builtins import property
 from os import environ
 from os.path import isfile
 from collections.abc import Sequence
+from mip.callbacks import CutsGenerator, IncumbentUpdater
+from mip.constants import BINARY, CONTINUOUS, INTEGER, MINIMIZE, INF, \
+        OptimizationStatus, SearchEmphasis, VERSION, GUROBI, CBC, \
+        LESS_OR_EQUAL, GREATER_OR_EQUAL
 
 
 class Column:
@@ -26,7 +27,8 @@ class Constr:
 
         A constraint is a specific :class:`~mip.model.LinExpr`. Constraints
         can be added to the model using the overloaded operator
-        +=, e.g., if :code:`m` is a model:
+        += or using the method :meth:`~mip.model.Model.add_constr` of the
+        :class:`~mip.model.Model` class:
 
         .. code:: python
 
@@ -353,8 +355,12 @@ class Model:
     querying optimization results and re-optimizing Mixed-Integer Programming
     Models.
 
-    To check how models are created please see the examples included.
+    To check how models are created please see the
+    :ref:`examples <chapExamples>` included.
 
+    Attributes:
+        vars(VarList): list of problem variables (:class:`~mip.model.Var`)
+        constrs(ConstrList): list of constraints (:class:`~mip.model.Constr`)
     """
 
     def __init__(self, name: str = "",
@@ -1219,7 +1225,7 @@ class Var:
     """
     Objects of class Var are decision variables of a model. The creation
     of variables is performed calling the :meth:`~mip.model.Model.add_var`
-    method of the Model class.
+    method of the :class:`~mip.model.Model` class.
 
     """
 
@@ -1359,7 +1365,7 @@ class Var:
 
     @property
     def rc(self) -> float:
-        """reduced cost, only available after a linear programming __model (no
+        """reduced cost, only available after a linear programming model (no
         integer variables) is optimized"""
         if self.__model.status != OptimizationStatus.OPTIMAL:
             raise SolutionNotAvailable('Solution not available.')
@@ -1406,7 +1412,22 @@ class Var:
 
 
 class VarList(Sequence):
-    """ List of model variables
+    """ List of model variables (:class:`~mip.model.Var`)
+
+        The number of variables of a model :code:`m` can be queried as
+        :code:`len(m.vars)` or as :code:`m.num_cols`.
+
+        Specific variables can be retrieved by their indices or names.
+        For example, to print the lower bounds of the first
+        variable or of a varible named :code:`z`, you can use, respectively:
+
+        .. code-block:: python
+
+            print(m.vars[0].lb)
+
+        .. code-block:: python
+
+            print(m.vars['z'].lb)
     """
 
     def __init__(self, model: Model):
@@ -1439,6 +1460,8 @@ class VarList(Sequence):
 
 
 class ConstrList(Sequence):
+    """ List of problem constraints"""
+
     def __init__(self, model: Model):
         self.__model = model
         self.__constrs = []
