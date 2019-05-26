@@ -7,7 +7,8 @@ from collections.abc import Sequence
 from mip.callbacks import CutsGenerator, IncumbentUpdater
 from mip.constants import BINARY, CONTINUOUS, INTEGER, MINIMIZE, INF, \
         OptimizationStatus, SearchEmphasis, VERSION, GUROBI, CBC, \
-        LESS_OR_EQUAL, GREATER_OR_EQUAL
+        LESS_OR_EQUAL, GREATER_OR_EQUAL, EPS
+from mip.exceptions import InvalidLinExpr, SolutionNotAvailable
 
 
 class Column:
@@ -529,9 +530,6 @@ class Model:
         # creating a new solver instance
         sense = self.sense
 
-        self.__n_cols = 0
-        self.__n_rows = 0
-
         if self.solver_name.upper() == GUROBI:
             from mip.gurobi import SolverGurobi
             self.solver = SolverGurobi(self, self.name, sense)
@@ -678,15 +676,15 @@ class Model:
         Args:
             path(str): file name
         """
-        if not isfile(file_path):
-            raise OSError(2, 'File {} does not exists'.format(file_path))
+        if not isfile(path):
+            raise OSError(2, 'File {} does not exists'.format(path))
 
-        if file_path.lower().endswith('.sol') or \
-           file_path.lower().endswith('.mst'):
-            mip_start = load_mipstart(file_path)
+        if path.lower().endswith('.sol') or \
+           path.lower().endswith('.mst'):
+            mip_start = load_mipstart(path)
             if not mip_start:
                 raise Exception('File {} does not contains a valid feasible \
-                                 solution.'.format(file_path))
+                                 solution.'.format(path))
             var_list = []
             for name, value in mip_start:
                 var = self.model.var_by_name(name)
@@ -694,19 +692,19 @@ class Model:
                     self.var_list.append(var, value)
             if not var_list:
                 raise Exception('Invalid variable(s) name(s) in \
-                                 mipstart file {}'.format(file_path))
+                                 mipstart file {}'.format(path))
 
             self.model.start = var_list
 
-        elif file_path.lower().endswith('.lp') or \
-                file_path.lower().endswith('.mps'):
+        elif path.lower().endswith('.lp') or \
+                path.lower().endswith('.mps'):
             self.clear()
-            self.solver.read(file_path)
-            self.__n_cols = self.solver.num_cols()
-            self.__n_rows = self.solver.num_rows()
+            self.solver.read(path)
         else:
             raise Exception('Use .lp, .mps, .sol or .mst as file extension \
                              to indicate the file format.')
+        self.vars.update_vars(self.solver.num_cols())
+        self.constrs.update_constrs(self.solver.num_rows())
 
     def relax(self):
         """ Relax integrality constraints of variables
@@ -743,7 +741,7 @@ class Model:
                 save_mipstart(self.start, file_path)
             else:
                 mip_start = [(var, var.x) for var in self.vars
-                            if abs(var.x) >= 1e-8]
+                             if abs(var.x) >= 1e-8]
                 save_mipstart(mip_start, file_path)
         elif file_path.lower().endswith('.lp') or \
                 file_path.lower().endswith('.mps'):
@@ -1042,29 +1040,27 @@ class Model:
         Args:
             objects: can be a Var, a Constr or a list of these objects
         """
-        if isinstance(objects, Var):
-            self.solver.remove_vars([objects.idx])
-        elif isinstance(objects, Constr):
-            self.solver.remove_constrs([objects.idx])
-        elif isinstance(objects, list):
+        if isinstance(objects, Var) or isinstance(objects, Constr):
+            objects = [objects]
+
+        if isinstance(objects, list):
             vlist = []
             clist = []
             for o in objects:
                 if isinstance(o, Var):
-                    vlist.append(o.idx)
+                    vlist.append(o)
                 elif isinstance(o, Constr):
-                    clist.append(o.idx)
+                    clist.append(o)
                 else:
                     raise Exception("Cannot handle removal of object of type "
                                     + type(o) + " from model.")
             if vlist:
-                vlist.sort()
-                self.solver.remove_vars(vlist)
-                self.__n_cols -= len(vlist)
+                self.vars.remove(vlist)
             if clist:
-                clist.sort()
-                self.solver.remove_constrs(clist)
-                self.__n_rows -= len(clist)
+                self.constrs.remove(clist)
+        else:
+            raise Exception("Cannot handle removal of object of type "
+                            + type(o) + " from model.")
 
 
 class Solver:
@@ -1458,6 +1454,28 @@ class VarList(Sequence):
     def __len__(self) -> int:
         return len(self.__vars)
 
+    def update_vars(self, n_vars: int):
+        self.__vars = [Var(self.__model, i) for i in range(n_vars)]
+
+    def remove(self, vars: List[Var]):
+        iv = [1 for i in range(len(self.__vars))]
+        vlist = [v.idx for v in vars]
+        vlist.sort()
+        for i in vlist:
+            iv[i] = 0
+        self.__model.solver.remove_vars(vlist)
+        i = 0
+        for v in self.__vars:
+            if iv[v.idx] == 0:
+                v.idx = -1
+            else:
+                v.idx = i
+                i += 1
+        self.__vars = [v for v in
+                       self.__vars
+                       if v.idx != -1]
+
+
 
 class ConstrList(Sequence):
     """ List of problem constraints"""
@@ -1483,6 +1501,27 @@ class ConstrList(Sequence):
 
     def __len__(self) -> int:
         return len(self.__constrs)
+
+    def remove(self, constrs: List[Constr]):
+        iv = [1 for i in range(len(self.__constrs))]
+        clist = [c.idx for c in constrs]
+        clist.sort()
+        for i in clist:
+            iv[i] = 0
+        self.__model.solver.remove_constrs(clist)
+        i = 0
+        for c in self.__constrs:
+            if iv[c.idx] == 0:
+                c.idx = -1
+            else:
+                c.idx = i
+                i += 1
+        self.__constrs = [c for c in
+                          self.__constrs
+                          if c.idx != -1]
+
+    def update_constrs(self, n_constrs: int):
+        self.__constrs = [Constr(self.__model, i) for i in range(n_constrs)]
 
 
 class BranchSelector:

@@ -1,11 +1,12 @@
-from mip.model import Model, Solver, Column, Var, LinExpr, Constr
-from mip.constants import MAXIMIZE, MINIMIZE, CONTINUOUS, INTEGER, BINARY, \
-    OptimizationStatus, EQUAL, LESS_OR_EQUAL, GREATER_OR_EQUAL, SearchEmphasis
-from cffi import FFI
 from ctypes.util import find_library
 from sys import maxsize
 from typing import List, Tuple
 from os.path import isfile
+from cffi import FFI
+from mip.model import Model, Solver, Column, Var, LinExpr, Constr
+from mip.constants import MAXIMIZE, MINIMIZE, CONTINUOUS, INTEGER, BINARY, \
+    OptimizationStatus, EQUAL, LESS_OR_EQUAL, GREATER_OR_EQUAL, SearchEmphasis
+
 
 try:
     found = False
@@ -141,6 +142,8 @@ if has_gurobi:
 
         int GRBreadmodel(GRBenv *env, const char *filename, GRBmodel **modelP);
 
+        int GRBdelvars(GRBmodel *model, int numdel, int *ind );
+
         int GRBsetcharattrlist(GRBmodel *model, const char *attrname,
             int len, int *ind, char *newvalues);
 
@@ -162,6 +165,8 @@ if has_gurobi:
 
         int GRBcblazy(void *cbdata, int lazylen, const int *lazyind,
             const double *lazyval, char lazysense, double lazyrhs);
+
+        int GRBdelconstrs (GRBmodel *model, int numdel, int *ind);
     """)
 
     GRBloadenv = grblib.GRBloadenv
@@ -200,6 +205,8 @@ if has_gurobi:
     GRBcbcut = grblib.GRBcbcut
     GRBcblazy = grblib.GRBcblazy
     GRBsetcallbackfunc = grblib.GRBsetcallbackfunc
+    GRBdelvars = grblib.GRBdelvars
+    GRBdelconstrs = grblib.GRBdelconstrs
 
 
 GRB_CB_PRE_COLDEL = 1000
@@ -654,7 +661,7 @@ check your license.')
         if not isfile(file_path):
             raise Exception('File {} does not exists'.format(file_path))
         GRBfreemodel(self._model)
-        self._model = ffi.new('void **')
+        self._model = ffi.new("GRBmodel **")
         st = GRBreadmodel(self._env, file_path.encode('utf-8'),
                           self._model)
         if st != 0:
@@ -720,7 +727,7 @@ check your license.')
         st = GRBgetconstrs(self._model, nnz, cbeg, cind, cval,
                            constr.idx, 1)
         if st != 0:
-            raise Exception.create('Could not query constraint contents')
+            raise Exception('Could not query constraint contents')
 
         # obtaining sense and rhs
         c_sense = ffi.new('char *')
@@ -760,7 +767,7 @@ check your license.')
         raise NotImplementedError("Gurobi functionality currently unavailable")
 
     def constr_get_pi(self, constr: "Constr") -> float:
-        return self.get_dbl_attr("Pi", constr.idx)
+        return self.get_dbl_attr_element("Pi", constr.idx)
 
     def constr_get_index(self, name: str) -> int:
         idx = ffi.new('int *')
@@ -768,6 +775,13 @@ check your license.')
         if st != 0:
             raise Exception("Error calling GRBgetconstrbyname")
         return idx[0]
+
+    def remove_constrs(self, constrsList: List[int]):
+        idx = ffi.new('int[]', constrsList)
+        st = GRBdelconstrs(self._model, len(constrsList), idx)
+        if st != 0:
+            raise Exception("Error calling GRBdelconstrs")
+        self.__n_modified_rows += len(constrsList)
 
     def var_get_lb(self, var: Var) -> float:
         self.flush_cols()
@@ -858,11 +872,18 @@ check your license.')
         self.flush_cols()
         return self.get_str_attr_element('VarName', idx)
 
+    def remove_vars(self, varsList: List[int]):
+        idx = ffi.new('int[]', varsList)
+        st = GRBdelvars(self._model, len(varsList), idx)
+        if st != 0:
+            raise Exception('Error calling GRBdelvars')
+        self.__n_modified_cols += len(varsList)
+
     def get_emphasis(self) -> SearchEmphasis:
         fc = self.get_int_param("MIPFocus")
         if fc == 1:
             return SearchEmphasis.FEASIBILITY
-        elif fc == 3 or fc == 2:
+        if fc in (2, 3):
             return SearchEmphasis.OPTIMALITY
 
         return 0
