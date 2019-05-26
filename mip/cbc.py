@@ -737,21 +737,22 @@ class SolverCbc(Solver):
         return expr
 
     def constr_get_name(self, idx: int) -> str:
+        namep = self.__name_space
         cbclib.Cbc_getRowName(self._model, idx,
-                              self.__name_space, MAX_NAME_SIZE)
-        return self.__name_space.decode('utf-8')
+                              namep, MAX_NAME_SIZE)
+        return ffi.string(namep).decode('utf-8')
 
     def set_processing_limits(self,
-                              maxTime=INF,
-                              maxNodes=INF,
-                              maxSol=INF):
-        if maxTime != INF:
+                              max_time: float = INF,
+                              max_nodes: int = INF,
+                              max_sol: int = INF):
+        if max_time != INF:
             cbc_set_parameter(self, 'timeMode', 'elapsed')
-            cbc_set_parameter(self, 'seconds', '{}'.format(maxTime))
-        if maxNodes != INF:
-            cbc_set_parameter(self, 'maxNodes', '{}'.format(maxNodes))
-        if maxSol != INF:
-            cbc_set_parameter(self, 'maxSolutions', '{}'.format(maxSol))
+            cbc_set_parameter(self, 'seconds', '{}'.format(max_time))
+        if max_nodes != INF:
+            cbc_set_parameter(self, 'max_nodes', '{}'.format(max_nodes))
+        if max_sol != INF:
+            cbc_set_parameter(self, 'max_solutions', '{}'.format(max_sol))
 
     def get_emphasis(self) -> SearchEmphasis:
         return self.emphasis
@@ -764,11 +765,11 @@ class SolverCbc(Solver):
 
     def remove_constrs(self, constrs: List[int]):
         idx = ffi.new("int[]", constrs)
-        cbclib.Cbc_deleteRows(self._model, idx)
+        cbclib.Cbc_deleteRows(self._model, len(constrs), idx)
 
     def remove_vars(self, cols: List[int]):
         idx = ffi.new("int[]", cols)
-        cbclib.Cbc_deleteCols(self._model, idx)
+        cbclib.Cbc_deleteCols(self._model, len(cols), idx)
 
     def __del__(self):
         cbclib.Cbc_deleteModel(self._model)

@@ -1,6 +1,8 @@
-VERSION = '1.1.1'
+"""Python-MIP constants"""
 
 from enum import Enum
+
+VERSION = '1.1.2'
 
 # epsilon number (practical zero)
 EPS = 10e-6
