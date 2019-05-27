@@ -15,30 +15,30 @@ Some of the main features of MIP are:
   operator overloading makes it easy to write linear expressions in Python;
 
 * full featured:
-    - cut generation: write your cut generator in Python and integrate it
-      into the Branch-and-Cut search;
-    - solution pool: query the elite set of solutions found during the
-      search;
-    - mipstart: use a problem dependent heuristic to generate initial
-      feasible solutions for the MIP search;
+    - cut generation: write your own cut generator in Python and integrate it
+    into the Branch-and-Cut search;
+    - solution pool: query the elite set of solutions found during the search;
+    - MIPStart: use a problem dependent heuristic to generate initial feasible
+    solutions for the MIP search.
 
 * fast: the Python MIP package calls directly the native dynamic loadable
   library of the installed solver using the modern python
-  [ctypes](https://docs.python.org/3/library/ctypes.html) module; models
+  [CFFI](https://cffi.readthedocs.io) module; models
   are efficiently stored and optimized by the solver and MIP transparently
   handles all communication with your Python code; it is also compatible
   with the [Pypy](https://pypy.org/) just in time compiler, meaning that
-  you can have a much better performance than the official Gurobi python
-  interface (which is incompatible with Pypy);
+  you can have a much better performance, up to 25 times faster for the 
+  creation of large MIPs, than the official Gurobi python interface 
+  which only runs on CPython;
 
 * multi solver: Python MIP was written to be deeply integrated with the
   C libraries of the open-source COIN-OR Branch-&-Cut
   [CBC](https://projects.coin-or.org/Cbc) solver and the commercial solver
-  [Gurobi](http://www.gurobi.com/); the design is solver independent and
-  more solvers may be supported in the future but right now the priority
-  is to support as much as possible all features of these solvers;
+  [Gurobi](http://www.gurobi.com/); all details of communicating with 
+  different solvers are handled by Python-MIP and you write only one
+  solver independent code;
 
-* completely written in modern statically typed Python 3 (requires Python
+* written in modern statically typed Python 3 (requires Python
   3.5 or newer).
   
 ## Documentation
