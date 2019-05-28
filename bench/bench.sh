@@ -22,3 +22,7 @@ mv queens-pulp.csv queens-pulp-cpython.csv
 pypy3 queens-pulp.py
 mv queens-pulp.csv queens-pulp-pypy.csv
 
+pypy3 summarize.py
+
+txt2tags -t tex bench-results.t2t
+
