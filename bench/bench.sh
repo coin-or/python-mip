@@ -29,4 +29,5 @@ mv queens-pulp.csv queens-pulp-pypy.csv
 pypy3 summarize.py
 
 txt2tags -t tex bench-results.t2t
+txt2tags -t rst bench-results.t2t
 
