@@ -33,21 +33,22 @@ def gen_model(n, solver, f):
 
     # one per row
     for i in range(n):
-        queens += xsum(x[i][j] for j in range(n)) == 1, 'row({})'.format(i)
+        queens.add_constr(xsum(x[i][j] for j in range(n)) == 1, 'row({})'.format(i))
 
     # one per column
     for j in range(n):
-        queens += xsum(x[i][j] for i in range(n)) == 1, 'col({})'.format(j)
+        queens.add_constr(xsum(x[i][j] for i in range(n)) == 1,
+                'col({})'.format(j))
 
     # diagonal \
     for p, k in enumerate(range(2 - n, n - 2 + 1)):
-        queens += xsum(x[i][j] for i in range(n) for j in range(n)
-                       if i - j == k) <= 1, 'diag1({})'.format(p)
+        queens.add_constr(xsum(x[i][j] for i in range(n) for j in range(n)
+                       if i - j == k) <= 1, 'diag1({})'.format(p))
 
     # diagonal /
     for p, k in enumerate(range(3, n + n)):
-        queens += xsum(x[i][j] for i in range(n) for j in range(n)
-                       if i + j == k) <= 1, 'diag2({})'.format(p)
+        queens.add_constr(xsum(x[i][j] for i in range(n) for j in range(n)
+                       if i + j == k) <= 1, 'diag2({})'.format(p))
 
     ed = time.time()
     execTime = ed-st
