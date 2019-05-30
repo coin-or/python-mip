@@ -1,8 +1,4 @@
-- rebuild with improved optimization options
-    - not from trunk
-- additional use of enumerations, exceptions
+- thread safety cut generator CBC
 - inst logo
-- doc of var and LinExpr
-- thr safety grb
 - AVX optional in CBC
 
