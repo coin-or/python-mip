@@ -58,7 +58,8 @@ The Traveling Salesman Problem
 ------------------------------
 
 The traveling salesman problem (TSP) is one of the most studied combinatorial
-optimization problems. To to illustrate this problem, consider that you
+optimization problems, with the first computational studies dating back to the 50s :cite:`Dantz54,Appleg06`. 
+To to illustrate this problem, consider that you
 will spend some time in Belgium and wish to visit some of its main tourist
 attractions, depicted in the map bellow:
 
@@ -158,4 +159,136 @@ trip has length 547 and is depicted bellow:
 .. image:: ./images/belgium-tourism-14-opt-547.png
     :width: 60%
     :align: center
+
+
+Frequency Assignment
+--------------------
+
+The design of wireless networks, such as cell phone networks, involves
+assigning communication frequencies to devices. These communication frequencies
+can be separated into channels. The geographical area covered by a network can
+be divided into hexagonal cells, where each cell has a base station that covers
+a given area. Each cell requires a different number of channels, based on usage
+statistics and each cell has a set of neighbor cells, based on the geographical
+distances. The design of an efficient mobile network involves selecting subsets
+of channels for each cell, avoiding interference between calls in the same cell
+and in neighboring cells.  Also, for economical reasons, the total bandwidth in
+use must be minimized, i.e., the total number of different channels used. One
+of the first real cases discussed in literature are the Philadelphia
+:cite:`Ande73` instances, with the structure depicted bellow:
+
+
+.. image:: ./images/philadelphia.png
+    :width: 60%
+    :align: center
+
+
+Each cell has a demand with the required number of channels drawn at the center
+of the hexagon, and an identifier at the top left corner. Also, in this
+example, each cell has a set of at most 6 adjacent neighboring cells (distance
+1). The largest demand (77) occurs on cell 8. This cell has the following
+adjacent cells, with distance 1: (1, 2, 7, 9, 15, 16) neighbors of the
+neighbors have distance 2 and so on. The minimum distances between channels in
+base stations with distances :math:`\{0, \ldots, 4\}`, in this example
+instance, are :math:`[4, 2, 1, 1, 1]`, respectively, cells with distance 5 or
+more do not interfere each other.  In this example each one of the 77 channels
+allocated at cell 8 must be separated by at least 4 units and each of these
+channels must be also at least two unities far from each channel assigned to
+node 9, for example.
+
+A generalization of this problem (not restricted to the hexagonal topology), is
+the Bandwidth Multicoloring Problem (BMCP), which has the following input data:
+
+:math:`N`:
+    set of cells, numbered from 1 to :math:`n`;
+
+:math:`r_i \in \mathbb{Z}^+`:
+    demand of cell :math:`i \in N`, i.e., the required number of channels;
+
+:math:`d_{i,j} \in \mathbb{Z}^+`:
+    minimum distance between channels assigned to nodes :math:`i` and :math:`j`,
+    :math:`d_{i,i}` indicates the minimum distance between different channels 
+    allocated to the same cell.
+
+Given an upper limit :math:`\overline{u}` on the maximum number of channels
+:math:`U=\{1,\ldots,\overline{u}\}` used, which can be obtained using a simple
+greedy heuristic, the BMPC can be formally stated as the combinatorial
+optimization problem of defining subsets of channels :math:`C_1, \ldots, C_n`
+while minimizing the used bandwidth and avoiding interference:
+
+.. math::
+
+     \textrm{Minimize:} & \\ 
+                       & \max_{c \in C_1 \cup C_2, \ldots, C_n}c  \\
+     \textrm{Subject to:} & \\
+            \mid c_1 - c_2 \mid & \geq d_{i,j} \,\,\, \forall (i,j) \in N \times N, (c_1, c_2) \in C_i \times C_j \\
+             C_i & \subseteq U \,\,\, \forall i \in N \\
+             \mid C_i \mid &  = r_i \,\,\, \forall i \in N
+
+
+This problem can be formulated as a mixed integer program with binary
+variables indicating the composition of the subsets: binary variables
+:math:`x_{(i,c)}` indicate if for a given cell :math:`i` channel :math:`c`
+is selected (:math:`x_{(i,c)}=1`) or not (:math:`x_{(i,c)}=0`). The BMCP can
+be modeled with the following MIP formulation:
+
+.. math::
+
+   \textrm{Minimize:} & \\      
+                      & z \\
+   \textrm{Subject to:} & \\      
+        \sum_{c=1}^{\overline{u}} x_{(i,c)}  & = r_{i} \,\,\, \forall \, i \in N  \\
+         z & \geq c\cdot x_{(i,c)} \,\,\, \forall \, i \in N, c \in U \\
+        x_{(i,c)} + x_{(j,c')}   & \leq 1 \,\,\, \forall \, (i,j,c,c') \in N \times N \times U \times U : \, i \neq j \land \mid c-c' \mid < d_{(i,j)} \\
+        x_{(i,c} + x_{(i,c')} & \leq 1 \,\,\, \forall i,c \in N \times U, c' \in \{c,+1\ldots, \min(c+d_{i,i}, \overline{u}) \} \\
+         x_{(i,c)} & \in \{0, 1\} \,\,\, \forall \, i \in N, c \in U \\
+          z  \geq 0
+
+
+The following example creates this formulation and executes an heuristic to generate an
+initial feasible solution and consequentily the set :math:`U`:
+
+
+.. code-block:: python
+    :linenos:
+
+    from itertools import product
+    import bmcp_data
+    import bmcp_greedy
+    from mip.model import Model, xsum
+    from mip.constants import MINIMIZE, BINARY
+
+    data = bmcp_data.read('P1.col')
+    N, r, d = data.N, data.r, data.d
+    S = bmcp_greedy.build(data)
+    C, U = S.C, [i for i in range(S.u_max+1)]
+
+    m = Model(sense=MINIMIZE)
+
+    x = [[m.add_var('x({},{})'.format(i, c), var_type=BINARY)
+          for c in U] for i in N]
+
+    m.objective = z = m.add_var('z')
+
+    for i in N:
+        m += xsum(x[i][c] for c in U) == r[i]
+
+    for i, j, c1, c2 in product(N, N, U, U):
+        if i != j and c1 <= c2 < c1+d[i][j]:
+            m += x[i][c1] + x[j][c2] <= 1
+
+    for i, c1, c2 in product(N, U, U):
+        if c1 < c2 < c1+d[i][i]:
+            m += x[i][c1] + x[i][c2] <= 1
+
+    for i, c in product(N, U):
+        m += z >= (c+1)*x[i][c]
+
+    m.start = [(x[i][c], 1.0) for i in N for c in C[i]]
+
+    m.optimize(max_seconds=100)
+
+    C = [[c for c in U if x[i][c] >= 0.99] for i in N]
+    print(C)
+
 

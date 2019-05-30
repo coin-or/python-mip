@@ -1,1 +1,4 @@
 sphinx_autodoc_typehints
+sphinxcontrib.bibtex
+
+
