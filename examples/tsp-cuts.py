@@ -92,7 +92,6 @@ for i in range(n):
     F.append((i, dp))
 
 m.cuts_generator = SubTourCutGenerator(m, F)
-m.cuts = 2
 m.optimize()
 
 print('best route found has length {}'.format(m.objective_value))
