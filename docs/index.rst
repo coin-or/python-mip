@@ -10,6 +10,10 @@ Python MIP - Mixed-Integer Programming Package Documentation
    quickstart
    examples
    custom
+   bench
    classes
 
+
+.. bibliography:: references.bib
+    :cited:
 
