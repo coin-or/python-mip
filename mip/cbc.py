@@ -8,6 +8,7 @@ from sys import platform, maxsize
 from os.path import dirname, isfile
 import os
 from cffi import FFI
+from time import time
 
 warningMessages = 0
 
@@ -47,6 +48,10 @@ except Exception:
 if has_cbc:
 
     ffi.cdef("""
+    typedef void(*cbc_callback)(void *model, int msgno, int ndouble,
+        const double *dvec, int nint, const int *ivec,
+        int nchar, char **cvec);
+
     typedef void(*cbc_cut_callback)(void *osiSolver,
         void *osiCuts, void *appdata);
 
@@ -240,6 +245,11 @@ if has_cbc:
     void Cbc_addIncCallback(
         void *model, cbc_incumbent_callback inccb,
         void *appData );
+
+    void Cbc_registerCallBack(Cbc_Model *model,
+        cbc_callback userCallBack);
+
+    void Cbc_clearCallBack(Cbc_Model *model);
     """)
 
 CHAR_ONE = "{}".format(chr(1)).encode("utf-8")
@@ -365,6 +375,7 @@ class SolverCbc(Solver):
                 var.ub = 1.0
 
     def optimize(self) -> OptimizationStatus:
+        self.__evtimes = {}
 
         # get name indexes from an osi problem
         def cbc_get_osi_name_indexes(osi_solver: CData) -> Dict[str, int]:
@@ -384,6 +395,27 @@ class SolverCbc(Solver):
                              colNames: CData,
                              colValues: CData,
                              appData: CData):
+            return
+
+        @ffi.callback("""
+            void(Cbc_Model *model, int msgno, int ndouble,
+                const double *dvec, int nint, const int *ivec,
+                int nchar, char **cvec)""")
+        def cbc_callback(model: CData, msgno: int, ndouble: int, dvec: CData,
+                         nint: int, ivec: CData, nstr: int, strvec: CData):
+            #ignore = True
+            #if msgno not in self.__evtimes:
+                #ignore = False
+                #self.__evtimes[msgno] = time()
+            #else:
+                #ctime = self.__evtimes[msgno]
+                #if time()-ctime >= 1:
+                    #ignore = False
+                    #self.__evtimes[msgno] = time()
+
+            #if not ignore:
+            print('>>>> CB {}'.format(msgno))
+
             return
 
         # cut callback
@@ -466,6 +498,9 @@ class SolverCbc(Solver):
             cbclib.Cbc_addCutCallback(self._model, cbc_cut_callback,
                                       'mipCutGen'.encode('utf-8'), ffi.NULL)
             self.added_cut_callback = True
+
+        #cbclib.Cbc_clearCallBack(self._model)
+        #cbclib.Cbc_registerCallBack(self._model, cbc_callback)
 
         if self.__verbose == 0:
             cbc_set_parameter(self, 'log', '0')
