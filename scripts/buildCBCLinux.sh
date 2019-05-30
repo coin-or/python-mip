@@ -18,7 +18,7 @@ make clean
 make -j 2
 g++ -shared -Ofast -fPIC -o cbc-c-linux-x86-64.so \
 -I~/prog/include/ -I./CoinUtils/src/ -I./Osi/src/ -I./Clp/src/ -I./Clp/src/ \
--I./Cgl/src/ -I./Cbc/src/ -I./Osi/src/Osi/ -I./Clp/src/OsiClp/ \
+-I./Cgl/src/ -I./Cbc/src/ -I./Osi/src/Osi/ -I./Clp/src/OsiClp/ -DCBC_THREAD \
 ./Cbc/src/Cbc_C_Interface.cpp -L/opt/gcc/lib64/ -L./Cbc/src/.libs/ -L./Cgl/src/.libs/ \
 -L./Cgl/src/.libs/ -L./Osi/src/Osi/.libs/ -L./Clp/src/OsiClp/.libs/ -L./Clp/src/.libs/ \
 -L./CoinUtils/src/.libs/ -L./Cgl/src/.libs/ -L./Clp/src/OsiClp/.libs/ -L./Clp/src/.libs/ \
