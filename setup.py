@@ -24,6 +24,9 @@ setuptools.setup(
     url="https://github.com/coin-or/python-mip",
     packages=['mip', 'mip.libraries'],
     package_data={'mip.libraries': ['*', '*.*']},
+    install_requires=[
+        'cffi'
+    ],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Eclipse Public License",
