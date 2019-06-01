@@ -714,8 +714,8 @@ class Model:
         """
         self.solver.relax()
         for v in self.vars:
-            if v.type == BINARY or v.type == INTEGER:
-                v.type = CONTINUOUS
+            if v.var_type == BINARY or v.var_type == INTEGER:
+                v.var_type = CONTINUOUS
 
     def write(self, file_path: str):
         """Saves a MIP model or an initial feasible solution.
