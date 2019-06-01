@@ -32,25 +32,34 @@ The following python code creates, optimizes and prints the optimal solution for
 .. code-block:: python
     :linenos:
 
-    from mip.model import * 
-    p = [10, 13, 18, 31,  7, 15] 
-    w = [11, 15, 20, 35, 10, 33] 
-    c = 40 
-    n = len(w) 
+    from mip.model import Model, xsum
+    from mip.constants import MAXIMIZE, BINARY
+
+    p = [10, 13, 18, 31, 7, 15]
+    w = [11, 15, 20, 35, 10, 33]
+    c = 47
+    n = len(w)
+
     m = Model('knapsack', MAXIMIZE)
-    x = [m.add_var(var_type='B') for i in range(n)] 
-    m += xsum(p[i]*x[i] for i in range(n) ) 
-    m += xsum(w[i]*x[i] for i in range(n) ) <= c
-    m.optimize() 
-    selected=[i for i in range(n) if x[i].x>=0.99]
+
+    x = [m.add_var(var_type=BINARY) for i in range(n)]
+
+    m.objective = xsum(p[i]*x[i] for i in range(n))
+
+    m += xsum(w[i]*x[i] for i in range(n)) <= c
+
+    m.optimize()
+
+    selected = [i for i in range(n) if x[i].x >= 0.99]
     print('selected items: {}'.format(selected))
 
-Lines 1-5 load problem data. In line 6 an empty maximization
-model m with the (optional) name of "knapsack" is created. Line 7 adds the
-binary decision variables to model m. Line 8 defines the objective
-function of this model and Line 9 adds the capacity constraint. The model
-is optimized in line 10 and the solution, a list of the selected items, is
-computed at line 11.
+Lines 1 and 2 import the required classes and definitions from Python-MIP.
+Lines 4-7 define the problem data. Line 9 creates an empty maximization
+problem :code:`m` with the (optional) name of "knapsack". Line 11 adds the
+binary decision variables to model :code:`m`. Line 13 defines the
+objective function of this model and line 15 adds the capacity constraint.
+The model is optimized in line 17 and the solution, a list of the selected
+items, is computed at line 19.
 
 .. _tsp-label:
 
@@ -108,27 +117,35 @@ included bellow:
 .. code-block:: python
     :linenos:
 
-    from tspdata import TSPData
     from sys import argv
-    from mip.model import *
-    from mip.constants import *
+    from tspdata import TSPData
+    from mip.model import Model, xsum
+    from mip.constants import BINARY
+
     inst = TSPData(argv[1])
-    n = inst.n
-    d = inst.d
+    (n, d) = (inst.n, inst.d)
+
     model = Model()
-    x = [ [ model.add_var(var_type=BINARY) for j in range(n) ] for i in range(n) ]
-    y = [ model.add_var() for i in range(n) ]
-    model += xsum( d[i][j]*x[i][j] for j in range(n) for i in range(n) )
+
+    x = [[model.add_var(var_type=BINARY) for j in range(n)] for i in range(n)]
+
+    y = [model.add_var() for i in range(n)]
+
+    model.objective = xsum(d[i][j]*x[i][j] for j in range(n) for i in range(n))
+
     for i in range(n):
-        model += xsum( x[j][i] for j in range(n) if j != i ) == 1
-    for i in range(n):
-        model += xsum( x[i][j] for j in range(n) if j != i ) == 1
+        model += xsum(x[j][i] for j in range(n) if j != i) == 1
+        model += xsum(x[i][j] for j in range(n) if j != i) == 1
+
     for i in range(1, n):
-        for j in [x for x in range(1, n) if x!=i]:
-            model += y[i]  - (n+1)*x[i][j] >=  y[j] -n
+        for j in [x for x in range(1, n) if x != i]:
+            model += y[i] - (n+1)*x[i][j] >= y[j] - n
+
     model.optimize(max_seconds=30)
-    arcs = [(i,j) for i in range(n) for j in range(n) if x[i][j].x >= 0.99]
+
+    arcs = [(i, j) for i in range(n) for j in range(n) if x[i][j].x >= 0.99]
     print('optimal route : {}'.format(arcs))
+
 
 This `example <https://raw.githubusercontent.com/coin-or/python-mip/master/examples/tsp-compact.py>`_ is included in the Python-MIP package in the example folder
 Additional code to load the problem data (called from line 5) is included in `tspdata.py <https://raw.githubusercontent.com/coin-or/python-mip/master/examples/tspdata.py>`_. 
@@ -140,14 +157,14 @@ of the cities included in the example. To produce the optimal tourist tour for o
     python tsp-compact.py belgium-tourism-14.tsp
 
 In the command line. Follows an explanation of the tsp-compact code: line
-10 creates the main binary decision variables for the selection of arcs
-and line 11 creates the auxiliary continuous variables. Differently
+11 creates the main binary decision variables for the selection of arcs
+and line 13 creates the auxiliary continuous variables. Differently
 from the :math:`x` variables, :math:`y` variables are not required to be
 binary or integral, they can be declared just as continuous variables, the
 default variable type. In this case, the parameter :code:`var_type` can be
-omitted from the :code:`add_var` call. Line 11 sets the total traveled
-distance as objective function and lines 12-18 include the constraints. In
-line 19 we call the optimizer specifying a time limit of 30 seconds. This
+omitted from the :code:`add_var` call. Line 15 sets the total traveled
+distance as objective function and lines 17-23 include the constraints. In
+line 25 we call the optimizer specifying a time limit of 30 seconds. This
 will surely not be necessary for our Belgium example, which will be solved
 instantly, but may be important for larger problems: even though high
 quality solutions may be found very quickly by the MIP solver, the time

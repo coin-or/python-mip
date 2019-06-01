@@ -13,7 +13,7 @@ setuptools.setup(
     name="mip",
     python_requires='>3.5.0',
     version=VERSION,
-    author="Toffolo, T.A.M. and Santos, H.G.",
+    author="Santos, H.G. and Toffolo, T.A.M.",
     author_email="haroldo@ufop.edu.br",
     description="Python tools for Modeling and Solving Mixed-Integer Linear \
     Programs (MIPs)",
