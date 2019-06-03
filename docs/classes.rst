@@ -6,60 +6,61 @@ Classes
 .. automodule:: mip.constants
 .. automodule:: mip.exceptions
 .. automodule:: mip.model
+.. automodule:: mip.callbacks
 
 Model
 -----
 
-.. autoclass:: Model
+.. autoclass:: mip.model.Model
     :members:
 
 LinExpr
 -------
-.. autoclass:: LinExpr
+.. autoclass:: mip.model.LinExpr
     :members:
 
 Var
 ---
-.. autoclass:: Var
+.. autoclass:: mip.model.Var
     :members:
 
 Constr
 ------
-.. autoclass:: Constr
+.. autoclass:: mip.model.Constr
     :members:
 
 Column
 ------
-.. autoclass:: Column
+.. autoclass:: mip.model.Column
     :members:
 
 VarList
 -------
-.. autoclass:: VarList
+.. autoclass:: mip.model.VarList
     :members:
 
 ConstrList
 ----------
-.. autoclass:: ConstrList
+.. autoclass:: mip.model.ConstrList
     :members:
 
 CutsGenerator
 -------------
-.. autoclass:: CutsGenerator
+.. autoclass:: mip.callbacks.CutsGenerator
     :members:
 
 IncumbentUpdater
 ----------------
-.. autoclass:: IncumbentUpdater
+.. autoclass:: mip.callbacks.IncumbentUpdater
     :members:
 
 CutPool
 -------
-.. autoclass:: CutPool
+.. autoclass:: mip.callbacks.CutPool
     :members:
 
 OptimizationStatus
 ------------------
-.. autoclass:: OptimizationStatus
+.. autoclass:: mip.constants.OptimizationStatus
     :members:
 
