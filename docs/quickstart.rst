@@ -204,7 +204,8 @@ bound from the lower bound for concluding the search. In our example,
 whenever the distance of the lower and upper bounds is less or equal 5\%
 (line 1) the search can be finished. 
 
-The :code:`optimize` method returns the status of the BC search:
+The :code:`optimize` method returns the status
+(:class:`~mip.constants.OptimizationStatus`) of the BC search:
 :code:`OPTIMAL` if the search was concluded and the optimal solution was
 found; :code:`FEASIBLE` if a feasible solution was found but there was no
 time to prove whether the current solution was optimal or not; 
@@ -215,10 +216,25 @@ or :code:`INT_INFEASIBLE` if no feasible solution exists for the model;
 some error occurred during optimization. In the example above, if a feasible
 solution is available (line 8), variables which have value different from zero
 are printed. Observe also that even when no feasible solution is available
-the lower bound is available (line 8).
+the lower bound is available (line 8). If a truncated execution was performed, 
+i.e., the solver stopped due to the time limit, you can check an estimate of 
+the quality of the solution found checking the :attr:`~mip.model.Model.gap`
+property.
 
-TODO: solution pool 
-TODO: enumerations
+During the tree search, it is often the case that many different feasible solutions
+are found. The solver engine stores this solutions in a solution pool. The following code 
+prints all routes found while optimizing the :ref:`Traveling Salesman Problem <tsp-label>`.
+
+
+.. code-block:: python
+
+    for k in range(model.num_solutions):
+        print('route {} with length {}'.format(k, model.objective_values[k]))
+        for (i, j) in product(range(n), range(n)):
+            if x[i][j].xi(k) >= 0.98:
+                print('\tarc ({},{})'.format(i,j))
+
+
 
 Performance Tuning
 ~~~~~~~~~~~~~~~~~~
@@ -231,7 +247,7 @@ these computations prove worthy to prove the optimality of the solution found.
 The model property  :code:`emphasis` provides three different settings:
 
 0. default setting: tries to balance between the search of improved feasible 
-  solutions and improved lower bounds;
+   solutions and improved lower bounds;
 1. feasibility: focus on finding improved feasible solutions in the 
    first moments of the search process, activates heuristics;
 2. optimality: activates procedures that produced improved lower bounds, focusing
