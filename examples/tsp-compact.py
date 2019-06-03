@@ -57,3 +57,5 @@ print('best route found has length {}, best possible (obj bound is) {} st: {}'
 
 arcs = [(i, j) for i in range(n) for j in range(n) if x[i][j].x >= 0.99]
 print('optimal route : {}'.format(arcs))
+
+model.plot_bounds_evolution()

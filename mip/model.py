@@ -870,6 +870,39 @@ class Model:
         return self.__gap
 
     @property
+    def log(self) -> List[Tuple[float, Tuple[float, float]]]:
+        """
+            Times and improved bounds during the search process.
+            The output of MIP solvers is a sequence of improving
+            incumbent solutions (primal bound) and estimates for the optimal
+            cost (dual bound). When the costs of these two bounds match the
+            search is concluded. In truncated searches, the most common
+            situation for hard problems, at the end of the search there is a
+            :attr:`~mip.model.Model.gap` between these bounds. This
+            property stores the detailed events of improving these
+            bounds during the search process. Analyzing the evolution
+            of these bounds you can see if you need to improve your
+            solver w.r.t. the production of feasible solutions, by including an
+            heuristic to produce a better initial feasible solution, for
+            example, or improve the formulation with cutting planes, for
+            example, to produce better dual bounds.
+        """
+        return self.solver.get_log()
+
+    def plot_bounds_evolution(self):
+        import matplotlib.pyplot as plt
+
+        # plotting lower bound
+        x = [a[0] for a in self.log]
+        y = [a[1][0] for a in self.log]
+        plt.plot(x, y)
+        # plotting upper bound
+        x = [a[0] for a in self.log if a[1][1] < 1e+50]
+        y = [a[1][1] for a in self.log if a[1][1] < 1e+50]
+        plt.plot(x, y)
+        plt.show()
+
+    @property
     def num_solutions(self) -> int:
         """Number of solutions found during the MIP search
 
@@ -1126,6 +1159,9 @@ class Solver:
     def optimize(self) -> OptimizationStatus: pass
 
     def get_objective_value(self) -> float: pass
+
+    def get_log(self) -> List[Tuple[float, Tuple[float, float]]]:
+        return []
 
     def get_objective_value_i(self, i: int) -> float: pass
 
