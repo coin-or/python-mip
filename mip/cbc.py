@@ -48,6 +48,18 @@ except Exception:
 if has_cbc:
 
     ffi.cdef("""
+    typedef int(*cbc_progress_callback)(void *model,
+                                        int phase,
+                                        int step,
+                                        const char *phaseName,
+                                        double seconds,
+                                        double lb,
+                                        double ub,
+                                        int nint,
+                                        int *vecint,
+                                        void *cbData
+                                        );
+
     typedef void(*cbc_callback)(void *model, int msgno, int ndouble,
         const double *dvec, int nint, const int *ivec,
         int nchar, char **cvec);
@@ -249,6 +261,9 @@ if has_cbc:
     void Cbc_registerCallBack(Cbc_Model *model,
         cbc_callback userCallBack);
 
+    void Cbc_addProgrCallback(void *model,
+        cbc_progress_callback prgcbc, void *appData);
+
     void Cbc_clearCallBack(Cbc_Model *model);
     """)
 
@@ -285,6 +300,7 @@ class SolverCbc(Solver):
         self.__name_space = ffi.new("char[{}]".format(MAX_NAME_SIZE))
         # in cut generation
         self.__name_spacec = ffi.new("char[{}]".format(MAX_NAME_SIZE))
+        self.__log = []
 
     def add_var(self,
                 obj: float = 0,
@@ -389,33 +405,25 @@ class SolverCbc(Solver):
 
             return nameIdx
 
+        # progress callback
+        @ffi.callback("""
+            int (void *, int, int, const char *, double, double, double,
+            int, int *, void *)
+        """)
+        def cbc_progress_callback(model: CData, phase: int, step: int,
+                                  phaseName: CData, seconds: float,
+                                  lb: float, ub: float, nint: int, vint: CData,
+                                  cbData: CData) -> int:
+            self.__log.append((seconds, (lb, ub)))
+            return -1
+
+
         # incumbent callback
         def cbc_inc_callback(cbc_model: CData,
                              obj: float, nz: int,
                              colNames: CData,
                              colValues: CData,
                              appData: CData):
-            return
-
-        @ffi.callback("""
-            void(Cbc_Model *model, int msgno, int ndouble,
-                const double *dvec, int nint, const int *ivec,
-                int nchar, char **cvec)""")
-        def cbc_callback(model: CData, msgno: int, ndouble: int, dvec: CData,
-                         nint: int, ivec: CData, nstr: int, strvec: CData):
-            #ignore = True
-            #if msgno not in self.__evtimes:
-                #ignore = False
-                #self.__evtimes[msgno] = time()
-            #else:
-                #ctime = self.__evtimes[msgno]
-                #if time()-ctime >= 1:
-                    #ignore = False
-                    #self.__evtimes[msgno] = time()
-
-            #if not ignore:
-            print('>>>> CB {}'.format(msgno))
-
             return
 
         # cut callback
@@ -540,6 +548,7 @@ class SolverCbc(Solver):
                               '{}'.format(multiprocessing.cpu_count()))
 
         cbc_set_parameter(self, 'maxSavedSolutions', '10')
+        cbclib.Cbc_addProgrCallback(self._model, cbc_progress_callback, ffi.NULL)
         cbclib.Cbc_solve(self._model)
 
         if cbclib.Cbc_isAbandoned(self._model):
@@ -579,6 +588,9 @@ class SolverCbc(Solver):
 
     def get_objective_value(self) -> float:
         return cbclib.Cbc_getObjValue(self._model)
+
+    def get_log(self) -> List[Tuple[float, Tuple[float, float]]]:
+        return self.__log
 
     def get_objective_bound(self) -> float:
         return cbclib.Cbc_getBestPossibleObjValue(self._model)
