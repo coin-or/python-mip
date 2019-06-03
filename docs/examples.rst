@@ -309,3 +309,61 @@ initial feasible solution and consequentily the set :math:`U`:
     print(C)
 
 
+Resource Constrained Project Scheduling
+---------------------------------------
+
+The Resource-Constrained Project Scheduling Problem (RCPSP) is a combinatorial
+optimization problem that consists of finding a feasible scheduling for a set of
+:math:`n` jobs subject to resource and precedence constraints. Each job has a
+processing time, a set of successors jobs and a required amount of different 
+resources. Resources are scarce but are renewable at each time period.
+Precedence constraints between jobs mean that no jobs may start before all its
+predecessors are completed. The jobs must be scheduled non-preemptively, i.e.,
+once started, their processing cannot be interrupted.
+
+The RCPSP has the following input data:
+
+
+:math:`\mathcal{J}`: 
+    jobs set
+
+:math:`\mathcal{R}`:
+    renewable resources set
+
+:math:`\mathcal{S}`:
+    set of precedences between jobs :math:`(i,j) \in \mathcal{J} \times \mathcal{J}`
+
+:math:`\mathcal{T}`:
+    set of possible processing times for jobs
+
+:math:`d_{j}`:
+    duration of job :math:`j`
+
+:math:`u_{jr}`:
+    amount of resource :math:`r` required for processing job :math:`j`
+
+
+:math:`c_r`:
+    capacity of renewable resource :math:`r`
+
+
+In addition to the jobs that belong to the project, the set :math:`\mathcal{J}`
+contains the jobs :math:`x_{0}` and :math:`x_{n+1}`. These jobs are dummy jobs and
+represent the beginning of the planning and the end of the planning. The
+processing time for the dummy jobs is zero and does not consume resources.
+
+A binary programming formulation was proposed by Pritsker et al. :cite:`Prit69`. 
+In this formulation, decision variables :math:`x_{jt} = 1` if job :math:`j` is assigned a completion
+time at the end of time :math:`t`; otherwise, :math:`x_{jt} = 0`. All jobs must finish
+in a single instant of time without violating the relationships of precedence
+and amount of available resources. The model proposed by Pristker can be stated as 
+follows:
+
+.. math::
+    & \textrm{Minimize} \\
+     & {\displaystyle \sum_{t\in \mathcal{T}} (t-1).x_{n+1t}}\\
+    & \textrm{Subject to:} \\
+     & \ensuremath{ \sum_{t\in \mathcal{T}} x_{jt} \ensuremath{= 1} }\ensuremath{\forall j\in J \cup \{n+1\}}\\
+     & \ensuremath{ \sum_{j\in J} \sum_{t'=t-p_{j}+1} d_{jr}x_{jt'} \ensuremath{\leq c_{r}} }\ensuremath{\forall t\in \mathcal{T}, r \in R}\\
+     & \ensuremath{ \sum_{t\in \mathcal{T}} t.x_{st} - \sum_{t \in \mathcal{T}} t.x_{jt} \ensuremath{\geq p_{j}} }\ensuremath{\forall (j,s) \in S}\\
+    & \ensuremath{x_{jt} \in \{0,1\}} \ensuremath{\forall j\in J \cup \{n+1\}, t \in \mathcal{T}}
