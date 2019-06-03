@@ -1,6 +1,6 @@
 """Example of a solver to the n-queens problem:
    n chess queens should be placed in a n x n
-   chess board so that no queen can atack another,
+   chess board so that no queen can attack another,
    i.e., just one queen per line, column and diagonal.
 """
 

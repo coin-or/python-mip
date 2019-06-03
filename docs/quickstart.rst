@@ -250,8 +250,8 @@ The model property  :code:`emphasis` provides three different settings:
    solutions and improved lower bounds;
 1. feasibility: focus on finding improved feasible solutions in the 
    first moments of the search process, activates heuristics;
-2. optimality: activates procedures that produced improved lower bounds, focusing
-   in pruning the search tree, even if the production of the first feasible solutions
+2. optimality: activates procedures that produce improved lower bounds, focusing
+   in pruning the search tree even if the production of the first feasible solutions
    is delayed.
 
 Changing this setting to 1 or 2 triggers the activation/deactivation of
@@ -262,6 +262,8 @@ formulation the impact of these changes may be very different and it is
 usually worth to check the solver behavior with these different settings
 in your application.
 
-
+Another parameter that may be worth tuning is the :attr:`~mip.model.Model.cuts` 
+attribute, that controls how much computational effort should be spent in generating 
+cutting planes.
    
 

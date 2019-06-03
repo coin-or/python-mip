@@ -177,6 +177,63 @@ trip has length 547 and is depicted bellow:
     :width: 60%
     :align: center
 
+n-Queens
+--------
+
+In the :math:`n`-queens puzzle :math:`n` chess queens should to be placed in a 
+board with :math:`n\times n` cells in a way that no queen can attack another, 
+i.e., there must be at most one queen per row, column and diagonal. This is a 
+constraint satisfaction problem: any feasible solution is acceptable and no
+objective function is defined. The following binary programming formulation 
+can be used to solve this problem:
+
+.. math::
+
+    \sum_{j=1}^{n} x_{ij} & = 1 \,\,\, \forall i \in \{1, \ldots, n\}  \\
+    \sum_{i=1}^{n} x_{ij} & = 1 \,\,\, \forall j \in \{1, \ldots, n\}  \\
+    \sum_{i=1}^n \sum_{j=1 : i-j=k}^{n} x_{i,j} & \leq 1 \,\,\, \forall i \in \{1, \ldots, n\} ,  k \in \{2-n, \ldots, n-2\}  \\
+    \sum_{i=1}^n \sum_{j=1 : i+j=k}^{n} x_{i,j} & \leq 1 \,\,\, \forall i \in \{1, \ldots, n\} ,  k \in \{3, \ldots, n+n-1\}  \\
+    x_{i,j} & \in \{0, 1\} \,\,\, \forall i\in \{1, \ldots, n\}, j\in \{1, \ldots, n\}
+
+The following code builds the previous model, solves it and prints the queen placements:
+
+.. code-block:: python
+
+    from sys import stdout
+    from mip.model import Model, xsum
+    from mip.constants import MAXIMIZE, BINARY
+
+    n = 75
+
+    queens = Model('queens', MAXIMIZE)
+
+    x = [[queens.add_var('x({},{})'.format(i, j), var_type=BINARY)
+          for j in range(n)] for i in range(n)]
+
+    for i in range(n):
+        queens += xsum(x[i][j] for j in range(n)) == 1, 'row({})'.format(i)
+
+    for j in range(n):
+        queens += xsum(x[i][j] for i in range(n)) == 1, 'col({})'.format(j)
+
+    for p, k in enumerate(range(2 - n, n - 2 + 1)):
+        queens += xsum(x[i][j] for i in range(n) for j in range(n)
+                       if i - j == k) <= 1, 'diag1({})'.format(p)
+
+    for p, k in enumerate(range(3, n + n)):
+        queens += xsum(x[i][j] for i in range(n) for j in range(n)
+                       if i + j == k) <= 1, 'diag2({})'.format(p)
+
+    queens.optimize()
+
+    stdout.write('\n')
+    for i, v in enumerate(queens.vars):
+        stdout.write('O ' if v.x >= 0.99 else '. ')
+        if i % n == n-1:
+        stdout.write('\n')
+
+
+
 
 Frequency Assignment
 --------------------
