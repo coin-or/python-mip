@@ -423,7 +423,7 @@ follows:
       \sum_{t\in \mathcal{T}} x_{(j,t)} & = 1  \,\,\, \forall j\in J \cup \{n+1\}\\
       \sum_{j\in J} \sum_{t'=t-p_{j}+1} u_{(j,r)}x_{(j,t')} & \leq c_{r}  \,\,\, \forall t\in \mathcal{T}, r \in R\\
       \sum_{t\in \mathcal{T}} t.x_{(s,t)} - \sum_{t \in \mathcal{T}} t.x_{(j,t)} & \geq p_{j}  \,\,\, \forall (j,s) \in S\\
-     x_{(j,t)} & \in \{0,1\} \,\,\, forall j\in J \cup \{n+1\}, t \in \mathcal{T}
+     x_{(j,t)} & \in \{0,1\} \,\,\, \forall j\in J \cup \{n+1\}, t \in \mathcal{T}
 
 
 An instance is shown below. The figure shows a graph where jobs :math:`\mathcal{J}`
@@ -467,7 +467,7 @@ for RCPSP is included below:
     x = [[model.add_var(name='x({},{})'.format(j, t), var_type=BINARY)
           for t in T] for j in J]
 
-    model += xsum(x[len(J)-1][t] * t for t in T)
+    model.objective = xsum(x[len(J)-1][t] * t for t in T)
 
     for j in J:
         model += xsum(x[j][t] for t in T) == 1
