@@ -381,26 +381,25 @@ once started, their processing cannot be interrupted.
 The RCPSP has the following input data:
 
 
-:math:`\mathcal{J}`: 
+:math:`\mathcal{J}`
     jobs set
 
-:math:`\mathcal{R}`:
+:math:`\mathcal{R}`
     renewable resources set
 
-:math:`\mathcal{S}`:
+:math:`\mathcal{S}`
     set of precedences between jobs :math:`(i,j) \in \mathcal{J} \times \mathcal{J}`
 
-:math:`\mathcal{T}`:
-    set of possible processing times for jobs
+:math:`\mathcal{T}`
+    planning horizon: set of possible processing times for jobs
 
-:math:`d_{j}`:
-    duration of job :math:`j`
+:math:`p_{j}`
+    processing time of job :math:`j`
 
-:math:`u_{jr}`:
+:math:`u_{(j,r)}`
     amount of resource :math:`r` required for processing job :math:`j`
 
-
-:math:`c_r`:
+:math:`c_r`
     capacity of renewable resource :math:`r`
 
 
@@ -417,10 +416,81 @@ and amount of available resources. The model proposed by Pristker can be stated 
 follows:
 
 .. math::
-    & \textrm{Minimize} \\
-     & {\displaystyle \sum_{t\in \mathcal{T}} (t-1).x_{n+1t}}\\
-    & \textrm{Subject to:} \\
-     & \ensuremath{ \sum_{t\in \mathcal{T}} x_{jt} \ensuremath{= 1} }\ensuremath{\forall j\in J \cup \{n+1\}}\\
-     & \ensuremath{ \sum_{j\in J} \sum_{t'=t-p_{j}+1} d_{jr}x_{jt'} \ensuremath{\leq c_{r}} }\ensuremath{\forall t\in \mathcal{T}, r \in R}\\
-     & \ensuremath{ \sum_{t\in \mathcal{T}} t.x_{st} - \sum_{t \in \mathcal{T}} t.x_{jt} \ensuremath{\geq p_{j}} }\ensuremath{\forall (j,s) \in S}\\
-    & \ensuremath{x_{jt} \in \{0,1\}} \ensuremath{\forall j\in J \cup \{n+1\}, t \in \mathcal{T}}
+
+     \textrm{Minimize} & \\
+     & {\displaystyle \sum_{t\in \mathcal{T}} (t-1).x_{(n+1,t)}}\\
+     \textrm{Subject to:} & \\
+      \ensuremath{ \sum_{t\in \mathcal{T}} x_{(j,t)} & \ensuremath{= 1} } \,\,\, \ensuremath{\forall j\in J \cup \{n+1\}}\\
+      \ensuremath{ \sum_{j\in J} \sum_{t'=t-p_{j}+1} u_{(j,r)}x_{(j,t')} & \ensuremath{\leq c_{r}} } \,\,\, \ensuremath{\forall t\in \mathcal{T}, r \in R}\\
+      \ensuremath{ \sum_{t\in \mathcal{T}} t.x_{(s,t)} - \sum_{t \in \mathcal{T}} t.x_{(j,t)} & \ensuremath{\geq p_{j}} } \,\,\, \ensuremath{\forall (j,s) \in S}\\
+     \ensuremath{x_{(j,t)} & \in \{0,1\}} \,\,\, \ensuremath{\forall j\in J \cup \{n+1\}, t \in \mathcal{T}}
+
+
+An instance is shown below. The figure shows a graph where jobs :math:`\mathcal{J}`
+are represented by nodes and precedence relations :math:`\mathcal{S}` are represented
+by directed edges. Arc weights represent the time-consumption :math:`p_{j}`, while
+the information about resource consumption :math:`u_{(j,r)}` is included next to the
+graph. This instance contains 10 jobs and 2 renewable resources
+(:math:`\mathcal{R}=\{r_{1}, r_{2}\}`), where :math:`c_{1}` = 6 and :math:`c_{2}` = 8. The
+time horizon :math:`\mathcal{T}` can be estimated by summing the duration of all
+jobs.
+
+
+.. image:: ./images/rcpsp.png
+    :width: 80%
+    :align: center
+
+The Python code for creating the binary programming model, optimize it and print the optimal scheduling
+for RCPSP is included below:
+
+.. code-block:: python
+
+    from itertools import product
+    from mip.model import Model, xsum
+    from mip.constants import BINARY
+
+    p = [0, 3, 2, 5, 4, 2, 3, 4, 2, 4, 6, 0]
+
+    u = [[0, 0], [5, 1], [0, 4], [1, 4], [1, 3], [3, 2], [3, 1], [2, 4], [4, 0],
+         [5, 2], [2, 5], [0, 0]]
+
+    c = [6, 8]
+
+    S = [[0, 1], [0, 2], [0, 3], [1, 4], [1, 5], [2, 9], [2, 10], [3, 8], [4, 6],
+         [4, 7], [5, 9], [5, 10], [6, 8], [6, 9], [7, 8], [8, 11], [9, 11],
+         [10, 11]]
+
+    (R, J, T) = (range(len(c)), range(len(p)), range(sum(p)))
+
+    model = Model()
+
+    x = [[model.add_var(name='x({},{})'.format(j, t), var_type=BINARY)
+          for t in T] for j in J]
+
+    model += xsum(x[len(J)-1][t] * t for t in T)
+
+    for j in J:
+        model += xsum(x[j][t] for t in T) == 1
+
+    for (r, t) in product(R, T):
+        model += xsum(u[j][r] * x[j][t2] for j in J
+                      for t2 in range(max(0, t - p[j] + 1), t + 1)) <= c[r]
+
+    for (j, s) in S:
+        model += xsum(t * x[s][t] - t * x[j][t] for t in T) >= p[j]
+
+    model.optimize()
+
+    print('Makespan {}. Allocations: '.format(model.objective))
+    for (j, t) in product(J, T):
+        if x[j][t].x >= 0.99:
+            print('({},{})'.format(j, t))
+
+The optimal solution is shown bellow, from the viewpoint of resource
+consumption:
+
+.. image:: ./images/rcpsp-opt.png
+    :width: 80%
+    :align: center
+
+
