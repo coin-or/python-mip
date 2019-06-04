@@ -32,25 +32,34 @@ The following python code creates, optimizes and prints the optimal solution for
 .. code-block:: python
     :linenos:
 
-    from mip.model import * 
-    p = [10, 13, 18, 31,  7, 15] 
-    w = [11, 15, 20, 35, 10, 33] 
-    c = 40 
-    n = len(w) 
+    from mip.model import Model, xsum
+    from mip.constants import MAXIMIZE, BINARY
+
+    p = [10, 13, 18, 31, 7, 15]
+    w = [11, 15, 20, 35, 10, 33]
+    c = 47
+    n = len(w)
+
     m = Model('knapsack', MAXIMIZE)
-    x = [m.add_var(var_type='B') for i in range(n)] 
-    m += xsum(p[i]*x[i] for i in range(n) ) 
-    m += xsum(w[i]*x[i] for i in range(n) ) <= c
-    m.optimize() 
-    selected=[i for i in range(n) if x[i].x>=0.99]
+
+    x = [m.add_var(var_type=BINARY) for i in range(n)]
+
+    m.objective = xsum(p[i]*x[i] for i in range(n))
+
+    m += xsum(w[i]*x[i] for i in range(n)) <= c
+
+    m.optimize()
+
+    selected = [i for i in range(n) if x[i].x >= 0.99]
     print('selected items: {}'.format(selected))
 
-Lines 1-5 load problem data. In line 6 an empty maximization
-model m with the (optional) name of "knapsack" is created. Line 7 adds the
-binary decision variables to model m. Line 8 defines the objective
-function of this model and Line 9 adds the capacity constraint. The model
-is optimized in line 10 and the solution, a list of the selected items, is
-computed at line 11.
+Lines 1 and 2 import the required classes and definitions from Python-MIP.
+Lines 4-7 define the problem data. Line 9 creates an empty maximization
+problem :code:`m` with the (optional) name of "knapsack". Line 11 adds the
+binary decision variables to model :code:`m`. Line 13 defines the
+objective function of this model and line 15 adds the capacity constraint.
+The model is optimized in line 17 and the solution, a list of the selected
+items, is computed at line 19.
 
 .. _tsp-label:
 
@@ -108,27 +117,35 @@ included bellow:
 .. code-block:: python
     :linenos:
 
-    from tspdata import TSPData
     from sys import argv
-    from mip.model import *
-    from mip.constants import *
+    from tspdata import TSPData
+    from mip.model import Model, xsum
+    from mip.constants import BINARY
+
     inst = TSPData(argv[1])
-    n = inst.n
-    d = inst.d
+    (n, d) = (inst.n, inst.d)
+
     model = Model()
-    x = [ [ model.add_var(var_type=BINARY) for j in range(n) ] for i in range(n) ]
-    y = [ model.add_var() for i in range(n) ]
-    model += xsum( d[i][j]*x[i][j] for j in range(n) for i in range(n) )
+
+    x = [[model.add_var(var_type=BINARY) for j in range(n)] for i in range(n)]
+
+    y = [model.add_var() for i in range(n)]
+
+    model.objective = xsum(d[i][j]*x[i][j] for j in range(n) for i in range(n))
+
     for i in range(n):
-        model += xsum( x[j][i] for j in range(n) if j != i ) == 1
-    for i in range(n):
-        model += xsum( x[i][j] for j in range(n) if j != i ) == 1
+        model += xsum(x[j][i] for j in range(n) if j != i) == 1
+        model += xsum(x[i][j] for j in range(n) if j != i) == 1
+
     for i in range(1, n):
-        for j in [x for x in range(1, n) if x!=i]:
-            model += y[i]  - (n+1)*x[i][j] >=  y[j] -n
+        for j in [x for x in range(1, n) if x != i]:
+            model += y[i] - (n+1)*x[i][j] >= y[j] - n
+
     model.optimize(max_seconds=30)
-    arcs = [(i,j) for i in range(n) for j in range(n) if x[i][j].x >= 0.99]
+
+    arcs = [(i, j) for i in range(n) for j in range(n) if x[i][j].x >= 0.99]
     print('optimal route : {}'.format(arcs))
+
 
 This `example <https://raw.githubusercontent.com/coin-or/python-mip/master/examples/tsp-compact.py>`_ is included in the Python-MIP package in the example folder
 Additional code to load the problem data (called from line 5) is included in `tspdata.py <https://raw.githubusercontent.com/coin-or/python-mip/master/examples/tspdata.py>`_. 
@@ -140,14 +157,14 @@ of the cities included in the example. To produce the optimal tourist tour for o
     python tsp-compact.py belgium-tourism-14.tsp
 
 In the command line. Follows an explanation of the tsp-compact code: line
-10 creates the main binary decision variables for the selection of arcs
-and line 11 creates the auxiliary continuous variables. Differently
+11 creates the main binary decision variables for the selection of arcs
+and line 13 creates the auxiliary continuous variables. Differently
 from the :math:`x` variables, :math:`y` variables are not required to be
 binary or integral, they can be declared just as continuous variables, the
 default variable type. In this case, the parameter :code:`var_type` can be
-omitted from the :code:`add_var` call. Line 11 sets the total traveled
-distance as objective function and lines 12-18 include the constraints. In
-line 19 we call the optimizer specifying a time limit of 30 seconds. This
+omitted from the :code:`add_var` call. Line 15 sets the total traveled
+distance as objective function and lines 17-23 include the constraints. In
+line 25 we call the optimizer specifying a time limit of 30 seconds. This
 will surely not be necessary for our Belgium example, which will be solved
 instantly, but may be important for larger problems: even though high
 quality solutions may be found very quickly by the MIP solver, the time
@@ -159,6 +176,63 @@ trip has length 547 and is depicted bellow:
 .. image:: ./images/belgium-tourism-14-opt-547.png
     :width: 60%
     :align: center
+
+n-Queens
+--------
+
+In the :math:`n`-queens puzzle :math:`n` chess queens should to be placed in a 
+board with :math:`n\times n` cells in a way that no queen can attack another, 
+i.e., there must be at most one queen per row, column and diagonal. This is a 
+constraint satisfaction problem: any feasible solution is acceptable and no
+objective function is defined. The following binary programming formulation 
+can be used to solve this problem:
+
+.. math::
+
+    \sum_{j=1}^{n} x_{ij} & = 1 \,\,\, \forall i \in \{1, \ldots, n\}  \\
+    \sum_{i=1}^{n} x_{ij} & = 1 \,\,\, \forall j \in \{1, \ldots, n\}  \\
+    \sum_{i=1}^n \sum_{j=1 : i-j=k}^{n} x_{i,j} & \leq 1 \,\,\, \forall i \in \{1, \ldots, n\} ,  k \in \{2-n, \ldots, n-2\}  \\
+    \sum_{i=1}^n \sum_{j=1 : i+j=k}^{n} x_{i,j} & \leq 1 \,\,\, \forall i \in \{1, \ldots, n\} ,  k \in \{3, \ldots, n+n-1\}  \\
+    x_{i,j} & \in \{0, 1\} \,\,\, \forall i\in \{1, \ldots, n\}, j\in \{1, \ldots, n\}
+
+The following code builds the previous model, solves it and prints the queen placements:
+
+.. code-block:: python
+
+    from sys import stdout
+    from mip.model import Model, xsum
+    from mip.constants import MAXIMIZE, BINARY
+
+    n = 75
+
+    queens = Model('queens', MAXIMIZE)
+
+    x = [[queens.add_var('x({},{})'.format(i, j), var_type=BINARY)
+          for j in range(n)] for i in range(n)]
+
+    for i in range(n):
+        queens += xsum(x[i][j] for j in range(n)) == 1, 'row({})'.format(i)
+
+    for j in range(n):
+        queens += xsum(x[i][j] for i in range(n)) == 1, 'col({})'.format(j)
+
+    for p, k in enumerate(range(2 - n, n - 2 + 1)):
+        queens += xsum(x[i][j] for i in range(n) for j in range(n)
+                       if i - j == k) <= 1, 'diag1({})'.format(p)
+
+    for p, k in enumerate(range(3, n + n)):
+        queens += xsum(x[i][j] for i in range(n) for j in range(n)
+                       if i + j == k) <= 1, 'diag2({})'.format(p)
+
+    queens.optimize()
+
+    stdout.write('\n')
+    for i, v in enumerate(queens.vars):
+        stdout.write('O ' if v.x >= 0.99 else '. ')
+        if i % n == n-1:
+        stdout.write('\n')
+
+
 
 
 Frequency Assignment
@@ -290,5 +364,133 @@ initial feasible solution and consequentily the set :math:`U`:
 
     C = [[c for c in U if x[i][c] >= 0.99] for i in N]
     print(C)
+
+
+Resource Constrained Project Scheduling
+---------------------------------------
+
+The Resource-Constrained Project Scheduling Problem (RCPSP) is a combinatorial
+optimization problem that consists of finding a feasible scheduling for a set of
+:math:`n` jobs subject to resource and precedence constraints. Each job has a
+processing time, a set of successors jobs and a required amount of different 
+resources. Resources are scarce but are renewable at each time period.
+Precedence constraints between jobs mean that no jobs may start before all its
+predecessors are completed. The jobs must be scheduled non-preemptively, i.e.,
+once started, their processing cannot be interrupted.
+
+The RCPSP has the following input data:
+
+
+:math:`\mathcal{J}`
+    jobs set
+
+:math:`\mathcal{R}`
+    renewable resources set
+
+:math:`\mathcal{S}`
+    set of precedences between jobs :math:`(i,j) \in \mathcal{J} \times \mathcal{J}`
+
+:math:`\mathcal{T}`
+    planning horizon: set of possible processing times for jobs
+
+:math:`p_{j}`
+    processing time of job :math:`j`
+
+:math:`u_{(j,r)}`
+    amount of resource :math:`r` required for processing job :math:`j`
+
+:math:`c_r`
+    capacity of renewable resource :math:`r`
+
+
+In addition to the jobs that belong to the project, the set :math:`\mathcal{J}`
+contains the jobs :math:`x_{0}` and :math:`x_{n+1}`. These jobs are dummy jobs and
+represent the beginning of the planning and the end of the planning. The
+processing time for the dummy jobs is zero and does not consume resources.
+
+A binary programming formulation was proposed by Pritsker et al. :cite:`Prit69`. 
+In this formulation, decision variables :math:`x_{jt} = 1` if job :math:`j` is assigned a completion
+time at the end of time :math:`t`; otherwise, :math:`x_{jt} = 0`. All jobs must finish
+in a single instant of time without violating the relationships of precedence
+and amount of available resources. The model proposed by Pristker can be stated as 
+follows:
+
+.. math::
+
+     \textrm{Minimize} & \\
+     &  \sum_{t\in \mathcal{T}} (t-1).x_{(n+1,t)}\\
+     \textrm{Subject to:} & \\
+      \sum_{t\in \mathcal{T}} x_{(j,t)} & = 1  \,\,\, \forall j\in J \cup \{n+1\}\\
+      \sum_{j\in J} \sum_{t'=t-p_{j}+1} u_{(j,r)}x_{(j,t')} & \leq c_{r}  \,\,\, \forall t\in \mathcal{T}, r \in R\\
+      \sum_{t\in \mathcal{T}} t.x_{(s,t)} - \sum_{t \in \mathcal{T}} t.x_{(j,t)} & \geq p_{j}  \,\,\, \forall (j,s) \in S\\
+     x_{(j,t)} & \in \{0,1\} \,\,\, \forall j\in J \cup \{n+1\}, t \in \mathcal{T}
+
+
+An instance is shown below. The figure shows a graph where jobs :math:`\mathcal{J}`
+are represented by nodes and precedence relations :math:`\mathcal{S}` are represented
+by directed edges. Arc weights represent the time-consumption :math:`p_{j}`, while
+the information about resource consumption :math:`u_{(j,r)}` is included next to the
+graph. This instance contains 10 jobs and 2 renewable resources
+(:math:`\mathcal{R}=\{r_{1}, r_{2}\}`), where :math:`c_{1}` = 6 and :math:`c_{2}` = 8. The
+time horizon :math:`\mathcal{T}` can be estimated by summing the duration of all
+jobs.
+
+
+.. image:: ./images/rcpsp.png
+    :width: 80%
+    :align: center
+
+The Python code for creating the binary programming model, optimize it and print the optimal scheduling
+for RCPSP is included below:
+
+.. code-block:: python
+
+    from itertools import product
+    from mip.model import Model, xsum
+    from mip.constants import BINARY
+
+    p = [0, 3, 2, 5, 4, 2, 3, 4, 2, 4, 6, 0]
+
+    u = [[0, 0], [5, 1], [0, 4], [1, 4], [1, 3], [3, 2], [3, 1], [2, 4], [4, 0],
+         [5, 2], [2, 5], [0, 0]]
+
+    c = [6, 8]
+
+    S = [[0, 1], [0, 2], [0, 3], [1, 4], [1, 5], [2, 9], [2, 10], [3, 8], [4, 6],
+         [4, 7], [5, 9], [5, 10], [6, 8], [6, 9], [7, 8], [8, 11], [9, 11],
+         [10, 11]]
+
+    (R, J, T) = (range(len(c)), range(len(p)), range(sum(p)))
+
+    model = Model()
+
+    x = [[model.add_var(name='x({},{})'.format(j, t), var_type=BINARY)
+          for t in T] for j in J]
+
+    model.objective = xsum(x[len(J)-1][t] * t for t in T)
+
+    for j in J:
+        model += xsum(x[j][t] for t in T) == 1
+
+    for (r, t) in product(R, T):
+        model += xsum(u[j][r] * x[j][t2] for j in J
+                      for t2 in range(max(0, t - p[j] + 1), t + 1)) <= c[r]
+
+    for (j, s) in S:
+        model += xsum(t * x[s][t] - t * x[j][t] for t in T) >= p[j]
+
+    model.optimize()
+
+    print('Makespan {}. Allocations: '.format(model.objective))
+    for (j, t) in product(J, T):
+        if x[j][t].x >= 0.99:
+            print('({},{})'.format(j, t))
+
+The optimal solution is shown bellow, from the viewpoint of resource
+consumption:
+
+.. image:: ./images/rcpsp-opt.png
+    :width: 80%
+    :align: center
 
 

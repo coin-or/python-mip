@@ -92,49 +92,63 @@ salesman problem:
 .. code-block:: python
  :linenos:
 
- from mip.model import *
- from itertools import product
- from networkx import minimum_cut,DiGraph
- N =['a', 'b', 'c', 'd', 'e', 'f', 'g']
- A ={('a','d'):56,('d','a'):67,('a','b'):49,('b','a'):50,('d','b'):39,('b','d'):37,('c','f'):35,
-     ('f','c'):35,('g','b'):35,('b','g'):35,('g','b'):35,('b','g'):25,('a','c'):80,('c','a'):99,
-     ('e','f'):20,('f','e'):20,('g','e'):38,('e','g'):49,('g','f'):37,('f','g'):32,('b','e'):21,
-     ('e','b'):30,('a','g'):47,('g','a'):68,('d','c'):37,('c','d'):52,('d','e'):15,('e','d'):20}
- Aout = {n:[a for a in A if a[0]==n] for n in N}
- Ain  = {n:[a for a in A if a[1]==n] for n in N}
- m = Model()
- x = {a:m.add_var(name='x({},{})'.format(a[0], a[1]), var_type=BINARY) for a in A}
- m.objective = xsum(c*x[a] for a,c in A.items())
- for n in N:
-   m += xsum(x[a] for a in Aout[n]) == 1, 'out({})'.format(n)
-   m += xsum(x[a] for a in Ain[n]) == 1, 'in({})'.format(n)
- newConstraints=True
- m.relax()
- while newConstraints:
-   m.optimize()
-   print('objective value : {}'.format(m.objective_value))
-   G = DiGraph()
-   for a in A:
-     G.add_edge(a[0], a[1], capacity=x[a].x)
-   newConstraints=False
-   for (n1,n2) in [(i,j) for (i,j) in product(N,N) if i!=j]:
-     cut_value, (S,NS) = minimum_cut(G, n1, n2)
-     if (cut_value<=0.99):
-       m += xsum(x[a] for a in A if (a[0] in S and a[1] in S)) <= len(S)-1
-       newConstraints = True 
+    from mip.model import Model, xsum
+    from mip.constants import BINARY
+    from itertools import product
+    from networkx import minimum_cut, DiGraph
 
-Lines 5-8 are the input data. Nodes are labeled with letters in a list
+    N = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+    A = {('a', 'd'): 56, ('d', 'a'): 67, ('a', 'b'): 49, ('b', 'a'): 50,
+         ('f', 'c'): 35, ('g', 'b'): 35, ('g', 'b'): 35, ('b', 'g'): 25,
+         ('a', 'c'): 80, ('c', 'a'): 99, ('e', 'f'): 20, ('f', 'e'): 20,
+         ('g', 'e'): 38, ('e', 'g'): 49, ('g', 'f'): 37, ('f', 'g'): 32,
+         ('b', 'e'): 21, ('e', 'b'): 30, ('a', 'g'): 47, ('g', 'a'): 68,
+         ('d', 'c'): 37, ('c', 'd'): 52, ('d', 'e'): 15, ('e', 'd'): 20,
+         ('d', 'b'): 39, ('b', 'd'): 37, ('c', 'f'): 35}
+    Aout = {n: [a for a in A if a[0] == n] for n in N}
+    Ain = {n: [a for a in A if a[1] == n] for n in N}
+
+    m = Model()
+    x = {a: m.add_var(name='x({},{})'.format(a[0], a[1]), var_type=BINARY)
+         for a in A}
+
+    m.objective = xsum(c*x[a] for a, c in A.items())
+
+    for n in N:
+        m += xsum(x[a] for a in Aout[n]) == 1, 'out({})'.format(n)
+        m += xsum(x[a] for a in Ain[n]) == 1, 'in({})'.format(n)
+
+    newConstraints = True
+    m.relax()
+
+    while newConstraints:
+        m.optimize()
+        print('objective value : {}'.format(m.objective_value))
+
+        G = DiGraph()
+        for a in A:
+            G.add_edge(a[0], a[1], capacity=x[a].x)
+
+        newConstraints = False
+        for (n1, n2) in [(i, j) for (i, j) in product(N, N) if i != j]:
+            cut_value, (S, NS) = minimum_cut(G, n1, n2)
+            if (cut_value <= 0.99):
+                m += xsum(x[a] for a in A if (a[0] in S and a[1] in S)) <= len(S)-1
+                newConstraints = True
+
+
+Lines 6-13 are the input data. Nodes are labeled with letters in a list
 :code:`N` and a dictionary :code:`A` is used to store the weighted
-directed graph. Lines 9 and 10 store output and input arcs per node. The
+directed graph. Lines 14 and 15 store output and input arcs per node. The
 mapping of binary variables :math:`x_a` to arcs is made also using
-a dictionary in line 12. Line 13 sets the objective function and the
+a dictionary in line 18. Line 21 sets the objective function and the
 following tree lines include constraints enforcing one entering and one
-leaving arc to be selected for each node. On line 18 we relax the
+leaving arc to be selected for each node. On line 28 we relax the
 integrality constraints of variables so that the optimization performed in
-line 20 will only solve the LP relaxation and the separation routine can
+line 31 will only solve the LP relaxation and the separation routine can
 be executed. Our separation routine is executed for each pair or nodes at
-line 28 and whenever a disconnected subset is found the violated inequality
-is generated and included at line 29. The process repeats while new
+line 40 and whenever a disconnected subset is found the violated inequality
+is generated and included at line 42. The process repeats while new
 violated inequalities are generated.
 
 .. _cut-generation-label:
@@ -146,7 +160,7 @@ The cutting plane method has some limitations: even though the first rounds of
 cuts improve significantly the lower bound, the overall number of iterations
 needed to obtain the optimal integer solution may be too large. Better results
 can be obtained with the `Branch-&-Cut algorithm <https://en.wikipedia.org/wiki/Branch_and_cut>`_, 
-where cut generation is combined with branching. If you have an algorithm like
+where cut generation is *combined* with branching. If you have an algorithm like
 the one included in the previous Section to separate inequalities for your
 application you can combine it with the complete BC algorithm implemented in
 the solver engine using *callbacks*. Cut generation callbacks (CGC) are called
@@ -158,65 +172,85 @@ included to the LP relaxation model. Please note that in the Branch-&-Cut
 algorithm context cuts are *optional* components and only those that are classified as
 *good* cuts by the solver engine will be accepted, i.e., cuts that are too
 dense and have a small violation and could slow down too much the LP re-optimization 
-can be discarded. Thus, when using cut callbacks be sure that cuts are used only to *improve* the 
-LP relaxation but not to *define* feasible solutions, which need to be defined by the initial 
-formulation. In other words, the initial model
-without cuts may be *weak* but needs to be *complete*. In the case of TSP, we can include the weak sub-tour 
-elimination constraints presented in Section (:numref:`tsp-label`) in the initial model and then add the stronger sub-tour elimination constraints presented in the previous section as cuts. 
+can be discarded. 
+
+When using cut callbacks be sure that cuts are used only to *improve* the LP
+relaxation but not to *define* feasible solutions, which need to be defined by
+the initial formulation. In other words, the initial model without cuts may be
+*weak* but needs to be *complete*. In the case of TSP, we can include the weak
+sub-tour elimination constraints presented in Section (:numref:`tsp-label`) in
+the initial model and then add the stronger sub-tour elimination constraints
+presented in the previous section as cuts. 
 
 In Python-MIP, CGC are implemented
-extending the :class:`~mip.model.CutsGenerator` class.
+extending the :class:`~mip.model.CutsGenerator` class. The following example implements the
+previous cut separation algorithm as a :class:`~mip.model.CutsGenerator` class and includes it
+as a cut generator for the branch-and-cut solver engine.
+
 
 .. code-block:: python
  :linenos:
 
- from tspdata import TSPData
- from sys import argv
- from mip.model import *
- from mip.constants import *
- import networkx as nx
- from itertools import product
+    from sys import argv
+    from typing import List, Tuple
+    from itertools import product
+    import networkx as nx
+    from tspdata import TSPData
+    from mip.model import Model, Var, LinExpr, xsum
+    from mip.callbacks import CutsGenerator, CutPool
+    from mip.constants import BINARY
 
- class SubTourCutGenerator(CutsGenerator):
-    def __init__(self, model: Model):
-        super().__init__(model)
 
-    def generate_cuts(self, relax_solution: List[Tuple[Var, float]]) -> List[LinExpr]:
-        G = nx.DiGraph()
-        r = [(v,f) for (v,f) in relax_solution if 'x(' in v.name]
-        U = [int(v.name.split('(')[1].split(',')[0]) for v,f in r]
-        V = [int(v.name.split(')')[0].split(',')[1]) for v,f in r]
-        UV = {u for u in (U+V)}
-        for i in range(len(U)):
-            G.add_edge(U[i], V[i], capacity=r[i][1])
-        cp = CutPool()
-        for u in UV:
-            for v in [v for v in UV if v!=u]:
-                val, (S,NS) = nx.minimum_cut(G, u, v)
-                if val<=0.99:
-                    arcsInS = [(v,f) for i,(v,f) in enumerate(r) if U[i] in S and V[i] in S]
-                    if sum(f for v,f in arcsInS) >= (len(S)-1)+1e-4:
-                        cut = xsum(1.0*v for v,fm in arcsInS) <= len(S)-1
-                        cp.add(cut)
-        return cp.cuts
+    class SubTourCutGenerator(CutsGenerator):
+        def __init__(self, model: Model):
+            super().__init__(model)
 
- inst = TSPData(argv[1])
- n,d = inst.n, inst.d
- model = Model()
- x = [[model.add_var(name='x({},{})'.format(i, j),
-       var_type=BINARY) for j in range(n)] for i in range(n)]
- y = [model.add_var(name='y({})'.format(i), 
-     lb=0.0, ub=n) for i in range(n)]
- model.objective = xsum(d[i][j] * x[i][j] for j in range(n) for i in range(n))
- for i in range(n):
-     model += xsum(x[j][i] for j in range(n) if j != i) == 1, 'enter({})'.format(i)
-     model += xsum(x[i][j] for j in range(n) if j != i) == 1, 'leave({})'.format(i)
- for (i,j) in [(i,j) for (i,j) in product(range(1,n), range(1,n)) if i!=j]:
-         model += y[i] - (n + 1) * x[i][j] >= y[j] - n, 'noSub({},{})'.format(i, j)
- model.cuts_generator = SubTourCutGenerator(model)
- model.optimize()
- arcs = [(i,j) for i in range(n) for j in range(n) if x[i][j].x >= 0.99]
- print('optimal route : {}'.format(arcs))
+        def generate_cuts(self, rsol: List[Tuple[Var, float]]) -> List[LinExpr]:
+            G = nx.DiGraph()
+            r = [(v, f) for (v, f) in rsol if 'x(' in v.name]
+            U = [int(v.name.split('(')[1].split(',')[0]) for v, f in r]
+            V = [int(v.name.split(')')[0].split(',')[1]) for v, f in r]
+            UV = {u for u in (U+V)}
+            for i in range(len(U)):
+                G.add_edge(U[i], V[i], capacity=r[i][1])
+            cp = CutPool()
+            for u in UV:
+                for v in [v for v in UV if v != u]:
+                    val, (S, NS) = nx.minimum_cut(G, u, v)
+                    if val <= 0.99:
+                        arcsInS = [(v, f) for i, (v, f) in enumerate(r)
+                                   if U[i] in S and V[i] in S]
+                        if sum(f for v, f in arcsInS) >= (len(S)-1)+1e-4:
+                            cut = xsum(1.0*v for v, fm in arcsInS) <= len(S)-1
+                            cp.add(cut)
+            return cp.cuts
+
+
+    inst = TSPData(argv[1])
+    n, d = inst.n, inst.d
+
+    model = Model()
+
+    x = [[model.add_var(name='x({},{})'.format(i, j),
+                        var_type=BINARY) for j in range(n)] for i in range(n)]
+    y = [model.add_var(name='y({})'.format(i),
+                       lb=0.0, ub=n) for i in range(n)]
+
+    model.objective = xsum(d[i][j] * x[i][j] for j in range(n) for i in range(n))
+
+    for i in range(n):
+        model += xsum(x[j][i] for j in range(n) if j != i) == 1
+        model += xsum(x[i][j] for j in range(n) if j != i) == 1
+    for (i, j) in [(i, j) for (i, j) in
+                   product(range(1, n), range(1, n)) if i != j]:
+        model += y[i] - (n + 1) * x[i][j] >= y[j] - n
+
+    model.cuts_generator = SubTourCutGenerator(model)
+    model.optimize()
+
+    arcs = [(i, j) for i in range(n) for j in range(n) if x[i][j].x >= 0.99]
+    print('optimal route : {}'.format(arcs))
+
 
 .. _mipstart-label:
 
