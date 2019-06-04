@@ -50,7 +50,6 @@ for i in range(1, n):
 print('model has {} variables, {} of which are integral and {} rows'
       .format(model.num_cols, model.num_int, model.num_rows))
 
-model.store_search_progress_log = True
 st = model.optimize(max_seconds=20)
 
 print('best route found has length {}, best possible (obj bound is) {} st: {}'
@@ -58,5 +57,3 @@ print('best route found has length {}, best possible (obj bound is) {} st: {}'
 
 arcs = [(i, j) for i in range(n) for j in range(n) if x[i][j].x >= 0.99]
 print('optimal route : {}'.format(arcs))
-
-model.plot_bounds_evolution()
