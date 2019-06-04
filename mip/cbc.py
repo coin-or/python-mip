@@ -548,7 +548,11 @@ class SolverCbc(Solver):
                               '{}'.format(multiprocessing.cpu_count()))
 
         cbc_set_parameter(self, 'maxSavedSolutions', '10')
-        cbclib.Cbc_addProgrCallback(self._model, cbc_progress_callback, ffi.NULL)
+
+        if self.model.store_search_progress_log:
+            cbclib.Cbc_addProgrCallback(self._model,
+                                        cbc_progress_callback, ffi.NULL)
+
         cbclib.Cbc_solve(self._model)
 
         if cbclib.Cbc_isAbandoned(self._model):
