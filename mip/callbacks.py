@@ -1,6 +1,6 @@
 from collections import defaultdict
 from typing import List, Tuple
-from mip.model import *
+from mip.model import Model, LinExpr
 
 
 class BranchSelector:
@@ -49,7 +49,7 @@ class CutPool:
         # the search of repeated cuts
         self.__pos = defaultdict(list)
 
-    def add(self: "CutPool", cut: "LinExpr") -> bool:
+    def add(self, cut: "LinExpr") -> bool:
         """tries to add a cut to the pool, returns true if this is a new cut,
         false if it is a repeated one
 
@@ -68,7 +68,7 @@ class CutPool:
         return True
 
     @property
-    def cuts(self: "CutPool") -> List["LinExpr"]:
+    def cuts(self) -> List["LinExpr"]:
         return self.__cuts
 
 

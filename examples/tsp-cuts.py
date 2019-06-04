@@ -8,7 +8,8 @@ from sys import argv
 from typing import List, Tuple
 import networkx as nx
 from tspdata import TSPData
-from mip.model import Model, xsum, CutsGenerator, LinExpr, Var, BINARY
+from mip.model import Model, xsum, LinExpr, Var, BINARY
+from mip.callbacks import CutsGenerator
 from mip.callbacks import CutPool
 
 
