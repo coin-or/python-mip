@@ -901,19 +901,19 @@ class Model:
     def store_search_progress_log(self, store: bool) -> bool:
         self.__store_search_progress_log = store
 
-    def plot_bounds_evolution(self):
-        import matplotlib.pyplot as plt
-        log = self.search_progress_log
-
-        # plotting lower bound
-        x = [a[0] for a in log]
-        y = [a[1][0] for a in log]
-        plt.plot(x, y)
-        # plotting upper bound
-        x = [a[0] for a in log if a[1][1] < 1e+50]
-        y = [a[1][1] for a in log if a[1][1] < 1e+50]
-        plt.plot(x, y)
-        plt.show()
+    # def plot_bounds_evolution(self):
+    #    import matplotlib.pyplot as plt
+    #    log = self.search_progress_log
+    #
+    #    # plotting lower bound
+    #    x = [a[0] for a in log]
+    #    y = [a[1][0] for a in log]
+    #    plt.plot(x, y)
+    #    # plotting upper bound
+    #    x = [a[0] for a in log if a[1][1] < 1e+50]
+    #    y = [a[1][1] for a in log if a[1][1] < 1e+50]
+    #    plt.plot(x, y)
+    #    plt.show()
 
     @property
     def num_solutions(self) -> int:
