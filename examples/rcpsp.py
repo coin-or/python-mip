@@ -22,7 +22,7 @@ model = Model()
 x = [[model.add_var(name='x({},{})'.format(j, t), var_type=BINARY)
       for t in T] for j in J]
 
-model += xsum(x[len(J)-1][t] * t for t in T)
+model.objective = xsum(x[len(J)-1][t] * t for t in T)
 
 for j in J:
     model += xsum(x[j][t] for t in T) == 1
