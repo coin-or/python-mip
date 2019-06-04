@@ -418,12 +418,12 @@ follows:
 .. math::
 
      \textrm{Minimize} & \\
-     & {\displaystyle \sum_{t\in \mathcal{T}} (t-1).x_{(n+1,t)}}\\
+     &  \sum_{t\in \mathcal{T}} (t-1).x_{(n+1,t)}\\
      \textrm{Subject to:} & \\
-      \ensuremath{ \sum_{t\in \mathcal{T}} x_{(j,t)} & \ensuremath{= 1} } \,\,\, \ensuremath{\forall j\in J \cup \{n+1\}}\\
-      \ensuremath{ \sum_{j\in J} \sum_{t'=t-p_{j}+1} u_{(j,r)}x_{(j,t')} & \ensuremath{\leq c_{r}} } \,\,\, \ensuremath{\forall t\in \mathcal{T}, r \in R}\\
-      \ensuremath{ \sum_{t\in \mathcal{T}} t.x_{(s,t)} - \sum_{t \in \mathcal{T}} t.x_{(j,t)} & \ensuremath{\geq p_{j}} } \,\,\, \ensuremath{\forall (j,s) \in S}\\
-     \ensuremath{x_{(j,t)} & \in \{0,1\}} \,\,\, \ensuremath{\forall j\in J \cup \{n+1\}, t \in \mathcal{T}}
+      \sum_{t\in \mathcal{T}} x_{(j,t)} & = 1  \,\,\, \forall j\in J \cup \{n+1\}\\
+      \sum_{j\in J} \sum_{t'=t-p_{j}+1} u_{(j,r)}x_{(j,t')} & \leq c_{r}  \,\,\, \forall t\in \mathcal{T}, r \in R\\
+      \sum_{t\in \mathcal{T}} t.x_{(s,t)} - \sum_{t \in \mathcal{T}} t.x_{(j,t)} & \geq p_{j}  \,\,\, \forall (j,s) \in S\\
+     x_{(j,t)} & \in \{0,1\} \,\,\, forall j\in J \cup \{n+1\}, t \in \mathcal{T}
 
 
 An instance is shown below. The figure shows a graph where jobs :math:`\mathcal{J}`
