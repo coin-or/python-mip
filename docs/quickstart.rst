@@ -244,15 +244,20 @@ solutions and lower bounds. Depending on your application you will
 be more interested in the quick production of feasible solutions than in improved 
 lower bounds that may require expensive computations, even if in the long term
 these computations prove worthy to prove the optimality of the solution found. 
-The model property  :code:`emphasis` provides three different settings:
+The model property  :attr:`~mip.model.Model.emphasis` provides three different settings:
 
-0. default setting: tries to balance between the search of improved feasible 
-   solutions and improved lower bounds;
-1. feasibility: focus on finding improved feasible solutions in the 
-   first moments of the search process, activates heuristics;
-2. optimality: activates procedures that produce improved lower bounds, focusing
-   in pruning the search tree even if the production of the first feasible solutions
-   is delayed.
+0. default setting: 
+    tries to balance between the search of improved feasible 
+    solutions and improved lower bounds;
+
+1. feasibility: 
+    focus on finding improved feasible solutions in the 
+    first moments of the search process, activates heuristics;
+
+2. optimality: 
+    activates procedures that produce improved lower bounds, focusing
+    in pruning the search tree even if the production of the first feasible solutions
+    is delayed.
 
 Changing this setting to 1 or 2 triggers the activation/deactivation of
 several algorithms that are processed at each node of the search tree that

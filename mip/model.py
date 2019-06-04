@@ -427,9 +427,7 @@ class Model:
         self.__n_cols = 0
         self.__n_rows = 0
         self.__gap = INF
-        # lower/upper bound improvements in the search
-        # in the format (time, (lb, ub))
-        self.__log = []
+        self.__store_search_progress_log = False
 
     def __del__(self):
         if self.solver:
@@ -767,7 +765,7 @@ class Model:
         """
             A valid estimate computed for the optimal solution cost,
             lower bound in the case of minimization, equals to
-            :attr:`~mip.model.model.objective_value` if the
+            :attr:`~mip.model.Model.objective_value` if the
             optimal solution was found.
         """
         return self.solver.get_objective_bound()
@@ -870,9 +868,9 @@ class Model:
         return self.__gap
 
     @property
-    def log(self) -> List[Tuple[float, Tuple[float, float]]]:
+    def search_progress_log(self) -> List[Tuple[float, Tuple[float, float]]]:
         """
-            Times and improved bounds during the search process.
+            Log of bound improvements in the search.
             The output of MIP solvers is a sequence of improving
             incumbent solutions (primal bound) and estimates for the optimal
             cost (dual bound). When the costs of these two bounds match the
@@ -885,20 +883,35 @@ class Model:
             solver w.r.t. the production of feasible solutions, by including an
             heuristic to produce a better initial feasible solution, for
             example, or improve the formulation with cutting planes, for
-            example, to produce better dual bounds.
+            example, to produce better dual bounds. To enable storing the
+            :attr:`~mip.model.Model.search_progress_log` set
+            :attr:`~mip.model.Model.store_search_progress_log` to True.
         """
         return self.solver.get_log()
 
+    @property
+    def store_search_progress_log(self) -> bool:
+        """
+            Wether :attr:`~mip.model.Model.search_progress_log` will be stored
+            or not when optimizing. Default False. Activate it if you want to
+            analyze bound improvements over time."""
+        return self.__store_search_progress_log
+
+    @store_search_progress_log.setter
+    def store_search_progress_log(self, store: bool) -> bool:
+        self.__store_search_progress_log = store
+
     def plot_bounds_evolution(self):
         import matplotlib.pyplot as plt
+        log = self.search_progress_log
 
         # plotting lower bound
-        x = [a[0] for a in self.log]
-        y = [a[1][0] for a in self.log]
+        x = [a[0] for a in log]
+        y = [a[1][0] for a in log]
         plt.plot(x, y)
         # plotting upper bound
-        x = [a[0] for a in self.log if a[1][1] < 1e+50]
-        y = [a[1][1] for a in self.log if a[1][1] < 1e+50]
+        x = [a[0] for a in log if a[1][1] < 1e+50]
+        y = [a[1][1] for a in log if a[1][1] < 1e+50]
         plt.plot(x, y)
         plt.show()
 
@@ -919,7 +932,7 @@ class Model:
         Returns:
             costs of all solutions stored in the solution pool
             as an array from 0 (the best solution) to
-            :attr:`~mip.model.model.num_solutions`-1.
+            :attr:`~mip.model.Model.num_solutions`-1.
         """
         return [float(self.solver.get_objective_value_i(i))
                 for i in range(self.num_solutions)]

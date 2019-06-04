@@ -48,6 +48,9 @@ if has_gurobi:
         typedef int(*gurobi_callback)(GRBmodel *model, void *cbdata,
                                       int where, void *usrdata);
 
+
+        GRBenv *GRBgetenv(GRBmodel *model);
+
         int GRBloadenv(GRBenv **envP, const char *logfilename);
 
         int GRBnewmodel(GRBenv *env, GRBmodel **modelP,
@@ -207,6 +210,7 @@ if has_gurobi:
     GRBsetcallbackfunc = grblib.GRBsetcallbackfunc
     GRBdelvars = grblib.GRBdelvars
     GRBdelconstrs = grblib.GRBdelconstrs
+    GRBgetenv = grblib.GRBgetenv
 
 
 GRB_CB_PRE_COLDEL = 1000
@@ -294,6 +298,7 @@ check your license.')
         self.__n_modified_rows = 0
         self.__updated = True
         self.__name_space = ffi.new('char[{}]'.format(MAX_NAME_SIZE))
+        self.__log = []
 
     def __del__(self):
         # freeing Gurobi model and environment
@@ -414,36 +419,61 @@ check your license.')
                      where: int,
                      p_usrdata: CData) -> int:
 
+            if self.model.store_search_progress_log:
+                if where == 3:
+                    res = ffi.new('double *')
+                    st = GRBcbget(p_cbdata, where, GRB_CB_MIP_OBJBND, res)
+                    if st == 0:
+                        obj_bound = res[0]
+                        st = GRBcbget(p_cbdata, where, GRB_CB_MIP_OBJBST, res)
+                        if st == 0:
+                            obj_best = res[0]
+                            st = GRBcbget(p_cbdata, where, GRB_CB_RUNTIME, res)
+                            if st == 0:
+                                sec = res[0]
+                                log = self.__log
+                                if not log:
+                                    log.append((sec, (obj_bound, obj_best)))
+                                else:
+                                    difl = abs(obj_bound - log[-1][1][0])
+                                    difu = abs(obj_best - log[-1][1][1])
+                                    if difl >= 1e-6 or difu >= 1e-6:
+                                        print('>>>>>>> {} {}'.format(
+                                              obj_bound, obj_best))
+                                    log.append((sec, (obj_bound, obj_best)))
+
             # adding cuts
-            if self.model.cuts_generator and where == 5:  # MIPNODE == 5
-                # obtaining relaxation solution and "translating" it
-                cb_solution = ffi.new('double[{}]'.format(self.model.num_cols))
-                GRBcbget(p_cbdata, where, GRB_CB_MIPNODE_REL, cb_solution)
-                relax_solution = []
-                for i in range(self.num_cols()):
-                    if abs(cb_solution[i]) > 1e-8:
-                        relax_solution.append((self.model.vars[i],
-                                               cb_solution[i]))
-                if len(relax_solution) == 0:
-                    return 0
+            if where == 5:  # MIPNODE == 5
+                if self.model.cuts_generator:
+                    # obtaining relaxation solution and "translating" it
+                    cb_solution = ffi.new('double[{}]'.format(
+                                          self.model.num_cols))
+                    GRBcbget(p_cbdata, where, GRB_CB_MIPNODE_REL, cb_solution)
+                    relax_solution = []
+                    for i in range(self.num_cols()):
+                        if abs(cb_solution[i]) > 1e-8:
+                            relax_solution.append((self.model.vars[i],
+                                                   cb_solution[i]))
+                    if len(relax_solution) == 0:
+                        return 0
 
-                # calling cuts generator
-                cuts = self.model.cuts_generator.generate_cuts(relax_solution)
-                # adding cuts
-                for lin_expr in cuts:
-                    # collecting linear expression data
-                    nz = len(lin_expr.expr)
-                    cind = ffi.new('int[]', [var.idx
-                                             for var in lin_expr.expr.keys()])
-                    cval = ffi.new('double[]',
-                                   [coef for coef in lin_expr.expr.values()])
+                    # calling cuts generator
+                    cuts = self.model.cuts_generator.generate_cuts(relax_solution)
+                    # adding cuts
+                    for lin_expr in cuts:
+                        # collecting linear expression data
+                        nz = len(lin_expr.expr)
+                        cind = ffi.new('int[]', [var.idx
+                                                 for var in lin_expr.expr.keys()])
+                        cval = ffi.new('double[]',
+                                       [coef for coef in lin_expr.expr.values()])
 
-                    # constraint sense and rhs
-                    sense = lin_expr.sense.encode('utf-8')
-                    rhs = -lin_expr.const
+                        # constraint sense and rhs
+                        sense = lin_expr.sense.encode('utf-8')
+                        rhs = -lin_expr.const
 
-                    GRBcbcut(p_cbdata, nz,
-                             cind, cval, sense, rhs)
+                        GRBcbcut(p_cbdata, nz,
+                                 cind, cval, sense, rhs)
 
             # adding lazy constraints
             elif self.model.lazy_constrs_generator and where == 4:  # MIPSOL==4
@@ -475,7 +505,8 @@ check your license.')
             return 0
 
         self.update()
-        if self.model.cuts_generator is not None:
+        if self.model.cuts_generator is not None or \
+           self.model.store_search_progress_log:
             GRBsetcallbackfunc(self._model, callback, ffi.NULL)
 
         if self.__threads >= 1:
@@ -575,6 +606,9 @@ check your license.')
 
     def get_objective_value(self) -> float:
         return self.get_dbl_attr('ObjVal')
+
+    def get_log(self) -> List[Tuple[float, Tuple[float, float]]]:
+        return self.__log
 
     def set_processing_limits(self,
                               max_time: float = INF,
@@ -957,14 +991,16 @@ check your license.')
 
     def get_int_param(self, name: str) -> int:
         res = ffi.new('int *')
-        error = GRBgetintparam(self._model, name.encode('utf-8'), res)
+        env = GRBgetenv(self._model)
+        error = GRBgetintparam(env, name.encode('utf-8'), res)
         if error != 0:
             raise Exception("Error getting gurobi integer parameter {}".
                             format(name))
         return res.value
 
     def set_int_param(self, name: str, value: int):
-        error = GRBsetintparam(self._env,
+        env = GRBgetenv(self._model)
+        error = GRBsetintparam(env,
                                name.encode('utf-8'), value)
         if error != 0:
             raise Exception("Error mofifying int parameter {} to value {}".
@@ -979,15 +1015,17 @@ check your license.')
         return res[0]
 
     def set_dbl_param(self, param: str, value: float):
-        error = GRBsetdblparam(self._env, param.encode('utf-8'),
-                               value)
+        env = GRBgetenv(self._model)
+        error = GRBsetdblparam(env, param.encode('utf-8'),
+                               float(value))
         if error != 0:
             raise Exception("Error setting gurobi double param " +
                             param + " to {}".format(value))
 
     def get_dbl_param(self, param: str) -> float:
         res = ffi.new('double *')
-        error = GRBgetdblparam(self._env, param.encode('utf-8'),
+        env = GRBgetenv(self._model)
+        error = GRBgetdblparam(env, param.encode('utf-8'),
                                res)
         if error != 0:
             raise Exception("Error getting gurobi double parameter {}".
