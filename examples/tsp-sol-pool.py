@@ -2,6 +2,7 @@ from tspdata import TSPData
 from sys import argv
 from mip.model import *
 from mip.constants import *
+from itertools import product
 #from matplotlib.pyplot import plot
 
 if len(argv) <= 1:
@@ -62,10 +63,9 @@ print('{} routes found'.format(model.num_solutions))
 
 for k in range(model.num_solutions):
     print('route {} with length {}'.format(k, model.objective_values[k]))
-    for i in range(n):
-        for j in range(n):
-            if x[i][j].xi(k) >= 0.98:
-                print('\tarc ({},{})'.format(i,j))
+    for (i, j) in product(range(n), range(n)):
+        if x[i][j].xi(k) >= 0.98:
+            print('\tarc ({},{})'.format(i, j))
 
 
 print('finished')

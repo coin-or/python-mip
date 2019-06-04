@@ -4,7 +4,6 @@ from builtins import property
 from os import environ
 from os.path import isfile
 from collections.abc import Sequence
-from mip.callbacks import CutsGenerator, IncumbentUpdater
 from mip.constants import BINARY, CONTINUOUS, INTEGER, MINIMIZE, INF, \
         OptimizationStatus, SearchEmphasis, VERSION, GUROBI, CBC, \
         LESS_OR_EQUAL, GREATER_OR_EQUAL, EPS
@@ -427,6 +426,10 @@ class Model:
         self.__threads = 0
         self.__n_cols = 0
         self.__n_rows = 0
+        self.__gap = INF
+        # lower/upper bound improvements in the search
+        # in the format (time, (lb, ub))
+        self.__log = []
 
     def __del__(self):
         if self.solver:
@@ -652,6 +655,15 @@ class Model:
                                           max_nodes, max_solutions)
 
         self.__status = self.solver.optimize()
+        # has a solution and is a MIP
+        if self.num_solutions and self.num_int > 0:
+            best = self.objective_value
+            lb = self.objective_bound
+            if abs(best) <= 1e-10:
+                self.__gap = INF
+            else:
+                self.__gap = abs(best-lb) / abs(best)
+
 
         return self.__status
 
@@ -714,8 +726,8 @@ class Model:
         """
         self.solver.relax()
         for v in self.vars:
-            if v.type == BINARY or v.type == INTEGER:
-                v.type = CONTINUOUS
+            if v.var_type == BINARY or v.var_type == INTEGER:
+                v.var_type = CONTINUOUS
 
     def write(self, file_path: str):
         """Saves a MIP model or an initial feasible solution.
@@ -752,6 +764,12 @@ class Model:
 
     @property
     def objective_bound(self) -> float:
+        """
+            A valid estimate computed for the optimal solution cost,
+            lower bound in the case of minimization, equals to
+            :attr:`~mip.model.model.objective_value` if the
+            optimal solution was found.
+        """
         return self.solver.get_objective_bound()
 
     @property
@@ -837,6 +855,52 @@ class Model:
         """Objective function value of the solution found
         """
         return self.solver.get_objective_value()
+
+    @property
+    def gap(self) -> float:
+        """
+           The optimality gap considering the cost of the best solution found
+           (:attr:`~mip.model.Model.objective_value`)
+           :math:`b` and the best objective bound :math:`l`
+           (:attr:`~mip.model.Model.objective_bound`) :math:`g` is
+           computed as: :math:`g=\\frac{|b-l|}{|b|}`.
+           If no solution was found or if :math:`b=0` then :math:`g=\infty`.
+           If the optimal solution was found then :math:`g=0`.
+        """
+        return self.__gap
+
+    @property
+    def log(self) -> List[Tuple[float, Tuple[float, float]]]:
+        """
+            Times and improved bounds during the search process.
+            The output of MIP solvers is a sequence of improving
+            incumbent solutions (primal bound) and estimates for the optimal
+            cost (dual bound). When the costs of these two bounds match the
+            search is concluded. In truncated searches, the most common
+            situation for hard problems, at the end of the search there is a
+            :attr:`~mip.model.Model.gap` between these bounds. This
+            property stores the detailed events of improving these
+            bounds during the search process. Analyzing the evolution
+            of these bounds you can see if you need to improve your
+            solver w.r.t. the production of feasible solutions, by including an
+            heuristic to produce a better initial feasible solution, for
+            example, or improve the formulation with cutting planes, for
+            example, to produce better dual bounds.
+        """
+        return self.solver.get_log()
+
+    def plot_bounds_evolution(self):
+        import matplotlib.pyplot as plt
+
+        # plotting lower bound
+        x = [a[0] for a in self.log]
+        y = [a[1][0] for a in self.log]
+        plt.plot(x, y)
+        # plotting upper bound
+        x = [a[0] for a in self.log if a[1][1] < 1e+50]
+        y = [a[1][1] for a in self.log if a[1][1] < 1e+50]
+        plt.plot(x, y)
+        plt.show()
 
     @property
     def num_solutions(self) -> int:
@@ -1095,6 +1159,9 @@ class Solver:
     def optimize(self) -> OptimizationStatus: pass
 
     def get_objective_value(self) -> float: pass
+
+    def get_log(self) -> List[Tuple[float, Tuple[float, float]]]:
+        return []
 
     def get_objective_value_i(self, i: int) -> float: pass
 
