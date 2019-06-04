@@ -50,6 +50,7 @@ for i in range(1, n):
 print('model has {} variables, {} of which are integral and {} rows'
       .format(model.num_cols, model.num_int, model.num_rows))
 
+model.store_search_progress_log = True
 st = model.optimize(max_seconds=20)
 
 print('best route found has length {}, best possible (obj bound is) {} st: {}'
