@@ -8,7 +8,6 @@ from sys import platform, maxsize
 from os.path import dirname, isfile
 import os
 from cffi import FFI
-from time import time
 
 warningMessages = 0
 
@@ -250,6 +249,11 @@ if has_cbc:
 
     int Cbc_getRowNameIndex(Cbc_Model *model, const char *name);
 
+    void Cbc_problemName(Cbc_Model *model, int maxNumberCharacters,
+                         char *array);
+
+    int Cbc_setProblemName(Cbc_Model *model, const char *array);
+
     void Cbc_addCutCallback(
         void *model, cbc_cut_callback cutcb,
         const char *name, void *appData );
@@ -301,6 +305,7 @@ class SolverCbc(Solver):
         # in cut generation
         self.__name_spacec = ffi.new("char[{}]".format(MAX_NAME_SIZE))
         self.__log = []
+        self.set_problem_name(name)
 
     def add_var(self,
                 obj: float = 0,
@@ -824,6 +829,14 @@ class SolverCbc(Solver):
 
     def __del__(self):
         cbclib.Cbc_deleteModel(self._model)
+
+    def get_problem_name(self) -> str:
+        namep = self.__name_space
+        cbclib.Cbc_problemName(self._model, MAX_NAME_SIZE, namep)
+        return ffi.string(namep).decode('utf-8')
+
+    def set_problem_name(self, name: str):
+        cbclib.Cbc_setProblemName(self._model, name.encode("utf-8"))
 
 
 # vim: ts=4 sw=4 et
