@@ -384,7 +384,6 @@ class Model:
 
         """
         # initializing variables with default values
-        self.name = name
         self.solver_name = solver_name
         self.solver = None
 
@@ -397,20 +396,20 @@ class Model:
         # creating a solver instance
         if self.solver_name.upper() == GUROBI:
             from mip.gurobi import SolverGurobi
-            self.solver = SolverGurobi(self, self.name, sense)
+            self.solver = SolverGurobi(self, name, sense)
         elif self.solver_name.upper() == CBC:
             from mip.cbc import SolverCbc
-            self.solver = SolverCbc(self, self.name, sense)
+            self.solver = SolverCbc(self, name, sense)
         else:
             # checking which solvers are available
             from mip import gurobi
             if gurobi.has_gurobi:
                 from mip.gurobi import SolverGurobi
-                self.solver = SolverGurobi(self, self.name, sense)
+                self.solver = SolverGurobi(self, name, sense)
                 self.solver_name = GUROBI
             else:
                 from mip.cbc import SolverCbc
-                self.solver = SolverCbc(self, self.name, sense)
+                self.solver = SolverCbc(self, name, sense)
                 self.solver_name = CBC
 
         # list of constraints and variables
@@ -662,7 +661,6 @@ class Model:
             else:
                 self.__gap = abs(best-lb) / abs(best)
 
-
         return self.__status
 
     def read(self, path: str):
@@ -675,7 +673,8 @@ class Model:
              mip model stored in the `LP file format <https://www.ibm.com/support/knowledgecenter/SSSA5P_12.9.0/ilog.odms.cplex.help/CPLEX/GettingStarted/topics/tutorials/InteractiveOptimizer/usingLPformat.html>`_
 
            :code:`.mps`
-             mip model stored in the `MPS file format <https://en.wikipedia.org/wiki/MPS_(format)>`_
+             mip model stored in the
+             `MPS file format <https://en.wikipedia.org/wiki/MPS_(format)>`_
 
            :code:`.sol`
              initial feasible solution
@@ -737,7 +736,8 @@ class Model:
              mip model stored in the `LP file format <https://www.ibm.com/support/knowledgecenter/SSSA5P_12.9.0/ilog.odms.cplex.help/CPLEX/GettingStarted/topics/tutorials/InteractiveOptimizer/usingLPformat.html>`_
 
            :code:`.mps`
-             mip model stored in the `MPS file format <https://en.wikipedia.org/wiki/MPS_(format)>`_
+             mip model stored in the
+             `MPS file format <https://en.wikipedia.org/wiki/MPS_(format)>`_
 
            :code:`.sol`
              initial feasible solution
@@ -769,6 +769,21 @@ class Model:
             optimal solution was found.
         """
         return self.solver.get_objective_bound()
+
+    @property
+    def name(self) -> str:
+        """The problem (instance) name
+
+           This name should be used to identify the instance that this model
+           refers, e.g.: productionPlanningMay19. This name is stored when
+           saving (:meth:`~mip.model.Model.write`) the model in :code:`.LP`
+           or :code:`.MPS` file formats.
+        """
+        return self.solver.get_problem_name()
+
+    @name.setter
+    def name(self, name: str):
+        self.solver.set_problem_name(name)
 
     @property
     def objective(self) -> LinExpr:
@@ -1295,6 +1310,10 @@ class Solver:
     def remove_vars(self, varsList: List[int]): pass
 
     def var_get_index(self, name: str) -> int: pass
+
+    def get_problem_name(self) -> str: pass
+
+    def set_problem_name(self, name: str): pass
 
 
 class Var:

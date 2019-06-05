@@ -107,6 +107,12 @@ if has_gurobi:
         int GRBgetstrattrelement(GRBmodel *model, const char *attrname,
                             int element, char **valueP);
 
+        int GRBgetstrattr (GRBmodel *model, const char *attrname,
+            char **valueP);
+
+        int GRBsetstrattr (GRBmodel *model, const char *attrname,
+            const char *newvalue);
+
         int GRBgetintparam(GRBenv *env, const char *paramname, int *valueP);
 
         int GRBsetintparam(GRBenv *env, const char *paramname, int value);
@@ -211,6 +217,8 @@ if has_gurobi:
     GRBdelvars = grblib.GRBdelvars
     GRBdelconstrs = grblib.GRBdelconstrs
     GRBgetenv = grblib.GRBgetenv
+    GRBgetstrattr = grblib.GRBgetstrattr
+    GRBsetstrattr = grblib.GRBsetstrattr
 
 
 GRB_CB_PRE_COLDEL = 1000
@@ -1040,3 +1048,20 @@ check your license.')
             raise Exception('Error getting str attribute {} index {}'.
                             format(attr, index))
         return ffi.string(vName[0]).decode('utf-8')
+
+    def get_problem_name(self) -> str:
+        vName = ffi.new('char **')
+        error = GRBgetstrattr(self._model,
+                              'ModelName'.encode('utf-8'),
+                              vName)
+        if error != 0:
+            raise Exception('Error getting problem name from gurobi')
+        return ffi.string(vName[0]).decode('utf-8')
+
+    def set_problem_name(self, name: str):
+        error = GRBsetstrattr(self._model,
+                              'ModelName'.encode('utf-8'),
+                              name.encode('utf-8'))
+
+        if error != 0:
+            raise Exception('Error setting problem name in Gurobi')
