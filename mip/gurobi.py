@@ -983,6 +983,7 @@ check your license.')
         if error != 0:
             raise Exception("Error modifying int attribute {} to {}".
                             format(name, value))
+        GRBupdatemodel(self._model)
 
     def set_dbl_attr(self, name: str, value: float):
         error = GRBsetdblattr(self._model, name.encode('utf-8'), value)
@@ -1004,7 +1005,7 @@ check your license.')
         if error != 0:
             raise Exception("Error getting gurobi integer parameter {}".
                             format(name))
-        return res.value
+        return res[0]
 
     def set_int_param(self, name: str, value: int):
         env = GRBgetenv(self._model)
@@ -1013,6 +1014,7 @@ check your license.')
         if error != 0:
             raise Exception("Error mofifying int parameter {} to value {}".
                             format(name, value))
+        GRBupdatemodel(self._model)
 
     def get_dbl_attr(self, attr: str) -> float:
         res = ffi.new('double *')
@@ -1065,3 +1067,10 @@ check your license.')
 
         if error != 0:
             raise Exception('Error setting problem name in Gurobi')
+        GRBupdatemodel(self._model)
+
+    def get_pump_passes(self) -> int:
+        return self.get_int_param('PumpPasses')
+
+    def set_pump_passes(self, passes: int):
+        self.set_int_param('PumpPasses', passes)
