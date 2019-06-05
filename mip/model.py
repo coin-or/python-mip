@@ -348,6 +348,53 @@ class LinExpr:
         return self.__sense
 
 
+class ProgressLog:
+    """Class to store the improvement of lower
+    and upper bounds over time during the search.
+    Results stored here are useful to analyze the
+    performance of a given formulation/parameter setting
+    for solving a instance. To be able to automatically
+    generate summarized experimental results, fill the
+    instance and settings of this object with the instance
+    name and formulation/parameter setting details, respectively.
+    """
+
+    def __init__(self):
+        self.log = []
+        self.instance = ''
+        self.settings = ''
+
+    def write(self, file_name: str = ''):
+        if not self.instance:
+            raise Exception('Enter model name (instance name) to save \
+                             experimental data.')
+        if not file_name:
+            file_name = '{}-{}.plog'.format(self.instance, self.settings)
+        else:
+            if file_name.endswith('/') or file_name.endswith('\\'):
+                file_name += '{}-{}.plog'.format(self.instance, self.settings)
+
+        if not file_name.endswith('.plog'):
+            file_name += '.plog'
+
+        f = open(file_name, 'w')
+        f.write('instance: {}'.format(self.instance))
+        f.write('settings: {}'.format(self.settings))
+        for (s, (l, b)) in self.__log:
+            f.write('{},{},{}'.format(s, l, b))
+        f.close()
+
+    def read(self, file_name: str):
+        f = open(file_name, 'r')
+        lin = f.next()
+        self.instance = lin.split(':')[1].lstrip()
+        self.settings = lin.split(':')[1].lstrip()
+        for lin in f:
+            cols = lin.split(',')
+            (s, l, b) = (float(cols[0]), float(cols[1]), float(cols[2]))
+        f.close()
+
+
 class Model:
     """ Mixed Integer Programming Model
 
@@ -427,6 +474,7 @@ class Model:
         self.__n_rows = 0
         self.__gap = INF
         self.__store_search_progress_log = False
+        self.__plog = ProgressLog()
 
     def __del__(self):
         if self.solver:
@@ -661,6 +709,10 @@ class Model:
             else:
                 self.__gap = abs(best-lb) / abs(best)
 
+        if self.store_search_progress_log:
+            self.__plog.log = self.solver.get_log()
+            self.__plog.instance = self.name
+
         return self.__status
 
     def read(self, path: str):
@@ -883,7 +935,7 @@ class Model:
         return self.__gap
 
     @property
-    def search_progress_log(self) -> List[Tuple[float, Tuple[float, float]]]:
+    def search_progress_log(self) -> ProgressLog:
         """
             Log of bound improvements in the search.
             The output of MIP solvers is a sequence of improving
@@ -902,7 +954,7 @@ class Model:
             :attr:`~mip.model.Model.search_progress_log` set
             :attr:`~mip.model.Model.store_search_progress_log` to True.
         """
-        return self.solver.get_log()
+        return self.__plog
 
     @property
     def store_search_progress_log(self) -> bool:
@@ -991,6 +1043,17 @@ class Model:
     @emphasis.setter
     def emphasis(self, emphasis: SearchEmphasis):
         self.solver.set_emphasis(emphasis)
+
+    @property
+    def pump_passes(self) -> int:
+        """Number of passes of the Feasibility Pump :cite:`FGL05` heuristic.
+           You may increase this value if you are not getting feasible
+           solutions."""
+        return self.solver.get_pump_passes()
+
+    @pump_passes.setter
+    def pump_passes(self, passes: int):
+        self.solver.set_pump_passes(passes)
 
     @property
     def cuts(self) -> int:
@@ -1224,6 +1287,10 @@ class Solver:
     def get_max_solutions(self) -> int: pass
 
     def set_max_solutions(self, max_solutions: int): pass
+
+    def get_pump_passes(self) -> int:pass
+
+    def set_pump_passes(self, passes: int): pass
 
     def get_max_nodes(self) -> int: pass
 
