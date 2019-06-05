@@ -20,6 +20,8 @@ INF = float('inf')
 # for variables and rows
 MAX_NAME_SIZE = 512
 
+DEF_PUMPP = 30
+
 try:
     pathmip = dirname(mip.__file__)
     pathlib = os.path.join(pathmip, 'libraries')
@@ -306,6 +308,7 @@ class SolverCbc(Solver):
         self.__name_spacec = ffi.new("char[{}]".format(MAX_NAME_SIZE))
         self.__log = []
         self.set_problem_name(name)
+        self.__pumpp = DEF_PUMPP
 
     def add_var(self,
                 obj: float = 0,
@@ -512,9 +515,6 @@ class SolverCbc(Solver):
                                       'mipCutGen'.encode('utf-8'), ffi.NULL)
             self.added_cut_callback = True
 
-        #cbclib.Cbc_clearCallBack(self._model)
-        #cbclib.Cbc_registerCallBack(self._model, cbc_callback)
-
         if self.__verbose == 0:
             cbc_set_parameter(self, 'log', '0')
         else:
@@ -528,6 +528,9 @@ class SolverCbc(Solver):
             cbc_set_parameter(self, 'trust', '20')
             cbc_set_parameter(self, 'lagomory', 'endonly')
             cbc_set_parameter(self, 'latwomir', 'endonly')
+
+        if self.__pumpp != DEF_PUMPP:
+            cbc_set_parameter(self, 'passf', '{}'.format(self.__pumpp))
 
         if self.model.cuts == 0:
             cbc_set_parameter(self, 'cuts', 'off')
@@ -837,6 +840,12 @@ class SolverCbc(Solver):
 
     def set_problem_name(self, name: str):
         cbclib.Cbc_setProblemName(self._model, name.encode("utf-8"))
+
+    def get_pump_passes(self) -> int:
+        return self.__pumpp
+
+    def set_pump_passes(self, passes: int):
+        self.__pumpp = passes
 
 
 # vim: ts=4 sw=4 et
