@@ -64,3 +64,8 @@ OptimizationStatus
 .. autoclass:: mip.constants.OptimizationStatus
     :members:
 
+ProgressLog
+-----------
+.. autoclass:: mip.model.ProgressLog
+    :members:
+

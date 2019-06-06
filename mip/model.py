@@ -355,16 +355,35 @@ class ProgressLog:
     performance of a given formulation/parameter setting
     for solving a instance. To be able to automatically
     generate summarized experimental results, fill the
-    instance and settings of this object with the instance
+    :attr:`~mip.model.ProgressLog.instance` and
+    :attr:`~mip.model.ProgressLog.settings` of this object with the instance
     name and formulation/parameter setting details, respectively.
+
+    Attributes:
+        log(Tuple[float, Tuple[float, float]]):  Tuple in the format \
+        :math:`(t, (l, u))`, where :math:`t` is the processing time and :math:`l` \
+        and :math:`u` are the lower and upper bounds, respectively.
+
+        instance(str): instance name
+
+        settings(str): identification of the formulation/parameter \
+        settings used in the optimization (whatever is relevant to \
+        identify a given computational experiment)
     """
 
     def __init__(self):
         self.log = []
+
         self.instance = ''
+
         self.settings = ''
 
     def write(self, file_name: str = ''):
+        """Saves the progress log. If no extension is informed,
+        the :code:`.plog` extension will be used. If only a directory is
+        informed then the name will be built considering the
+        :attr:`~mip.model.ProgressLog.instance` and
+        :attr:`~mip.model.ProgressLog.settings` attributes"""
         if not self.instance:
             raise Exception('Enter model name (instance name) to save \
                              experimental data.')
@@ -385,6 +404,7 @@ class ProgressLog:
         f.close()
 
     def read(self, file_name: str):
+        """Reads a progress log stored in a file"""
         f = open(file_name, 'r')
         lin = f.next()
         self.instance = lin.split(':')[1].lstrip()
