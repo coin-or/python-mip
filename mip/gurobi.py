@@ -520,7 +520,17 @@ check your license.')
         if self.__threads >= 1:
             self.set_int_param("Threads", self.__threads)
 
-        self.set_int_param("Cuts", self.model.cuts)
+        if self.model.cuts != -1:
+            self.set_int_param("Cuts", self.model.cuts)
+
+        if self.model.clique != -1:
+            self.set_int_param("CliqueCuts", self.model.clique)
+
+        if self.model.cut_passes != -1:
+            self.set_int_param("CutPasses", self.model.cut_passes)
+
+        if self.model.preprocess != -1:
+            self.set_int_param("Presolve", self.model.preprocess)
 
         # executing Gurobi to solve the formulation
         status = GRBoptimize(self._model)
