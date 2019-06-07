@@ -183,8 +183,8 @@ the initial model and then add the stronger sub-tour elimination constraints
 presented in the previous section as cuts. 
 
 In Python-MIP, CGC are implemented
-extending the :class:`~mip.model.CutsGenerator` class. The following example implements the
-previous cut separation algorithm as a :class:`~mip.model.CutsGenerator` class and includes it
+extending the :class:`~mip.callbacks.CutsGenerator` class. The following example implements the
+previous cut separation algorithm as a :class:`~mip.callbacks.CutsGenerator` class and includes it
 as a cut generator for the branch-and-cut solver engine.
 
 
@@ -257,9 +257,28 @@ as a cut generator for the branch-and-cut solver engine.
 Providing initial feasible solutions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The Branch-&-Cut algorithm usually executes faster with the availability of an integer feasible solution: an upper bound for the solution cost improves its ability of pruning branches in the search tree and this solution is also used in local search MIP heuristics. MIP solvers employ several heuristics for the automatically production of these solutions but they do not always succeed. 
+The Branch-&-Cut algorithm usually executes faster with the availability of an
+integer feasible solution: an upper bound for the solution cost improves its
+ability of pruning branches in the search tree and this solution is also used
+in local search MIP heuristics. MIP solvers employ several heuristics for the
+automatically production of these solutions but they do not always succeed. 
 
-If you have some problem specific heuristic which can produce an initial feasible solution for your application then you can inform this solution to the MIP solver using the :attr:`~mip.model.Model.start` model property. Let's consider our TSP application (:numref:`tsp-label`). If the graph is complete, i.e. distances are available for each pair of cities, then *any* permutation :math:`\Pi=(\pi_1,\ldots,\pi_n)` of the cities :math:`N` can be used as an initial feasible solution. This solution has exactly :math:`|N|` :math:`x` variables equal to one indicating the selected arcs: :math:`((\pi_1,\pi_2), (\pi_2,\pi_3), \ldots, (\pi_{n-1},\pi_{n}), (\pi_{n},\pi_{1}))`. Even though this solution is obvious for the modeler, which knows that binary variables of this model refer to arcs in a TSP graph, this solution is not obvious for the MIP solver, which only sees variables and a constraint matrix. The following example enters an initial random permutation of cities as initial feasible solution for our TSP example, considering an instance with :code:`n` cities, and a model :code:`model` with references to variables stored in a matrix :code:`x[0,...,n][0,..,n]`:
+If you have some problem specific heuristic which can produce an initial
+feasible solution for your application then you can inform this solution to the
+MIP solver using the :attr:`~mip.model.Model.start` model property. Let's
+consider our TSP application (:numref:`tsp-label`). If the graph is complete,
+i.e. distances are available for each pair of cities, then *any* permutation
+:math:`\Pi=(\pi_1,\ldots,\pi_n)` of the cities :math:`N` can be used as an
+initial feasible solution. This solution has exactly :math:`|N|` :math:`x`
+variables equal to one indicating the selected arcs: :math:`((\pi_1,\pi_2),
+(\pi_2,\pi_3), \ldots, (\pi_{n-1},\pi_{n}), (\pi_{n},\pi_{1}))`. Even though
+this solution is obvious for the modeler, which knows that binary variables of
+this model refer to arcs in a TSP graph, this solution is not obvious for the
+MIP solver, which only sees variables and a constraint matrix. The following
+example enters an initial random permutation of cities as initial feasible
+solution for our TSP example, considering an instance with :code:`n` cities,
+and a model :code:`model` with references to variables stored in a matrix
+:code:`x[0,...,n-1][0,..,n-1]`:
 
 .. code-block:: python
     :linenos:
@@ -269,4 +288,9 @@ If you have some problem specific heuristic which can produce an initial feasibl
     shuffle(S)
     model.start = [(x[S[k-1]][S[k]], 1.0) for k in range(n)]
 
-The previous example can be integrated in our TSP example (:numref:`tsp-label`) by inserting these lines before the :code:`model.optimize()` call. Initial feasible solutions are informed in a list (line 4) of :code:`(var, value)` pairs. Please note that only the original non-zero problem variables need to be informed, i.e., the solver will automatically compute the values of the auxiliary :math:`y` variables which are used only to eliminate sub-tours.
+The previous example can be integrated in our TSP example (:numref:`tsp-label`)
+by inserting these lines before the :code:`model.optimize()` call. Initial
+feasible solutions are informed in a list (line 4) of :code:`(var, value)`
+pairs. Please note that only the original non-zero problem variables need to be
+informed, i.e., the solver will automatically compute the values of the
+auxiliary :math:`y` variables which are used only to eliminate sub-tours.

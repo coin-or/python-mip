@@ -555,6 +555,20 @@ class SolverCbc(Solver):
             cbc_set_parameter(self, 'threads',
                               '{}'.format(multiprocessing.cpu_count()))
 
+        if self.model.preprocess == 0:
+            cbc_set_parameter(self, 'preprocess', 'off')
+        elif self.model.preprocess == 1:
+            cbc_set_parameter(self, 'preprocess', 'sos')
+
+        if self.model.cut_passes != -1:
+            cbc_set_parameter(self, 'passc', '{}'.format(
+                              self.model.cut_passes))
+
+        if self.model.clique == 0:
+            cbc_set_parameter(self, 'clique', 'off')
+        elif self.model.clique == 1:
+            cbc_set_parameter(self, 'clique', 'forceon')
+
         cbc_set_parameter(self, 'maxSavedSolutions', '10')
 
         if self.model.store_search_progress_log:

@@ -484,7 +484,10 @@ class Model:
         self.vars = VarList(self)
 
         # initializing additional control variables
-        self.__cuts = 1
+        self.__cuts = -1
+        self.__cut_passes = -1
+        self.__clique = -1
+        self.__preprocess = -1
         self.__cuts_generator = None
         self.__lazy_constrs_generator = None
         self.__start = None
@@ -1065,6 +1068,16 @@ class Model:
         self.solver.set_emphasis(emphasis)
 
     @property
+    def preprocess(self) -> int:
+        """Enables/disables pre-processing. Pre-processing tries to improve your
+        MIP formulation. -1 means automatic, 0 means off and 1 means on."""
+        return self.__preprocess
+
+    @preprocess.setter
+    def preprocess(self, prep: int):
+        self.__preprocess = prep
+
+    @property
     def pump_passes(self) -> int:
         """Number of passes of the Feasibility Pump :cite:`FGL05` heuristic.
            You may increase this value if you are not getting feasible
@@ -1077,23 +1090,43 @@ class Model:
 
     @property
     def cuts(self) -> int:
-        """controls the generation of cutting planes, 0 disables completely,
-        1 (default) generates cutting planes in a moderate way,
-        2 generates cutting planes aggressively and
-        3 generates
-        even more cutting planes. Cutting planes usually improve the LP
-        relaxation bound but also make the solution time of the LP relaxation
-        larger, so the overall effect is hard to predict and experimenting
-        different values for this parameter may be beneficial.
-        """
+        """Controls the generation of cutting planes, -1 means automatic, 0
+        disables completely, 1 (default) generates cutting planes in a moderate
+        way, 2 generates cutting planes aggressively and 3 generates even more
+        cutting planes. Cutting planes usually improve the LP relaxation bound
+        but also make the solution time of the LP relaxation larger, so the
+        overall effect is hard to predict and experimenting different values
+        for this parameter may be beneficial."""
+
         return self.__cuts
 
     @cuts.setter
-    def cuts(self, cuts: int):
-        if cuts < 0 or cuts > 3:
-            print('Warning: invalid value ({}) for parameter cuts, \
-                  keeping old setting.'.format(self.__cuts))
-        self.__cuts = cuts
+    def cuts(self, gencuts: int):
+        self.__cuts = gencuts
+
+    @property
+    def cut_passes(self) -> int:
+        """Maximum number of rounds of cutting planes. You may set this
+        parameter to low values if you see that a significant amount of
+        time is being spent generating cuts without any improvement in
+        the lower bound. -1 means automatic, values greater than zero
+        specify the maximum number of rounds."""
+        return self.__cut_passes
+
+    @cut_passes.setter
+    def cut_passes(self, cp: int):
+        self.__cut_passes = cp
+
+    @property
+    def clique(self) -> int:
+        """Controls the generation of clique cuts. -1 means automatic,
+        0 disables it, 1 enables it and 2 enables more aggressive clique
+        generation."""
+        return self.__clique
+
+    @clique.setter
+    def clique(self, clq: int):
+        self.__clique = clq
 
     @property
     def start(self) -> List[Tuple["Var", float]]:
@@ -1308,7 +1341,7 @@ class Solver:
 
     def set_max_solutions(self, max_solutions: int): pass
 
-    def get_pump_passes(self) -> int:pass
+    def get_pump_passes(self) -> int: pass
 
     def set_pump_passes(self, passes: int): pass
 
