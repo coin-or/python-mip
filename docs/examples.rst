@@ -494,3 +494,143 @@ consumption:
     :align: center
 
 
+Job Shop Scheduling Problem
+---------------------------
+
+
+The Job Shop Scheduling Problem (JSSP) is an NP-hard problem defined by a set
+of jobs that must be executed by a set of machines in a specific order for each
+job. Each job has a defined execution time for each machine and a defined
+processing order of machines. Also, each job must use each machine only once.
+The machines can only execute a job at a time and once started, the machine
+cannot be interrupted until the completion of the assigned job. The objective
+is to minimize the makespan, i.e. the maximum completion time among all jobs.
+
+For instance, suppose we have 3 machines and 3 jobs. The processing order for
+each job is as follows (the processing time of each job in each machine is
+between parenthesis):
+
+- Job :math:`j_1`: :math:`m_3` (2) :math:`\rightarrow` :math:`m_1` (1) :math:`\rightarrow` :math:`m_2` (2)
+- Job :math:`j_2`: :math:`m_2` (1) :math:`\rightarrow` :math:`m_3` (2) :math:`\rightarrow` :math:`m_1` (2)
+- Job :math:`j_3`: :math:`m_3` (1) :math:`\rightarrow` :math:`m_2` (2) :math:`\rightarrow` :math:`m_1` (1)
+
+Bellow there are two feasible schedules:
+
+.. image:: ./images/jssp1.pdf
+    :width: 80%
+    :align: center
+
+.. image:: ./images/jssp2.pdf
+    :width: 80%
+    :align: center
+
+The first schedule shows a naive solution: jobs are processed in a sequence and 
+machines stay idle quite often. The second solution is the optimal one, where jobs
+execute in parallel.
+
+The JSSP has the following input data:
+
+:math:`\mathcal{J}`
+    set of jobs, :math:`\mathcal{J} = \{1,...,n\}`,
+
+:math:`\mathcal{M}`
+    set of machines, :math:`\mathcal{M} = \{1,...,m\}`,
+
+:math:`o^j_r`
+    the machine that processes the :math:`r`-th operation of job :math:`j`, the sequence 
+    without repetition :math:`O^j = (o^j_1,o^j_2,...,o^j_m)` is the processing order of :math:`j`,
+
+:math:`p_{ij}`
+    non-negative integer processing time of job :math:`j` in machine :math:`i`.
+
+A JSSP solution must respect the following constraints:
+
+- All jobs :math:`j` must be executed following the sequence of machines given by :math:`O^j`,
+- Each machine can process only one job at a time,
+- Once a machine starts a job, it must be completed without interruptions.
+
+The objective is to minimize the makespan, the end of the last job to be
+executed. The JSSP is NP-hard for any fixed :math:`n \ge 3` and also for any
+fixed :math:`m \ge 3`.
+
+The decision variables are defined by:
+
+:math:`x_{ij}`
+    starting time of job :math:`j \in J` on machine :math:`i \in M`
+
+:math:`y_{ijk}=` 
+    :math:`\begin{cases} 1, & \text{if job } j \text{ precedes job } k \text{ on machine } i \text{,}\\ & i \in \mathcal{M} \text{, } j, k  \in \mathcal{J} \text{, } j \neq k \\ 0, & \text{otherwise} \end{cases}`
+
+:math:`C` 
+    variable for the makespan 
+
+
+Follows a MIP formulation for the JSSP. The objective function is computed
+in the auxiliary variable :math:`C`. The first set of constraints are the
+precedence constraints, that ensure that a job on a machine only starts
+after the processing of the previous machine concluded. The second and 
+third set of disjunctive constraints ensure that only one job is processing
+at a given time in a given machine. The :math:`M` constant must be large enough to 
+ensure the correctness of these constraints. A valid (but weak) estimate for this
+value can be the summation of all processing times. The fourth set of constrains 
+ensure that the makespan value is computed correctly and the last constraints indicate
+variable domains.
+
+.. math:: 
+
+    \textrm{min: }  &  \\
+                   & C \\
+    \textrm{s.t.: } &  \\
+                   x_{o^{j}_{r}j} &  \geq x_{o^{j}_{r-1}j} +p_{o^{j}_{r-1}j} \,\,\, \forall r \in \{2,..,m\}, j \in \mathcal{J} \\
+                       x_{ij}     & \geq x_{ik} + p_{ik} - M \cdot y_{ijk} \,\,\, \forall j,k \in \mathcal{J}, j \neq k, i \in \mathcal{M} \\
+                       x_{ik}     & \geq x_{ij} + p_{ij} - M \cdot (1-y_{ijk}) \,\,\, \forall j,k \in \mathcal{J}, j \neq k,i \in \mathcal{M} \\
+                       C          & \geq x_{o^{j}_{m}j} + p_{o^{j}_{m}j} \,\,\, \forall j \in \mathcal{J} \\
+                      x_{ij}      & \geq 0 \,\,\, \forall i \in \mathcal{J}, i \in \mathcal{M} \\
+                      y_{ijk}     & \in \{0,1\} \,\,\, \forall j,k \in \mathcal{J}, i \in \mathcal{M} \\
+                      C & \geq 0
+
+The following Python-MIP code optimizes creates the previous formulation, optimizes it and print
+the optimal solution found:
+
+.. code-block:: python
+
+    from itertools import product
+    from sys import argv
+    from jssp_instance import JSSPInstance
+    from mip.model import Model
+    from mip.constants import BINARY
+
+    inst = JSSPInstance(argv[1])
+    n, m, machines, times, M = inst.n, inst.m, inst.machines, inst.times, inst.M
+
+    model = Model('JSSP')
+
+    c = model.add_var(name="C")
+    x = [[model.add_var(name='x({},{})'.format(j+1, i+1))
+          for i in range(m)] for j in range(n)]
+    y = [[[model.add_var(var_type=BINARY, name='y({},{},{})'.format(j+1, k+1, i+1))
+           for i in range(m)] for k in range(n)] for j in range(n)]
+
+    model.objective = c
+
+    for (j, i) in product(range(n), range(1, m)):
+        model += x[j][machines[j][i]] - x[j][machines[j][i-1]] >= \
+            times[j][machines[j][i-1]]
+
+    for (j, k) in product(range(n), range(n)):
+        if k != j:
+            for i in range(m):
+                model += x[j][i] - x[k][i] + M*y[j][k][i] >= times[k][i]
+                model += -x[j][i] + x[k][i] - M*y[j][k][i] >= times[j][i] - M
+
+    for j in range(n):
+        model += c - x[j][machines[j][m - 1]] >= times[j][machines[j][m - 1]]
+
+    model.optimize()
+
+    print("C: ", c.x)
+    for j in range(n):
+        for i in range(m):
+            print('x({},{}) = {} '.format(j+1, i+1, x[j][i].x), end='')
+    print()
+
