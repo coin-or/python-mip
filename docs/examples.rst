@@ -632,5 +632,5 @@ the optimal solution found:
     for j in range(n):
         for i in range(m):
             print('x({},{}) = {} '.format(j+1, i+1, x[j][i].x), end='')
-    print()
+        print()
 
