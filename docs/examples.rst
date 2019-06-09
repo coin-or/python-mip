@@ -516,11 +516,11 @@ between parenthesis):
 
 Bellow there are two feasible schedules:
 
-.. image:: ./images/jssp1.pdf
+.. image:: ./images/jssp1.png
     :width: 80%
     :align: center
 
-.. image:: ./images/jssp2.pdf
+.. image:: ./images/jssp2.png
     :width: 80%
     :align: center
 
