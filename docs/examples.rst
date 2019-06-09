@@ -589,7 +589,7 @@ variable domains.
                       y_{ijk}     & \in \{0,1\} \,\,\, \forall j,k \in \mathcal{J}, i \in \mathcal{M} \\
                       C & \geq 0
 
-The following Python-MIP code optimizes creates the previous formulation, optimizes it and print
+The following Python-MIP code creates the previous formulation, optimizes it and prints
 the optimal solution found:
 
 .. code-block:: python
