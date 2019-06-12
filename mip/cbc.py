@@ -1,3 +1,5 @@
+"""Python-MIP interface to the COIN-OR Branch-and-Cut solver CBC"""
+
 import mip
 from mip.model import Model, Solver, Var, Constr, Column, LinExpr
 from mip.constants import MAXIMIZE, SearchEmphasis, CONTINUOUS, BINARY, \
@@ -6,6 +8,7 @@ from mip.constants import MAXIMIZE, SearchEmphasis, CONTINUOUS, BINARY, \
 from typing import Dict, List, Tuple
 from sys import platform, maxsize
 from os.path import dirname, isfile
+from mip.model import xsum
 import os
 from cffi import FFI
 
@@ -16,6 +19,7 @@ CData = ffi.CData
 has_cbc = False
 os_is_64_bit = maxsize > 2**32
 INF = float('inf')
+cut_idx = 0
 
 # for variables and rows
 MAX_NAME_SIZE = 512
@@ -214,6 +218,44 @@ if has_cbc:
 
     void *Cbc_deleteModel(Cbc_Model *model);
 
+    int Osi_getNumIntegers( void *osi );
+
+    const double *Osi_getReducedCost( void *osi );
+
+    const double *Osi_getObjCoefficients();
+
+    double Osi_getObjSense();
+
+    void *Osi_newSolver();
+
+    void Osi_deleteSolver( void *osi );
+
+    void Osi_initialSolve(void *osi);
+
+    void Osi_resolve(void *osi);
+
+    void Osi_branchAndBound(void *osi);
+
+    char Osi_isAbandoned(void *osi);
+
+    char Osi_isProvenOptimal(void *osi);
+
+    char Osi_isProvenPrimalInfeasible(void *osi);
+
+    char Osi_isProvenDualInfeasible(void *osi);
+
+    char Osi_isPrimalObjectiveLimitReached(void *osi);
+
+    char Osi_isDualObjectiveLimitReached(void *osi);
+
+    char Osi_isIterationLimitReached(void *osi);
+
+    double Osi_getObjValue( void *osi );
+
+    void Osi_setColUpper (void *osi, int elementIndex, double ub);
+
+    void Osi_setColLower(void *osi, int elementIndex, double lb);
+
     int Osi_getNumCols( void *osi );
 
     void Osi_getColName( void *osi, int i, char *name, int maxLen );
@@ -236,10 +278,20 @@ if has_cbc:
 
     char Osi_getRowSense(void *osi, int row);
 
+    void Osi_setObjCoef(void *osi, int index, double obj);
+
+    void Osi_setObjSense(void *osi, double sense);
+
     const double *Osi_getColSolution(void *osi);
 
     void OsiCuts_addRowCut( void *osiCuts, int nz, const int *idx,
         const double *coef, char sense, double rhs );
+
+    void Osi_addCol(void *osi, const char *name, double lb, double ub,
+       double obj, char isInteger, int nz, int *rows, double *coefs);
+
+    void Osi_addRow(void *osi, const char *name, int nz,
+        const int *cols, const double *coefs, char sense, double rhs);
 
     void Cbc_deleteRows(Cbc_Model *model, int numRows, const int rows[]);
 
@@ -337,6 +389,13 @@ class SolverCbc(Solver):
     def get_objective_const(self) -> float:
         return self._objconst
 
+    def get_objective(self) -> LinExpr:
+        obj = cbclib.Cbc_getObjCoefficients(self._model)
+        if obj == ffi.NULL:
+            raise Exception("Error getting objective function coefficients")
+        return xsum(obj[j]*self.vars[j] for j in range(self.num_cols)
+                    if abs(obj[j]) >= 1e-15)
+
     def set_objective(self, lin_expr: "LinExpr", sense: str = "") -> None:
         # collecting variable coefficients
 
@@ -398,6 +457,9 @@ class SolverCbc(Solver):
             if var.ub != 1.0:
                 var.ub = 1.0
 
+    def var_set_obj(self, var: "Var", value: float):
+        cbclib.Cbc_setObjCoeff(self._model, var.idx, value)
+
     def optimize(self) -> OptimizationStatus:
         self.__evtimes = {}
 
@@ -424,7 +486,6 @@ class SolverCbc(Solver):
                                   cbData: CData) -> int:
             self.__log.append((seconds, (lb, ub)))
             return -1
-
 
         # incumbent callback
         def cbc_inc_callback(cbc_model: CData,
@@ -720,6 +781,25 @@ class SolverCbc(Solver):
         mp = self._model
         cbclib.Cbc_addRow(mp, namestr, numnz, cind, cval, sense, rhs)
 
+    def add_cut(self, lin_expr: LinExpr):
+        if self.osi_cutsp != ffi.NULL:
+            numnz = len(lin_expr.expr)
+
+            cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
+            cval = ffi.new("double[]", [coef for coef in
+                                        lin_expr.expr.values()])
+
+            # constraint sense and rhs
+            sense = lin_expr.sense.encode("utf-8")
+            rhs = -lin_expr.const
+
+            cbclib.OsiCuts_addRowCut(self.osi_cutsp, numnz, cind, cval,
+                                     sense, rhs)
+        else:
+            global cut_idx
+            name = 'cut{}'.format(cut_idx)
+            self.add_constr(lin_expr, name)
+
     def write(self, file_path: str):
         fpstr = file_path.encode("utf-8")
         if ".mps" in file_path.lower():
@@ -860,6 +940,422 @@ class SolverCbc(Solver):
 
     def set_pump_passes(self, passes: int):
         self.__pumpp = passes
+
+
+class SolverOsi(Solver):
+    """Interface for the OsiSolverInterface, the generic solver interface of
+    COIN-OR. This solver has a restricted functionality (comparing to
+    SolverCbc) and it is used mainly in callbacks"""
+
+    def __init__(self, osi_ptr: CData):
+        if osi_ptr != ffi.NULL:
+            self.osi = osi_ptr
+            self.owns_solver = False
+        else:
+            self.owns_solver = True
+        self.__relaxed = False
+        self.colNames = None
+        self.rowNames = None
+        self._obj_const = 0.0
+        self.osi_cutsp = ffi.NULL
+
+    def __del__(self):
+        if self.owns_solver:
+            cbclib.Osi_deleteSolver(self.osi)
+
+    def add_var(self,
+                name: str = "",
+                obj: float = 0,
+                lb: float = 0,
+                ub: float = INF,
+                var_type: str = CONTINUOUS,
+                column: "Column" = None):
+        # collecting column data
+        numnz = 0 if column is None else len(column.constrs)
+        if not numnz:
+            vind = ffi.NULL
+            vval = ffi.NULL
+        else:
+            vind = ffi.new("int[]", [c.idx for c in column.constrs])
+            vval = ffi.new("double[]", [coef for coef in column.coeffs])
+
+        isInt = \
+            CHAR_ONE if var_type.upper() == "B" or var_type.upper() == "I" \
+            else CHAR_ZERO
+        cbclib.Osi_addCol(
+            self.osi, name.encode("utf-8"),
+            lb, ub, obj,
+            isInt, numnz, vind, vval)
+
+    def add_constr(self, lin_expr: "LinExpr", name: str = ""):
+        # collecting linear expression data
+        numnz = len(lin_expr.expr)
+
+        cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
+        cval = ffi.new("double[]", [coef for coef in lin_expr.expr.values()])
+
+        # constraint sense and rhs
+        sense = lin_expr.sense.encode("utf-8")
+        rhs = -lin_expr.const
+
+        namestr = name.encode("utf-8")
+        mp = self._model
+        cbclib.Osi_addRow(mp, namestr, numnz, cind, cval, sense, rhs)
+
+    def add_cut(self, lin_expr: LinExpr):
+        if self.osi_cutsp != ffi.NULL:
+            numnz = len(lin_expr.expr)
+
+            cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
+            cval = ffi.new("double[]", [coef for coef in
+                                        lin_expr.expr.values()])
+
+            # constraint sense and rhs
+            sense = lin_expr.sense.encode("utf-8")
+            rhs = -lin_expr.const
+
+            cbclib.OsiCuts_addRowCut(self.osi_cutsp, numnz, cind, cval,
+                                     sense, rhs)
+        else:
+            global cut_idx
+            name = 'cut{}'.format(cut_idx)
+            self.add_constr(lin_expr, name)
+
+    def get_objective_bound(self) -> float:
+        raise Exception('Not available in OsiSolver')
+
+    def get_objective(self) -> LinExpr:
+        obj = cbclib.Osi_getObjCoefficients(self.osi)
+        if obj == ffi.NULL:
+            raise Exception("Error getting objective function coefficients")
+        return xsum(obj[j]*self.vars[j] for j in range(self.num_cols)
+                    if abs(obj[j]) >= 1e-15)
+
+    def get_objective_const(self) -> float:
+        return self._objconst
+
+    def relax(self):
+        self.__relaxed = True
+
+    def optimize(self) -> OptimizationStatus:
+        if self.__relaxed or self.num_int() == 0:
+            # linear optimization
+            if cbclib.Osi_isProvenOptimal(self.osi):
+                cbclib.Osi_resolve(self.osi)
+            else:
+                cbclib.Osi_initialSolve(self.osi)
+        else:
+            cbclib.Osi_branchAndBound(self.osi)
+
+    def get_objective_value(self) -> float:
+        return cbclib.Osi_getObjValue(self.osi)
+
+    def get_log(self) -> List[Tuple[float, Tuple[float, float]]]:
+        return []
+
+    def get_objective_value_i(self, i: int) -> float:
+        raise Exception('Not available in OsiSolver')
+
+    def get_num_solutions(self) -> int:
+        if cbclib.Osi_isProvenOptimal(self.osi):
+            return 1
+
+        return 0
+
+    def get_objective_sense(self) -> str:
+        objs = cbclib.Osi_getObjSense(self.osi)
+        if objs <= -0.5:
+            return MAXIMIZE
+
+        return MINIMIZE
+
+    def set_objective_sense(self, sense: str):
+        if sense.strip().upper() == MAXIMIZE.strip().upper():
+            cbclib.Osi_setObjSense(self.osi, -1.0)
+        elif sense.strip().upper() == MINIMIZE.strip().upper():
+            cbclib.Osi_setObjSense(self.osi, 1.0)
+        else:
+            raise Exception("Unknown sense: {}, use {} or {}".format(sense,
+                                                                     MAXIMIZE,
+                                                                     MINIMIZE))
+
+    def set_start(self, start: List[Tuple["Var", float]]):
+        raise Exception('MIPstart not available in OsiSolver')
+
+    def set_objective(self, lin_expr: "LinExpr", sense: str = ""):
+        # collecting variable coefficients
+        for var, coeff in lin_expr.expr.items():
+            cbclib.Osi_setObjCoeff(self.osi, var.idx, coeff)
+
+        # objective function constant
+        self._obj_const = lin_expr.const
+
+        # setting objective sense
+        if sense == MAXIMIZE:
+            cbclib.Osi_setObjSense(self.osi, -1.0)
+        elif sense == MINIMIZE:
+            cbclib.Osi_setObjSense(self.osi, 1.0)
+
+    def set_objective_const(self, const: float):
+        raise Exception('Still not implemented in OsiSolver')
+
+    def set_callbacks(self,
+                      branch_selector: "BranchSelector" = None,
+                      incumbent_updater: "IncumbentUpdater" = None,
+                      lazy_constrs_generator: "LazyConstrsGenerator" = None):
+        raise Exception('Callbacks not available in OsiSolver')
+
+    def set_processing_limits(self,
+                              max_time: float = INF,
+                              max_nodes: int = INF,
+                              max_sol: int = INF):
+        raise Exception('Not available in OsiSolver')
+
+    def get_max_seconds(self) -> float:
+        raise Exception('Not available in OsiSolver')
+
+    def set_max_seconds(self, max_seconds: float):
+        raise Exception('Not available in OsiSolver')
+
+    def get_max_solutions(self) -> int:
+        raise Exception('Not available in OsiSolver')
+
+    def set_max_solutions(self, max_solutions: int):
+        raise Exception('Not available in OsiSolver')
+
+    def get_pump_passes(self) -> int:
+        raise Exception('Not available in OsiSolver')
+
+    def set_pump_passes(self, passes: int):
+        raise Exception('Not available in OsiSolver')
+
+    def get_max_nodes(self) -> int:
+        raise Exception('Not available in OsiSolver')
+
+    def set_max_nodes(self, max_nodes: int):
+        raise Exception('Not available in OsiSolver')
+
+    def set_num_threads(self, threads: int):
+        raise Exception('Not available in OsiSolver')
+
+    def write(self, file_path: str):
+        raise Exception('Not available in OsiSolver')
+
+    def read(self, file_path: str):
+        raise Exception('Not available in OsiSolver')
+
+    def num_cols(self) -> int:
+        return cbclib.Osi_getNumCols(self.osi)
+
+    def num_rows(self) -> int:
+        return cbclib.Osi_getNumRows(self.osi)
+
+    def num_nz(self) -> int:
+        return cbclib.Osi_getNumElements(self.osi)
+
+    def num_int(self) -> int:
+        return cbclib.Osi_getNumIntegers(self.osi)
+
+    def get_emphasis(self) -> SearchEmphasis:
+        raise Exception('Not available in OsiSolver')
+
+    def set_emphasis(self, emph: SearchEmphasis):
+        raise Exception('Not available in OsiSolver')
+
+    def get_cutoff(self) -> float:
+        raise Exception('Not available in OsiSolver')
+
+    def set_cutoff(self, cutoff: float):
+        raise Exception('Not available in OsiSolver')
+
+    def get_mip_gap_abs(self) -> float:
+        raise Exception('Not available in OsiSolver')
+
+    def set_mip_gap_abs(self, mip_gap_abs: float):
+        raise Exception('Not available in OsiSolver')
+
+    def get_mip_gap(self) -> float:
+        raise Exception('Not available in OsiSolver')
+
+    def set_mip_gap(self, mip_gap: float):
+        raise Exception('Not available in OsiSolver')
+
+    def get_verbose(self) -> int:
+        raise Exception('Not available in OsiSolver')
+
+    def set_verbose(self, verbose: int):
+        raise Exception('Not available in OsiSolver')
+
+    # Constraint-related getters/setters
+    def constr_get_expr(self, constr: Constr) -> LinExpr:
+        numnz = cbclib.Osi_getRowNz(self.osi, constr.idx)
+
+        ridx = cbclib.Osi_getRowIndices(self.osi, constr.idx)
+        if ridx == ffi.NULL:
+            raise Exception("Error getting row indices.")
+        rcoef = cbclib.Osi_getRowCoeffs(self.osi, constr.idx)
+        if rcoef == ffi.NULL:
+            raise Exception("Error getting row coefficients.")
+
+        rhs = cbclib.Osi_getRowRHS(self.osi, constr.idx)
+        rsense = cbclib.Osi_getRowSense(self.osi,
+                                        constr.idx).decode("utf-8").upper()
+        sense = ''
+        if (rsense == 'E'):
+            sense = EQUAL
+        elif (rsense == 'L'):
+            sense = LESS_OR_EQUAL
+        elif (rsense == 'G'):
+            sense = GREATER_OR_EQUAL
+        else:
+            raise Exception('Unknow sense: {}'.format(rsense))
+
+        expr = LinExpr(const=-rhs, sense=sense)
+        for i in range(numnz):
+            expr.add_var(self.model.vars[ridx[i]], rcoef[i])
+
+        return expr
+
+    def constr_set_expr(self, constr: Constr, value: LinExpr) -> LinExpr:
+        raise Exception('Not available in OsiSolver')
+
+    def constr_get_name(self, idx: int) -> str:
+        namep = self.__name_space
+        cbclib.Osi_getRowName(self.osi, idx,
+                              namep, MAX_NAME_SIZE)
+        return ffi.string(namep).decode('utf-8')
+
+    def constr_get_pi(self, constr: Constr) -> float:
+        rp = cbclib.Osi_getRowPrice(self.osi)
+        if rp == ffi.NULL:
+            raise Exception('row prices not available')
+        return float(rp[constr.idx])
+
+    def remove_constrs(self, constrsList: List[int]):
+        raise Exception('Not available in OsiSolver')
+
+    def constr_get_index(self, name: str) -> int:
+        if self.rowNames is None:
+            self.rowNames = {}
+            for i in range(self.num_rows()):
+                self.rowNames[self.constr_get_name(i)] = i
+
+        if name in self.rowNames:
+            return self.rowNames[name]
+
+        return -1
+
+    # Variable-related getters/setters
+    def var_get_lb(self, var: "Var") -> float:
+        x = cbclib.Osi_getColLower(self.osi)
+        return x[var.idx]
+
+    def var_set_lb(self, var: "Var", value: float):
+        cbclib.Osi_setColLower(self.osi, var.idx, value)
+
+    def var_get_ub(self, var: "Var") -> float:
+        x = cbclib.Osi_getColUpper(self.osi)
+        return x[var.idx]
+
+    def var_set_ub(self, var: "Var", value: float):
+        cbclib.Osi_setColUpper(self.osi, var.idx, value)
+
+    def var_get_obj(self, var: "Var") -> float:
+        obj = cbclib.Osi_getObjCoefficients(self._model)
+        if obj == ffi.NULL:
+            raise Exception("Error getting objective function coefficients")
+        return obj[var.idx]
+
+    def var_set_obj(self, var: "Var", value: float):
+        cbclib.Osi_setObjCoef(self.osi, var.idx, value)
+
+    def var_get_var_type(self, var: "Var") -> str:
+        isInt = cbclib.Osi_isInteger(self.osi, var.idx)
+        if isInt:
+            lb = self.var_get_lb(var)
+            ub = self.var_get_ub(var)
+            if abs(lb) <= 1e-15 and abs(ub - 1.0) <= 1e-15:
+                return BINARY
+            else:
+                return INTEGER
+
+        return CONTINUOUS
+
+    def var_set_var_type(self, var: "Var", value: str):
+        cv = var.var_type
+        if (value == cv):
+            return
+        if cv == CONTINUOUS:
+            if value == INTEGER or value == BINARY:
+                cbclib.Osi_setInteger(self.osi, var.idx)
+        else:
+            if value == CONTINUOUS:
+                cbclib.Osi_setContinuous(self.osi, var.idx)
+        if value == BINARY:
+            # checking bounds
+            if var.lb != 0.0:
+                var.lb = 0.0
+            if var.ub != 1.0:
+                var.ub = 1.0
+
+    def var_get_column(self, var: "Var") -> Column:
+        numnz = cbclib.Cbc_getColNz(self._model, var.idx)
+
+        cidx = cbclib.Cbc_getColIndices(self._model, var.idx)
+        if cidx == ffi.NULL:
+            raise Exception("Error getting column indices'")
+        ccoef = cbclib.Cbc_getColCoeffs(self._model, var.idx)
+
+        col = Column()
+
+        for i in range(numnz):
+            col.constrs.append(Constr(self, cidx[i]))
+            col.coeffs.append(ccoef[i])
+
+        return col
+
+    def var_set_column(self, var: "Var", value: Column):
+        raise Exception('Not available in OsiSolver')
+
+    def var_get_rc(self, var: "Var") -> float:
+        rc = cbclib.Osi_getReducedCost(self.osi)
+        if rc == ffi.NULL:
+            raise Exception('reduced cost not available')
+        return float(rc[var.idx])
+
+    def var_get_x(self, var: "Var") -> float:
+        x = cbclib.Osi_getColSolution(self.osi)
+        if x == ffi.NULL:
+            raise Exception('no solution found')
+        return float(x[var.idx])
+
+    def var_get_xi(self, var: "Var", i: int) -> float:
+        raise Exception('Solution pool not supported in OsiSolver')
+
+    def var_get_name(self, idx: int) -> str:
+        namep = self.__name_space
+        cbclib.Osi_getColName(self.osi, idx, namep, MAX_NAME_SIZE)
+        return ffi.string(namep).decode('utf-8')
+
+    def remove_vars(self, varsList: List[int]):
+        raise Exception('Not supported in OsiSolver')
+
+    def var_get_index(self, name: str) -> int:
+        if self.colNames is None:
+            self.colNames = {}
+            for i in range(self.num_cols()):
+                self.colNames[self.var_get_name(i)] = i
+
+        if name in self.colNames:
+            return self.colNames[name]
+
+        return -1
+
+    def get_problem_name(self) -> str:
+        raise Exception('Not supported in OsiSolver')
+
+    def set_problem_name(self, name: str):
+        raise Exception('Not supported in OsiSolver')
 
 
 # vim: ts=4 sw=4 et

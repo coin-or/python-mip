@@ -2,7 +2,7 @@
 BuildItems=@Variant(\x00\x00\x00\t\x00\x00\x00\x00\x01\x00\x00\x00\x0b\x00\x00\x00\x00\x01\x00\x00\x00\x06\x00m\x00i\x00p)
 
 [Filters]
-size=37
+size=38
 
 [Filters][0]
 inclusive=0
@@ -159,6 +159,11 @@ inclusive=0
 pattern=/docs/_build
 targets=2
 
+[Filters][37]
+inclusive=0
+pattern=/mip/libraries
+targets=2
+
 [Filters][4]
 inclusive=0
 pattern=CVS
@@ -203,3 +208,6 @@ text/x-objchdr=kdevastyle||1TBS
 text/x-objcsrc=kdevastyle||1TBS
 text/x-python=kdevcustomscript||GNU_indent_GNU
 text/x-python3=kdevcustomscript||GNU_indent_GNU
+
+[pythonsupport]
+interpreter=

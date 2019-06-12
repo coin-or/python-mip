@@ -1,6 +1,37 @@
+"""Classes used in solver callbacks, for a bi-directional communication
+with the solver engine"""
 from collections import defaultdict
 from typing import List, Tuple
 from mip.model import Model, LinExpr
+
+
+class CutsGenerator:
+    """abstract class for implementing cut generators"""
+    def __init__(self):
+        pass
+
+    def generate_cuts(self, model: Model):
+        """Method called by the solver engine to generate cuts
+
+           After analyzing the contents of the fractional solution in
+           model variables :meth:`~mip.model.Model.vars`, whose solution values
+           can be queries with the in :meth:`~mip.model.Var.x` method, one or
+           more cuts may be generated and added to the model with the
+           :meth:`~mip.model.Model.add_cut` method.
+
+        Args:
+
+            model(Model): model for which cuts may be generated. Please note
+                that this model may have fewer variables than the original
+                model due to pre-processing. If you want to generate cuts
+                in terms of the original variables, one alternative is to
+                query variables by their names, checking which ones remain
+                in this pre-processed problem. In this procedure you can
+                query model properties and add cuts
+                (:meth:`~mip.model.Model.add_cut`), but you cannot perform
+                other model modifications, such as add columns.
+        """
+        raise NotImplementedError()
 
 
 class BranchSelector:
@@ -9,33 +40,6 @@ class BranchSelector:
 
     def select_branch(self,
                       rsol: List[Tuple["Var", float]]) -> Tuple["Var", int]:
-        raise NotImplementedError()
-
-
-class CutsGenerator:
-    """abstract class for implementing cut generators"""
-    def __init__(self, model: "Model"):
-        self.model = model
-
-    def generate_cuts(self,
-                      rsol: List[Tuple["Var", float]]) -> List["LinExpr"]:
-        """Method called by the solve engine to generate cuts
-
-           After analyzing the contents of the fractional solution in
-           :code:`relax_solution`, one or mode cuts
-           (:class:`~mip.model.LinExpr`) may be generated and returned.
-           These cuts are added to the relaxed model.
-
-        Args:
-            rsol(List[Tuple[Var, float]]): a list of tuples (variable,value)
-            indicating the values of variables in the current fractional
-            solution. Variables at zero are not included.
-
-        Note: take care not to query the value of the fractional solution in
-        the cut generation method using the :code:`x` methods from original
-        references to problem variables, use the contents of
-        :code:`relax_solution` instead.
-        """
         raise NotImplementedError()
 
 
@@ -49,7 +53,7 @@ class CutPool:
         # the search of repeated cuts
         self.__pos = defaultdict(list)
 
-    def add(self, cut: "LinExpr") -> bool:
+    def add(self, cut: LinExpr) -> bool:
         """tries to add a cut to the pool, returns true if this is a new cut,
         false if it is a repeated one
 
