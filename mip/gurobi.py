@@ -261,7 +261,10 @@ GRB_CB_RUNTIME = 6002
 
 class SolverGurobi(Solver):
 
-    def __init__(self, model: Model, name: str, sense: str):
+    def __init__(self, model: Model, name: str, sense: str, modelp: CData =
+                 ffi.NULL):
+        """modelp should be informed if a model should not be created,
+        but only allow access to an existing one"""
         super().__init__(model, name, sense)
 
         # setting class members to default values
@@ -269,30 +272,37 @@ class SolverGurobi(Solver):
         self._env = ffi.NULL
         self._model = ffi.NULL
         self._callback = None
+        self._ownsModel = True
 
-        self._env = ffi.new("GRBenv **")
+        if modelp == ffi.NULL:
+            self._ownsModel = True
+            self._env = ffi.new("GRBenv **")
 
-        # creating Gurobi environment
-        st = GRBloadenv(self._env, ''.encode('utf-8'))
-        if st != 0:
-            raise Exception('Gurobi environment could not be loaded,\
-check your license.')
-        self._env = self._env[0]
+            # creating Gurobi environment
+            st = GRBloadenv(self._env, ''.encode('utf-8'))
+            if st != 0:
+                raise Exception('Gurobi environment could not be loaded,\
+    check your license.')
+            self._env = self._env[0]
 
-        # creating Gurobi model
-        self._model = ffi.new("GRBmodel **")
-        st = GRBnewmodel(self._env, self._model,
-                         name.encode('utf-8'), 0,
-                         ffi.NULL, ffi.NULL, ffi.NULL, ffi.NULL, ffi.NULL)
-        if st != 0:
-            raise Exception('Could not create Gurobi model')
-        self._model = self._model[0]
+            # creating Gurobi model
+            self._model = ffi.new("GRBmodel **")
+            st = GRBnewmodel(self._env, self._model,
+                             name.encode('utf-8'), 0,
+                             ffi.NULL, ffi.NULL, ffi.NULL, ffi.NULL, ffi.NULL)
+            if st != 0:
+                raise Exception('Could not create Gurobi model')
+            self._model = self._model[0]
 
-        # setting objective sense
-        if sense == MAXIMIZE:
-            self.set_int_attr("ModelSense", -1)
+            # setting objective sense
+            if sense == MAXIMIZE:
+                self.set_int_attr("ModelSense", -1)
+            else:
+                self.set_int_attr("ModelSense", 1)
         else:
-            self.set_int_attr("ModelSense", 1)
+            self._ownsModel = False
+            self._model = modelp
+            self._env = GRBgetenv(self._model)
 
         # default number of threads
         self.__threads = 0
@@ -310,10 +320,11 @@ check your license.')
 
     def __del__(self):
         # freeing Gurobi model and environment
-        if self._model:
-            GRBfreemodel(self._model)
-        if self._env:
-            GRBfreeenv(self._env)
+        if self._ownsModel:
+            if self._model:
+                GRBfreemodel(self._model)
+            if self._env:
+                GRBfreeenv(self._env)
 
     def add_var(self,
                 obj: float = 0,

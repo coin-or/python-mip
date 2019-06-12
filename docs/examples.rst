@@ -565,7 +565,7 @@ The decision variables are defined by:
     variable for the makespan 
 
 
-Follows a MIP formulation for the JSSP. The objective function is computed
+Follows a MIP formulation :cite:`Mann60` for the JSSP. The objective function is computed
 in the auxiliary variable :math:`C`. The first set of constraints are the
 precedence constraints, that ensure that a job on a machine only starts
 after the processing of the previous machine concluded. The second and 

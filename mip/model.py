@@ -411,7 +411,8 @@ class ProgressLog:
         self.settings = lin.split(':')[1].lstrip()
         for lin in f:
             cols = lin.split(',')
-            (s, l, b) = (float(cols[0]), float(cols[1]), float(cols[2]))
+            (s, (l, b)) = (float(cols[0]), (float(cols[1]), float(cols[2])))
+            self.log.append((s, (l, b)))
         f.close()
 
 
@@ -745,7 +746,8 @@ class Model:
            to define the contents of what will be loaded:
 
            :code:`.lp`
-             mip model stored in the `LP file format <https://www.ibm.com/support/knowledgecenter/SSSA5P_12.9.0/ilog.odms.cplex.help/CPLEX/GettingStarted/topics/tutorials/InteractiveOptimizer/usingLPformat.html>`_
+             mip model stored in the
+             `LP file format <https://www.ibm.com/support/knowledgecenter/SSSA5P_12.9.0/ilog.odms.cplex.help/CPLEX/GettingStarted/topics/tutorials/InteractiveOptimizer/usingLPformat.html>`_
 
            :code:`.mps`
              mip model stored in the
@@ -808,7 +810,8 @@ class Model:
            to define the contents of what will be saved:
 
            :code:`.lp`
-             mip model stored in the `LP file format <https://www.ibm.com/support/knowledgecenter/SSSA5P_12.9.0/ilog.odms.cplex.help/CPLEX/GettingStarted/topics/tutorials/InteractiveOptimizer/usingLPformat.html>`_
+             mip model stored in the
+             `LP file format <https://www.ibm.com/support/knowledgecenter/SSSA5P_12.9.0/ilog.odms.cplex.help/CPLEX/GettingStarted/topics/tutorials/InteractiveOptimizer/usingLPformat.html>`_
 
            :code:`.mps`
              mip model stored in the
@@ -1242,6 +1245,16 @@ class Model:
         """
         return self.__status
 
+    def add_cut(self, cut: LinExpr):
+        """Adds a cutting plane. If called outside
+        the cut callback performs exactly as add_constr. When
+        called inside the cut callback the cut is included in the solver
+        cut pool, which will later decide if this cut should be added
+        or not to the model. Repeated cuts, or cuts which will probably be less
+        effective, e.g. with a very small violation, can be discarded.
+        """
+        self.solver.add_cut(cut)
+
     def remove(self, objects):
         """removes variable(s) and/or constraint(s) from the model
 
@@ -1291,6 +1304,8 @@ class Solver:
 
     def add_constr(self, lin_expr: "LinExpr", name: str = ""):
         pass
+
+    def add_cut(self, lin_expr: LinExpr): pass
 
     def get_objective_bound(self) -> float: pass
 
@@ -1693,7 +1708,6 @@ class VarList(Sequence):
         self.__vars = [v for v in
                        self.__vars
                        if v.idx != -1]
-
 
 
 class ConstrList(Sequence):
