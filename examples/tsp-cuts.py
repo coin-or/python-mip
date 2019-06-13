@@ -8,21 +8,20 @@ from sys import argv
 from typing import List, Tuple
 import networkx as nx
 from tspdata import TSPData
-from mip.model import Model, xsum, LinExpr, Var, BINARY
+from mip.model import Model, xsum, BINARY
 from mip.callbacks import CutsGenerator
 from mip.callbacks import CutPool
 
 
 class SubTourCutGenerator(CutsGenerator):
     """Class to generate cutting planes for the TSP"""
-    def __init__(self, model: Model, Fl: List[Tuple[int, int]]):
-        super().__init__(model)
+    def __init__(self, Fl: List[Tuple[int, int]]):
         self.F = Fl
 
-    def generate_cuts(self, rsol: List[Tuple[Var, float]]) -> List[LinExpr]:
+    def generate_cuts(self, model: Model):
         """receives a fractional solution   rs and returns cutting planes"""
         G = nx.DiGraph()
-        r = [(v, f) for (v, f) in rsol if 'x(' in v.name]
+        r = [(v, v.x) for v in model.vars if v.name.startswith('x(')]
         U = [int(v.name.split('(')[1].split(',')[0]) for v, f in r]
         V = [int(v.name.split(')')[0].split(',')[1]) for v, f in r]
         cp = CutPool()
@@ -39,8 +38,12 @@ class SubTourCutGenerator(CutsGenerator):
                     cut = xsum(1.0*v for v, fm in arcsInS) <= len(S)-1
                     cp.add(cut)
                     if len(cp.cuts) > 256:
-                        return cp.cuts
-        return cp.cuts
+                        for cut in cp.cuts:
+                            model.add_cut(cut)
+                        return
+        for cut in cp.cuts:
+            model.add_cut(cut)
+        return
 
 
 if len(argv) <= 1:
@@ -92,7 +95,7 @@ for i in range(n):
             (md, dp) = (d[i][j], j)
     F.append((i, dp))
 
-m.cuts_generator = SubTourCutGenerator(m, F)
+m.cuts_generator = SubTourCutGenerator(F)
 m.optimize()
 
 print('best route found has length {}'.format(m.objective_value))

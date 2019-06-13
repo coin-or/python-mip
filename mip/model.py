@@ -433,7 +433,8 @@ class Model:
 
     def __init__(self, name: str = "",
                  sense: str = MINIMIZE,
-                 solver_name: str = ""):
+                 solver_name: str = "",
+                 solver=None):
         """Model constructor
 
         Creates a Mixed-Integer Linear Programming Model. The default model
@@ -449,40 +450,57 @@ class Model:
             sense (str): MINIMIZATION ("MIN") or MAXIMIZATION ("MAX")
             solver_name: gurobi or cbc, searches for which
                 solver is available if not informed
+            solver(Solver):  should be set to None (used only internally)
 
         """
-        # initializing variables with default values
-        self.solver_name = solver_name
-        self.solver = None
+        self._ownSolver = False
+        if solver is None:
+            self._ownSolver = True
+            # initializing variables with default values
+            self.solver_name = solver_name
+            self.solver = None
 
-        # reading solver_name from an environment variable (if applicable)
-        if not self.solver_name and "solver_name" in environ:
-            self.solver_name = environ["solver_name"]
-        if not self.solver_name and "solver_name".upper() in environ:
-            self.solver_name = environ["solver_name".upper()]
+            # reading solver_name from an environment variable (if applicable)
+            if not self.solver_name and "solver_name" in environ:
+                self.solver_name = environ["solver_name"]
+            if not self.solver_name and "solver_name".upper() in environ:
+                self.solver_name = environ["solver_name".upper()]
 
-        # creating a solver instance
-        if self.solver_name.upper() == GUROBI:
-            from mip.gurobi import SolverGurobi
-            self.solver = SolverGurobi(self, name, sense)
-        elif self.solver_name.upper() == CBC:
-            from mip.cbc import SolverCbc
-            self.solver = SolverCbc(self, name, sense)
-        else:
-            # checking which solvers are available
-            from mip import gurobi
-            if gurobi.has_gurobi:
+            # creating a solver instance
+            if self.solver_name.upper() == GUROBI:
                 from mip.gurobi import SolverGurobi
                 self.solver = SolverGurobi(self, name, sense)
-                self.solver_name = GUROBI
-            else:
+            elif self.solver_name.upper() == CBC:
                 from mip.cbc import SolverCbc
                 self.solver = SolverCbc(self, name, sense)
-                self.solver_name = CBC
+            else:
+                # checking which solvers are available
+                from mip import gurobi
+                if gurobi.has_gurobi:
+                    from mip.gurobi import SolverGurobi
+                    self.solver = SolverGurobi(self, name, sense)
+                    self.solver_name = GUROBI
+                else:
+                    from mip.cbc import SolverCbc
+                    self.solver = SolverCbc(self, name, sense)
+                    self.solver_name = CBC
+        else:
+            if solver_name == 'osi':
+                from mip.cbc import SolverOsi
+                self.solver = SolverOsi(self, name, sense, solver)
+            else:
+                raise Exception('Solver not supported')
 
         # list of constraints and variables
         self.constrs = ConstrList(self)
         self.vars = VarList(self)
+
+        if self._ownSolver is False:
+            self.vars.update_vars(self.solver.num_cols())
+            self.constrs.update_constrs(self.solver.num_rows())
+            self.__status = self.solver.get_status()
+        else:
+            self.__status = OptimizationStatus.LOADED
 
         # initializing additional control variables
         self.__cuts = -1
@@ -492,7 +510,6 @@ class Model:
         self.__cuts_generator = None
         self.__lazy_constrs_generator = None
         self.__start = None
-        self.__status = OptimizationStatus.LOADED
         self.__threads = 0
         self.__n_cols = 0
         self.__n_rows = 0
@@ -501,7 +518,7 @@ class Model:
         self.__plog = ProgressLog()
 
     def __del__(self):
-        if self.solver:
+        if self._ownSolver and self.solver:
             del self.solver
 
     def __iadd__(self, other) -> "Model":
@@ -1449,6 +1466,8 @@ class Solver:
     def get_problem_name(self) -> str: pass
 
     def set_problem_name(self, name: str): pass
+
+    def get_status(self) -> OptimizationStatus: pass
 
 
 class Var:

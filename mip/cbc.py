@@ -501,73 +501,18 @@ class SolverCbc(Solver):
         """)
         def cbc_cut_callback(osi_solver: CData, osi_cuts: CData,
                              app_data: CData):
-            global warningMessages
-            if osi_solver == ffi.NULL or osi_cuts == ffi.NULL:
+            if osi_solver == ffi.NULL or osi_cuts == ffi.NULL or \
+                    self.model.cuts_generator is None:
                 return
-            # getting fractional solution
-            fracSol = []
-            n = cbclib.Osi_getNumCols(osi_solver)
-            namespc = ffi.new("char[{}]".format(MAX_NAME_SIZE))
-            x = cbclib.Osi_getColSolution(osi_solver)
-            if x == ffi.NULL:
-                raise Exception('No fractional solution available in callback')
+            osi_model = Model(self.name, self.sense, 'osi',
+                              osi_solver)
+            osi_model.solver.osi_cutsp = osi_cuts
 
-            nnz = 0
-            for i in range(n):
-                val = float(x[i])
-                if abs(val) < 1e-7:
-                    continue
-
-                nnz += 1
-                cbclib.Osi_getColName(osi_solver, i, namespc, MAX_NAME_SIZE)
-                cname = ffi.string(namespc).decode('utf-8')
-                var = self.model.var_by_name(cname)
-                if var is None and warningMessages == 1:
-                    print('-->> var {} not found'.format(cname))
-                fracSol.append((var, val))
-
-            if nnz == 0:
+            if osi_model.status != OptimizationStatus.OPTIMAL:
                 return
 
             # calling cut generators
-            if self.model.cuts_generator is not None:
-                cuts = self.model.cuts_generator.generate_cuts(fracSol)
-
-                if len(cuts) == 0:
-                    return
-
-                name_idx = cbc_get_osi_name_indexes(osi_solver)
-
-                # translating cuts for variables in the preprocessed problem
-                for cut in cuts:
-                    if len(cut.expr) == 0:
-                        continue
-                    cut_idx = []
-                    cut_coef = []
-                    has_vars = True  # vars not erased in pre-proc
-                    missing_var = ''
-                    for v, c in cut.expr.items():
-                        if v.name in name_idx.keys():
-                            cut_idx.append(name_idx[v.name])
-                            cut_coef.append(c)
-                        else:
-                            has_vars = False
-                            missing_var = v.name
-                            break
-                    if has_vars:
-                        nz = len(cut_idx)
-                        cidx = ffi.new("int[]", cut_idx)
-                        cval = ffi.new("double[]", cut_coef)
-                        sense = cut.sense.encode('utf-8')
-                        rhs = -cut.const
-                        cbclib.OsiCuts_addRowCut(
-                            osi_cuts, nz, cidx, cval, sense, rhs)
-                    else:
-                        if warningMessages < 5:
-                            print('cut discarded because variable {} does not \
-                            exists in preprocessed problem.'.format(
-                                missing_var))
-                            warningMessages += 1
+            self.model.cuts_generator.generate_cuts(osi_model)
 
         # adding cut generators
         m = self.model
@@ -947,7 +892,17 @@ class SolverOsi(Solver):
     COIN-OR. This solver has a restricted functionality (comparing to
     SolverCbc) and it is used mainly in callbacks"""
 
-    def __init__(self, osi_ptr: CData):
+    def __init__(self, model: Model, name='', sense=MINIMIZE, osi_ptr: CData =
+                 ffi.NULL):
+        super().__init__(model, name, sense)
+
+        self._objconst = 0.0
+
+        # pre-allocate temporary space to query names
+        self.__name_space = ffi.new("char[{}]".format(MAX_NAME_SIZE))
+        # in cut generation
+        self.__name_spacec = ffi.new("char[{}]".format(MAX_NAME_SIZE))
+
         if osi_ptr != ffi.NULL:
             self.osi = osi_ptr
             self.owns_solver = False
@@ -1046,6 +1001,16 @@ class SolverOsi(Solver):
                 cbclib.Osi_initialSolve(self.osi)
         else:
             cbclib.Osi_branchAndBound(self.osi)
+
+    def get_status(self) -> OptimizationStatus:
+        if cbclib.Osi_isProvenOptimal(self.osi):
+            return OptimizationStatus.OPTIMAL
+        elif cbclib.Osi_isProvenPrimalInfeasible(self.osi) or \
+                cbclib.Osi_isProvenDualInfeasible(self.osi):
+            return OptimizationStatus.INFEASIBLE
+        elif cbclib.Osi_isAbandoned(self.osi):
+            return OptimizationStatus.ERROR
+        return OptimizationStatus.LOADED
 
     def get_objective_value(self) -> float:
         return cbclib.Osi_getObjValue(self.osi)
