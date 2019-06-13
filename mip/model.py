@@ -1715,6 +1715,55 @@ class VarList(Sequence):
                        if v.idx != -1]
 
 
+# same as VarList but does not stores
+# references for variables, used in
+# callbacks
+class VVarList(Sequence):
+
+    def __init__(self, model: Model, start: int = -1, end: int = -1):
+        self.__model = model
+        if start == -1:
+            self.__start = 0
+            self.__end = model.solver.num_cols()
+        else:
+            self.__start = start
+            self.__end = end
+
+    def add(self, name: str = "",
+            lb: float = 0.0,
+            ub: float = INF,
+            obj: float = 0.0,
+            var_type: str = CONTINUOUS,
+            column: Column = None) -> Var:
+        solver = self.__model.solver
+        if not name:
+            name = 'var({})'.format(len(self.__vars))
+        if var_type == BINARY:
+            lb = 0.0
+            ub = 1.0
+        new_var = Var(self.__model, solver.num_cols())
+        solver.add_var(obj, lb, ub, var_type, column, name)
+        return new_var
+
+    def __getitem__(self, key):
+        if (isinstance(key, str)):
+            return self.__model.var_by_name(key)
+        if (isinstance(key, slice)):
+            return VVarList(self.model, key.start, key.end)
+        if (isinstance(key, int)):
+            if key < 0:
+                key = self.__end-key
+            if key >= self.__end:
+                raise IndexError
+
+            return Var(self.__model, key+self.__start)
+
+        raise Exception('Unknow type')
+
+    def __len__(self) -> int:
+        return self.__model.solver.num_cols()
+
+
 class ConstrList(Sequence):
     """ List of problem constraints"""
 
@@ -1760,6 +1809,28 @@ class ConstrList(Sequence):
 
     def update_constrs(self, n_constrs: int):
         self.__constrs = [Constr(self.__model, i) for i in range(n_constrs)]
+
+
+# same as previous class, but does not stores
+# anything and does not allows modification,
+# used in callbacks
+class VConstrList(Sequence):
+
+    def __init__(self, model: Model):
+        self.__model = model
+
+    def __getitem__(self, key):
+        if (isinstance(key, str)):
+            return self.__model.constr_by_name(key)
+        elif (isinstance(key, int)):
+            return Constr(self.__model, key)
+        elif (isinstance(key, slice)):
+            return self[key]
+
+        raise Exception('Use int or string as key')
+
+    def __len__(self) -> int:
+        return self.__model.solver.num_rows()
 
 
 class BranchSelector:
