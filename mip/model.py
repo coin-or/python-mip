@@ -450,57 +450,42 @@ class Model:
             sense (str): MINIMIZATION ("MIN") or MAXIMIZATION ("MAX")
             solver_name: gurobi or cbc, searches for which
                 solver is available if not informed
-            solver(Solver):  should be set to None (used only internally)
-
         """
-        self._ownSolver = False
-        if solver is None:
-            self._ownSolver = True
-            # initializing variables with default values
-            self.solver_name = solver_name
-            self.solver = None
+        self._ownSolver = True
+        # initializing variables with default values
+        self.solver_name = solver_name
+        self.solver = None
 
-            # reading solver_name from an environment variable (if applicable)
-            if not self.solver_name and "solver_name" in environ:
-                self.solver_name = environ["solver_name"]
-            if not self.solver_name and "solver_name".upper() in environ:
-                self.solver_name = environ["solver_name".upper()]
+        # reading solver_name from an environment variable (if applicable)
+        if not self.solver_name and "solver_name" in environ:
+            self.solver_name = environ["solver_name"]
+        if not self.solver_name and "solver_name".upper() in environ:
+            self.solver_name = environ["solver_name".upper()]
 
-            # creating a solver instance
-            if self.solver_name.upper() == GUROBI:
+        # creating a solver instance
+        if self.solver_name.upper() == GUROBI:
+            from mip.gurobi import SolverGurobi
+            self.solver = SolverGurobi(self, name, sense)
+        elif self.solver_name.upper() == CBC:
+            from mip.cbc import SolverCbc
+            self.solver = SolverCbc(self, name, sense)
+        else:
+            # checking which solvers are available
+            from mip import gurobi
+            if gurobi.has_gurobi:
                 from mip.gurobi import SolverGurobi
                 self.solver = SolverGurobi(self, name, sense)
-            elif self.solver_name.upper() == CBC:
+                self.solver_name = GUROBI
+            else:
                 from mip.cbc import SolverCbc
                 self.solver = SolverCbc(self, name, sense)
-            else:
-                # checking which solvers are available
-                from mip import gurobi
-                if gurobi.has_gurobi:
-                    from mip.gurobi import SolverGurobi
-                    self.solver = SolverGurobi(self, name, sense)
-                    self.solver_name = GUROBI
-                else:
-                    from mip.cbc import SolverCbc
-                    self.solver = SolverCbc(self, name, sense)
-                    self.solver_name = CBC
-        else:
-            if solver_name == 'osi':
-                from mip.cbc import SolverOsi
-                self.solver = SolverOsi(self, name, sense, solver)
-            else:
-                raise Exception('Solver not supported')
+                self.solver_name = CBC
 
         # list of constraints and variables
         self.constrs = ConstrList(self)
         self.vars = VarList(self)
 
-        if self._ownSolver is False:
-            self.vars.update_vars(self.solver.num_cols())
-            self.constrs.update_constrs(self.solver.num_rows())
-            self.__status = self.solver.get_status()
-        else:
-            self.__status = OptimizationStatus.LOADED
+        self._status = OptimizationStatus.LOADED
 
         # initializing additional control variables
         self.__cuts = -1
@@ -518,8 +503,7 @@ class Model:
         self.__plog = ProgressLog()
 
     def __del__(self):
-        if self._ownSolver and self.solver:
-            del self.solver
+        del self.solver
 
     def __iadd__(self, other) -> "Model":
         if isinstance(other, LinExpr):
@@ -645,7 +629,7 @@ class Model:
         self.__cuts = 1
         self.__cuts_generator = None
         self.__start = []
-        self.__status = OptimizationStatus.LOADED
+        self._status = OptimizationStatus.LOADED
         self.__threads = 0
 
     def copy(self, solver_name: str = None) -> "Model":
@@ -740,7 +724,7 @@ class Model:
         self.solver.set_processing_limits(max_seconds,
                                           max_nodes, max_solutions)
 
-        self.__status = self.solver.optimize()
+        self._status = self.solver.optimize()
         # has a solution and is a MIP
         if self.num_solutions and self.num_int > 0:
             best = self.objective_value
@@ -754,7 +738,7 @@ class Model:
             self.__plog.log = self.solver.get_log()
             self.__plog.instance = self.name
 
-        return self.__status
+        return self._status
 
     def read(self, path: str):
         """Reads a MIP model or an initial feasible solution.
@@ -1260,7 +1244,7 @@ class Model:
         NO_SOLUTION_FOUND(5) for the case when an integer solution was not
         found in the optimization.
         """
-        return self.__status
+        return self._status
 
     def add_cut(self, cut: LinExpr):
         """Adds a cutting plane. If called outside
@@ -1303,10 +1287,12 @@ class Model:
 
 class Solver:
 
-    def __init__(self, model: Model, name: str, sense: str):
+    def __init__(self, model: Model, name: str = '', sense: str = ''):
         self.model = model
-        self.name = name
-        self.sense = sense
+        if name:
+            self.name = name
+        if sense:
+            self.sense = sense
 
     def __del__(self): pass
 
