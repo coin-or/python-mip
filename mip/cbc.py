@@ -2,7 +2,7 @@
 
 import mip
 from mip.model import Model, Solver, Var, Constr, Column, LinExpr, \
-    ConstrList, VarList
+    VConstrList, VVarList
 from mip.constants import MAXIMIZE, SearchEmphasis, CONTINUOUS, BINARY, \
     INTEGER, MINIMIZE, EQUAL, LESS_OR_EQUAL, GREATER_OR_EQUAL, \
     OptimizationStatus
@@ -896,13 +896,11 @@ class ModelOsi(Model):
         self.solver = SolverOsi(self, osi_ptr)
 
         # list of constraints and variables
-        self.constrs = ConstrList(self)
-        self.vars = VarList(self)
+        self.constrs = VConstrList(self)
+        self.vars = VVarList(self)
 
         if existing_solver:
             self._status = self.solver.get_status()
-            self.vars.update_vars(self.solver.num_cols())
-            self.constrs.update_constrs(self.solver.num_rows())
         else:
             self._status = OptimizationStatus.LOADED
 
