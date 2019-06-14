@@ -1084,8 +1084,8 @@ class SolverGurobiCB(SolverGurobi):
        running in the callback, so some methods
        should be different (e.g. to get the frac sol)"""
 
-    def __init__(self, model: Model, grb_model: CData = ffi.NULL, cb_data: CData = ffi.NULL,
-                 where: int = -1):
+    def __init__(self, model: Model, grb_model: CData = ffi.NULL,
+                 cb_data: CData = ffi.NULL, where: int = -1):
         assert grb_model != ffi.NULL
         assert cb_data != ffi.NULL
 
