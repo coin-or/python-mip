@@ -2,7 +2,7 @@
 BuildItems=@Variant(\x00\x00\x00\t\x00\x00\x00\x00\x01\x00\x00\x00\x0b\x00\x00\x00\x00\x01\x00\x00\x00\x06\x00m\x00i\x00p)
 
 [Filters]
-size=38
+size=46
 
 [Filters][0]
 inclusive=0
@@ -164,10 +164,50 @@ inclusive=0
 pattern=/mip/libraries
 targets=2
 
+[Filters][38]
+inclusive=0
+pattern=*.log
+targets=3
+
+[Filters][39]
+inclusive=0
+pattern=*.aux
+targets=3
+
 [Filters][4]
 inclusive=0
 pattern=CVS
 targets=2
+
+[Filters][40]
+inclusive=0
+pattern=*.out
+targets=3
+
+[Filters][41]
+inclusive=0
+pattern=*.csv
+targets=3
+
+[Filters][42]
+inclusive=0
+pattern=*.dat
+targets=3
+
+[Filters][43]
+inclusive=0
+pattern=*.png
+targets=3
+
+[Filters][44]
+inclusive=0
+pattern=*.pdf
+targets=3
+
+[Filters][45]
+inclusive=0
+pattern=*.txt
+targets=3
 
 [Filters][5]
 inclusive=0
@@ -193,6 +233,26 @@ targets=2
 inclusive=0
 pattern=.hg
 targets=2
+
+[Launch]
+Launch Configurations=Launch Configuration 0
+
+[Launch][Launch Configuration 0]
+Configured Launch Modes=execute
+Configured Launchers=scriptAppLauncher
+Name=tsp-cuts ulysses22
+Type=Script Application
+
+[Launch][Launch Configuration 0][Data]
+Arguments=ulysses22.tsp
+EnvironmentGroup=
+Executable=file:///home/haroldo/git/mip/examples/tsp-cuts.py
+Execute on Remote Host=false
+Interpreter=python3
+Output Filtering Mode=2
+Remote Host=
+Run current file=false
+Working Directory=file:///home/haroldo/git/mip/examples/
 
 [Project]
 VersionControlSupport=kdevgit
