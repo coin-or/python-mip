@@ -5,8 +5,9 @@ from os import environ
 from os.path import isfile
 from collections.abc import Sequence
 from mip.constants import BINARY, CONTINUOUS, INTEGER, MINIMIZE, INF, \
-        OptimizationStatus, SearchEmphasis, VERSION, GUROBI, CBC, \
-        LESS_OR_EQUAL, GREATER_OR_EQUAL, EPS
+    OptimizationStatus, SearchEmphasis, VERSION, GUROBI, CBC, \
+    LESS_OR_EQUAL, GREATER_OR_EQUAL, EPS
+from mip.constants import MINIMIZE, MAXIMIZE
 from mip.exceptions import InvalidLinExpr, SolutionNotAvailable
 
 
@@ -50,9 +51,9 @@ class Constr:
 
     def __str__(self) -> str:
         if self.name:
-            res = self.name+':'
+            res = self.name + ':'
         else:
-            res = 'constr({}): '.format(self.idx+1)
+            res = 'constr({}): '.format(self.idx + 1)
         line = ''
         len_line = 0
         for (var, val) in self.expr.expr.items():
@@ -64,7 +65,7 @@ class Constr:
                 line += '\n\t'
                 len_line = 0
         res += line
-        rhs = self.expr.const*-1.0
+        rhs = self.expr.const * -1.0
         if self.expr.sense == '=':
             res += ' = {}'.format(rhs)
         elif self.expr.sense == '<':
@@ -305,7 +306,7 @@ class LinExpr:
             return False
         if len(self.__expr) != len(other.__expr):
             return False
-        if abs(self.__const-other.__const) >= 1e-12:
+        if abs(self.__const - other.__const) >= 1e-12:
             return False
         for (v, c) in self.__expr.items():
             if v not in self.__expr:
@@ -346,6 +347,16 @@ class LinExpr:
         function
         """
         return self.__sense
+
+    @sense.setter
+    def sense(self, value):
+        """sense of the linear expression
+
+        sense can be EQUAL("="), LESS_OR_EQUAL("<"), GREATER_OR_EQUAL(">") or
+        empty ("") if this is an affine expression, such as the objective
+        function
+        """
+        self.__sense = value
 
 
 class ProgressLog:
@@ -748,7 +759,7 @@ class Model:
             if abs(best) <= 1e-10:
                 self.__gap = INF
             else:
-                self.__gap = abs(best-lb) / abs(best)
+                self.__gap = abs(best - lb) / abs(best)
 
         if self.store_search_progress_log:
             self.__plog.log = self.solver.get_log()
@@ -783,7 +794,7 @@ class Model:
             raise OSError(2, 'File {} does not exists'.format(path))
 
         if path.lower().endswith('.sol') or \
-           path.lower().endswith('.mst'):
+                path.lower().endswith('.mst'):
             mip_start = load_mipstart(path)
             if not mip_start:
                 raise Exception('File {} does not contains a valid feasible \
@@ -841,7 +852,7 @@ class Model:
             file_path(str): file name
         """
         if file_path.lower().endswith('.sol') or \
-           file_path.lower().endswith('.mst'):
+                file_path.lower().endswith('.mst'):
             if self.start:
                 save_mipstart(self.start, file_path)
             else:
@@ -909,6 +920,10 @@ class Model:
         elif isinstance(objective, Var):
             self.solver.set_objective(LinExpr([objective], [1]))
         elif isinstance(objective, LinExpr):
+            if objective.sense == MAXIMIZE:
+                self.solver.set_objective_sense(MAXIMIZE)
+            elif objective.sense == MINIMIZE:
+                self.solver.set_objective_sense(MINIMIZE)
             self.solver.set_objective(objective)
 
     @property
@@ -1802,6 +1817,16 @@ def xsum(terms) -> LinExpr:
     return result
 
 
+def minimize(expr: LinExpr) -> LinExpr:
+    expr.sense = MINIMIZE
+    return expr
+
+
+def maximize(expr: LinExpr) -> LinExpr:
+    expr.sense = MAXIMIZE
+    return expr
+
+
 # function aliases
 quicksum = xsum
 
@@ -1815,7 +1840,7 @@ def save_mipstart(sol: List[Tuple[Var, float]], file_name: str, obj=0.0):
 
 
 def load_mipstart(file_name: str) -> \
-                   List[Tuple[str, float]]:
+        List[Tuple[str, float]]:
     f = open(file_name, 'w')
     result = []
     line = f.next()
@@ -1841,7 +1866,7 @@ def read_custom_settings():
                 if "=" in line:
                     cols = line.split("=")
                     if cols[0].strip().lower() == "cbc-library":
-                        customCbcLib = cols[1].\
+                        customCbcLib = cols[1]. \
                             lstrip().rstrip().replace('"', "")
 
 
