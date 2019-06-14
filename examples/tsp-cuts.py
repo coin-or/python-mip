@@ -9,8 +9,7 @@ from typing import List, Tuple
 import networkx as nx
 from tspdata import TSPData
 from mip.model import Model, xsum, BINARY
-from mip.callbacks import CutsGenerator
-from mip.callbacks import CutPool
+from mip.callbacks import CutsGenerator, CutPool
 
 
 class SubTourCutGenerator(CutsGenerator):
@@ -19,7 +18,6 @@ class SubTourCutGenerator(CutsGenerator):
         self.F = Fl
 
     def generate_cuts(self, model: Model):
-        """receives a fractional solution   rs and returns cutting planes"""
         G = nx.DiGraph()
         r = [(v, v.x) for v in model.vars if v.name.startswith('x(')]
         U = [int(v.name.split('(')[1].split(',')[0]) for v, f in r]
@@ -86,7 +84,7 @@ for i in range(1, n):
     for j in [k for k in range(1, n) if k != i]:
         m += y[i] - (n + 1) * x[i][j] >= y[j] - n, 'noSub({},{})'.format(i, j)
 
-# computing fartest point for each point
+# computing farthest point for each point
 F = []
 for i in range(n):
     (md, dp) = (0, -1)
