@@ -5,12 +5,19 @@ from typing import List, Tuple
 from mip.model import Model, LinExpr
 
 
+class CallbackModel(Model):
+    def __init__(self, model, where=None):
+        self.__model = model
+        self.__where = where  # used to determine the type of callback
+
+
 class CutsGenerator:
     """abstract class for implementing cut generators"""
+
     def __init__(self):
         pass
 
-    def generate_cuts(self, model: Model):
+    def generate_cuts(self, model: CutGeneratorModel):
         """Method called by the solver engine to generate cuts
 
            After analyzing the contents of the fractional solution in
@@ -38,8 +45,7 @@ class BranchSelector:
     def __init__(self, model: "Model"):
         self.model = model
 
-    def select_branch(self,
-                      rsol: List[Tuple["Var", float]]) -> Tuple["Var", int]:
+    def select_branch(self, rsol: List[Tuple["Var", float]]) -> Tuple["Var", int]:
         raise NotImplementedError()
 
 
@@ -81,6 +87,7 @@ class IncumbentUpdater:
     found. Optionally a new improved solution can be generated (using some
     local search heuristic) and returned to the MIP solver.
     """
+
     def __init__(self, model: "Model"):
         self.model = model
 
