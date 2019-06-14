@@ -3,7 +3,8 @@ from sys import maxsize
 from typing import List, Tuple
 from os.path import isfile
 from cffi import FFI
-from mip.model import Model, Solver, Column, Var, LinExpr, Constr
+from mip.model import Model, Solver, Column, Var, LinExpr, Constr, \
+    VConstrList, VVarList
 from mip.constants import MAXIMIZE, MINIMIZE, CONTINUOUS, INTEGER, BINARY, \
     OptimizationStatus, EQUAL, LESS_OR_EQUAL, GREATER_OR_EQUAL, SearchEmphasis
 
@@ -259,6 +260,7 @@ GRB_CB_MSG_STRING = 6001
 GRB_CB_RUNTIME = 6002
 GRB_OPTIMAL = 2
 
+
 class SolverGurobi(Solver):
 
     def __init__(self, model: Model, name: str, sense: str, modelp: CData =
@@ -471,30 +473,8 @@ class SolverGurobi(Solver):
             # adding cuts
             if where == 5:  # MIPNODE == 5
                 if self.model.cuts_generator:
-                    # obtaining relaxation solution and "translating" it
-                    cb_solution = ffi.new('double[{}]'.format(
-                                          self.model.num_cols))
-                    GRBcbget(p_cbdata, where, GRB_CB_MIPNODE_REL, cb_solution)
-                    self.solver._p_cbdata = p_cbdata
-
-
-                    # calling cuts generator
-                    #cuts = self.model.cuts_generator.generate_cuts(relax_solution)
-                    # adding cuts
-                    #for lin_expr in cuts:
-                        # collecting linear expression data
-                    #    nz = len(lin_expr.expr)
-                    #    cind = ffi.new('int[]', [var.idx
-                    #                             for var in lin_expr.expr.keys()])
-                    #    cval = ffi.new('double[]',
-                    #                   [coef for coef in lin_expr.expr.values()])
-
-                        # constraint sense and rhs
-                     #   sense = lin_expr.sense.encode('utf-8')
-                     #   rhs = -lin_expr.const
-
-                      #  GRBcbcut(p_cbdata, nz,
-                      #           cind, cval, sense, rhs)
+                    mgc = ModelGurobiCB(p_model, p_cbdata, where)
+                    self.model.cuts_generator.generate_cuts(mgc)
 
             # adding lazy constraints
             elif self.model.lazy_constrs_generator and where == 4:  # MIPSOL==4
@@ -1099,21 +1079,25 @@ class SolverGurobi(Solver):
         self.set_int_param('PumpPasses', passes)
 
 
-def SolverGurobiCB(SolverGurobi):
+class SolverGurobiCB(SolverGurobi):
     """Just like previous solver, but aware that
        running in the callback, so some methods
        should be different (e.g. to get the frac sol)"""
 
-    def __init__(self, model: Model, grb_model: CData, cb_data: CData,
+    def __init__(self, model: Model, grb_model: CData = ffi.NULL, cb_data: CData = ffi.NULL,
                  where: int = -1):
         assert grb_model != ffi.NULL
         assert cb_data != ffi.NULL
-        super().__init__(model)
+
+        super().__init__(model, '', '')
 
         self._cb_data = cb_data
         self._objconst = 0.0
         self._model = grb_model
         self._env = GRBgetenv(self._model)
+        self._status = OptimizationStatus.LOADED
+        self._obj_value = INF
+        self._best_bound = INF
         self._status = OptimizationStatus.LOADED
 
         # pre-allocate temporary space to query names
@@ -1128,8 +1112,14 @@ def SolverGurobiCB(SolverGurobi):
             if res != 0:
                 raise Exception('Error getting status')
             if gstatus[0] == GRB_OPTIMAL:
+                self._status = OptimizationStatus.OPTIMAL
+                ires = ffi.new('int *')
+                st = GRBgetintattr(grb_model, 'NumVars'.encode('utf-8'), ires)
+                if st != 0:
+                    raise Exception('Could not query number of variables')
+                ncols = ires[0]
                 self._cb_sol = \
-                    ffi.new('double[{}]'.format(self.model.num_cols))
+                    ffi.new('double[{}]'.format(ncols))
                 res = GRBcbget(cb_data, where, GRB_CB_MIPNODE_REL,
                                self._cb_sol)
                 if res != 0:
@@ -1139,6 +1129,22 @@ def SolverGurobiCB(SolverGurobi):
         else:
             self._cb_sol = ffi.NULL
 
+    def add_cut(self, cut: LinExpr):
+        numnz = len(cut.expr)
+
+        cind = ffi.new("int[]", [var.idx for var in cut.expr.keys()])
+        cval = ffi.new("double[]", [coef for coef in
+                                    cut.expr.values()])
+
+        # constraint sense and rhs
+        sense = cut.sense.encode("utf-8")
+        rhs = -cut.const
+
+        GRBcbcut(self._cb_data, numnz, cind, cval, sense, rhs)
+
+    def get_status(self):
+        return self._status
+
     def var_get_x(self, var: Var):
         if self._cb_sol == ffi.NULL:
             raise Exception('Solution not available')
@@ -1147,3 +1153,32 @@ def SolverGurobiCB(SolverGurobi):
 
     def __del__(self):
         return
+
+
+class ModelGurobiCB(Model):
+
+    def __init__(self, grb_model: CData = ffi.NULL, cb_data: CData = ffi.NULL,
+                 where: int = -1):
+        # initializing variables with default values
+        self.solver_name = 'gurobicb'
+
+        self.solver = SolverGurobiCB(self, grb_model, cb_data, where)
+
+        # list of constraints and variables
+        self.constrs = VConstrList(self)
+        self.vars = VVarList(self)
+        self._status = self.solver.get_status()
+
+        # initializing additional control variables
+        self.__cuts = -1
+        self.__cut_passes = -1
+        self.__clique = -1
+        self.__preprocess = -1
+        self.__cuts_generator = None
+        self.__lazy_constrs_generator = None
+        self.__start = None
+        self.__threads = 0
+        self.__n_cols = 0
+        self.__n_rows = 0
+        self.__gap = INF
+        self.__store_search_progress_log = False
