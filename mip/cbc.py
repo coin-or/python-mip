@@ -1,7 +1,8 @@
 """Python-MIP interface to the COIN-OR Branch-and-Cut solver CBC"""
 
 import mip
-from mip.model import Model, Solver, Var, Constr, Column, LinExpr
+from mip.model import Model, Solver, Var, Constr, Column, LinExpr, \
+    VConstrList, VVarList
 from mip.constants import MAXIMIZE, SearchEmphasis, CONTINUOUS, BINARY, \
     INTEGER, MINIMIZE, EQUAL, LESS_OR_EQUAL, GREATER_OR_EQUAL, \
     OptimizationStatus
@@ -504,12 +505,11 @@ class SolverCbc(Solver):
             if osi_solver == ffi.NULL or osi_cuts == ffi.NULL or \
                     self.model.cuts_generator is None:
                 return
-            osi_model = Model(self.name, self.sense, 'osi',
-                              osi_solver)
-            osi_model.solver.osi_cutsp = osi_cuts
-
-            if osi_model.status != OptimizationStatus.OPTIMAL:
+            if cbclib.Osi_isProvenOptimal(osi_solver) != CHAR_ONE:
                 return
+            osi_model = ModelOsi(osi_solver)
+            osi_model._status = osi_model.solver.get_status()
+            osi_model.solver.osi_cutsp = osi_cuts
 
             # calling cut generators
             self.model.cuts_generator.generate_cuts(osi_model)
@@ -887,14 +887,46 @@ class SolverCbc(Solver):
         self.__pumpp = passes
 
 
+class ModelOsi(Model):
+    def __init__(self, osi_ptr: CData):
+        # initializing variables with default values
+        self.solver_name = 'osi'
+        existing_solver = (osi_ptr != ffi.NULL)
+
+        self.solver = SolverOsi(self, osi_ptr)
+
+        # list of constraints and variables
+        self.constrs = VConstrList(self)
+        self.vars = VVarList(self)
+
+        if existing_solver:
+            self._status = self.solver.get_status()
+        else:
+            self._status = OptimizationStatus.LOADED
+
+        # initializing additional control variables
+        self.__cuts = -1
+        self.__cut_passes = -1
+        self.__clique = -1
+        self.__preprocess = -1
+        self.__cuts_generator = None
+        self.__lazy_constrs_generator = None
+        self.__start = None
+        self.__threads = 0
+        self.__n_cols = 0
+        self.__n_rows = 0
+        self.__gap = INF
+        self.__store_search_progress_log = False
+
+
 class SolverOsi(Solver):
     """Interface for the OsiSolverInterface, the generic solver interface of
     COIN-OR. This solver has a restricted functionality (comparing to
     SolverCbc) and it is used mainly in callbacks"""
 
-    def __init__(self, model: Model, name='', sense=MINIMIZE, osi_ptr: CData =
+    def __init__(self, model: Model, osi_ptr: CData =
                  ffi.NULL):
-        super().__init__(model, name, sense)
+        super().__init__(model)
 
         self._objconst = 0.0
 
@@ -908,7 +940,10 @@ class SolverOsi(Solver):
             self.owns_solver = False
         else:
             self.owns_solver = True
+            self.osi = cbclib.Osi_newSolver()
         self.__relaxed = False
+
+        # name indexes, created if necessary
         self.colNames = None
         self.rowNames = None
         self._obj_const = 0.0
