@@ -159,20 +159,21 @@ Cut Callback
 The cutting plane method has some limitations: even though the first rounds of
 cuts improve significantly the lower bound, the overall number of iterations
 needed to obtain the optimal integer solution may be too large. Better results
-can be obtained with the `Branch-&-Cut algorithm <https://en.wikipedia.org/wiki/Branch_and_cut>`_, 
-where cut generation is *combined* with branching. If you have an algorithm like
-the one included in the previous Section to separate inequalities for your
-application you can combine it with the complete BC algorithm implemented in
-the solver engine using *callbacks*. Cut generation callbacks (CGC) are called
-at each node of the search tree where a fractional solution is found. Cuts are
-generated in the callback and returned to the MIP solver engine which adds
-these cuts to the solver *Cut Pool*. These cuts are merged with the cuts
-generated with the solver builtin cut generators and a *subset* of these cuts in
-included to the LP relaxation model. Please note that in the Branch-&-Cut
-algorithm context cuts are *optional* components and only those that are classified as
-*good* cuts by the solver engine will be accepted, i.e., cuts that are too
-dense and have a small violation and could slow down too much the LP re-optimization 
-can be discarded. 
+can be obtained with the `Branch-&-Cut algorithm
+<https://en.wikipedia.org/wiki/Branch_and_cut>`_, where cut generation is
+*combined* with branching. If you have an algorithm like the one included in
+the previous Section to separate inequalities for your application you can
+combine it with the complete BC algorithm implemented in the solver engine
+using *callbacks*. Cut generation callbacks (CGC) are called at each node of
+the search tree where a fractional solution is found. Cuts are generated in the
+callback and returned to the MIP solver engine which adds these cuts to the
+*Cut Pool*. These cuts are merged with the cuts generated with the solver
+builtin cut generators and a *subset* of these cuts in included to the LP
+relaxation model. Please note that in the Branch-&-Cut algorithm context cuts
+are *optional* components and only those that are classified as *good* cuts by
+the solver engine will be accepted, i.e., cuts that are too dense and/or have a
+small violation could be discarded, since the cost of solving a much larger
+linear program may not be worth the resulting bound improvement.
 
 When using cut callbacks be sure that cuts are used only to *improve* the LP
 relaxation but not to *define* feasible solutions, which need to be defined by
@@ -182,48 +183,52 @@ sub-tour elimination constraints presented in Section (:numref:`tsp-label`) in
 the initial model and then add the stronger sub-tour elimination constraints
 presented in the previous section as cuts. 
 
-In Python-MIP, CGC are implemented
-extending the :class:`~mip.callbacks.CutsGenerator` class. The following example implements the
-previous cut separation algorithm as a :class:`~mip.callbacks.CutsGenerator` class and includes it
-as a cut generator for the branch-and-cut solver engine.
-
+In Python-MIP, CGC are implemented extending the
+:class:`~mip.callbacks.CutsGenerator` class. The following example implements
+the previous cut separation algorithm as a
+:class:`~mip.callbacks.CutsGenerator` class and includes it as a cut generator
+for the branch-and-cut solver engine.
 
 .. code-block:: python
  :linenos:
 
     from sys import argv
     from typing import List, Tuple
-    from itertools import product
     import networkx as nx
     from tspdata import TSPData
-    from mip.model import Model, Var, LinExpr, xsum
+    from mip.model import Model, xsum, BINARY
     from mip.callbacks import CutsGenerator, CutPool
-    from mip.constants import BINARY
 
 
     class SubTourCutGenerator(CutsGenerator):
-        def __init__(self, model: Model):
-            super().__init__(model)
+        def __init__(self, Fl: List[Tuple[int, int]]):
+            self.F = Fl
 
-        def generate_cuts(self, rsol: List[Tuple[Var, float]]) -> List[LinExpr]:
+        def generate_cuts(self, model: Model):
             G = nx.DiGraph()
-            r = [(v, f) for (v, f) in rsol if 'x(' in v.name]
+            r = [(v, v.x) for v in model.vars if v.name.startswith('x(')]
             U = [int(v.name.split('(')[1].split(',')[0]) for v, f in r]
             V = [int(v.name.split(')')[0].split(',')[1]) for v, f in r]
-            UV = {u for u in (U+V)}
+            cp = CutPool()
             for i in range(len(U)):
                 G.add_edge(U[i], V[i], capacity=r[i][1])
-            cp = CutPool()
-            for u in UV:
-                for v in [v for v in UV if v != u]:
-                    val, (S, NS) = nx.minimum_cut(G, u, v)
-                    if val <= 0.99:
-                        arcsInS = [(v, f) for i, (v, f) in enumerate(r)
-                                   if U[i] in S and V[i] in S]
-                        if sum(f for v, f in arcsInS) >= (len(S)-1)+1e-4:
-                            cut = xsum(1.0*v for v, fm in arcsInS) <= len(S)-1
-                            cp.add(cut)
-            return cp.cuts
+            for (u, v) in F:
+                if u not in U or v not in V:
+                    continue
+                val, (S, NS) = nx.minimum_cut(G, u, v)
+                if val <= 0.99:
+                    arcsInS = [(v, f) for i, (v, f) in enumerate(r)
+                               if U[i] in S and V[i] in S]
+                    if sum(f for v, f in arcsInS) >= (len(S)-1)+1e-4:
+                        cut = xsum(1.0*v for v, fm in arcsInS) <= len(S)-1
+                        cp.add(cut)
+                        if len(cp.cuts) > 256:
+                            for cut in cp.cuts:
+                                model.add_cut(cut)
+                            return
+            for cut in cp.cuts:
+                model.add_cut(cut)
+            return
 
 
     inst = TSPData(argv[1])
@@ -245,7 +250,15 @@ as a cut generator for the branch-and-cut solver engine.
                    product(range(1, n), range(1, n)) if i != j]:
         model += y[i] - (n + 1) * x[i][j] >= y[j] - n
 
-    model.cuts_generator = SubTourCutGenerator(model)
+    F = []
+    for i in range(n):
+        (md, dp) = (0, -1)
+        for j in [k for k in range(n) if k != i]:
+            if d[i][j] > md:
+                (md, dp) = (d[i][j], j)
+        F.append((i, dp))
+
+    m.cuts_generator = SubTourCutGenerator(F)
     model.optimize()
 
     arcs = [(i, j) for i in range(n) for j in range(n) if x[i][j].x >= 0.99]
