@@ -481,7 +481,7 @@ for RCPSP is included below:
 
     model.optimize()
 
-    print('Makespan {}. Allocations: '.format(model.objective))
+    print('Makespan {}. Allocations: '.format(model.objective_value))
     for (j, t) in product(J, T):
         if x[j][t].x >= 0.99:
             print('({},{})'.format(j, t))
