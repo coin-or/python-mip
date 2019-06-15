@@ -7,7 +7,7 @@
 
 from sys import argv
 from tspdata import TSPData
-from mip.model import Model, xsum
+from mip.model import Model, xsum, minimize
 from mip.constants import BINARY
 
 if len(argv) <= 1:
@@ -30,8 +30,8 @@ x = [[model.add_var(
 y = [model.add_var(name='y({})') for i in range(n)]
 
 # objective function: minimize the distance
-model.objective = xsum(d[i][j]*x[i][j]
-                       for j in range(n) for i in range(n))
+model.objective = minimize(
+    xsum(d[i][j]*x[i][j] for j in range(n) for i in range(n)))
 
 # constraint : enter each city coming from another city
 for i in range(n):
