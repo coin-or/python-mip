@@ -17,7 +17,7 @@ class CutsGenerator:
     def __init__(self):
         pass
 
-    def generate_cuts(self, model: CutGeneratorModel):
+    def generate_cuts(self, model: Model):
         """Method called by the solver engine to generate cuts
 
            After analyzing the contents of the fractional solution in
