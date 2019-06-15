@@ -40,4 +40,4 @@ print('Schedule: ')
 for (j, t) in product(J, T):
     if x[j][t].x >= 0.99:
         print('({},{})'.format(j, t))
-print('Makespan = {}'.format(model.objective))
+print('Makespan = {}'.format(model.objective_value))
