@@ -8,7 +8,7 @@
 from itertools import product
 import bmcp_data
 import bmcp_greedy
-from mip.model import Model, xsum
+from mip.model import Model, xsum, minimize
 from mip.constants import MINIMIZE, BINARY
 
 data = bmcp_data.read('P1.col')
@@ -21,7 +21,8 @@ m = Model(sense=MINIMIZE)
 x = [[m.add_var('x({},{})'.format(i, c), var_type=BINARY)
       for c in U] for i in N]
 
-m.objective = z = m.add_var('z')
+z = m.add_var('z')
+m.objective = minimize(z)
 
 for i in N:
     m += xsum(x[i][c] for c in U) == r[i]

@@ -32,19 +32,19 @@ The following python code creates, optimizes and prints the optimal solution for
 .. code-block:: python
     :linenos:
 
-    from mip.model import Model, xsum
-    from mip.constants import MAXIMIZE, BINARY
+    from mip.model import Model, xsum, maximize
+    from mip.constants import BINARY
 
     p = [10, 13, 18, 31, 7, 15]
     w = [11, 15, 20, 35, 10, 33]
     c = 47
     n = len(w)
 
-    m = Model('knapsack', MAXIMIZE)
+    m = Model('knapsack')
 
     x = [m.add_var(var_type=BINARY) for i in range(n)]
 
-    m.objective = xsum(p[i]*x[i] for i in range(n))
+    m.objective = maximize(xsum(p[i]*x[i] for i in range(n)))
 
     m += xsum(w[i]*x[i] for i in range(n)) <= c
 
@@ -67,8 +67,8 @@ The Traveling Salesman Problem
 ------------------------------
 
 The traveling salesman problem (TSP) is one of the most studied combinatorial
-optimization problems, with the first computational studies dating back to the 50s :cite:`Dantz54,Appleg06`. 
-To to illustrate this problem, consider that you
+optimization problems, with the first computational studies dating back to the
+50s :cite:`Dantz54,Appleg06`.  To to illustrate this problem, consider that you
 will spend some time in Belgium and wish to visit some of its main tourist
 attractions, depicted in the map bellow:
 
@@ -119,7 +119,7 @@ included bellow:
 
     from sys import argv
     from tspdata import TSPData
-    from mip.model import Model, xsum
+    from mip.model import Model, xsum, minimize
     from mip.constants import BINARY
 
     inst = TSPData(argv[1])
@@ -131,7 +131,8 @@ included bellow:
 
     y = [model.add_var() for i in range(n)]
 
-    model.objective = xsum(d[i][j]*x[i][j] for j in range(n) for i in range(n))
+    model.objective = minimize(
+        xsum(d[i][j]*x[i][j] for j in range(n) for i in range(n)))
 
     for i in range(n):
         model += xsum(x[j][i] for j in range(n) if j != i) == 1
@@ -233,8 +234,6 @@ The following code builds the previous model, solves it and prints the queen pla
         stdout.write('\n')
 
 
-
-
 Frequency Assignment
 --------------------
 
@@ -320,7 +319,7 @@ be modeled with the following MIP formulation:
 
 
 The following example creates this formulation and executes an heuristic to generate an
-initial feasible solution and consequentily the set :math:`U`:
+initial feasible solution and consequently the set :math:`U`:
 
 
 .. code-block:: python
@@ -329,7 +328,7 @@ initial feasible solution and consequentily the set :math:`U`:
     from itertools import product
     import bmcp_data
     import bmcp_greedy
-    from mip.model import Model, xsum
+    from mip.model import Model, xsum, minimize
     from mip.constants import MINIMIZE, BINARY
 
     data = bmcp_data.read('P1.col')
@@ -337,12 +336,13 @@ initial feasible solution and consequentily the set :math:`U`:
     S = bmcp_greedy.build(data)
     C, U = S.C, [i for i in range(S.u_max+1)]
 
-    m = Model(sense=MINIMIZE)
+    m = Model()
 
     x = [[m.add_var('x({},{})'.format(i, c), var_type=BINARY)
           for c in U] for i in N]
 
-    m.objective = z = m.add_var('z')
+    z = m.add_var('z')
+    m.objective = minimize(z)
 
     for i in N:
         m += xsum(x[i][c] for c in U) == r[i]
@@ -446,7 +446,7 @@ for RCPSP is included below:
 .. code-block:: python
 
     from itertools import product
-    from mip.model import Model, xsum
+    from mip.model import Model, xsum, minimize
     from mip.constants import BINARY
 
     p = [0, 3, 2, 5, 4, 2, 3, 4, 2, 4, 6, 0]
@@ -467,7 +467,7 @@ for RCPSP is included below:
     x = [[model.add_var(name='x({},{})'.format(j, t), var_type=BINARY)
           for t in T] for j in J]
 
-    model.objective = xsum(x[len(J)-1][t] * t for t in T)
+    model.objective = minimize(xsum(x[len(J)-1][t] * t for t in T))
 
     for j in J:
         model += xsum(x[j][t] for t in T) == 1
@@ -565,16 +565,16 @@ The decision variables are defined by:
     variable for the makespan 
 
 
-Follows a MIP formulation :cite:`Mann60` for the JSSP. The objective function is computed
-in the auxiliary variable :math:`C`. The first set of constraints are the
-precedence constraints, that ensure that a job on a machine only starts
-after the processing of the previous machine concluded. The second and 
-third set of disjunctive constraints ensure that only one job is processing
-at a given time in a given machine. The :math:`M` constant must be large enough to 
-ensure the correctness of these constraints. A valid (but weak) estimate for this
-value can be the summation of all processing times. The fourth set of constrains 
-ensure that the makespan value is computed correctly and the last constraints indicate
-variable domains.
+Follows a MIP formulation :cite:`Mann60` for the JSSP. The objective function
+is computed in the auxiliary variable :math:`C`. The first set of constraints
+are the precedence constraints, that ensure that a job on a machine only starts
+after the processing of the previous machine concluded. The second and third
+set of disjunctive constraints ensure that only one job is processing at a
+given time in a given machine. The :math:`M` constant must be large enough to
+ensure the correctness of these constraints. A valid (but weak) estimate for
+this value can be the summation of all processing times. The fourth set of
+constrains ensure that the makespan value is computed correctly and the last
+constraints indicate variable domains.
 
 .. math:: 
 
@@ -597,7 +597,7 @@ the optimal solution found:
     from itertools import product
     from sys import argv
     from jssp_instance import JSSPInstance
-    from mip.model import Model
+    from mip.model import Model, minimize
     from mip.constants import BINARY
 
     inst = JSSPInstance(argv[1])
@@ -611,7 +611,7 @@ the optimal solution found:
     y = [[[model.add_var(var_type=BINARY, name='y({},{},{})'.format(j+1, k+1, i+1))
            for i in range(m)] for k in range(n)] for j in range(n)]
 
-    model.objective = c
+    model.objective = minimize(c)
 
     for (j, i) in product(range(n), range(1, m)):
         model += x[j][machines[j][i]] - x[j][machines[j][i-1]] >= \
