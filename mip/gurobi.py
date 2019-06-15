@@ -634,6 +634,7 @@ class SolverGurobi(Solver):
             self.set_int_param("SolutionLimit", max_sol)
 
     def set_objective(self, lin_expr: LinExpr, sense: str = "") -> None:
+        self.flush_cols()
         # collecting linear expression data
         nz = len(lin_expr.expr)
         cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
