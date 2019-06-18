@@ -31,18 +31,16 @@ try:
     grblib = ffi.dlopen(lib_path)
     print('gurobi version {}.{} found'.format(major_ver,
                                               minor_ver))
-    has_gurobi = True
 except Exception:
-    has_gurobi = False
+    raise ImportError
 
 
-if has_gurobi:
-    CData = ffi.CData
-    os_is_64_bit = maxsize > 2**32
-    INF = float('inf')
-    MAX_NAME_SIZE = 512  # for variables and constraints
+CData = ffi.CData
+os_is_64_bit = maxsize > 2**32
+INF = float('inf')
+MAX_NAME_SIZE = 512  # for variables and constraints
 
-    ffi.cdef("""
+ffi.cdef("""
         typedef struct _GRBmodel GRBmodel;
         typedef struct _GRBenv GRBenv;
 
@@ -179,47 +177,47 @@ if has_gurobi:
         int GRBdelconstrs (GRBmodel *model, int numdel, int *ind);
     """)
 
-    GRBloadenv = grblib.GRBloadenv
-    GRBnewmodel = grblib.GRBnewmodel
-    GRBfreeenv = grblib.GRBfreeenv
-    GRBfreemodel = grblib.GRBfreemodel
-    GRBaddvar = grblib.GRBaddvar
-    GRBaddconstr = grblib.GRBaddconstr
-    GRBoptimize = grblib.GRBoptimize
-    GRBgetvarbyname = grblib.GRBgetvarbyname
-    GRBsetdblattrarray = grblib.GRBsetdblattrarray
-    GRBsetcharattrlist = grblib.GRBsetcharattrlist
-    GRBsetdblattrlist = grblib.GRBsetdblattrlist
-    GRBwrite = grblib.GRBwrite
-    GRBreadmodel = grblib.GRBreadmodel
-    GRBgetconstrbyname = grblib.GRBgetconstrbyname
-    GRBupdatemodel = grblib.GRBupdatemodel
-    GRBgetcharattrelement = grblib.GRBgetcharattrelement
-    GRBgetconstrs = grblib.GRBgetconstrs
-    GRBgetdblattrelement = grblib.GRBgetdblattrelement
-    GRBgetvars = grblib.GRBgetvars
-    GRBsetcharattrelement = grblib.GRBsetcharattrelement
-    GRBsetdblattrelement = grblib.GRBsetdblattrelement
-    GRBsetintattr = grblib.GRBsetintattr
-    GRBsetdblattr = grblib.GRBsetdblattr
-    GRBgetintattr = grblib.GRBgetintattr
-    GRBgetintparam = grblib.GRBgetintparam
-    GRBsetintparam = grblib.GRBsetintparam
-    GRBgetdblattr = grblib.GRBgetdblattr
-    GRBsetdblparam = grblib.GRBsetdblparam
-    GRBgetdblparam = grblib.GRBgetdblparam
-    GRBgetstrattrelement = grblib.GRBgetstrattrelement
-    GRBcbget = grblib.GRBcbget
-    GRBcbsetparam = grblib.GRBcbsetparam
-    GRBcbsolution = grblib.GRBcbsolution
-    GRBcbcut = grblib.GRBcbcut
-    GRBcblazy = grblib.GRBcblazy
-    GRBsetcallbackfunc = grblib.GRBsetcallbackfunc
-    GRBdelvars = grblib.GRBdelvars
-    GRBdelconstrs = grblib.GRBdelconstrs
-    GRBgetenv = grblib.GRBgetenv
-    GRBgetstrattr = grblib.GRBgetstrattr
-    GRBsetstrattr = grblib.GRBsetstrattr
+GRBloadenv = grblib.GRBloadenv
+GRBnewmodel = grblib.GRBnewmodel
+GRBfreeenv = grblib.GRBfreeenv
+GRBfreemodel = grblib.GRBfreemodel
+GRBaddvar = grblib.GRBaddvar
+GRBaddconstr = grblib.GRBaddconstr
+GRBoptimize = grblib.GRBoptimize
+GRBgetvarbyname = grblib.GRBgetvarbyname
+GRBsetdblattrarray = grblib.GRBsetdblattrarray
+GRBsetcharattrlist = grblib.GRBsetcharattrlist
+GRBsetdblattrlist = grblib.GRBsetdblattrlist
+GRBwrite = grblib.GRBwrite
+GRBreadmodel = grblib.GRBreadmodel
+GRBgetconstrbyname = grblib.GRBgetconstrbyname
+GRBupdatemodel = grblib.GRBupdatemodel
+GRBgetcharattrelement = grblib.GRBgetcharattrelement
+GRBgetconstrs = grblib.GRBgetconstrs
+GRBgetdblattrelement = grblib.GRBgetdblattrelement
+GRBgetvars = grblib.GRBgetvars
+GRBsetcharattrelement = grblib.GRBsetcharattrelement
+GRBsetdblattrelement = grblib.GRBsetdblattrelement
+GRBsetintattr = grblib.GRBsetintattr
+GRBsetdblattr = grblib.GRBsetdblattr
+GRBgetintattr = grblib.GRBgetintattr
+GRBgetintparam = grblib.GRBgetintparam
+GRBsetintparam = grblib.GRBsetintparam
+GRBgetdblattr = grblib.GRBgetdblattr
+GRBsetdblparam = grblib.GRBsetdblparam
+GRBgetdblparam = grblib.GRBgetdblparam
+GRBgetstrattrelement = grblib.GRBgetstrattrelement
+GRBcbget = grblib.GRBcbget
+GRBcbsetparam = grblib.GRBcbsetparam
+GRBcbsolution = grblib.GRBcbsolution
+GRBcbcut = grblib.GRBcbcut
+GRBcblazy = grblib.GRBcblazy
+GRBsetcallbackfunc = grblib.GRBsetcallbackfunc
+GRBdelvars = grblib.GRBdelvars
+GRBdelconstrs = grblib.GRBdelconstrs
+GRBgetenv = grblib.GRBgetenv
+GRBgetstrattr = grblib.GRBgetstrattr
+GRBsetstrattr = grblib.GRBsetstrattr
 
 
 GRB_CB_PRE_COLDEL = 1000
@@ -264,7 +262,7 @@ GRB_OPTIMAL = 2
 class SolverGurobi(Solver):
 
     def __init__(self, model: Model, name: str, sense: str, modelp: CData =
-                 ffi.NULL):
+    ffi.NULL):
         """modelp should be informed if a model should not be created,
         but only allow access to an existing one"""
         super().__init__(model, name, sense)
@@ -362,7 +360,7 @@ class SolverGurobi(Solver):
     def add_cut(self, lin_expr: LinExpr):
         # int GRBcbcut(void *cbdata, int cutlen, const int *cutind, const double *cutval, char cutsense, double cutrhs);
         # int GRBcbcut(void *cbdata, int cutlen, const int *cutind, const double *cutval, char cutsense, double cutrhs);
-        
+
 
         return
 
@@ -467,7 +465,7 @@ class SolverGurobi(Solver):
                                     difu = abs(obj_best - log[-1][1][1])
                                     if difl >= 1e-6 or difu >= 1e-6:
                                         print('>>>>>>> {} {}'.format(
-                                              obj_bound, obj_best))
+                                            obj_bound, obj_best))
                                     log.append((sec, (obj_bound, obj_best)))
 
             # adding cuts
@@ -507,7 +505,7 @@ class SolverGurobi(Solver):
 
         self.update()
         if self.model.cuts_generator is not None or \
-           self.model.store_search_progress_log:
+                self.model.store_search_progress_log:
             GRBsetcallbackfunc(self._model, callback, ffi.NULL)
 
         if self.__threads >= 1:
@@ -594,7 +592,7 @@ class SolverGurobi(Solver):
             self.set_int_attr("ModelSense", 1)
         else:
             raise Exception("Unknown sense: {}, use {} or {}".format(sense,
-                            MAXIMIZE, MINIMIZE))
+                                                                     MAXIMIZE, MINIMIZE))
         self.__updated = False
 
     def get_num_solutions(self) -> int:
@@ -712,7 +710,7 @@ class SolverGurobi(Solver):
                           self._model)
         if st != 0:
             raise Exception('Could not read model {}, check contents'.format(
-                            file_path))
+                file_path))
         self._model = self._model[0]
 
     def num_cols(self) -> int:
@@ -761,7 +759,7 @@ class SolverGurobi(Solver):
                            constr.idx, 1)
         if st != 0:
             raise Exception('Could not get info for constraint {}'.format(
-                            constr.idx))
+                constr.idx))
         nz = nnz[0]
 
         # creating arrays to hold indices and coefficients
@@ -782,12 +780,12 @@ class SolverGurobi(Solver):
                                    constr.idx, c_sense)
         if st != 0:
             raise Exception('Could not query sense for constraint {}'.format(
-                            constr.idx))
+                constr.idx))
         st = GRBgetdblattrelement(self._model, 'RHS'.encode('utf-8'),
                                   constr.idx, rhs)
         if st != 0:
             raise Exception('Could not query RHS for constraint {}'.format(
-                            constr.idx))
+                constr.idx))
 
         ssense = c_sense[0].decode('utf-8')
         # translating sense
@@ -963,7 +961,7 @@ class SolverGurobi(Solver):
         if error != 0:
             raise Exception(
                 'Error setting gurobi char attr element {} index {} to value'.
-                format(name, index, value))
+                    format(name, index, value))
 
     def get_dbl_attr_element(self, name: str, index: int) -> float:
         res = ffi.new('double *')
@@ -980,7 +978,7 @@ class SolverGurobi(Solver):
         if error != 0:
             raise Exception(
                 "Error modifying dbl attribute {} for element {} to value {}".
-                format(name, index, value))
+                    format(name, index, value))
 
     def set_int_attr(self, name: str, value: int):
         error = GRBsetintattr(self._model, name.encode('utf-8'), value)

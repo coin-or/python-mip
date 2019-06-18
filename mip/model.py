@@ -444,7 +444,7 @@ class Model:
 
     def __init__(self, name: str = "",
                  sense: str = MINIMIZE,
-                 solver_name: str = "cbc",
+                 solver_name: str = "",
                  solver=None):
         """Model constructor
 
@@ -482,8 +482,13 @@ class Model:
             self.solver = SolverCbc(self, name, sense)
         else:
             # checking which solvers are available
-            from mip import gurobi
-            if gurobi.has_gurobi:
+            try:
+                from mip import gurobi
+                has_gurobi = True
+            except ImportError:
+                has_gurobi = False
+
+            if has_gurobi:
                 from mip.gurobi import SolverGurobi
                 self.solver = SolverGurobi(self, name, sense)
                 self.solver_name = GUROBI
