@@ -9,7 +9,7 @@ the default Gurobi :sup:`®` Python interface, which currently only supports the
 Python interpreter CPython. Pulp supports both CPython and also the
 just-in-time compiler Pypy. MIP also suports both. JuMP :cite:`DHL17` is the
 Mathematical Programming package of the Julia programming language. Both
-Jump and Pulp use intermediate date structures to store the mathematical
+Jump and Pulp use intermediate data structures to store the mathematical
 programming model before flushing it to the solver, so that the selected
 solver does not impacts on the model creation times. MIP does not stores
 the model itself, directly calling problem creation/modification routines
@@ -25,7 +25,7 @@ the CBC C Interface. Our computational results already consider this
 updated CBC version.
 
 Computational experiments executed on a ThinkPad :sup:`®` X1 notebook with
-an Intel :sup:`®` Core™ i7-7600U processor and  8 Gb of RAM using the
+an Intel :sup:`®` Core™ i7-7600U processor and 8 Gb of RAM using the
 Linux operating system. The following software releases were used: CPython
 3.7.3, Pypy 7.1.1, Julia 1.1.1, JuMP 0.19 and Gurobi 8.1 and CBC svn 2563.
 
