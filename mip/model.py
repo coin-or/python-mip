@@ -444,7 +444,7 @@ class Model:
 
     def __init__(self, name: str = "",
                  sense: str = MINIMIZE,
-                 solver_name: str = "",
+                 solver_name: str = "cbc",
                  solver=None):
         """Model constructor
 
