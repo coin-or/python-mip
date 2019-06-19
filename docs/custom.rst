@@ -179,7 +179,7 @@ When using cut callbacks be sure that cuts are used only to *improve* the LP
 relaxation but not to *define* feasible solutions, which need to be defined by
 the initial formulation. In other words, the initial model without cuts may be
 *weak* but needs to be *complete*. In the case of TSP, we can include the weak
-sub-tour elimination constraints presented in Section (:numref:`tsp-label`) in
+sub-tour elimination constraints presented in :numref:`tsp-label` in
 the initial model and then add the stronger sub-tour elimination constraints
 presented in the previous section as cuts. 
 
@@ -187,7 +187,26 @@ In Python-MIP, CGC are implemented extending the
 :class:`~mip.callbacks.CutsGenerator` class. The following example implements
 the previous cut separation algorithm as a
 :class:`~mip.callbacks.CutsGenerator` class and includes it as a cut generator
-for the branch-and-cut solver engine.
+for the branch-and-cut solver engine. The method that needs to be implemented
+in this class is the :meth:`~mip.callbacks.CutsGenerator.generate_cuts`
+procedure. This method receives as parameter the object :code:`model` of type
+:class:`~mip.model.Model`. This object must be used to query the fractional
+values of the model :attr:`~mip.model.Model.vars`, using the
+:attr:`~mip.model.Var.x` property. Other model properties can be queried, such
+as the problem constraints (:attr:`~mip.model.Model.constrs`). Please note that,
+depending on which solver engine you use, some variables/constraints from the
+original model may have been removed by pre-processing. Thus, direct references
+to the original problem variables may be invalid. Since for variables that
+remain in this model Python-MIP ensures that the names from the original
+variables are preserved, it is a good practice to query again the variables
+list. In our example, the relationship of the variables with the arcs of the
+input graph can be inferred by examining variable names which are in the format
+":code:`x(i,j)`" (lines 15-17). Whenever a violated inequality is discovered, 
+it can be added to the solver's engine cut pool using the 
+:meth:`~mip.model.Model.add_cut` :class:`~mip.model.Model` method (lines 33 and 35). 
+In our example, we temporarily store the generated cuts in our 
+:class:`~mip.callbacks.CutPool` object (line 30).
+
 
 .. code-block:: python
  :linenos:
