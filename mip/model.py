@@ -6,8 +6,7 @@ from os.path import isfile
 from collections.abc import Sequence
 from mip.constants import BINARY, CONTINUOUS, INTEGER, MINIMIZE, INF, \
     OptimizationStatus, SearchEmphasis, VERSION, GUROBI, CBC, \
-    LESS_OR_EQUAL, GREATER_OR_EQUAL, EPS
-from mip.constants import MINIMIZE, MAXIMIZE
+    LESS_OR_EQUAL, GREATER_OR_EQUAL, EPS, MAXIMIZE
 from mip.exceptions import InvalidLinExpr, SolutionNotAvailable
 
 
@@ -372,8 +371,9 @@ class ProgressLog:
 
     Attributes:
         log(Tuple[float, Tuple[float, float]]):  Tuple in the format \
-        :math:`(t, (l, u))`, where :math:`t` is the processing time and :math:`l` \
-        and :math:`u` are the lower and upper bounds, respectively.
+        :math:`(t, (l, u))`, where :math:`t` is the processing time and
+        :math:`l` and :math:`u` are the lower and upper bounds, \
+        respectively.
 
         instance(str): instance name
 
@@ -517,6 +517,8 @@ class Model:
         self.__gap = INF
         self.__store_search_progress_log = False
         self.__plog = ProgressLog()
+        self.__integer_tol = -1.0
+        self.__infeas_tol = -1.0
 
     def __del__(self):
         del self.solver
@@ -1199,6 +1201,36 @@ class Model:
     @cutoff.setter
     def cutoff(self, cutoff: float):
         self.solver.set_cutoff(cutoff)
+
+    @property
+    def integer_tol(self) -> float:
+        """Maximum distance to the nearest integer value for a variable to be \
+        considered integer. A negative value indicates that the default \
+        solver tolerance should be used (1e-5 for gurobi, 1e-7 for cbc). \
+        Tightening this value will increase the numerical precision but \
+        also probably increase the running time. As floating point
+        computations always involve some loss of precision, values too
+        close to zero will likely render some models impossible to optimize."""
+        return self.__integer_tol
+
+    @integer_tol.setter
+    def integer_tol(self, int_tol: float):
+        self.__integer_tol = int_tol
+
+    @property
+    def infeas_tol(self) -> float:
+        """Maximum allowed violation for constraints. A negative value
+        indicates that the default tolerance of the solver engine
+        will be used (1e-6 for gurobi and 1e-7 for cbc). Tightening this
+        value results in an increased numerical precision but possibly
+        larger running times. As floating point
+        computations always involve some loss of precision, values too
+        close to zero will likely render some models impossible to optimize."""
+        return self.__infeas_tol
+
+    @infeas_tol.setter
+    def infeas_tol(self, inf_tol: float):
+        self.__infeas_tol = inf_tol
 
     @property
     def max_mip_gap_abs(self) -> float:
