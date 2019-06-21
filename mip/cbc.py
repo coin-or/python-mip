@@ -581,6 +581,16 @@ class SolverCbc(Solver):
             cbclib.Cbc_addProgrCallback(self._model,
                                         cbc_progress_callback, ffi.NULL)
 
+        if self.model.integer_tol >= 0.0:
+            cbc_set_parameter(self, 'integerT',
+                              '{}'.format(self.model.integer_tol))
+
+        if self.model.infeas_tol >= 0.0:
+            cbc_set_parameter(self, 'primalT',
+                              '{}'.format(self.model.infeas_tol))
+            cbc_set_parameter(self, 'dualT',
+                              '{}'.format(self.model.infeas_tol))
+
         cbclib.Cbc_solve(self._model)
 
         if cbclib.Cbc_isAbandoned(self._model):

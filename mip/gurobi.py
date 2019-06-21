@@ -523,6 +523,11 @@ class SolverGurobi(Solver):
         if self.model.preprocess != -1:
             self.set_int_param("Presolve", self.model.preprocess)
 
+        if self.model.integer_tol >= 0.0:
+            self.set_dbl_param("IntFeasTol", self.model.integer_tol)
+        if self.model.infeas_tol >= 0.0:
+            self.set_dbl_param("FeasibilityTol", self.model.infeas_tol)
+
         # executing Gurobi to solve the formulation
         status = GRBoptimize(self._model)
         if status == 10009:
