@@ -519,6 +519,7 @@ class Model:
         self.__plog = ProgressLog()
         self.__integer_tol = -1.0
         self.__infeas_tol = -1.0
+        self.__opt_tol = -1.0
 
     def __del__(self):
         del self.solver
@@ -1231,6 +1232,23 @@ class Model:
     @infeas_tol.setter
     def infeas_tol(self, inf_tol: float):
         self.__infeas_tol = inf_tol
+
+    @property
+    def opt_tol(self) -> float:
+        """Maximum reduced cost value for a solution of the LP relaxation
+        to be considered optimal. A negative value indicates that the
+        default solver engine parameter value should be used (1e-6 for
+        gurobi and 1e-7 for cbc). Increasing this value can improve the
+        numerical precision at the expense of possibly much larger running
+        times. As floating point
+        computations always involve some loss of precision, values too
+        close to zero will likely render some models impossible to optimize.
+        """
+        return self.__opt_tol
+
+    @opt_tol.setter
+    def opt_tol(self, tol: float):
+        return self.__opt_tol
 
     @property
     def max_mip_gap_abs(self) -> float:

@@ -588,8 +588,10 @@ class SolverCbc(Solver):
         if self.model.infeas_tol >= 0.0:
             cbc_set_parameter(self, 'primalT',
                               '{}'.format(self.model.infeas_tol))
+
+        if self.model.opt_tol >= 0.0:
             cbc_set_parameter(self, 'dualT',
-                              '{}'.format(self.model.infeas_tol))
+                              '{}'.format(self.model.opt_tol))
 
         cbclib.Cbc_solve(self._model)
 
