@@ -527,6 +527,8 @@ class SolverGurobi(Solver):
             self.set_dbl_param("IntFeasTol", self.model.integer_tol)
         if self.model.infeas_tol >= 0.0:
             self.set_dbl_param("FeasibilityTol", self.model.infeas_tol)
+        if self.model.opt_tol >= 0.0:
+            self.set_dbl_param("OptimalityTol", self.model.opt_tol)
 
         # executing Gurobi to solve the formulation
         status = GRBoptimize(self._model)
