@@ -517,9 +517,9 @@ class Model:
         self.__gap = INF
         self.__store_search_progress_log = False
         self.__plog = ProgressLog()
-        self.__integer_tol = -1.0
-        self.__infeas_tol = -1.0
-        self.__opt_tol = -1.0
+        self.__integer_tol = 1e-6
+        self.__infeas_tol = 1e-6
+        self.__opt_tol = 1e-6
 
     def __del__(self):
         del self.solver
@@ -1205,13 +1205,12 @@ class Model:
 
     @property
     def integer_tol(self) -> float:
-        """Maximum distance to the nearest integer value for a variable to be \
-        considered integer. A negative value indicates that the default \
-        solver tolerance should be used (1e-5 for gurobi, 1e-7 for cbc). \
-        Tightening this value will increase the numerical precision but \
-        also probably increase the running time. As floating point
-        computations always involve some loss of precision, values too
-        close to zero will likely render some models impossible to optimize."""
+        """Maximum distance to the nearest integer for a variable to be
+        considered with an integer value. Default value: 1e-6. Tightening this
+        value can increase the numerical precision but also probably increase
+        the running time. As floating point computations always involve some
+        loss of precision, values too close to zero will likely render some
+        models impossible to optimize."""
         return self.__integer_tol
 
     @integer_tol.setter
@@ -1220,13 +1219,12 @@ class Model:
 
     @property
     def infeas_tol(self) -> float:
-        """Maximum allowed violation for constraints. A negative value
-        indicates that the default tolerance of the solver engine
-        will be used (1e-6 for gurobi and 1e-7 for cbc). Tightening this
-        value results in an increased numerical precision but possibly
-        larger running times. As floating point
-        computations always involve some loss of precision, values too
-        close to zero will likely render some models impossible to optimize."""
+        """Maximum allowed violation for constraints. Default value: 1e-6.
+        Tightening this value can increase the numerical precision but also
+        probably increase the running time. As floating point computations
+        always involve some loss of precision, values too close to zero will
+        likely render some models impossible to optimize."""
+
         return self.__infeas_tol
 
     @infeas_tol.setter
@@ -1235,15 +1233,12 @@ class Model:
 
     @property
     def opt_tol(self) -> float:
-        """Maximum reduced cost value for a solution of the LP relaxation
-        to be considered optimal. A negative value indicates that the
-        default solver engine parameter value should be used (1e-6 for
-        gurobi and 1e-7 for cbc). Increasing this value can improve the
-        numerical precision at the expense of possibly much larger running
-        times. As floating point
-        computations always involve some loss of precision, values too
-        close to zero will likely render some models impossible to optimize.
-        """
+        """Maximum reduced cost value for a solution of the LP relaxation to be
+        considered optimal. Default value: 1e-6.  Tightening this value can
+        increase the numerical precision but also probably increase the running
+        time. As floating point computations always involve some loss of
+        precision, values too close to zero will likely render some models
+        impossible to optimize."""
         return self.__opt_tol
 
     @opt_tol.setter
