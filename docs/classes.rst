@@ -3,10 +3,8 @@ Classes
 
 .. _chapClasses:
 
-.. automodule:: mip.constants
 .. automodule:: mip.exceptions
 .. automodule:: mip.model
-.. automodule:: mip.callbacks
 
 Model
 -----
