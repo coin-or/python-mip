@@ -13,7 +13,7 @@ from mip.exceptions import InvalidLinExpr, SolutionNotAvailable
 class Column:
     """A column contains all the non-zero entries of a variable in the
     constraint matrix. To create a variable see
-    :meth:`~mip.model.model.add_var` """
+    :meth:`~mip.model.model.add_var`."""
 
     def __init__(self,
                  constrs: List["Constr"] = None,
@@ -23,11 +23,13 @@ class Column:
 
 
 class Constr:
-    """ A row (constraint) in the constraint matrix
+    """ A row (constraint) in the constraint matrix.
 
-        A constraint is a specific :class:`~mip.model.LinExpr`. Constraints
-        can be added to the model using the overloaded operator
-        += or using the method :meth:`~mip.model.Model.add_constr` of the
+        A constraint is a specific :class:`~mip.model.LinExpr` that includes a
+        sense (<, > or == or less-or-equal, greater-or-equal and equal,
+        respectively) and a right-hand-side constant value. Constraints can be
+        added to the model using the overloaded operator :code:`+=` or using
+        the method :meth:`~mip.model.Model.add_constr` of the
         :class:`~mip.model.Model` class:
 
         .. code:: python
@@ -76,9 +78,13 @@ class Constr:
 
     @property
     def pi(self) -> float:
-        """value for the dual variable of this constraint in the optimal
-        solution of a linear programming __model, cannot be evaluated for
-        problems with integer variables"""
+
+        """Value for the dual variable of this constraint in the optimal
+        solution of a linear programming :class:`~mip.model.Model`. Only
+        available if a pure linear programming problem was solved (only
+        continuous variables).
+        """
+
         return self.__model.solver.constr_get_pi(self)
 
     @property
@@ -575,13 +581,13 @@ class Model:
         return self.vars.add(name, lb, ub, obj, var_type, column)
 
     def add_constr(self, lin_expr: LinExpr, name: str = "") -> "Constr":
-        """ Creates a new constraint (row)
+        """Creates a new constraint (row).
 
-        Adds a new constraint to the model, returning its reference
+        Adds a new constraint to the model, returning its reference.
 
         Args:
-            lin_expr (LinExpr): linear expression
-            name (str): optional constraint name, used when saving model to\
+            lin_expr(LinExpr): linear expression
+            name(str): optional constraint name, used when saving model to\
             lp or mps files
 
         Examples:
@@ -1247,11 +1253,12 @@ class Model:
 
     @property
     def max_mip_gap_abs(self) -> float:
-        """tolerance for the quality of the optimal solution, if a
-        solution with cost :math:`c` and a lower bound :math:`l` are available
-        and :math:`c-l<` :code:`mip_gap_abs`,
-        the search will be concluded, see mip_gap to determine
-        a percentage value """
+        """Tolerance for the quality of the optimal solution, if a solution
+        with cost :math:`c` and a lower bound :math:`l` are available and
+        :math:`c-l<` :code:`mip_gap_abs`, the search will be concluded, see
+        :attr:`~mip.model.Model.max_mip_gap` to determine a percentage value. Default
+        value: 1e-10."""
+
         return self.solver.get_mip_gap_abs()
 
     @max_mip_gap_abs.setter
@@ -1263,7 +1270,8 @@ class Model:
         """value indicating the tolerance for the maximum percentage deviation
         from the optimal solution cost, if a solution with cost :math:`c` and
         a lower bound :math:`l` are available and
-        :math:`(c-l)/l <` :code:`max_mip_gap` the search will be concluded."""
+        :math:`(c-l)/l <` :code:`max_mip_gap` the search will be concluded.
+        Default value: 1e-4."""
         return self.solver.get_mip_gap()
 
     @max_mip_gap.setter
@@ -1312,12 +1320,17 @@ class Model:
         return self._status
 
     def add_cut(self, cut: LinExpr):
-        """Adds a cutting plane. If called outside
-        the cut callback performs exactly as add_constr. When
-        called inside the cut callback the cut is included in the solver
-        cut pool, which will later decide if this cut should be added
-        or not to the model. Repeated cuts, or cuts which will probably be less
-        effective, e.g. with a very small violation, can be discarded.
+
+        """Adds a violated inequality (cutting plane) to the linear programming
+        model. If called outside the cut callback performs exactly as
+        :meth:`~mip.model.Model.add_constr`. When called inside the cut
+        callback the cut is included in the solver's cut pool, which will later
+        decide if this cut should be added or not to the model. Repeated cuts,
+        or cuts which will probably be less effective, e.g. with a very small
+        violation, can be discarded.
+
+        Args:
+            cut(LinExpr): violated inequality
         """
         self.solver.add_cut(cut)
 
@@ -1522,12 +1535,8 @@ class Solver:
 
 
 class Var:
-    """
-    Objects of class Var are decision variables of a model. The creation
-    of variables is performed calling the :meth:`~mip.model.Model.add_var`
-    method of the :class:`~mip.model.Model` class.
-
-    """
+    """ Decision variable of the :class:`~mip.model.Model`. The creation of
+    variables is performed calling the :meth:`~mip.model.Model.add_var`."""
 
     def __init__(self,
                  model: Model,
@@ -1611,7 +1620,7 @@ class Var:
 
     @property
     def name(self) -> str:
-        """variable name"""
+        """Variable name."""
         return self.__model.solver.var_get_name(self.idx)
 
     def __str__(self) -> str:
@@ -1619,7 +1628,7 @@ class Var:
 
     @property
     def lb(self) -> float:
-        """the variable lower bound"""
+        """Variable lower bound."""
         return self.__model.solver.var_get_lb(self)
 
     @lb.setter
@@ -1628,7 +1637,7 @@ class Var:
 
     @property
     def ub(self) -> float:
-        """the variable upper bound"""
+        """Variable upper bound."""
         return self.__model.solver.var_get_ub(self)
 
     @ub.setter
@@ -1637,7 +1646,7 @@ class Var:
 
     @property
     def obj(self) -> float:
-        """coefficient of a variable in the objective function"""
+        """Coefficient of variable in the objective function."""
         return self.__model.solver.var_get_obj(self)
 
     @obj.setter
@@ -1646,7 +1655,7 @@ class Var:
 
     @property
     def var_type(self) -> str:
-        """variable type ('B') BINARY, ('C') CONTINUOUS and ('I') INTEGER"""
+        """Variable type: ('B') BINARY, ('C') CONTINUOUS and ('I') INTEGER."""
         return self.__model.solver.var_get_var_type(self)
 
     @var_type.setter
@@ -1656,7 +1665,7 @@ class Var:
 
     @property
     def column(self) -> Column:
-        """coefficients of variable in constraints"""
+        """Variable coefficients in constraints."""
         return self.__model.solver.var_get_column(self)
 
     @column.setter
@@ -1665,8 +1674,8 @@ class Var:
 
     @property
     def rc(self) -> float:
-        """reduced cost, only available after a linear programming model (no
-        integer variables) is optimized"""
+        """Reduced cost, only available after a linear programming model (only
+        continuous variables) is optimized"""
         if self.__model.status != OptimizationStatus.OPTIMAL:
             raise SolutionNotAvailable('Solution not available.')
 
@@ -1674,7 +1683,7 @@ class Var:
 
     @property
     def x(self) -> float:
-        """solution value"""
+        """Value of this variable in the solution."""
         if self.__model.status == OptimizationStatus.LOADED:
             raise SolutionNotAvailable('Model was not optimized, \
                 solution not available.')
@@ -1692,8 +1701,8 @@ class Var:
         return self.__model.solver.var_get_x(self)
 
     def xi(self, i: int) -> float:
-        """solution value for this variable in the :math:`i`-th solution from
-        the solution pool"""
+        """Value for this variable in the :math:`i`-th solution from
+        the solution pool."""
         if self.__model.status == OptimizationStatus.LOADED:
             raise SolutionNotAvailable('Model was not optimized, \
                 solution not available.')
@@ -1712,7 +1721,7 @@ class Var:
 
 
 class VarList(Sequence):
-    """ List of model variables (:class:`~mip.model.Var`)
+    """ List of model variables (:class:`~mip.model.Var`).
 
         The number of variables of a model :code:`m` can be queried as
         :code:`len(m.vars)` or as :code:`m.num_cols`.
@@ -1734,7 +1743,8 @@ class VarList(Sequence):
         self.__model = model
         self.__vars = []
 
-    def add(self, name: str = "",
+    def add(self,
+            name: str = "",
             lb: float = 0.0,
             ub: float = INF,
             obj: float = 0.0,

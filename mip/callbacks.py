@@ -20,11 +20,11 @@ class CutsGenerator:
     def generate_cuts(self, model: Model):
         """Method called by the solver engine to generate cuts
 
-           After analyzing the contents of the fractional solution in
-           model variables :meth:`~mip.model.Model.vars`, whose solution values
-           can be queries with the in :meth:`~mip.model.Var.x` method, one or
-           more cuts may be generated and added to the model with the
-           :meth:`~mip.model.Model.add_cut` method.
+           After analyzing the contents of the fractional solution in model
+           variables :meth:`~mip.model.Model.vars`, whose solution values can
+           be queried with the in :meth:`~mip.model.Var.x` method, one or more
+           cuts may be generated and added to the solver engine cut pool with
+           the :meth:`~mip.model.Model.add_cut` method.
 
         Args:
 
@@ -45,7 +45,8 @@ class BranchSelector:
     def __init__(self, model: "Model"):
         self.model = model
 
-    def select_branch(self, rsol: List[Tuple["Var", float]]) -> Tuple["Var", int]:
+    def select_branch(self, rsol: List[Tuple["Var", float]]) \
+            -> Tuple["Var", int]:
         raise NotImplementedError()
 
 
