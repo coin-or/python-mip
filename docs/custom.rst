@@ -55,14 +55,14 @@ separated by our cutting pane algorithm. As an example, consider the following
 graph:
 
 .. image:: ./images/tspG.png
-    :width: 45%
+    :width: 60%
     :align: center
 
 The optimal LP relaxation of the previous formulation without the sub-tour
 elimination constraints has cost 237:
 
 .. image:: ./images/tspRoot.png
-    :width: 45%
+    :width: 60%
     :align: center
 
 As it can be seen, there are tree disconnected sub-tours. Two of these
@@ -74,7 +74,7 @@ Optimizing with these two additional constraints the objective value
 increases to 244 and the following new solution is generated:
 
 .. image:: ./images/tspNo2Sub.png
-    :width: 45%
+    :width: 60%
     :align: center
 
 Now there are sub-tours of size 3 and 4. Let's consider the sub-tour defined by

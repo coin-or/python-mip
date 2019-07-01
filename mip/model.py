@@ -526,6 +526,8 @@ class Model:
         self.__integer_tol = 1e-6
         self.__infeas_tol = 1e-6
         self.__opt_tol = 1e-6
+        self.__max_mip_gap = 1e-4
+        self.__max_mip_gap_abs = 1e-10
 
     def __del__(self):
         del self.solver
@@ -1256,14 +1258,13 @@ class Model:
         """Tolerance for the quality of the optimal solution, if a solution
         with cost :math:`c` and a lower bound :math:`l` are available and
         :math:`c-l<` :code:`mip_gap_abs`, the search will be concluded, see
-        :attr:`~mip.model.Model.max_mip_gap` to determine a percentage value. Default
-        value: 1e-10."""
-
-        return self.solver.get_mip_gap_abs()
+        :attr:`~mip.model.Model.max_mip_gap` to determine a percentage value.
+        Default value: 1e-10."""
+        return self.__max_mip_gap_abs
 
     @max_mip_gap_abs.setter
     def max_mip_gap_abs(self, max_mip_gap_abs: float):
-        self.solver.set_mip_gap(max_mip_gap_abs)
+        self.__max_mip_gap_abs = max_mip_gap_abs
 
     @property
     def max_mip_gap(self) -> float:
@@ -1272,11 +1273,11 @@ class Model:
         a lower bound :math:`l` are available and
         :math:`(c-l)/l <` :code:`max_mip_gap` the search will be concluded.
         Default value: 1e-4."""
-        return self.solver.get_mip_gap()
+        return self.__max_mip_gap
 
     @max_mip_gap.setter
     def max_mip_gap(self, max_mip_gap: float):
-        self.solver.set_mip_gap(max_mip_gap)
+        self.__max_mip_gap = max_mip_gap
 
     @property
     def max_seconds(self) -> float:
