@@ -522,9 +522,9 @@ class SolverCbc(Solver):
             self.added_cut_callback = True
 
         if self.__verbose == 0:
-            cbc_set_parameter(self, 'log', '0')
+            cbclib.Cbc_setLogLevel(self._model, 0)
         else:
-            cbc_set_parameter(self, 'log', '1')
+            cbclib.Cbc_setLogLevel(self._model, 1)
 
         if self.emphasis == SearchEmphasis.FEASIBILITY:
             cbc_set_parameter(self, 'passf', '50')
