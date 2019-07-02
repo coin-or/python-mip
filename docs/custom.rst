@@ -54,14 +54,14 @@ constraints is :math:`O(2^{|N|})`. These are the constraints that will be
 separated by our cutting pane algorithm. As an example, consider the following
 graph:
 
-.. image:: ./images/tspG.png
+.. image:: ./images/tspG.*
     :width: 60%
     :align: center
 
 The optimal LP relaxation of the previous formulation without the sub-tour
 elimination constraints has cost 237:
 
-.. image:: ./images/tspRoot.png
+.. image:: ./images/tspRoot.*
     :width: 60%
     :align: center
 
@@ -73,7 +73,7 @@ this case we only need to include the additional constraints:
 Optimizing with these two additional constraints the objective value 
 increases to 244 and the following new solution is generated:
 
-.. image:: ./images/tspNo2Sub.png
+.. image:: ./images/tspNo2Sub.*
     :width: 60%
     :align: center
 

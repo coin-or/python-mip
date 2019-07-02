@@ -251,7 +251,7 @@ of the first real cases discussed in literature are the Philadelphia
 :cite:`Ande73` instances, with the structure depicted bellow:
 
 
-.. image:: ./images/philadelphia.png
+.. image:: ./images/philadelphia.*
     :width: 60%
     :align: center
 
@@ -436,7 +436,7 @@ time horizon :math:`\mathcal{T}` can be estimated by summing the duration of all
 jobs.
 
 
-.. image:: ./images/rcpsp.png
+.. image:: ./images/rcpsp.*
     :width: 80%
     :align: center
 
@@ -489,7 +489,7 @@ for RCPSP is included below:
 The optimal solution is shown bellow, from the viewpoint of resource
 consumption:
 
-.. image:: ./images/rcpsp-opt.png
+.. image:: ./images/rcpsp-opt.*
     :width: 80%
     :align: center
 
@@ -516,11 +516,11 @@ between parenthesis):
 
 Bellow there are two feasible schedules:
 
-.. image:: ./images/jssp1.png
+.. image:: ./images/jssp1.*
     :width: 80%
     :align: center
 
-.. image:: ./images/jssp2.png
+.. image:: ./images/jssp2.*
     :width: 80%
     :align: center
 
