@@ -554,6 +554,8 @@ class SolverCbc(Solver):
             cbc_set_parameter(self, 'lift', 'ifmove')
 
         if (self.__threads >= 1):
+            cbc_set_parameter(self, 'timeM',
+                              '{}'.format('elapsed'))
             cbc_set_parameter(self, 'threads',
                               '{}'.format(self.__threads))
         elif self.__threads == -1:
