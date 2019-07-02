@@ -315,7 +315,7 @@ if has_cbc:
 
     double Cbc_getDualTolerance(Cbc_Model *model);
 
-    Cbc_setDualTolerance(Cbc_Model *model, double tol);
+    void Cbc_setDualTolerance(Cbc_Model *model, double tol);
 
     void Cbc_addCutCallback(
         void *model, cbc_cut_callback cutcb,
