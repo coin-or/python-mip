@@ -309,6 +309,14 @@ if has_cbc:
 
     int Cbc_setProblemName(Cbc_Model *model, const char *array);
 
+    double Cbc_getPrimalTolerance(Cbc_Model *model);
+
+    void Cbc_setPrimalTolerance(Cbc_Model *model, double tol);
+
+    double Cbc_getDualTolerance(Cbc_Model *model);
+
+    Cbc_setDualTolerance(Cbc_Model *model, double tol);
+
     void Cbc_addCutCallback(
         void *model, cbc_cut_callback cutcb,
         const char *name, void *appData );
@@ -588,12 +596,10 @@ class SolverCbc(Solver):
                               '{}'.format(self.model.integer_tol))
 
         if self.model.infeas_tol >= 0.0:
-            cbc_set_parameter(self, 'primalT',
-                              '{}'.format(self.model.infeas_tol))
+            cbclib.Cbc_setPrimalTolerance(self._model, self.model.infeas_tol)
 
         if self.model.opt_tol >= 0.0:
-            cbc_set_parameter(self, 'dualT',
-                              '{}'.format(self.model.opt_tol))
+            cbclib.Cbc_setDualTolerance(self._model, self.model.opt_tol)
 
         cbclib.Cbc_solve(self._model)
 
