@@ -243,6 +243,56 @@ def test_tsp_cuts(solver: str):
     print('')
 
 
+def test_tsp_mipstart(solver: str):
+    """tsp related tests"""
+    announce_test("TSP - MIPStart", solver)
+    N = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+    n = len(N)
+    i0 = N[0]
+
+    A = {('a', 'd'): 56, ('d', 'a'): 67, ('a', 'b'): 49, ('b', 'a'): 50,
+         ('d', 'b'): 39, ('b', 'd'): 37, ('c', 'f'): 35, ('f', 'c'): 35,
+         ('g', 'b'): 35, ('b', 'g'): 25,
+         ('a', 'c'): 80, ('c', 'a'): 99, ('e', 'f'): 20, ('f', 'e'): 20,
+         ('g', 'e'): 38, ('e', 'g'): 49, ('g', 'f'): 37, ('f', 'g'): 32,
+         ('b', 'e'): 21, ('e', 'b'): 30, ('a', 'g'): 47, ('g', 'a'): 68,
+         ('d', 'c'): 37, ('c', 'd'): 52, ('d', 'e'): 15, ('e', 'd'): 20}
+
+    # input and output arcs per node
+    Aout = {n: [a for a in A if a[0] == n] for n in N}
+    Ain = {n: [a for a in A if a[1] == n] for n in N}
+    m = Model(solver_name=solver)
+    m.verbose = 0
+
+    x = {a: m.add_var(name='x({},{})'.format(a[0], a[1]),
+                      var_type=BINARY) for a in A}
+
+    m.objective = xsum(c*x[a] for a, c in A.items())
+
+    for i in N:
+        m += xsum(x[a] for a in Aout[i]) == 1, 'out({})'.format(i)
+        m += xsum(x[a] for a in Ain[i]) == 1, 'in({})'.format(i)
+
+    # continuous variable to prevent subtours: each
+    # city will have a different "identifier" in the planned route
+    y = {i: m.add_var(name='y({})'.format(i), lb=0.0) for i in N}
+
+    # subtour elimination
+    for (i, j) in A:
+        if i0 not in [i, j]:
+            m.add_constr(
+                y[i] - (n+1)*x[(i, j)] >= y[j]-n)
+
+    route = ['a', 'g', 'f', 'c', 'd', 'e', 'b', 'a']
+    m.start = [(x[route[i-1], route[i]], 1.0) for i in range(1, len(route))]
+    m.optimize()
+
+    check_result("mip model status", m.status == OptimizationStatus.OPTIMAL)
+    check_result("mip model objective", (abs(m.objective_value - 262)) <=
+                 0.0001)
+    print('')
+
+
 print("")
 if has_colors:
     print(colored("=======================================",
@@ -263,6 +313,7 @@ for svr in SOLVERS:
     test_queens(svr)
     test_tsp(svr)
     test_tsp_cuts(svr)
+    test_tsp_mipstart(svr)
 
 print("")
 if has_colors:
