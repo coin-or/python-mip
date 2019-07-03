@@ -39,9 +39,9 @@ try:
             libfile = os.path.join(pathlib, 'cbc-c-windows-x86-64.dll')
         else:
             libfile = os.path.join(pathlib, 'cbc-c-windows-x86-32.dll')
-    elif platform.lower().startswith('darwin'):
+    elif platform.lower().startswith('darwin') or platform.lower().startswith('macos'):
         if os_is_64_bit:
-            libfile = os.path.join(pathlib, 'cbc-c-darwin-x86-64.a')
+            libfile = os.path.join(pathlib, 'cbc-c-darwin-x86-64.dylib')
     if not libfile:
         raise Exception(
             "You operating system/platform is not supported")
