@@ -117,7 +117,7 @@ def test_tsp(solver: str):
     Aout = {n: [a for a in A if a[0] == n] for n in N}
     Ain = {n: [a for a in A if a[1] == n] for n in N}
     m = Model(solver_name=solver)
-    m.verbose = 0
+    m.verbose = 1
 
     x = {a: m.add_var(name='x({},{})'.format(a[0], a[1]),
                       var_type=BINARY) for a in A}
