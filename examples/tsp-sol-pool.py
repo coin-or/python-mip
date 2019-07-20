@@ -14,7 +14,7 @@ n = inst.n
 d = inst.d
 print('solving TSP with {} cities'.format(inst.n))
 
-model = Model( solver_name="gurobi" )
+model = Model()
 
 # binary variables indicating if arc (i,j) is used on the route or not
 x = [ [ model.add_var(
