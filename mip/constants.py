@@ -10,7 +10,6 @@ EPS = 10e-6
 # infinity representation
 INF = float("inf")
 
-
 # constraint senses
 EQUAL = "="
 LESS_OR_EQUAL = "<"
