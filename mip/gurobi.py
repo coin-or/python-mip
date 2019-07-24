@@ -535,6 +535,8 @@ class SolverGurobi(Solver):
         if status == 10009:
             raise Exception('gurobi found but license not accepted,\
  please check it')
+        elif status == 10001:
+            raise Exception('out of memory error')
 
         status = self.get_int_attr("Status")
         # checking status for MIP optimization which
