@@ -532,11 +532,15 @@ class SolverGurobi(Solver):
 
         # executing Gurobi to solve the formulation
         status = GRBoptimize(self._model)
-        if status == 10009:
-            raise Exception('gurobi found but license not accepted,\
- please check it')
-        elif status == 10001:
-            raise Exception('out of memory error')
+        if (status != 0):
+            if status == 10009:
+                raise Exception('gurobi found but license not accepted,\
+     please check it')
+            elif status == 10001:
+                raise MemoryError('out of memory error')
+            else:
+                raise Exception('Gurobi error {} while\
+                                optimizing.'.format(status))
 
         status = self.get_int_attr("Status")
         # checking status for MIP optimization which
