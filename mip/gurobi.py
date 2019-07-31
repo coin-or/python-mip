@@ -2,6 +2,9 @@ from ctypes.util import find_library
 from sys import maxsize
 from typing import List, Tuple
 from os.path import isfile
+import os.path
+from glob import glob
+from os import environ
 from cffi import FFI
 from mip.model import Model, Solver, Column, Var, LinExpr, Constr, \
     VConstrList, VVarList
@@ -13,18 +16,27 @@ try:
     found = False
     lib_path = None
 
-    for major_ver in reversed(range(6, 10)):
-        for minor_ver in reversed(range(0, 11)):
-            lib_path = find_library('gurobi{}{}'.format(major_ver,
-                                                        minor_ver))
+    if 'GUROBI_HOME' in environ:
+        libfile = glob(os.path.join(os.environ['GUROBI_HOME'],
+                                    'lib/libgurobi*[0-9].so'))
+        if libfile:
+            lib_path = libfile[0]
+
+    if lib_path is None:
+        for major_ver in reversed(range(6, 10)):
+            for minor_ver in reversed(range(0, 11)):
+                lib_path = find_library('gurobi{}{}'.format(major_ver,
+                                                            minor_ver))
+                if lib_path is not None:
+                    break
             if lib_path is not None:
                 break
-        if lib_path is not None:
-            break
 
     if lib_path is None:
         raise Exception("""Gurobi not found. Plase check if the
-        Gurobi dynamic loadable library if reachable
+        Gurobi dynamic loadable library is reachable or define
+        the environment variable GUROBI_HOME indicating the gurobi
+        installation path.
         """)
     ffi = FFI()
 
