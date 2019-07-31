@@ -681,7 +681,7 @@ class SolverCbc(Solver):
         return float(lb[var.idx])
 
     def var_get_ub(self, var: "Var") -> float:
-        ub = cbclib.Cbc_getColLower(self._model)
+        ub = cbclib.Cbc_getColUpper(self._model)
         if ub == ffi.NULL:
             raise Exception('Error while getting upper bound of variables')
         return float(ub[var.idx])
