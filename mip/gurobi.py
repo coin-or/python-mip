@@ -18,9 +18,22 @@ try:
 
     if 'GUROBI_HOME' in environ:
         libfile = glob(os.path.join(os.environ['GUROBI_HOME'],
-                                    'lib/libgurobi*[0-9].so'))
+                                    'lib/libgurobi[0-9][0-9].*'))
+
         if libfile:
             lib_path = libfile[0]
+
+        # checking gurobi version
+        s1 = lib_path.split('.')[0]
+        vs = ''
+        for c in reversed(s1):
+            if c.isdigit():
+                vs += c
+            else:
+                break
+        vs = vs[::-1]
+        minor_ver = vs[-1]
+        major_ver = vs[0:-1]
 
     if lib_path is None:
         for major_ver in reversed(range(6, 10)):
