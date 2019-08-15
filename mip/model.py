@@ -363,6 +363,25 @@ class LinExpr:
         """
         self.__sense = value
 
+    @property
+    def violation(self):
+        """Amount that current solution violates this constraint
+
+        If a solution is available, than this property indicates how much
+        the current solution violates this constraint.
+        """
+        lhs = sum(coef*var.x for (var, coef) in self.__expr.items())
+        rhs = -self.const
+        viol = 0.0
+        if self.sense == '=':
+            viol = abs(lhs-rhs)
+        elif self.sense == '<':
+            viol = max(lhs-rhs, 0.0)
+        elif self.sense == '>':
+            viol = max(rhs-lhs, 0.0)
+
+        return viol
+
 
 class ProgressLog:
     """Class to store the improvement of lower
