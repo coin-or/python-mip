@@ -5,6 +5,7 @@ from os.path import isfile
 import os.path
 from glob import glob
 from os import environ
+from sys import platform
 from cffi import FFI
 from mip.model import Model, Solver, Column, Var, LinExpr, Constr, \
     VConstrList, VVarList
@@ -17,9 +18,13 @@ try:
     lib_path = None
 
     if 'GUROBI_HOME' in environ:
-        libfile = glob(os.path.join(os.environ['GUROBI_HOME'],
-                                    'lib/libgurobi[0-9][0-9].*'))
-
+        if platform.lower().startswith('win'):
+            libfile = glob(os.path.join(os.environ['GUROBI_HOME'],
+                                        'bin\gurobi[0-9][0-9].dll'))
+        else:
+            libfile = glob(os.path.join(os.environ['GUROBI_HOME'],
+                                        'lib/libgurobi[0-9][0-9].*'))
+        
         if libfile:
             lib_path = libfile[0]
 
