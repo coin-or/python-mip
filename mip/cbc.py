@@ -332,6 +332,10 @@ if has_cbc:
         cbc_progress_callback prgcbc, void *appData);
 
     void Cbc_clearCallBack(Cbc_Model *model);
+
+    const double *Cbc_getRowPrice(Cbc_Model *model);
+
+    const double *Osi_getRowPrice(void *osi);
     """)
 
 CHAR_ONE = "{}".format(chr(1)).encode("utf-8")
@@ -680,11 +684,17 @@ class SolverCbc(Solver):
             raise Exception('Error while getting lower bound of variables')
         return float(lb[var.idx])
 
+    def var_set_lb(self, var: "Var", value: float):
+        cbclib.Cbc_setColLower(self._model, var.idx, value)
+
     def var_get_ub(self, var: "Var") -> float:
         ub = cbclib.Cbc_getColUpper(self._model)
         if ub == ffi.NULL:
             raise Exception('Error while getting upper bound of variables')
         return float(ub[var.idx])
+
+    def var_set_ub(self, var: "Var", value: float):
+        cbclib.Cbc_setColUpper(self._model, var.idx, value)
 
     def var_get_name(self, idx: int) -> str:
         namep = self.__name_space
@@ -905,6 +915,12 @@ class SolverCbc(Solver):
 
     def set_pump_passes(self, passes: int):
         self.__pumpp = passes
+
+    def constr_get_pi(self, constr: Constr) -> float:
+        rp = cbclib.Cbc_getRowPrice(self._model)
+        if rp == ffi.NULL:
+            raise Exception('row prices not available')
+        return float(rp[constr.idx])
 
 
 class ModelOsi(Model):
