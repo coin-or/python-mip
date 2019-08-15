@@ -7,6 +7,21 @@ from mip.model import *
 EPS = 10e-4
 SOLVER = GUROBI
 
+def get_pricing(m, w, L):
+    # creating the pricing problem
+    pricing = Model(SOLVER)
+
+    # creating pricing variables
+    a = []
+    for i in range(m):
+        a.append(pricing.add_var(obj=0, var_type=INTEGER, name='a_%d' % (i + 1)))
+
+    # creating pricing constraint
+    pricing.add_constr(xsum(w[i] * a[i] for i in range(m)) <= L, 'bar_length')
+
+    pricing.write('pricing.lp')
+
+    return a, pricing
 
 def cg():
     """
@@ -32,19 +47,6 @@ def cg():
     for i in range(m):
         constraints.append(master.add_constr(lambdas[i] >= b[i], name='i_%d' % (i + 1)))
 
-    # creating the pricing problem
-    pricing = Model(SOLVER)
-
-    # creating pricing variables
-    a = []
-    for i in range(m):
-        a.append(pricing.add_var(obj=0, var_type=INTEGER, name='a_%d' % (i + 1)))
-
-    # creating pricing constraint
-    pricing.add_constr(xsum(w[i] * a[i] for i in range(m)) <= L, 'bar_length')
-
-    pricing.write('pricing.lp')
-
     new_vars = True
     while new_vars:
 
@@ -64,6 +66,8 @@ def cg():
         ##########
         # STEP 2: updating pricing objective with dual values from master
         ##########
+
+        a, pricing = get_pricing(m, w, L)
 
         pricing.objective = 1
         for i in range(m):
