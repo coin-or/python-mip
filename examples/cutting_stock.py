@@ -1,7 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import pdb
 from mip.model import *
 
 EPS = 10e-4
@@ -103,7 +102,6 @@ def cg():
             new_vars = False
 
         pricing.write('pricing.lp')
-        pdb.set_trace()
 
     print_solution(master)
 
