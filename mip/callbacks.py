@@ -15,7 +15,7 @@ class CutsGenerator:
     """abstract class for implementing cut generators"""
 
     def __init__(self):
-        pass
+        self.lazyConstraints = False
 
     def generate_cuts(self, model: Model):
         """Method called by the solver engine to generate cuts
