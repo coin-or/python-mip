@@ -20,11 +20,11 @@ try:
     if 'GUROBI_HOME' in environ:
         if platform.lower().startswith('win'):
             libfile = glob(os.path.join(os.environ['GUROBI_HOME'],
-                                        'bin\gurobi[0-9][0-9].dll'))
+                                        'bin\\gurobi[0-9][0-9].dll'))
         else:
             libfile = glob(os.path.join(os.environ['GUROBI_HOME'],
                                         'lib/libgurobi[0-9][0-9].*'))
-        
+
         if libfile:
             lib_path = libfile[0]
 
@@ -249,6 +249,8 @@ GRBgetenv = grblib.GRBgetenv
 GRBgetstrattr = grblib.GRBgetstrattr
 GRBsetstrattr = grblib.GRBsetstrattr
 
+GRB_CB_MIPSOL    = 4
+GRB_CB_MIPNODE   = 5
 
 GRB_CB_PRE_COLDEL = 1000
 GRB_CB_PRE_ROWDEL = 1001
@@ -390,7 +392,6 @@ class SolverGurobi(Solver):
     def add_cut(self, lin_expr: LinExpr):
         # int GRBcbcut(void *cbdata, int cutlen, const int *cutind, const double *cutval, char cutsense, double cutrhs);
         # int GRBcbcut(void *cbdata, int cutlen, const int *cutind, const double *cutval, char cutsense, double cutrhs);
-        
 
         return
 
@@ -498,9 +499,12 @@ class SolverGurobi(Solver):
                                               obj_bound, obj_best))
                                     log.append((sec, (obj_bound, obj_best)))
 
-            # adding cuts
-            if where == 5:  # MIPNODE == 5
-                if self.model.cuts_generator:
+            # adding cuts or lazy constraints
+            if self.model.cuts_generator:
+                if where == GRB_CB_MIPNODE or \
+                    (where == GRB_CB_MIPSOL and
+                     hasattr(self.model.cuts_generator, 'lazy_constraints') and
+                     self.model.cuts_generator.lazy_constraints):
                     mgc = ModelGurobiCB(p_model, p_cbdata, where)
                     self.model.cuts_generator.generate_cuts(mgc)
 
@@ -537,6 +541,12 @@ class SolverGurobi(Solver):
         if self.model.cuts_generator is not None or \
            self.model.store_search_progress_log:
             GRBsetcallbackfunc(self._model, callback, ffi.NULL)
+
+        if (self.model.cuts_generator is not None and
+            hasattr(self.model.cuts_generator, 'lazy_constraints') and
+            self.model.cuts_generator.lazy_constraints) or \
+                self.model.lazy_constrs_generator is not None:
+            self.set_int_param("LazyConstraints", 1)
 
         if self.__threads >= 1:
             self.set_int_param("Threads", self.__threads)
@@ -1141,6 +1151,7 @@ class SolverGurobiCB(SolverGurobi):
         self._obj_value = INF
         self._best_bound = INF
         self._status = OptimizationStatus.LOADED
+        self._where = where
 
         # pre-allocate temporary space to query names
         self.__name_space = ffi.new("char[{}]".format(MAX_NAME_SIZE))
@@ -1148,8 +1159,8 @@ class SolverGurobiCB(SolverGurobi):
         self.__name_spacec = ffi.new("char[{}]".format(MAX_NAME_SIZE))
 
         self.__relaxed = False
-        if where == 5:
-            gstatus = ffi.new('int *')
+        gstatus = ffi.new('int *')
+        if where == 5:  # GRB_CB_MIPNODE
             res = GRBcbget(cb_data, where, GRB_CB_MIPNODE_STATUS, gstatus)
             if res != 0:
                 raise Exception('Error getting status')
@@ -1168,6 +1179,21 @@ class SolverGurobiCB(SolverGurobi):
                     raise Exception('Error getting fractional solution')
             else:
                 self._cb_sol = ffi.NULL
+        elif where == 4:  # GRB_CB_MIPSOL
+            self._status = OptimizationStatus.FEASIBLE
+            ires = ffi.new('int *')
+            st = GRBgetintattr(grb_model, 'NumVars'.encode('utf-8'), ires)
+            if st != 0:
+                raise Exception('Could not query number of variables in Gurobi \
+                                callback')
+            ncols = ires[0]
+
+            self._cb_sol = \
+                ffi.new('double[{}]'.format(ncols))
+            res = GRBcbget(cb_data, where, GRB_CB_MIPSOL_SOL, self._cb_sol)
+            if res != 0:
+                raise Exception('Error getting integer solution in gurobi \
+                                callback')
         else:
             self._cb_sol = ffi.NULL
 
@@ -1182,7 +1208,10 @@ class SolverGurobiCB(SolverGurobi):
         sense = cut.sense.encode("utf-8")
         rhs = -cut.const
 
-        GRBcbcut(self._cb_data, numnz, cind, cval, sense, rhs)
+        if self._where == GRB_CB_MIPNODE:
+            GRBcbcut(self._cb_data, numnz, cind, cval, sense, rhs)
+        elif self._where == GRB_CB_MIPSOL:
+            GRBcblazy(self._cb_data, numnz, cind, cval, sense, rhs)
 
     def get_status(self):
         return self._status
