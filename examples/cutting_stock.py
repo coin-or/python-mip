@@ -89,7 +89,7 @@ def cg():
 
         # checking if columns with negative reduced cost were produced and
         # adding them into the restricted master problem
-        if pricing.objective_value < - EPS:
+        if 1 + pricing.objective_value < - EPS:
             coeffs = [a[i].x for i in range(m)]
             column = Column(constraints, coeffs)
             lambdas.append(master.add_var(obj=1, column=column, name='lambda_%d' % (len(lambdas) + 1)))
