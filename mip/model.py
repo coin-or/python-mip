@@ -314,9 +314,9 @@ class LinExpr:
         if abs(self.__const - other.__const) >= 1e-12:
             return False
         for (v, c) in self.__expr.items():
-            if v not in self.__expr:
+            if v not in other.__expr:
                 return False
-            oc = self.__expr[v]
+            oc = other.__expr[v]
             if abs(c - oc) > 1e-12:
                 return False
         return True
