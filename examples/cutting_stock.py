@@ -1,12 +1,26 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import pdb
 from mip.model import *
 
 EPS = 10e-4
 SOLVER = GUROBI
 
+def get_pricing(m, w, L):
+    # creating the pricing problem
+    pricing = Model(SOLVER)
+
+    # creating pricing variables
+    a = []
+    for i in range(m):
+        a.append(pricing.add_var(obj=0, var_type=INTEGER, name='a_%d' % (i + 1)))
+
+    # creating pricing constraint
+    pricing.add_constr(xsum(w[i] * a[i] for i in range(m)) <= L, 'bar_length')
+
+    pricing.write('pricing.lp')
+
+    return a, pricing
 
 def cg():
     """
@@ -32,19 +46,6 @@ def cg():
     for i in range(m):
         constraints.append(master.add_constr(lambdas[i] >= b[i], name='i_%d' % (i + 1)))
 
-    # creating the pricing problem
-    pricing = Model(SOLVER)
-
-    # creating pricing variables
-    a = []
-    for i in range(m):
-        a.append(pricing.add_var(obj=0, var_type=INTEGER, name='a_%d' % (i + 1)))
-
-    # creating pricing constraint
-    pricing.add_constr(xsum(w[i] * a[i] for i in range(m)) <= L, 'bar_length')
-
-    pricing.write('pricing.lp')
-
     new_vars = True
     while new_vars:
 
@@ -64,6 +65,8 @@ def cg():
         ##########
         # STEP 2: updating pricing objective with dual values from master
         ##########
+
+        a, pricing = get_pricing(m, w, L)
 
         pricing.objective = 1
         for i in range(m):
@@ -86,7 +89,7 @@ def cg():
 
         # checking if columns with negative reduced cost were produced and
         # adding them into the restricted master problem
-        if pricing.objective_value < - EPS:
+        if 1 + pricing.objective_value < - EPS:
             coeffs = [a[i].x for i in range(m)]
             column = Column(constraints, coeffs)
             lambdas.append(master.add_var(obj=1, column=column, name='lambda_%d' % (len(lambdas) + 1)))
@@ -99,7 +102,6 @@ def cg():
             new_vars = False
 
         pricing.write('pricing.lp')
-        pdb.set_trace()
 
     print_solution(master)
 
