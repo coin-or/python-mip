@@ -1,19 +1,21 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from mip.model import *
+from mip.model import Model, xsum, Column
+from mip.constants import INTEGER
 
 EPS = 10e-4
-SOLVER = GUROBI
+
 
 def get_pricing(m, w, L):
     # creating the pricing problem
-    pricing = Model(SOLVER)
+    pricing = Model()
 
     # creating pricing variables
     a = []
     for i in range(m):
-        a.append(pricing.add_var(obj=0, var_type=INTEGER, name='a_%d' % (i + 1)))
+        a.append(pricing.add_var(obj=0, var_type=INTEGER,
+                                 name='a_%d' % (i + 1)))
 
     # creating pricing constraint
     pricing.add_constr(xsum(w[i] * a[i] for i in range(m)) <= L, 'bar_length')
@@ -21,6 +23,7 @@ def get_pricing(m, w, L):
     pricing.write('pricing.lp')
 
     return a, pricing
+
 
 def cg():
     """
@@ -33,18 +36,20 @@ def cg():
     b = [1, 2, 2, 1]  # demand for each item
 
     # creating models and auxiliary lists
-    master = Model(SOLVER)
+    master = Model()
     lambdas = []
     constraints = []
 
     # creating an initial pattern (which cut one item per bar)
     # to provide the restricted master problem with a feasible solution
     for i in range(m):
-        lambdas.append(master.add_var(obj=1, name='lambda_%d' % (len(lambdas) + 1)))
+        lambdas.append(master.add_var(obj=1, name='lambda_%d' %
+                                      (len(lambdas) + 1)))
 
     # creating constraints
     for i in range(m):
-        constraints.append(master.add_constr(lambdas[i] >= b[i], name='i_%d' % (i + 1)))
+        constraints.append(master.add_constr(lambdas[i] >= b[i], 
+                                             name='i_%d' % (i + 1)))
 
     new_vars = True
     while new_vars:
@@ -54,7 +59,6 @@ def cg():
         ##########
 
         master.optimize()
-        master.write('master.lp')
 
         # printing dual values
         print_solution(master)
@@ -125,8 +129,8 @@ def kantorovich():
     # constraints
     for i in range(m):
         model.add_constr(xsum(x[i, j] for j in range(N)) >= b[i])
-    for j in range(N):
-        model.add_constr(xsum(w[i] * x[i, j] for i in range(m)) <= L * y[j])
+        for j in range(N):
+            model.add_constr(xsum(w[i] * x[i, j] for i in range(m)) <= L * y[j])
 
     # additional constraint to reduce symmetry
     for j in range(1, N):
@@ -145,7 +149,7 @@ def print_solution(model: Model):
     for v in model.vars:
         if v.x > EPS:
             print('    {v.name} = {v.x:.3}'.format(**locals()))
-    print('')
+            print('')
 
 
 if __name__ == "__main__":
