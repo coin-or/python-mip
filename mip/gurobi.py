@@ -249,8 +249,8 @@ GRBgetenv = grblib.GRBgetenv
 GRBgetstrattr = grblib.GRBgetstrattr
 GRBsetstrattr = grblib.GRBsetstrattr
 
-GRB_CB_MIPSOL    = 4
-GRB_CB_MIPNODE   = 5
+GRB_CB_MIPSOL = 4
+GRB_CB_MIPNODE = 5
 
 GRB_CB_PRE_COLDEL = 1000
 GRB_CB_PRE_ROWDEL = 1001
@@ -505,6 +505,17 @@ class SolverGurobi(Solver):
                     (where == GRB_CB_MIPSOL and
                      hasattr(self.model.cuts_generator, 'lazy_constraints') and
                      self.model.cuts_generator.lazy_constraints):
+                    if (where == GRB_CB_MIPNODE):
+                        st = ffi.new("int *")
+                        st[0] = 0
+
+                        error = GRBcbget(p_cbdata, where,
+                                         GRB_CB_MIPNODE_STATUS, st)
+                        if error:
+                            raise Exception("Could not get gurobi status")
+                        if st[0] != GRB_OPTIMAL:
+                            return 0
+
                     mgc = ModelGurobiCB(p_model, p_cbdata, where)
                     self.model.cuts_generator.generate_cuts(mgc)
 
@@ -1152,6 +1163,9 @@ class SolverGurobiCB(SolverGurobi):
         self._best_bound = INF
         self._status = OptimizationStatus.LOADED
         self._where = where
+
+        if where not in [4, 5]:
+            return
 
         # pre-allocate temporary space to query names
         self.__name_space = ffi.new("char[{}]".format(MAX_NAME_SIZE))
