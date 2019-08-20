@@ -102,3 +102,16 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# Eclipse Core      
+.project
+
+# PyDev specific (Python IDE for Eclipse)
+*.pydevproject
+
+# KDevelop4
+*.kdev4
+.kdev4/
+
+# JetBrains Intellij
+.idea/
