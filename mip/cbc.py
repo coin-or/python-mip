@@ -406,7 +406,7 @@ class SolverCbc(Solver):
         obj = cbclib.Cbc_getObjCoefficients(self._model)
         if obj == ffi.NULL:
             raise Exception("Error getting objective function coefficients")
-        return xsum(obj[j]*self.vars[j] for j in range(self.num_cols)
+        return xsum(obj[j]*self.vars[j] for j in range(self.num_cols())
                     if abs(obj[j]) >= 1e-15)
 
     def set_objective(self, lin_expr: "LinExpr", sense: str = "") -> None:
@@ -1054,7 +1054,7 @@ class SolverOsi(Solver):
         obj = cbclib.Osi_getObjCoefficients(self.osi)
         if obj == ffi.NULL:
             raise Exception("Error getting objective function coefficients")
-        return xsum(obj[j]*self.vars[j] for j in range(self.num_cols)
+        return xsum(obj[j]*self.vars[j] for j in range(self.num_cols())
                     if abs(obj[j]) >= 1e-15)
 
     def get_objective_const(self) -> float:
