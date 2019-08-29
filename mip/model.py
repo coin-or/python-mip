@@ -77,6 +77,17 @@ class Constr:
         return res
 
     @property
+    def slack(self) -> float:
+
+        """Value of the slack variable of this constraint in the optimal
+        solution of a linear programming :class:`~mip.model.Model`. Only
+        available if a pure linear programming problem was solved (only
+        continuous variables).
+        """
+
+        return self.__model.solver.constr_get_slack(self)
+
+    @property
     def pi(self) -> float:
 
         """Value for the dual variable of this constraint in the optimal
@@ -1508,6 +1519,8 @@ class Solver:
     def constr_get_name(self, idx: int) -> str: pass
 
     def constr_get_pi(self, constr: Constr) -> float: pass
+
+    def constr_get_slack(self, constr: Constr) -> float: pass
 
     def remove_constrs(self, constrsList: List[int]): pass
 
