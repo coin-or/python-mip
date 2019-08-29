@@ -107,6 +107,8 @@ if has_cbc:
 
     char Cbc_getRowSense(Cbc_Model *model, int row);
 
+    const double *Cbc_getRowActivity(Cbc_Model *model);
+
     int Cbc_getColNz(Cbc_Model *model, int col);
 
     int *Cbc_getColIndices(Cbc_Model *model, int col);
@@ -921,6 +923,24 @@ class SolverCbc(Solver):
         if rp == ffi.NULL:
             raise Exception('row prices not available')
         return float(rp[constr.idx])
+
+    def constr_get_slack(self, constr: Constr) -> float:
+        pac = cbclib.Cbc_getRowActivity(self._model)
+        if pac == ffi.NULL:
+            raise Exception('row activity not available')
+        rhs = float(cbclib.Cbc_getRowRHS(self._model, constr.idx))
+        activity = float(pac[constr.idx])
+        if constr.sense == "<":
+            return rhs - activity
+        elif constr.sense == ">":
+            return activity - rhs
+        elif constr.sense == "=":
+            return abs(activity - rhs)
+        else:
+            raise Exception("not prepared to handle sense {} in get_slack".
+                            constr.sense)
+
+        return 0.0
 
 
 class ModelOsi(Model):
