@@ -79,10 +79,8 @@ class Constr:
     @property
     def slack(self) -> float:
 
-        """Value of the slack variable of this constraint in the optimal
-        solution of a linear programming :class:`~mip.model.Model`. Only
-        available if a pure linear programming problem was solved (only
-        continuous variables).
+        """Value of the slack in this constraint in the optimal
+        solution. Available only if the formulation was solved.
         """
 
         return self.__model.solver.constr_get_slack(self)
