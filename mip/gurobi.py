@@ -874,6 +874,9 @@ class SolverGurobi(Solver):
     def constr_set_expr(self, constr: Constr, value: LinExpr) -> LinExpr:
         raise NotImplementedError("Gurobi functionality currently unavailable")
 
+    def constr_get_slack(self, constr: "Constr") -> float:
+        return self.get_dbl_attr_element("Slack", constr.idx)
+
     def constr_get_pi(self, constr: "Constr") -> float:
         return self.get_dbl_attr_element("Pi", constr.idx)
 
