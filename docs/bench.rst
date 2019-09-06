@@ -13,7 +13,7 @@ Jump and Pulp use intermediate data structures to store the mathematical
 programming model before flushing it to the solver, so that the selected
 solver does not impacts on the model creation times. MIP does not stores
 the model itself, directly calling problem creation/modification routines
-on the solver engine. 
+on the solver engine.
 
 Since MIP communicates every problem modification directly to the solver
 engine, the engine must handle efficiently many small modification request
@@ -39,7 +39,7 @@ in the constraint matrix.
 
 
   +------------+------------+------------+-----------+-----------------------+-----------------------+-----------+
-  |            |            |         Pulp           |                     MIP                       |           |
+  |            |            |         Pulp           |                  Python-MIP                   |           |
   |            |   Gurobi   |                        +-----------------------+-----------------------+           |
   |            |            |                        |        Gurobi         |         CBC           |   JuMP    |
   |            |   CPython  +------------+-----------+------------+----------+------------+----------+           |
