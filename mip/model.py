@@ -1389,7 +1389,7 @@ class Model:
                 self.constrs.remove(clist)
         else:
             raise Exception("Cannot handle removal of object of type "
-                            + type(o) + " from model.")
+                            + type(objects) + " from model.")
 
 
 class Solver:
@@ -1937,25 +1937,6 @@ class VConstrList(Sequence):
 
     def __len__(self) -> int:
         return self.__model.solver.num_rows()
-
-
-class BranchSelector:
-    def __init__(self, model: Model):
-        self.model = model
-
-    def select_branch(self,
-                      relax_solution: List[Tuple[Var, float]]
-                      ) -> Tuple[Var, int]:
-        raise NotImplementedError()
-
-
-class LazyConstrsGenerator:
-    def __init(self, model: Model):
-        self.model = model
-
-    def generate_lazy_constrs(self, solution: List[Tuple[Var, float]]
-                              ) -> List[LinExpr]:
-        raise NotImplementedError()
 
 
 def xsum(terms) -> LinExpr:
