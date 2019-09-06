@@ -319,9 +319,7 @@ if has_cbc:
 
     void Cbc_setDualTolerance(Cbc_Model *model, double tol);
 
-    void Cbc_addCutCallback(
-        void *model, cbc_cut_callback cutcb,
-        const char *name, void *appData );
+    void Cbc_addCutCallback(Cbc_Model *model, cbc_cut_callback cutcb, const char *name, void *appData, int howOften, char atSolution );
 
     void Cbc_addIncCallback(
         void *model, cbc_incumbent_callback inccb,
@@ -531,8 +529,15 @@ class SolverCbc(Solver):
         # adding cut generators
         m = self.model
         if m.cuts_generator is not None and self.added_cut_callback is False:
+            atSol = CHAR_ZERO
+            if hasattr(m.cuts_generator, "lazy_constraints") \
+                    and m.cuts_generator.lazy_constraints:
+                atSol = CHAR_ONE
+                cbc_set_parameter(self, "preprocess", "off")
+                cbc_set_parameter(self, "heur", "off")
             cbclib.Cbc_addCutCallback(self._model, cbc_cut_callback,
-                                      'mipCutGen'.encode('utf-8'), ffi.NULL)
+                                      'mipCutGen'.encode('utf-8'),
+                                      ffi.NULL, 1, atSol)
             self.added_cut_callback = True
 
         if self.__verbose == 0:

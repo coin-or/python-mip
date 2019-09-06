@@ -98,6 +98,5 @@ m.optimize()
 
 print('best route found has length {}'.format(m.objective_value))
 
-for i in range(n):
-    for j in [k for k in range(n) if x[i][j].x >= 0.99]:
-        print('arc({},{})'.format(i, j))
+arcs = [(i, j) for i in range(n) for j in range(n) if x[i][j].x >= 0.99]
+print('optimal route : {}'.format(arcs))
