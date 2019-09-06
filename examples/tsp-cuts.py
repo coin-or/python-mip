@@ -4,11 +4,12 @@ is dinamically improved with cutting planes, sub-tour elimination inequalities,
 using a CutsGenerator implementation. Cut generation is called from the
 solver engine whenever a fractional solution is generated."""
 
+from collections import defaultdict
 from sys import argv
 from typing import List, Tuple
 import networkx as nx
-from tspdata import TSPData
-from mip.model import Model, xsum, BINARY
+import tsplib95
+from mip.model import Model, xsum, BINARY, minimize
 from mip.callbacks import CutsGenerator, CutPool
 
 
@@ -48,55 +49,83 @@ if len(argv) <= 1:
     print('enter instance name.')
     exit(1)
 
-inst = TSPData(argv[1])
-(n, d) = (inst.n, inst.d)
-print('solving TSP with {} cities'.format(inst.n))
+inst = tsplib95.load_problem(argv[1])
+N = [n for n in inst.get_nodes()]
+n = len(N)
+A = dict()
+for (i, j) in inst.get_edges():
+    if i != j:
+        A[(i, j)] = inst.wfunc(i, j)
 
-m = Model()
+# set of edges leaving a node
+OUT = defaultdict(set)
+
+# set of edges entering a node
+IN = defaultdict(set)
+
+# an arbitrary initial point
+n0 = min(i for i in N)
+
+for a in A:
+    OUT[a[0]].add(a)
+    IN[a[1]].add(a)
+
+print('solving TSP with {} cities'.format(len(N)))
+
+model = Model()
+
 # binary variables indicating if arc (i,j) is used on the route or not
-x = [[m.add_var(name='x({},{})'.format(i, j),
-                var_type=BINARY) for j in range(n)] for i in range(n)]
+x = {a: model.add_var('x({},{})'.format(a[0], a[1]), var_type=BINARY)
+     for a in A.keys()}
 
 # continuous variable to prevent subtours: each
 # city will have a different "identifier" in the planned route
-y = [m.add_var(name='y({})'.format(i), lb=0.0, ub=n)
-     for i in range(n)]
+y = {i: model.add_var(name='y({})') for i in N}
+
+# continuous variable to prevent subtours: each
+# city will have a different "identifier" in the planned route
+y = {i: model.add_var(name='y({})') for i in N}
 
 # objective function: minimize the distance
-m += xsum(d[i][j] * x[i][j] for j in range(n) for i in range(n))
+model.objective = minimize(
+    xsum(A[a]*x[a] for a in A.keys()))
 
 # constraint : enter each city coming from another city
-for i in range(n):
-    m += xsum(x[j][i] for j in range(n) if j != i) == 1, 'in({})'.format(i)
+for i in N:
+    model += xsum(x[a] for a in OUT[i]) == 1
 
 # constraint : leave each city coming from another city
-for i in range(n):
-    m += xsum(x[i][j] for j in range(n) if j != i) == 1, 'out({})'.format(i)
+for i in N:
+    model += xsum(x[a] for a in IN[i]) == 1
 
-# no 2 subtours
-for i in range(n):
-    for j in [k for k in range(n) if k != i]:
-        m += x[i][j] + x[j][i] <= 1
+# (weak) subtour elimination
+for (i, j) in [a for a in A.keys() if n0 not in [a[0], a[1]]]:
+    model += \
+        y[i] - (n+1)*x[(i, j)] >= y[j]-n, 'noSub({},{})'.format(i, j)
 
-# subtour elimination weak constraint, included in the
-# initial formulation to start with a complete formulation
-for i in range(1, n):
-    for j in [k for k in range(1, n) if k != i]:
-        m += y[i] - (n + 1) * x[i][j] >= y[j] - n, 'noSub({},{})'.format(i, j)
+# no subtours of size 2
+for a in A.keys():
+    if (a[1], a[0]) in A.keys():
+        model += x[a] + x[a[1], a[0]] <= 1
+
 
 # computing farthest point for each point
 F = []
-for i in range(n):
-    (md, dp) = (0, -1)
-    for j in [k for k in range(n) if k != i]:
-        if d[i][j] > md:
-            (md, dp) = (d[i][j], j)
-    F.append((i, dp))
+G = nx.DiGraph()
+for ((i, j), d) in A.items():
+    G.add_edge(i, j, weight=d)
+for i in N:
+    P, D = nx.dijkstra_predecessor_and_distance(G, source=i)
+    DS = list(D.items())
+    DS.sort(key=lambda x: x[1])
+    F.append((i, DS[-1][0]))
 
-m.cuts_generator = SubTourCutGenerator(F)
-m.optimize()
+model.cuts_generator = SubTourCutGenerator(F)
+model.optimize()
 
-print('best route found has length {}'.format(m.objective_value))
+print(model.status)
 
-arcs = [(i, j) for i in range(n) for j in range(n) if x[i][j].x >= 0.99]
+print('best route found has length {}'.format(model.objective_value))
+
+arcs = [a for a in A.keys() if x[a].x >= 0.99]
 print('optimal route : {}'.format(arcs))
