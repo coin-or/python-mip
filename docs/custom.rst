@@ -284,6 +284,34 @@ In our example, we temporarily store the generated cuts in our
     print('optimal route : {}'.format(arcs))
 
 
+.. _lazy-constraints-label:
+
+Lazy Constraints
+~~~~~~~~~~~~~~~~
+
+Python-MIP also supports the use of cut generators to produce *lazy
+constraints*. Lazy constraints are dynamically generated, just as cutting
+planes, with the difference that lazy constraints are also applied to *integer
+solutions*. They should be used when the initial formulation is *incomplete*.
+In the case of our previous TSP example, this approach allow us to use in the
+initial formulation only the degree constraints and add all required sub-tour
+elimination constraints on demand. Auxiliary variables :math:`y` would also not
+be necessary. The lazy constraints TSP example is exaclty as the cut generator
+callback example with the difference that, besides starting with a smaller
+formulation,  we have to inform that the cut generator will be used to generate
+lazy constraints:
+
+
+.. code-block:: python
+ :linenos:
+    
+    ...
+    m.cuts_generator = SubTourCutGenerator(F)
+    m.cuts_generator.lazy_constraints = True
+    model.optimize()
+    ...
+
+
 .. _mipstart-label:
 
 Providing initial feasible solutions
