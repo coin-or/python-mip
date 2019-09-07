@@ -15,8 +15,9 @@ Some of the main features of MIP are:
   operator overloading makes it easy to write linear expressions in Python;
 
 * full featured:
-    - cut generation: write your own cut generator in Python and integrate it
-    into the Branch-and-Cut search;
+    - cut generators and lazy constraints: work with strong formulations with a
+    large number of constraints by generating only the required inequalities
+    during the branch and cut search;
     - solution pool: query the elite set of solutions found during the search;
     - MIPStart: use a problem dependent heuristic to generate initial feasible
     solutions for the MIP search.
