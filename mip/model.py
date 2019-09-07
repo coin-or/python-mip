@@ -648,6 +648,30 @@ class Model:
             used as a constraint.")
         return self.constrs.add(lin_expr, name)
 
+    def add_sos(self, sos: List[Tuple["Var", float]], sos_type: int):
+        """Adds an Special Ordered Set (SOS) to the model
+
+        In models with binary variables it is often the case that
+        from a list of variables only one can be selected. When
+        large constraints of this type exist (packing and partitioning),
+        branching in one variable at time usually doesn't work: while
+        fixing one of these variables to one restricts a lot the search
+        space, fixing one of these variables to zero has a minimal effect,
+        since all remaining variables remain free. This *unbalanced*
+        branching
+
+        Args:
+            sos(List[Tuple[Var, float]]) list including variables and
+                respective weights in the model
+            sos_type(int): 1 for SOS type 1, where at most one of the binary
+                variables can be selected and 2 for SOS type 2, where at
+                most two variables from the list may be selected. In type
+                2 SOS the two selected variables will be consecutive in
+                the list.
+        """
+        pass
+
+
     def clear(self):
         """Clears the model
 
@@ -1414,6 +1438,8 @@ class Solver:
 
     def add_constr(self, lin_expr: "LinExpr", name: str = ""):
         pass
+
+    def add_sos(self, sos: List[Tuple["Var", float]], sos_type: int): pass
 
     def add_cut(self, lin_expr: LinExpr): pass
 
