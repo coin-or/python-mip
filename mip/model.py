@@ -651,26 +651,41 @@ class Model:
     def add_sos(self, sos: List[Tuple["Var", float]], sos_type: int):
         """Adds an Special Ordered Set (SOS) to the model
 
-        In models with binary variables it is often the case that
-        from a list of variables only one can be selected. When
+        In models with binary variables it is often the case that from a list
+        of variables only one can receive value 1 in a feasible solution. When
         large constraints of this type exist (packing and partitioning),
-        branching in one variable at time usually doesn't work: while
-        fixing one of these variables to one restricts a lot the search
-        space, fixing one of these variables to zero has a minimal effect,
-        since all remaining variables remain free. This *unbalanced*
-        branching
+        branching in one variable at time usually doesn't work well: while
+        fixing one of these variables to one leaves only one possible feasible
+        value for the other variables in this set (zero), fixing one variable
+        to zero keeps all other variables free. This *unbalanced* branching is
+        highly ineffective. A Special ordered set (SOS) is a set
+        :math:`\mathcal{S}=\{s_1, s_2, \ldots, s_k\}` with weights 
+        :math:`[w_1, w_2, \ldots, w_k] \in \mathbb{R}^+`. With this structure
+        available branching on a fractional solution :math:`x^*` for these
+        variables can be performed computing:
+
+
+        .. math::
+
+            \min \{ u_{k'} : u_{k'} = | \sum_{j=1\,\ldots \,k'-1} w_j \ldotp x^*_j - \sum_{j=k'\,\ldots ,k} w_j \ldotp x^*_j | \}
+
+
+        Then, branching :math:`\mathcal{S}_1` would be :math:`\displaystyle \sum_{j=1,
+        \ldots, k'-1} x_j = 0` and :math:`\displaystyle \mathcal{S}_2 = \sum_{j=k', \ldots,
+        k} x_j = 0`.
 
         Args:
-            sos(List[Tuple[Var, float]]) list including variables and
+            sos(List[Tuple[Var, float]]):
+                list including variables (not necessarily binary) and
                 respective weights in the model
-            sos_type(int): 1 for SOS type 1, where at most one of the binary
-                variables can be selected and 2 for SOS type 2, where at
+            sos_type(int):
+                1 for Type 1 SOS, where at most one of the binary
+                variables can be set to one and 2 for Type 2 SOS, where at
                 most two variables from the list may be selected. In type
                 2 SOS the two selected variables will be consecutive in
                 the list.
         """
-        pass
-
+        self.solver.add_sos(sos, sos_type)
 
     def clear(self):
         """Clears the model

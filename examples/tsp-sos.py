@@ -69,6 +69,12 @@ for (i, j) in [a for a in A.keys() if n0 not in [a[0], a[1]]]:
 print('model has {} variables, {} of which are integral and {} rows'
       .format(model.num_cols, model.num_int, model.num_rows))
 
+print("Adding SOSs")
+for i in N:
+    sosOut = [(x[(i, j)], A[(i, j)]) for (i, j) in OUT[i]]
+    sosIn = [(x[(i, j)], A[(i, j)]) for (i, j) in IN[i]]
+    model.add_sos(sosOut, 1)
+
 model.max_nodes = 1000
 st = model.optimize(max_seconds=120)
 
