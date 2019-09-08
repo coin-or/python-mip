@@ -162,6 +162,10 @@ ffi.cdef("""
     int GRBaddconstr(GRBmodel *model, int numnz, int *cind, double *cval,
            char sense, double rhs, const char *constrname);
 
+    int GRBaddsos(GRBmodel *model,
+        int numsos, int nummembers, int *types,
+            int *beg, int *ind, double *weight);
+
     int GRBgetconstrs(GRBmodel *model, int *numnzP, int *cbeg,
             int *cind, double *cval, int start, int len);
 
@@ -213,6 +217,7 @@ GRBfreeenv = grblib.GRBfreeenv
 GRBfreemodel = grblib.GRBfreemodel
 GRBaddvar = grblib.GRBaddvar
 GRBaddconstr = grblib.GRBaddconstr
+GRBaddsos = grblib.GRBaddsos
 GRBoptimize = grblib.GRBoptimize
 GRBgetvarbyname = grblib.GRBgetvarbyname
 GRBsetdblattrarray = grblib.GRBsetdblattrarray
@@ -417,6 +422,16 @@ class SolverGurobi(Solver):
             raise Exception('Error adding constraint {} to the model'.format(
                 name))
         self.__n_rows_buffer += 1
+
+    def add_sos(self, sos: List[Tuple["Var", float]], sos_type: int):
+        self.flush_cols()
+        types = ffi.new("int[]", [sos_type])
+        beg = ffi.new("int[]", [0, len(sos)])
+        idx = ffi.new("int[]", [v.idx for (v, f) in sos])
+        w = ffi.new("double[]", [f for (v, f) in sos])
+        st = GRBaddsos(self._model, 1, len(sos), types, beg, idx, w)
+        if st != 0:
+            raise Exception('Error adding SOS to the model')
 
     def get_objective_bound(self) -> float:
         return self.get_dbl_attr("ObjBound")
