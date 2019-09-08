@@ -122,6 +122,9 @@ if has_cbc:
     void Cbc_addRow(Cbc_Model *model, const char *name, int nz,
         const int *cols, const double *coefs, char sense, double rhs);
 
+    void Cbc_addSOS(Cbc_Model *model, int numRows, const int *rowStarts,
+        const int *colIndices, const double *weights, const int type);
+
     void Cbc_setObjCoeff(Cbc_Model *model, int index, double value);
 
     double Cbc_getObjSense(Cbc_Model *model);
@@ -762,6 +765,12 @@ class SolverCbc(Solver):
         namestr = name.encode("utf-8")
         mp = self._model
         cbclib.Cbc_addRow(mp, namestr, numnz, cind, cval, sense, rhs)
+
+    def add_sos(self, sos: List[Tuple["Var", float]], sos_type: int):
+        starts = ffi.new("int[]", [0, len(sos)])
+        idx = ffi.new("int[]", [v.idx for (v, f) in sos])
+        w = ffi.new("double[]", [f for (v, f) in sos])
+        cbclib.Cbc_addSOS(self._model, 1, starts, idx, w, sos_type)
 
     def add_cut(self, lin_expr: LinExpr):
         if self.osi_cutsp != ffi.NULL:
