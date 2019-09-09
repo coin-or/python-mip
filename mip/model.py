@@ -379,15 +379,15 @@ class LinExpr:
         If a solution is available, than this property indicates how much
         the current solution violates this constraint.
         """
-        lhs = sum(coef*var.x for (var, coef) in self.__expr.items())
+        lhs = sum(coef * var.x for (var, coef) in self.__expr.items())
         rhs = -self.const
         viol = 0.0
         if self.sense == '=':
-            viol = abs(lhs-rhs)
+            viol = abs(lhs - rhs)
         elif self.sense == '<':
-            viol = max(lhs-rhs, 0.0)
+            viol = max(lhs - rhs, 0.0)
         elif self.sense == '>':
-            viol = max(rhs-lhs, 0.0)
+            viol = max(rhs - lhs, 0.0)
 
         return viol
 
@@ -404,15 +404,12 @@ class ProgressLog:
     name and formulation/parameter setting details, respectively.
 
     Attributes:
-        log(Tuple[float, Tuple[float, float]]):  Tuple in the format \
-        :math:`(t, (l, u))`, where :math:`t` is the processing time and
-        :math:`l` and :math:`u` are the lower and upper bounds, \
-        respectively.
+        log(Tuple[float, Tuple[float, float]]): Tuple in the format :math:`(time, (lb, ub))`, where :math:`time` is the processing time and :math:`lb` and :math:`ub` are the lower and upper bounds, respectively
 
         instance(str): instance name
 
-        settings(str): identification of the formulation/parameter \
-        settings used in the optimization (whatever is relevant to \
+        settings(str): identification of the formulation/parameter
+        settings used in the optimization (whatever is relevant to
         identify a given computational experiment)
     """
 
@@ -659,7 +656,7 @@ class Model:
         value for the other variables in this set (zero), fixing one variable
         to zero keeps all other variables free. This *unbalanced* branching is
         highly ineffective. A Special ordered set (SOS) is a set
-        :math:`\mathcal{S}=\{s_1, s_2, \ldots, s_k\}` with weights 
+        :math:`\mathcal{S}=\{s_1, s_2, \ldots, s_k\}` with weights
         :math:`[w_1, w_2, \ldots, w_k] \in \mathbb{R}^+`. With this structure
         available branching on a fractional solution :math:`x^*` for these
         variables can be performed computing:
@@ -1139,7 +1136,7 @@ class Model:
         return self.__cuts_generator
 
     @cuts_generator.setter
-    def cuts_generator(self, cuts_generator: "CutsGenerator"):
+    def cuts_generator(self, cuts_generator: "ConstrsGenerator"):
         self.__cuts_generator = cuts_generator
 
     @property
@@ -1148,7 +1145,7 @@ class Model:
 
     @lazy_constrs_generator.setter
     def lazy_constrs_generator(self,
-                               lazy_constrs_generator: "LazyConstrsGenerator"):
+                               lazy_constrs_generator: "ConstrsGenerator"):
         self.__lazy_constrs_generator = lazy_constrs_generator
 
     @property
@@ -1440,7 +1437,8 @@ class Solver:
         if sense:
             self.sense = sense
 
-    def __del__(self): pass
+    def __del__(self):
+        pass
 
     def add_var(self,
                 name: str = "",
@@ -1454,38 +1452,53 @@ class Solver:
     def add_constr(self, lin_expr: "LinExpr", name: str = ""):
         pass
 
-    def add_sos(self, sos: List[Tuple["Var", float]], sos_type: int): pass
+    def add_sos(self, sos: List[Tuple["Var", float]], sos_type: int):
+        pass
 
-    def add_cut(self, lin_expr: LinExpr): pass
+    def add_cut(self, lin_expr: LinExpr):
+        pass
 
-    def get_objective_bound(self) -> float: pass
+    def get_objective_bound(self) -> float:
+        pass
 
-    def get_objective(self) -> LinExpr: pass
+    def get_objective(self) -> LinExpr:
+        pass
 
-    def get_objective_const(self) -> float: pass
+    def get_objective_const(self) -> float:
+        pass
 
-    def relax(self): pass
+    def relax(self):
+        pass
 
-    def optimize(self) -> OptimizationStatus: pass
+    def optimize(self) -> OptimizationStatus:
+        pass
 
-    def get_objective_value(self) -> float: pass
+    def get_objective_value(self) -> float:
+        pass
 
     def get_log(self) -> List[Tuple[float, Tuple[float, float]]]:
         return []
 
-    def get_objective_value_i(self, i: int) -> float: pass
+    def get_objective_value_i(self, i: int) -> float:
+        pass
 
-    def get_num_solutions(self) -> int: pass
+    def get_num_solutions(self) -> int:
+        pass
 
-    def get_objective_sense(self) -> str: pass
+    def get_objective_sense(self) -> str:
+        pass
 
-    def set_objective_sense(self, sense: str): pass
+    def set_objective_sense(self, sense: str):
+        pass
 
-    def set_start(self, start: List[Tuple["Var", float]]): pass
+    def set_start(self, start: List[Tuple["Var", float]]):
+        pass
 
-    def set_objective(self, lin_expr: "LinExpr", sense: str = ""): pass
+    def set_objective(self, lin_expr: "LinExpr", sense: str = ""):
+        pass
 
-    def set_objective_const(self, const: float): pass
+    def set_objective_const(self, const: float):
+        pass
 
     def set_callbacks(self,
                       branch_selector: "BranchSelector" = None,
@@ -1499,111 +1512,162 @@ class Solver:
                               max_sol: int = inf):
         pass
 
-    def get_max_seconds(self) -> float: pass
+    def get_max_seconds(self) -> float:
+        pass
 
-    def set_max_seconds(self, max_seconds: float): pass
+    def set_max_seconds(self, max_seconds: float):
+        pass
 
-    def get_max_solutions(self) -> int: pass
+    def get_max_solutions(self) -> int:
+        pass
 
-    def set_max_solutions(self, max_solutions: int): pass
+    def set_max_solutions(self, max_solutions: int):
+        pass
 
-    def get_pump_passes(self) -> int: pass
+    def get_pump_passes(self) -> int:
+        pass
 
-    def set_pump_passes(self, passes: int): pass
+    def set_pump_passes(self, passes: int):
+        pass
 
-    def get_max_nodes(self) -> int: pass
+    def get_max_nodes(self) -> int:
+        pass
 
-    def set_max_nodes(self, max_nodes: int): pass
+    def set_max_nodes(self, max_nodes: int):
+        pass
 
-    def set_num_threads(self, threads: int): pass
+    def set_num_threads(self, threads: int):
+        pass
 
-    def write(self, file_path: str): pass
+    def write(self, file_path: str):
+        pass
 
-    def read(self, file_path: str): pass
+    def read(self, file_path: str):
+        pass
 
-    def num_cols(self) -> int: pass
+    def num_cols(self) -> int:
+        pass
 
-    def num_rows(self) -> int: pass
+    def num_rows(self) -> int:
+        pass
 
-    def num_nz(self) -> int: pass
+    def num_nz(self) -> int:
+        pass
 
-    def num_int(self) -> int: pass
+    def num_int(self) -> int:
+        pass
 
-    def get_emphasis(self) -> SearchEmphasis: pass
+    def get_emphasis(self) -> SearchEmphasis:
+        pass
 
-    def set_emphasis(self, emph: SearchEmphasis): pass
+    def set_emphasis(self, emph: SearchEmphasis):
+        pass
 
-    def get_cutoff(self) -> float: pass
+    def get_cutoff(self) -> float:
+        pass
 
-    def set_cutoff(self, cutoff: float): pass
+    def set_cutoff(self, cutoff: float):
+        pass
 
-    def get_mip_gap_abs(self) -> float: pass
+    def get_mip_gap_abs(self) -> float:
+        pass
 
-    def set_mip_gap_abs(self, mip_gap_abs: float): pass
+    def set_mip_gap_abs(self, mip_gap_abs: float):
+        pass
 
-    def get_mip_gap(self) -> float: pass
+    def get_mip_gap(self) -> float:
+        pass
 
-    def set_mip_gap(self, mip_gap: float): pass
+    def set_mip_gap(self, mip_gap: float):
+        pass
 
-    def get_verbose(self) -> int: pass
+    def get_verbose(self) -> int:
+        pass
 
-    def set_verbose(self, verbose: int): pass
+    def set_verbose(self, verbose: int):
+        pass
 
     # Constraint-related getters/setters
 
-    def constr_get_expr(self, constr: Constr) -> LinExpr: pass
+    def constr_get_expr(self, constr: Constr) -> LinExpr:
+        pass
 
-    def constr_set_expr(self, constr: Constr, value: LinExpr) -> LinExpr: pass
+    def constr_set_expr(self, constr: Constr, value: LinExpr) -> LinExpr:
+        pass
 
-    def constr_get_name(self, idx: int) -> str: pass
+    def constr_get_name(self, idx: int) -> str:
+        pass
 
-    def constr_get_pi(self, constr: Constr) -> float: pass
+    def constr_get_pi(self, constr: Constr) -> float:
+        pass
 
-    def constr_get_slack(self, constr: Constr) -> float: pass
+    def constr_get_slack(self, constr: Constr) -> float:
+        pass
 
-    def remove_constrs(self, constrsList: List[int]): pass
+    def remove_constrs(self, constrsList: List[int]):
+        pass
 
-    def constr_get_index(self, name: str) -> int: pass
+    def constr_get_index(self, name: str) -> int:
+        pass
 
     # Variable-related getters/setters
 
-    def var_get_lb(self, var: "Var") -> float: pass
+    def var_get_lb(self, var: "Var") -> float:
+        pass
 
-    def var_set_lb(self, var: "Var", value: float): pass
+    def var_set_lb(self, var: "Var", value: float):
+        pass
 
-    def var_get_ub(self, var: "Var") -> float: pass
+    def var_get_ub(self, var: "Var") -> float:
+        pass
 
-    def var_set_ub(self, var: "Var", value: float): pass
+    def var_set_ub(self, var: "Var", value: float):
+        pass
 
-    def var_get_obj(self, var: "Var") -> float: pass
+    def var_get_obj(self, var: "Var") -> float:
+        pass
 
-    def var_set_obj(self, var: "Var", value: float): pass
+    def var_set_obj(self, var: "Var", value: float):
+        pass
 
-    def var_get_var_type(self, var: "Var") -> str: pass
+    def var_get_var_type(self, var: "Var") -> str:
+        pass
 
-    def var_set_var_type(self, var: "Var", value: str): pass
+    def var_set_var_type(self, var: "Var", value: str):
+        pass
 
-    def var_get_column(self, var: "Var") -> Column: pass
+    def var_get_column(self, var: "Var") -> Column:
+        pass
 
-    def var_set_column(self, var: "Var", value: Column): pass
+    def var_set_column(self, var: "Var", value: Column):
+        pass
 
-    def var_get_rc(self, var: "Var") -> float: pass
+    def var_get_rc(self, var: "Var") -> float:
+        pass
 
-    def var_get_x(self, var: "Var") -> float: pass
+    def var_get_x(self, var: "Var") -> float:
+        pass
 
-    def var_get_xi(self, var: "Var", i: int) -> float: pass
+    def var_get_xi(self, var: "Var", i: int) -> float:
+        pass
 
-    def var_get_name(self, idx: int) -> str: pass
+    def var_get_name(self, idx: int) -> str:
+        pass
 
-    def remove_vars(self, varsList: List[int]): pass
+    def remove_vars(self, varsList: List[int]):
+        pass
 
-    def var_get_index(self, name: str) -> int: pass
+    def var_get_index(self, name: str) -> int:
+        pass
 
-    def get_problem_name(self) -> str: pass
+    def get_problem_name(self) -> str:
+        pass
 
-    def set_problem_name(self, name: str): pass
+    def set_problem_name(self, name: str):
+        pass
 
-    def get_status(self) -> OptimizationStatus: pass
+    def get_status(self) -> OptimizationStatus:
+        pass
 
 
 class Var:
@@ -1899,11 +1963,11 @@ class VVarList(Sequence):
             return VVarList(self.model, key.start, key.end)
         if (isinstance(key, int)):
             if key < 0:
-                key = self.__end-key
+                key = self.__end - key
             if key >= self.__end:
                 raise IndexError
 
-            return Var(self.__model, key+self.__start)
+            return Var(self.__model, key + self.__start)
 
         raise Exception('Unknow type')
 
@@ -1980,21 +2044,43 @@ class VConstrList(Sequence):
         return self.__model.solver.num_rows()
 
 
-def xsum(terms) -> LinExpr:
-    result = LinExpr()
-    for term in terms:
-        result.add_term(term)
-    return result
+def maximize(expr: LinExpr) -> LinExpr:
+    """
+    Function that should be used to set the objective function to MAXIMIZE
+    a given linear expression (passed as argument).
+
+    Args:
+        expr(LinExpr): linear expression
+    """
+    expr.sense = MAXIMIZE
+    return expr
 
 
 def minimize(expr: LinExpr) -> LinExpr:
+    """
+    Function that should be used to set the objective function to MINIMIZE
+    a given linear expression (passed as argument).
+
+    Args:
+        expr(LinExpr): linear expression
+    """
     expr.sense = MINIMIZE
     return expr
 
 
-def maximize(expr: LinExpr) -> LinExpr:
-    expr.sense = MAXIMIZE
-    return expr
+def xsum(terms) -> LinExpr:
+    """
+    Function that should be used to create a linear expression from a summation.
+    While the python function sum() can also be used, this function is optimized
+    version for quickly generating the linear expression.
+
+    Args:
+        terms: set (ideally a list) of terms to be summed
+    """
+    result = LinExpr()
+    for term in terms:
+        result.add_term(term)
+    return result
 
 
 # function aliases

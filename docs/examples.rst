@@ -8,7 +8,7 @@ problems with Python-MIP.
 
 The 0/1 Knapsack Problem
 ------------------------
- 
+
 As a first example, consider the solution of the 0/1 knapsack problem:
 given a set :math:`I` of items, each one with a weight :math:`w_i`  and
 estimated profit :math:`p_i`, one wants to select a subset with maximum
@@ -16,10 +16,10 @@ profit such that the summation of the weights of the selected items is
 less or equal to the knapsack capacity :math:`c`.
 Considering a set of decision binary variables :math:`x_i` that receive
 value 1 if the :math:`i`-th item is selected, or 0 if not, the resulting
-mathematical programming formulation is: 
+mathematical programming formulation is:
 
 .. math::
-   
+
     \textrm{Maximize: }   &  \\
                                    &  \sum_{i \in I} p_i \cdot x_i  \\
     \textrm{Subject to: } & \\
@@ -42,15 +42,20 @@ The following python code creates, optimizes and prints the optimal solution for
 
     m = Model('knapsack')
 
-    x = [m.add_var(var_type=BINARY) for i in range(n)]
+    # creating variables
+    x = [ m.add_var(var_type=BINARY) for i in range(n) ]
 
+    # objective function
     m.objective = maximize(xsum(p[i]*x[i] for i in range(n)))
 
+    # creating constraints
     m += xsum(w[i]*x[i] for i in range(n)) <= c
 
+    # optimizing the model
     m.optimize()
 
-    selected = [i for i in range(n) if x[i].x >= 0.99]
+    # printing the solution
+    selected = [ i for i in range(n) if x[i].x >= 0.99 ]
     print('selected items: {}'.format(selected))
 
 Lines 1 and 2 import the required classes and definitions from Python-MIP.
@@ -79,15 +84,15 @@ attractions, depicted in the map bellow:
 You want to find the shortest possible tour to visit all these places. More
 formally, considering  :math:`n` points :math:`I=\{0,\ldots,n-1\}` and
 a distance matrix :math:`D_{n \times n}` with elements :math:`d_{i,j} \in
-\mathbb{R}^+`, a solution consists in a set of exactly :math:`n` (origin, 
+\mathbb{R}^+`, a solution consists in a set of exactly :math:`n` (origin,
 destination) pairs indicating the itinerary of your trip, resulting in
 the following formulation:
 
 .. math::
 
-    \textrm{Minimize: }   &  \\ 
+    \textrm{Minimize: }   &  \\
     &  \sum_{i \in I, j \in I : i \neq j} d_{i,j} \ldotp x_{i,j} \\
-    \textrm{Subject to: }   &  \\ 
+    \textrm{Subject to: }   &  \\
     & \sum_{j \in I : i \neq j} x_{i,j} = 1 \,\,\, \forall i \in I  \\
     & \sum_{i \in I : i \neq j} x_{i,j} = 1 \,\,\, \forall j \in I \\
     & y_{i} -(n+1)\ldotp x_{i,j} \geq y_{j} -n  \,\,\, \forall i \in I\setminus \{0\}, j \in I\setminus \{0,i\}\\
@@ -99,7 +104,7 @@ once at each point. The optimal solution for the problem including only
 these constraints could result in a solution with sub-tours, such as the
 one bellow.
 
-.. image:: images/belgium-tourism-14-subtour.png 
+.. image:: images/belgium-tourism-14-subtour.png
     :width: 60%
     :align: center
 
@@ -149,7 +154,7 @@ included bellow:
 
 
 This `example <https://raw.githubusercontent.com/coin-or/python-mip/master/examples/tsp-compact.py>`_ is included in the Python-MIP package in the example folder
-Additional code to load the problem data (called from line 5) is included in `tspdata.py <https://raw.githubusercontent.com/coin-or/python-mip/master/examples/tspdata.py>`_. 
+Additional code to load the problem data (called from line 5) is included in `tspdata.py <https://raw.githubusercontent.com/coin-or/python-mip/master/examples/tspdata.py>`_.
 File `belgium-tourism-14.tsp <https://raw.githubusercontent.com/coin-or/python-mip/master/examples/belgium-tourism-14.tsp>`_ contains the coordinates
 of the cities included in the example. To produce the optimal tourist tour for our Belgium example just enter:
 
@@ -181,11 +186,11 @@ trip has length 547 and is depicted bellow:
 n-Queens
 --------
 
-In the :math:`n`-queens puzzle :math:`n` chess queens should to be placed in a 
-board with :math:`n\times n` cells in a way that no queen can attack another, 
-i.e., there must be at most one queen per row, column and diagonal. This is a 
+In the :math:`n`-queens puzzle :math:`n` chess queens should to be placed in a
+board with :math:`n\times n` cells in a way that no queen can attack another,
+i.e., there must be at most one queen per row, column and diagonal. This is a
 constraint satisfaction problem: any feasible solution is acceptable and no
-objective function is defined. The following binary programming formulation 
+objective function is defined. The following binary programming formulation
 can be used to solve this problem:
 
 .. math::
@@ -280,7 +285,7 @@ the Bandwidth Multicoloring Problem (BMCP), which has the following input data:
 
 :math:`d_{i,j} \in \mathbb{Z}^+`:
     minimum distance between channels assigned to nodes :math:`i` and :math:`j`,
-    :math:`d_{i,i}` indicates the minimum distance between different channels 
+    :math:`d_{i,i}` indicates the minimum distance between different channels
     allocated to the same cell.
 
 Given an upper limit :math:`\overline{u}` on the maximum number of channels
@@ -291,7 +296,7 @@ while minimizing the used bandwidth and avoiding interference:
 
 .. math::
 
-     \textrm{Minimize:} & \\ 
+     \textrm{Minimize:} & \\
                        & \max_{c \in C_1 \cup C_2, \ldots, C_n}c  \\
      \textrm{Subject to:} & \\
             \mid c_1 - c_2 \mid & \geq d_{i,j} \,\,\, \forall (i,j) \in N \times N, (c_1, c_2) \in C_i \times C_j \\
@@ -307,9 +312,9 @@ be modeled with the following MIP formulation:
 
 .. math::
 
-   \textrm{Minimize:} & \\      
+   \textrm{Minimize:} & \\
                       & z \\
-   \textrm{Subject to:} & \\      
+   \textrm{Subject to:} & \\
         \sum_{c=1}^{\overline{u}} x_{(i,c)}  & = r_{i} \,\,\, \forall \, i \in N  \\
          z & \geq c\cdot x_{(i,c)} \,\,\, \forall \, i \in N, c \in U \\
         x_{(i,c)} + x_{(j,c')}   & \leq 1 \,\,\, \forall \, (i,j,c,c') \in N \times N \times U \times U : \, i \neq j \land \mid c-c' \mid < d_{(i,j)} \\
@@ -372,7 +377,7 @@ Resource Constrained Project Scheduling
 The Resource-Constrained Project Scheduling Problem (RCPSP) is a combinatorial
 optimization problem that consists of finding a feasible scheduling for a set of
 :math:`n` jobs subject to resource and precedence constraints. Each job has a
-processing time, a set of successors jobs and a required amount of different 
+processing time, a set of successors jobs and a required amount of different
 resources. Resources are scarce but are renewable at each time period.
 Precedence constraints between jobs mean that no jobs may start before all its
 predecessors are completed. The jobs must be scheduled non-preemptively, i.e.,
@@ -408,11 +413,11 @@ contains the jobs :math:`x_{0}` and :math:`x_{n+1}`. These jobs are dummy jobs a
 represent the beginning of the planning and the end of the planning. The
 processing time for the dummy jobs is zero and does not consume resources.
 
-A binary programming formulation was proposed by Pritsker et al. :cite:`Prit69`. 
+A binary programming formulation was proposed by Pritsker et al. :cite:`Prit69`.
 In this formulation, decision variables :math:`x_{jt} = 1` if job :math:`j` is assigned a completion
 time at the end of time :math:`t`; otherwise, :math:`x_{jt} = 0`. All jobs must finish
 in a single instant of time without violating the relationships of precedence
-and amount of available resources. The model proposed by Pristker can be stated as 
+and amount of available resources. The model proposed by Pristker can be stated as
 follows:
 
 .. math::
@@ -524,7 +529,7 @@ Bellow there are two feasible schedules:
     :width: 80%
     :align: center
 
-The first schedule shows a naive solution: jobs are processed in a sequence and 
+The first schedule shows a naive solution: jobs are processed in a sequence and
 machines stay idle quite often. The second solution is the optimal one, where jobs
 execute in parallel.
 
@@ -537,7 +542,7 @@ The JSSP has the following input data:
     set of machines, :math:`\mathcal{M} = \{1,...,m\}`,
 
 :math:`o^j_r`
-    the machine that processes the :math:`r`-th operation of job :math:`j`, the sequence 
+    the machine that processes the :math:`r`-th operation of job :math:`j`, the sequence
     without repetition :math:`O^j = (o^j_1,o^j_2,...,o^j_m)` is the processing order of :math:`j`,
 
 :math:`p_{ij}`
@@ -558,11 +563,11 @@ The decision variables are defined by:
 :math:`x_{ij}`
     starting time of job :math:`j \in J` on machine :math:`i \in M`
 
-:math:`y_{ijk}=` 
+:math:`y_{ijk}=`
     :math:`\begin{cases} 1, & \text{if job } j \text{ precedes job } k \text{ on machine } i \text{,}\\ & i \in \mathcal{M} \text{, } j, k  \in \mathcal{J} \text{, } j \neq k \\ 0, & \text{otherwise} \end{cases}`
 
-:math:`C` 
-    variable for the makespan 
+:math:`C`
+    variable for the makespan
 
 
 Follows a MIP formulation :cite:`Mann60` for the JSSP. The objective function
@@ -576,7 +581,7 @@ this value can be the summation of all processing times. The fourth set of
 constrains ensure that the makespan value is computed correctly and the last
 constraints indicate variable domains.
 
-.. math:: 
+.. math::
 
     \textrm{min: }  &  \\
                    & C \\

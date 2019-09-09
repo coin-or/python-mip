@@ -2,7 +2,16 @@
 with the solver engine"""
 from collections import defaultdict
 from typing import List, Tuple
-from mip.model import Model, LinExpr
+from mip.model import LinExpr, Model, Var
+
+
+class BranchSelector:
+    def __init__(self, model: "Model"):
+        self.model = model
+
+    def select_branch(self, rsol: List[Tuple["Var", float]]) \
+            -> Tuple["Var", int]:
+        raise NotImplementedError()
 
 
 class CallbackModel(Model):
@@ -11,13 +20,13 @@ class CallbackModel(Model):
         self.__where = where  # used to determine the type of callback
 
 
-class CutsGenerator:
-    """abstract class for implementing cut generators"""
+class ColumnsGenerator:
+    """abstract class for implementing columns generators"""
 
     def __init__(self):
         self.lazy_constraints = False
 
-    def generate_cuts(self, model: Model):
+    def generate_columns(self, model: Model):
         """Method called by the solver engine to generate cuts
 
            After analyzing the contents of the fractional solution in model
@@ -41,12 +50,33 @@ class CutsGenerator:
         raise NotImplementedError()
 
 
-class BranchSelector:
-    def __init__(self, model: "Model"):
-        self.model = model
+class ConstrsGenerator:
+    """abstract class for implementing cuts and lazy constraints generators"""
 
-    def select_branch(self, rsol: List[Tuple["Var", float]]) \
-            -> Tuple["Var", int]:
+    def __init__(self):
+        self.lazy_constraints = False
+
+    def generate_constrs(self, model: Model):
+        """Method called by the solver engine to generate cuts or lazy constraints
+
+           After analyzing the contents of the solution in model
+           variables :meth:`~mip.model.Model.vars`, whose solution values can
+           be queried with the in :meth:`~mip.model.Var.x` method, one or more
+           constraints may be generated and added to the solver with
+           the :meth:`~mip.model.Model.add_constrs` method.
+
+        Args:
+
+            model(Model): model for which cuts may be generated. Please note
+                that this model may have fewer variables than the original
+                model due to pre-processing. If you want to generate cuts
+                in terms of the original variables, one alternative is to
+                query variables by their names, checking which ones remain
+                in this pre-processed problem. In this procedure you can
+                query model properties and add cuts or lazy constraints
+                (:meth:`~mip.model.Model.add_constrs`), but you cannot
+                perform other model modifications, such as add columns.
+        """
         raise NotImplementedError()
 
 
@@ -103,13 +133,4 @@ class IncumbentUpdater:
             cost solution(List[Tuple[Var,float]]): non-zero variables
             in the solution
         """
-        raise NotImplementedError()
-
-
-class LazyConstrsGenerator:
-    def __init(self, model: "Model"):
-        self.model = model
-
-    def generate_lazy_constrs(self, solution: List[Tuple["Var", float]]
-                              ) -> List["LinExpr"]:
         raise NotImplementedError()
