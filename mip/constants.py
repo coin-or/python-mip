@@ -23,11 +23,11 @@ MAXIMIZE = "MAX"
 
 # solvers
 CBC = "CBC"
-CPX = "CPX"
-CPLEX = "CPX"
+CPX = "CPX"   # will be supported in the future
+CPLEX = "CPX" # will be supported in the future
 GRB = "GRB"
 GUROBI = "GRB"
-SCIP = "SCIP"
+SCIP = "SCIP" # will be supported in the future
 
 # variable types
 BINARY = "B"

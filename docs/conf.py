@@ -14,8 +14,8 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../mip/'))
 
+sys.path.insert(0, os.path.abspath('../'))
 
 # -- Project information -----------------------------------------------------
 
@@ -27,7 +27,6 @@ author = 'Santos, H.G. <haroldo@ufop.edu.br> and Toffolo, T.A.M. <tulio@toffolo.
 version = ''
 # The full version, including alpha/beta/rc tags
 release = ''
-
 
 # -- General configuration ---------------------------------------------------
 
@@ -73,7 +72,6 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = None
 
-
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -90,7 +88,7 @@ html_theme = 'alabaster'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ['static']
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
@@ -108,25 +106,23 @@ html_static_path = ['_static']
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'python-mipdoc'
 
-
 # -- Options for LaTeX output ------------------------------------------------
 
 latex_engine = 'pdflatex'
 latex_logo = './images/coin-or-logo.png'
 latex_elements = {
- 'papersize': 'a4paper',
- 'fncychap': '\\usepackage{fncychap}',
- 'fontpkg': '\\usepackage{amsmath,amsfonts,amssymb,amsthm}'
-        }
+    'papersize': 'a4paper',
+    'fncychap': '\\usepackage{fncychap}',
+    'fontpkg': '\\usepackage{amsmath,amsfonts,amssymb,amsthm}'
+}
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-        (master_doc, 'python-mip.tex', 'Mixed Integer Linear Programming with Python',
+    (master_doc, 'python-mip.tex', 'Mixed Integer Linear Programming with Python',
      'Haroldo G. Santos \\and Túlio A.M. Toffolo', 'manual'),
 ]
-
 
 # -- Options for manual page output ------------------------------------------
 
@@ -137,7 +133,6 @@ man_pages = [
      [author], 1)
 ]
 
-
 # -- Options for Texinfo output ----------------------------------------------
 
 # Grouping the document tree into Texinfo files. List of tuples
@@ -145,10 +140,9 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'python-mip', 'Python-MIP Documentation',
-     author, 'python-mip', 'Python tools to model and optimize Mixed-Integer Linear Programs.',
+     author, 'python-mip', 'Python tools to model and optimize Mixed Integer Linear Programs.',
      'Miscellaneous'),
 ]
-
 
 # -- Options for Epub output -------------------------------------------------
 
@@ -167,10 +161,9 @@ epub_title = project
 # A list of files that should not be packed into the epub file.
 epub_exclude_files = ['search.html']
 
-
 # -- Extension configuration -------------------------------------------------
-#numfig = True
-#math_numfig = True
+# numfig = True
+# math_numfig = True
 math_eqref_format = "Eq.{number}"
 
 add_module_names = False
