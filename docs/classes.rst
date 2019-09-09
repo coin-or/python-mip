@@ -3,6 +3,8 @@ Classes
 
 .. _chapClasses:
 
+.. automodule:: mip.callbacks
+.. automodule:: mip.constants
 .. automodule:: mip.exceptions
 .. automodule:: mip.model
 
@@ -67,3 +69,9 @@ ProgressLog
 .. autoclass:: mip.model.ProgressLog
     :members:
 
+Useful functions
+----------------
+
+.. automethod:: mip.model.minimize
+.. automethod:: mip.model.maximize
+.. automethod:: mip.model.xsum
