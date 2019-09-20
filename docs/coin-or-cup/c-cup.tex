@@ -40,14 +40,14 @@ Python naturally provides convenient data structures such as sets and dictionari
 
 \begin{minted}{python}
 m = Model()
-n, n0 = len(N), min(N) 
-x = {a: model.add_var(var_type=BINARY) for a in A.keys()}
-y = {i: model.add_var() for i in N}
-m.objective = minimize(xsum(A[a]*x[a] for a in A.keys()))
+n, n0 = len(N), min(N)
+x = {(i, j): m.add_var(var_type=BINARY) for (i, j) in A}
+y = {i: m.add_var() for i in N}
+m.objective = minimize(xsum(A[a]*x[a] for a in A))
 for i in N:
-    m += xsum(x[a] for a in A if a[0]==i) == 1
-    m += xsum(x[a] for a in A if a[1]==i) == 1
-for (i, j) in [a for a in A.keys() if n0 not in [a[0], a[1]]]:
+    m += xsum(x[a] for a in A if a[0] == i) == 1
+    m += xsum(x[a] for a in A if a[1] == i) == 1
+for (i, j) in [a for a in A if n0 not in [a[0], a[1]]]:
     m += y[i] - (n+1)*x[(i, j)] >= y[j]-n
 \end{minted}
 
