@@ -322,10 +322,11 @@ class LinExpr:
             return False
         if abs(self.__const - other.__const) >= 1e-12:
             return False
+        other_contents = {vr.idx: coef  for vr, coef  in other.__expr.items()}
         for (v, c) in self.__expr.items():
-            if v not in other.__expr:
+            if v.idx not in other_contents:
                 return False
-            oc = other.__expr[v]
+            oc = other_contents[v.idx]
             if abs(c - oc) > 1e-12:
                 return False
         return True
