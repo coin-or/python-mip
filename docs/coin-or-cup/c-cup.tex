@@ -51,20 +51,27 @@
 \section{Introduction}
 
 \PythonMIP\ is a comprehensive collection of tools for modeling and solving Mixed-Integer Linear Programs (MIP) using Python. 
-The package was designed with the following goals in mind: (1) clarity - it should provide easy high-level modeling; (2) performance; and (3) extensibility and configurability.
-% The \PythonMIP\ module is a comprehensive collection of tools for the modelling and solution of Mixed-Integer Linear Programs in Python. The following design goals were considered in the creation of this package: (1) clear, high-level modelling; (2) performance and (3) extensibility and configurability.
-Traditionally, some of these goals have been considered conflicting. 
+The package was designed with the following goals in mind: 
+
+(1) clarity - it should provide easy high-level modeling; 
+
+(2) performance; and 
+
+(3) extensibility and configurability.
+
+\noindent Traditionally, some of these goals have been considered conflicting. 
 On the one hand, high-level languages languages such as \AMPL\ \cite{Fourer1987} were usually the best choice for the rapid development of models that didn't require advanced configuration.
 On the other hand, interaction with the solver engine and low level languages like \C\ were the best option for those who wanted to achieve maximum performance. 
-By performance gains we consider here both improvements in the \emph{model creation times} but also, and most importantly, the ones that can be obtained in \emph{solution times} by a deeper integration with the solver engine (bi-directional communication) during the solution process.
-Since state-of-the-art solvers such as \CPLEX\ are generally developed in the \texttt{C} language \cite{Bixby2002}, the access to advanced features was often only available to those using this language.
+By performance gains we consider here improvements in the \emph{model creation times} but also, and most importantly, the ones that can be obtained in \emph{solution times} using features that enable a deeper integration with the solver engine (bi-directional communication) during the solution process.
+Cuts generation is an example of these features.
+Since state-of-the-art solvers such as \CPLEX\ are generally developed in the \texttt{C} language \cite{Bixby2002}, the access to more advanced features was often only available to those using this language.
 
-Recently, frameworks like \JuMP \cite{Dunning2015} showed that these goals are not necessarily conflicting.
+Recently, frameworks like \JuMP\ \cite{Dunning2015} showed that goals (1)-(3) are not necessarily conflicting.
 The availability of highly expressive languages such as \Julia\ and fast just-in-time compilers can be used to quickly develop efficient optimization codes in a convenient high-level language. 
 Thus, \JuMP\ scores quite well w.r.t.\ goals (1)-(3). 
 The objective of the \PythonMIP\ project is to provide a tool that excels in goals (1)-(3) using the Python programming language.
 
-Python is becoming the most popular \cite{Econ2018} programming language according to recent surveys. 
+Python is becoming the most popular programming language according to recent surveys \cite{Econ2018}. 
 Part of this success is due to the availability of a very large number of easily accessible third-party packages ($\approx 200,000$ currently) with various functionalities. 
 Data science and machine learning are some of the prominent uses of Python currently. 
 In this context, a Python package that enables the fast implementation of MIP models can benefit from this ecosystem rich in data processing and analysis solutions to speedup the development of effective decision making tools. 
@@ -73,7 +80,8 @@ In the next subsections we discuss some characteristics of \PythonMIP\ w.r.t.\ i
 \subsection{Clarity}
 Python naturally provides convenient data structures such as sets and dictionaries. 
 In \PythonMIP\ the expression of linear constraints can be conveniently stated using operators over objects in these data structures. 
-Let \texttt{N} be a set of cities (nodes) and \texttt{A} a dictionary that maps arcs $(i,j)$, for all $i,j\in N$, to their respective distances, then the Traveling Salesman Person (TSP) formulation \cite{Miller1960} can be stated in only 10 lines of code:
+Let \texttt{N} be a set of cities (nodes) and \texttt{A} a dictionary that maps arcs $(i,j)$, for all $i,j\in N$, to their respective distances.
+The Traveling Salesman Person (TSP) formulation \cite{Miller1960} can be stated in only 10 lines of code using \PythonMIP:
 
 \begin{minted}{python}
     m = Model("TSP")
@@ -91,7 +99,7 @@ Let \texttt{N} be a set of cities (nodes) and \texttt{A} a dictionary that maps 
 \subsection{Performance}
 \PythonMIP\ was written in modern, statically typed Python to be fully compatible with the high performance Just-In-Time compiler \Pypy. 
 To provide a deep integration with the supported solver engines, \PythonMIP\ uses \CFFI\footnote{\href{https://cffi.readthedocs.io}{The C Foreign Function Interface for Python}} to communicate directly with native dynamic loadable libraries. 
-Some of the advantages of this choice over \Cython\ are: ($i$) \C\ code can be included directly within Python modules, ($ii$) no recompilation is needed if a new version of a solver is released and ($iii$) \Pypy\ is specially optimized\footnote{\href{https://pypy.org/compat.html}{https://pypy.org/compat.html}} to work with it. 
+Some of the advantages of this choice over alternative options like \Cython\ are: ($i$) \C\ code can be included directly within Python modules, ($ii$) no recompilation is needed if a new version of a solver is released and ($iii$) \Pypy\ is specially optimized\footnote{\href{https://pypy.org/compat.html}{https://pypy.org/compat.html}} to work with it. 
 One shortcoming of this approach is that only \C\ functions can be called. 
 While for \Gurobi\ this was not a problem, \CBC\ is written in \texttt{C++} and only a subset of functionalities was available in \C\ in 2018. 
 Therefore, in the previous months, we expanded and improved the \CBC\ \C\ API adding several advanced features such as \href{https://python-mip.readthedocs.io/en/latest/custom.html#cut-callback}{cut callbacks}, \href{https://python-mip.readthedocs.io/en/latest/custom.html#lazy-constraints}{lazy constraints} and an \href{https://python-mip.readthedocs.io/en/latest/classes.html#incumbentupdater}{incumbent solution callback} where the solution in terms of the original variables (not the pre-processed ones) can be queried. 
@@ -100,24 +108,24 @@ Some of these features are not available in the \CPP\ API.
 With our additions, we believe that now that are many cases in which the the \CBC\ \C\ API is even more convenient to use than the \CPP\ one.
 As for \Gurobi, using \PythonMIP\ and \Pypy\ to create MIP models can be up to \href{https://python-mip.readthedocs.io/en/latest/bench.html#n-queens}{ \emph{25 times faster}} than using the official \Gurobi\ Python interface. 
 Moreover, \PythonMIP\ eases the implementation of alternative formulations for the same combinatorial optimization problem.
-This can result in dramatic performance gains, such as the one observed when solving the TSP with the \href{https://github.com/coin-or/python-mip/blob/master/examples/tsp-compact.py}{compact formulation} and the \href{https://github.com/coin-or/python-mip/blob/master/examples/tsp-cuts.py}{branch-\&-cut with the sub-tour elimination constraints}.
+This can result in dramatic performance gains, such as the one observed when solving the TSP with \href{https://github.com/coin-or/python-mip/blob/master/examples/tsp-cuts.py}{branch-\&-cut with the sub-tour elimination constraints} instead of using a \href{https://github.com/coin-or/python-mip/blob/master/examples/tsp-compact.py}{compact formulation}.
 
 \subsection{Extensibility and configurability}
 
 While the performance of standalone MIP solvers is continuously improving, it is often the case that the solution times obtained simply by feeding the MIP model to the MIP solver and querying the results is poor. 
-The best MIP formulations often have an exponential number of constraints (or variables) and handling them requires bi-directional communication with the solver engine to include them on-demand, during the tree search. 
-\PythonMIP\ has solver-independent callbacks: \href{https://python-mip.readthedocs.io/en/latest/custom.html#cut-callback}{cut generators} and \href{https://python-mip.readthedocs.io/en/latest/custom.html#lazy-constraints}{lazy constraints} are available. The integration with problem dependent heuristics is also quite easy using \href{https://python-mip.readthedocs.io/en/latest/custom.html#providing-initial-feasible-solutions}{MIPStarts} and the \href{https://python-mip.readthedocs.io/en/latest/classes.html#incumbentupdater}{incumbent callback} can be used to improve the performance in the production of high quality, feasible solutions.
+The best MIP formulations often have an exponential number of constraints (or variables) and handling them requires bi-directional communication with the solver engine to include them on-demand. %, during the tree search. 
+\PythonMIP\ has solver-independent callbacks: \href{https://python-mip.readthedocs.io/en/latest/custom.html#cut-callback}{cut generators} and \href{https://python-mip.readthedocs.io/en/latest/custom.html#lazy-constraints}{lazy constraints} are available. The integration with problem dependent heuristics is also quite easy using \href{https://python-mip.readthedocs.io/en/latest/custom.html#providing-initial-feasible-solutions}{MIPStarts}, and the \href{https://python-mip.readthedocs.io/en/latest/classes.html#incumbentupdater}{incumbent callback} can be used to improve the performance in the production of high quality, feasible solutions.
 
 \section{Final remarks}
 
-The \href{https://github.com/coin-or/python-mip/commit/ba1719db4bf033dd661844bc797779a98a884d81}{first commit} in \PythonMIP\ was less than a year ago. 
+The \href{https://github.com/coin-or/python-mip/commit/ba1719db4bf033dd661844bc797779a98a884d81}{initial commit} in \PythonMIP\ was less than a year ago. 
 Nevertheless, we believe that an impressive number of well documented and tested features is already implemented. 
 Our plan is to keep improving Python-MIP by adding new features and performance improvements. 
 Furthermore, our objective is to keep and support all these features for multiple solvers. 
 To make this objective feasible, we do not plan to support a large number of solvers.
 In fact, our priority is the open source solver \CBC\ and one or two state-of-the-art commercial solvers. 
 
-Finally, the complete \PythonMIP\ documentation and more information can be accessed at the \href{http://www.python-mip.com}{package's website}.
+For more information, the complete \PythonMIP\ code and documentation can be accessed at the \href{http://www.python-mip.com}{package's website}.
 
 \bibliographystyle{plain}
 \bibliography{references}
