@@ -2,7 +2,7 @@
 
 from enum import Enum
 
-VERSION = '1.4.2'
+VERSION = '1.4.3'
 
 # epsilon number (practical zero)
 EPS = 10e-6
