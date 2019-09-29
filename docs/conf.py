@@ -161,6 +161,9 @@ epub_title = project
 # A list of files that should not be packed into the epub file.
 epub_exclude_files = ['search.html']
 
+nitpick_ignore = [('py:class', 'float'), ('py:class', 'str'),
+                  ('py:class', 'bool'), ('py:class', 'int')]
+
 # -- Extension configuration -------------------------------------------------
 # numfig = True
 # math_numfig = True

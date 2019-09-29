@@ -1,17 +1,18 @@
 """Python-MIP interface to the COIN-OR Branch-and-Cut solver CBC"""
 
+from typing import Dict, List, Tuple
+from sys import platform, maxsize
+from os.path import dirname, isfile
+import os
+from cffi import FFI
+from mip.model import xsum
 import mip
 from mip.model import Model, Solver, Var, Constr, Column, LinExpr, \
     VConstrList, VVarList
 from mip.constants import MAXIMIZE, SearchEmphasis, CONTINUOUS, BINARY, \
     INTEGER, MINIMIZE, EQUAL, LESS_OR_EQUAL, GREATER_OR_EQUAL, \
     OptimizationStatus
-from typing import Dict, List, Tuple
-from sys import platform, maxsize
-from os.path import dirname, isfile
-from mip.model import xsum
-import os
-from cffi import FFI
+from math import floor
 
 warningMessages = 0
 
@@ -121,6 +122,9 @@ if has_cbc:
 
     void Cbc_addRow(Cbc_Model *model, const char *name, int nz,
         const int *cols, const double *coefs, char sense, double rhs);
+
+    void Cbc_addLazyConstraint(Cbc_Model *model, int nz,
+        int *cols, double *coefs, char sense, double rhs);
 
     void Cbc_addSOS(Cbc_Model *model, int numRows, const int *rowStarts,
         const int *colIndices, const double *weights, const int type);
@@ -339,11 +343,18 @@ if has_cbc:
     const double *Cbc_getRowPrice(Cbc_Model *model);
 
     const double *Osi_getRowPrice(void *osi);
+
+    double Osi_getIntegerTolerance(void *osi);
     """)
 
 CHAR_ONE = "{}".format(chr(1)).encode("utf-8")
 CHAR_ZERO = "\0".encode("utf-8")
 
+Osi_getNumCols = cbclib.Osi_getNumCols
+Osi_getColSolution = cbclib.Osi_getColSolution
+Osi_getIntegerTolerance = cbclib.Osi_getIntegerTolerance
+Osi_isInteger = cbclib.Osi_isInteger
+Osi_isProvenOptimal = cbclib.Osi_isProvenOptimal
 
 def cbc_set_parameter(model: Model, param: str, value: str):
     cbclib.Cbc_setParameter(model._model, param.encode("utf-8"),
@@ -518,30 +529,45 @@ class SolverCbc(Solver):
         def cbc_cut_callback(osi_solver: CData, osi_cuts: CData,
                              app_data: CData):
             if osi_solver == ffi.NULL or osi_cuts == ffi.NULL or \
-                    self.model.cuts_generator is None:
+                    (self.model.cuts_generator is None
+                     and self.model.lazy_constrs_generator is None):
                 return
-            if cbclib.Osi_isProvenOptimal(osi_solver) != CHAR_ONE:
+            if Osi_isProvenOptimal(osi_solver) != CHAR_ONE:
                 return
+
+            # checking if solution is fractional or not
+            nc = Osi_getNumCols(osi_solver)
+            x = Osi_getColSolution(osi_solver)
+            itol = Osi_getIntegerTolerance(osi_solver)
+            fractional = False
+            for j in range(nc):
+                if Osi_isInteger(osi_solver, j):
+                    if (x[j] - floor(x[j]+0.5)) > itol:
+                        fractional = True
+                        break
+
             osi_model = ModelOsi(osi_solver)
             osi_model._status = osi_model.solver.get_status()
             osi_model.solver.osi_cutsp = osi_cuts
-
-            # calling cut generators
-            self.model.cuts_generator.generate_cuts(osi_model)
+            if fractional and self.model.cuts_generator:
+                self.model.cuts_generator.generate_constrs(osi_model)
+            if (not fractional) and self.model.lazy_constrs_generator:
+                self.model.lazy_constrs_generator.generate_constrs(osi_model)
 
         # adding cut generators
         m = self.model
-        if m.cuts_generator is not None and self.added_cut_callback is False:
+        if m.cuts_generator is not None:
             atSol = CHAR_ZERO
-            if hasattr(m.cuts_generator, "lazy_constraints") \
-                    and m.cuts_generator.lazy_constraints:
-                atSol = CHAR_ONE
-                cbc_set_parameter(self, "preprocess", "off")
-                cbc_set_parameter(self, "heur", "off")
             cbclib.Cbc_addCutCallback(self._model, cbc_cut_callback,
-                                      'mipCutGen'.encode('utf-8'),
+                                      'UserCuts'.encode('utf-8'),
                                       ffi.NULL, 1, atSol)
-            self.added_cut_callback = True
+        if m.lazy_constrs_generator is not None:
+            atSol = CHAR_ONE
+            cbc_set_parameter(self, "preprocess", "off")
+            cbc_set_parameter(self, "heur", "off")
+            cbclib.Cbc_addCutCallback(self._model, cbc_cut_callback,
+                                      'LazyConstraints'.encode('utf-8'),
+                                      ffi.NULL, 1, atSol)
 
         if self.__verbose == 0:
             cbclib.Cbc_setLogLevel(self._model, 0)
@@ -766,6 +792,20 @@ class SolverCbc(Solver):
         mp = self._model
         cbclib.Cbc_addRow(mp, namestr, numnz, cind, cval, sense, rhs)
 
+    def add_lazy_constr(self, lin_expr: LinExpr):
+        # collecting linear expression data
+        numnz = len(lin_expr.expr)
+
+        cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
+        cval = ffi.new("double[]", [coef for coef in lin_expr.expr.values()])
+
+        # constraint sense and rhs
+        sense = lin_expr.sense.encode("utf-8")
+        rhs = -lin_expr.const
+
+        mp = self._model
+        cbclib.Cbc_addLazyConstraint(mp, numnz, cind, cval, sense, rhs)
+
     def add_sos(self, sos: List[Tuple["Var", float]], sos_type: int):
         starts = ffi.new("int[]", [0, len(sos)])
         idx = ffi.new("int[]", [v.idx for (v, f) in sos])
@@ -773,23 +813,9 @@ class SolverCbc(Solver):
         cbclib.Cbc_addSOS(self._model, 1, starts, idx, w, sos_type)
 
     def add_cut(self, lin_expr: LinExpr):
-        if self.osi_cutsp != ffi.NULL:
-            numnz = len(lin_expr.expr)
-
-            cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
-            cval = ffi.new("double[]", [coef for coef in
-                                        lin_expr.expr.values()])
-
-            # constraint sense and rhs
-            sense = lin_expr.sense.encode("utf-8")
-            rhs = -lin_expr.const
-
-            cbclib.OsiCuts_addRowCut(self.osi_cutsp, numnz, cind, cval,
-                                     sense, rhs)
-        else:
-            global cut_idx
-            name = 'cut{}'.format(cut_idx)
-            self.add_constr(lin_expr, name)
+        global cut_idx
+        name = 'cut{}'.format(cut_idx)
+        self.add_constr(lin_expr, name)
 
     def write(self, file_path: str):
         fpstr = file_path.encode("utf-8")
@@ -951,8 +977,8 @@ class SolverCbc(Solver):
         elif constr.sense == "=":
             return abs(activity - rhs)
         else:
-            raise Exception("not prepared to handle sense {} in get_slack".
-                            constr.sense)
+            raise Exception("not prepared to handle sense {} in \
+                            get_slack".format(constr.sense))
 
         return 0.0
 
@@ -979,7 +1005,7 @@ class ModelOsi(Model):
         self.__cut_passes = -1
         self.__clique = -1
         self.__preprocess = -1
-        self.__cuts_generator = None
+        self.__constrs_generator = None
         self.__lazy_constrs_generator = None
         self.__start = None
         self.__threads = 0
@@ -992,7 +1018,8 @@ class ModelOsi(Model):
 class SolverOsi(Solver):
     """Interface for the OsiSolverInterface, the generic solver interface of
     COIN-OR. This solver has a restricted functionality (comparing to
-    SolverCbc) and it is used mainly in callbacks"""
+    SolverCbc) and it is used mainly in callbacks where only the pre-processed
+    model is available"""
 
     def __init__(self, model: Model, osi_ptr: CData =
                  ffi.NULL):
@@ -1059,10 +1086,29 @@ class SolverOsi(Solver):
         rhs = -lin_expr.const
 
         namestr = name.encode("utf-8")
-        mp = self._model
+        mp = self.osi
         cbclib.Osi_addRow(mp, namestr, numnz, cind, cval, sense, rhs)
 
     def add_cut(self, lin_expr: LinExpr):
+        if self.osi_cutsp != ffi.NULL:
+            numnz = len(lin_expr.expr)
+
+            cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
+            cval = ffi.new("double[]", [coef for coef in
+                                        lin_expr.expr.values()])
+
+            # constraint sense and rhs
+            sense = lin_expr.sense.encode("utf-8")
+            rhs = -lin_expr.const
+
+            cbclib.OsiCuts_addRowCut(self.osi_cutsp, numnz, cind, cval,
+                                     sense, rhs)
+        else:
+            global cut_idx
+            name = 'cut{}'.format(cut_idx)
+            self.add_constr(lin_expr, name)
+
+    def add_lazy_constr(self, lin_expr: LinExpr):
         if self.osi_cutsp != ffi.NULL:
             numnz = len(lin_expr.expr)
 
@@ -1088,7 +1134,7 @@ class SolverOsi(Solver):
         obj = cbclib.Osi_getObjCoefficients(self.osi)
         if obj == ffi.NULL:
             raise Exception("Error getting objective function coefficients")
-        return xsum(obj[j]*self.vars[j] for j in range(self.num_cols())
+        return xsum(obj[j]*self.model.vars[j] for j in range(self.num_cols())
                     if abs(obj[j]) >= 1e-15)
 
     def get_objective_const(self) -> float:
@@ -1271,11 +1317,11 @@ class SolverOsi(Solver):
         rsense = cbclib.Osi_getRowSense(self.osi,
                                         constr.idx).decode("utf-8").upper()
         sense = ''
-        if (rsense == 'E'):
+        if rsense == 'E':
             sense = EQUAL
-        elif (rsense == 'L'):
+        elif rsense == 'L':
             sense = LESS_OR_EQUAL
-        elif (rsense == 'G'):
+        elif rsense == 'G':
             sense = GREATER_OR_EQUAL
         else:
             raise Exception('Unknow sense: {}'.format(rsense))
@@ -1331,7 +1377,7 @@ class SolverOsi(Solver):
         cbclib.Osi_setColUpper(self.osi, var.idx, value)
 
     def var_get_obj(self, var: "Var") -> float:
-        obj = cbclib.Osi_getObjCoefficients(self._model)
+        obj = cbclib.Osi_getObjCoefficients(self.osi)
         if obj == ffi.NULL:
             raise Exception("Error getting objective function coefficients")
         return obj[var.idx]
@@ -1346,17 +1392,17 @@ class SolverOsi(Solver):
             ub = self.var_get_ub(var)
             if abs(lb) <= 1e-15 and abs(ub - 1.0) <= 1e-15:
                 return BINARY
-            else:
-                return INTEGER
+
+            return INTEGER
 
         return CONTINUOUS
 
     def var_set_var_type(self, var: "Var", value: str):
         cv = var.var_type
-        if (value == cv):
+        if value == cv:
             return
         if cv == CONTINUOUS:
-            if value == INTEGER or value == BINARY:
+            if value in (INTEGER, BINARY):
                 cbclib.Osi_setInteger(self.osi, var.idx)
         else:
             if value == CONTINUOUS:
@@ -1369,12 +1415,12 @@ class SolverOsi(Solver):
                 var.ub = 1.0
 
     def var_get_column(self, var: "Var") -> Column:
-        numnz = cbclib.Cbc_getColNz(self._model, var.idx)
+        numnz = cbclib.Cbc_getColNz(self.osi, var.idx)
 
-        cidx = cbclib.Cbc_getColIndices(self._model, var.idx)
+        cidx = cbclib.Cbc_getColIndices(self.osi, var.idx)
         if cidx == ffi.NULL:
             raise Exception("Error getting column indices'")
-        ccoef = cbclib.Cbc_getColCoeffs(self._model, var.idx)
+        ccoef = cbclib.Cbc_getColCoeffs(self.osi, var.idx)
 
         col = Column()
 
