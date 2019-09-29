@@ -8,6 +8,7 @@ from mip.constants import BINARY, CONTINUOUS, INTEGER, MINIMIZE, INF, \
     OptimizationStatus, SearchEmphasis, VERSION, GUROBI, CBC, \
     LESS_OR_EQUAL, GREATER_OR_EQUAL, EPS, MAXIMIZE
 from mip.exceptions import InvalidLinExpr, SolutionNotAvailable
+from mip.solver import Solver
 
 
 class Column:
@@ -442,7 +443,7 @@ class ProgressLog:
         f = open(file_name, 'w')
         f.write('instance: {}'.format(self.instance))
         f.write('settings: {}'.format(self.settings))
-        for (s, (l, b)) in self.__log:
+        for (s, (l, b)) in self.log:
             f.write('{},{},{}'.format(s, l, b))
         f.close()
 
@@ -646,6 +647,25 @@ class Model:
             used as a constraint.")
         return self.constrs.add(lin_expr, name)
 
+    def add_lazy_constr(self, expr: LinExpr):
+        """Adds a lazy constraint
+
+           A lazy constraint is a constraint that is only inserted
+           into the model after the first integer solution that violates
+           it is found. When lazy constraints are used a restricted
+           pre-processing is executed since the complete model is not
+           available at the beginning. If the number of lazy constraints
+           is too large then they can be added during the search process
+           by implementing a
+           :class:`~mip.callbacks.ConstrsGenerator` and setting the
+           property :attr:`~mip.model.Model.lazy_constrs_generator` of
+           :class:`~mip.model.Model`.
+
+           Args:
+               expr(LinExpr): the linear constraint
+        """
+        self.solver.add_lazy_constr(expr)
+
     def add_sos(self, sos: List[Tuple["Var", float]], sos_type: int):
         """Adds an Special Ordered Set (SOS) to the model
 
@@ -704,7 +724,7 @@ class Model:
         else:
             # checking which solvers are available
             from mip import gurobi
-            if gurobi.has_gurobi:
+            if gurobi.found:
                 from mip.gurobi import SolverGurobi
                 self.solver = SolverGurobi(self, self.name, sense)
                 self.solver_name = GUROBI
@@ -720,6 +740,7 @@ class Model:
         # initializing additional control variables
         self.__cuts = 1
         self.__cuts_generator = None
+        self.__lazy_constrs_generator = None
         self.__start = []
         self._status = OptimizationStatus.LOADED
         self.__threads = 0
@@ -866,14 +887,14 @@ class Model:
                                  solution.'.format(path))
             var_list = []
             for name, value in mip_start:
-                var = self.model.var_by_name(name)
+                var = self.var_by_name(name)
                 if var is not None:
-                    self.var_list.append(var, value)
+                    var_list.append(var, value)
             if not var_list:
                 raise Exception('Invalid variable(s) name(s) in \
                                  mipstart file {}'.format(path))
 
-            self.model.start = var_list
+            self.start = var_list
 
         elif path.lower().endswith('.lp') or \
                 path.lower().endswith('.mps'):
@@ -978,9 +999,10 @@ class Model:
         """
         return self.solver.get_objective()
 
+    # TODO how to handle objective += ?
     @objective.setter
     def objective(self, objective):
-        if isinstance(objective, int) or isinstance(objective, float):
+        if isinstance(objective, (int, float)):
             self.solver.set_objective(LinExpr([], [], objective))
         elif isinstance(objective, Var):
             self.solver.set_objective(LinExpr([objective], [1]))
@@ -1128,12 +1150,14 @@ class Model:
                 for i in range(self.num_solutions)]
 
     @property
-    def cuts_generator(self) -> "CutsGenerator":
-        """Cut generator callback. Cut generators are called whenever a
-        solution where one or more integer variables appear with
-        continuous values. A cut generator will try to produce
-        one or more inequalities to remove this fractional point.
+    def cuts_generator(self) -> "ConstrsGenerator":
+        """A cuts generator is an :class:`~mip.callbacks.ConstrsGenerator`
+        object that receives a fractional solution and tries to generate one or
+        more constraints (cuts) to remove it. The cuts generator is called in
+        every node of the branch-and-cut tree where a solution that violates
+        the integrality constraint of one or more variables is found.
         """
+
         return self.__cuts_generator
 
     @cuts_generator.setter
@@ -1141,7 +1165,19 @@ class Model:
         self.__cuts_generator = cuts_generator
 
     @property
-    def lazy_constrs_generator(self) -> "LazyConstrsGenerator":
+    def lazy_constrs_generator(self) -> "ConstrsGenerator":
+        """A lazy constraints generator is an :class:`~mip.callbacks.ConstrsGenerator`
+        object that receives an integer solution and checks its feasibility. If
+        the solution is not feasible then one or more constraints can be
+        generated to remove it. When a lazy constraints generator is informed
+        it is assumed that the initial formulation is incomplete. Thus, a
+        restricted pre-processing routine may be applied. If the initial
+        formulation is incomplete, it may be interesting to use the same
+        :class:`~mip.callbacks.ConstrsGenerator` to generate cuts *and* lazy
+        constraints. The use of *only* lazy constraints may be useful then
+        integer solutions rarely violate these constraints.
+        """
+
         return self.__lazy_constrs_generator
 
     @lazy_constrs_generator.setter
@@ -1429,247 +1465,6 @@ class Model:
                             + type(objects) + " from model.")
 
 
-class Solver:
-
-    def __init__(self, model: Model, name: str = '', sense: str = ''):
-        self.model = model
-        if name:
-            self.name = name
-        if sense:
-            self.sense = sense
-
-    def __del__(self):
-        pass
-
-    def add_var(self,
-                name: str = "",
-                obj: float = 0,
-                lb: float = 0,
-                ub: float = INF,
-                var_type: str = CONTINUOUS,
-                column: "Column" = None):
-        pass
-
-    def add_constr(self, lin_expr: "LinExpr", name: str = ""):
-        pass
-
-    def add_sos(self, sos: List[Tuple["Var", float]], sos_type: int):
-        pass
-
-    def add_cut(self, lin_expr: LinExpr):
-        pass
-
-    def get_objective_bound(self) -> float:
-        pass
-
-    def get_objective(self) -> LinExpr:
-        pass
-
-    def get_objective_const(self) -> float:
-        pass
-
-    def relax(self):
-        pass
-
-    def optimize(self) -> OptimizationStatus:
-        pass
-
-    def get_objective_value(self) -> float:
-        pass
-
-    def get_log(self) -> List[Tuple[float, Tuple[float, float]]]:
-        return []
-
-    def get_objective_value_i(self, i: int) -> float:
-        pass
-
-    def get_num_solutions(self) -> int:
-        pass
-
-    def get_objective_sense(self) -> str:
-        pass
-
-    def set_objective_sense(self, sense: str):
-        pass
-
-    def set_start(self, start: List[Tuple["Var", float]]):
-        pass
-
-    def set_objective(self, lin_expr: "LinExpr", sense: str = ""):
-        pass
-
-    def set_objective_const(self, const: float):
-        pass
-
-    def set_callbacks(self,
-                      branch_selector: "BranchSelector" = None,
-                      incumbent_updater: "IncumbentUpdater" = None,
-                      lazy_constrs_generator: "LazyConstrsGenerator" = None):
-        pass
-
-    def set_processing_limits(self,
-                              max_time: float = inf,
-                              max_nodes: int = inf,
-                              max_sol: int = inf):
-        pass
-
-    def get_max_seconds(self) -> float:
-        pass
-
-    def set_max_seconds(self, max_seconds: float):
-        pass
-
-    def get_max_solutions(self) -> int:
-        pass
-
-    def set_max_solutions(self, max_solutions: int):
-        pass
-
-    def get_pump_passes(self) -> int:
-        pass
-
-    def set_pump_passes(self, passes: int):
-        pass
-
-    def get_max_nodes(self) -> int:
-        pass
-
-    def set_max_nodes(self, max_nodes: int):
-        pass
-
-    def set_num_threads(self, threads: int):
-        pass
-
-    def write(self, file_path: str):
-        pass
-
-    def read(self, file_path: str):
-        pass
-
-    def num_cols(self) -> int:
-        pass
-
-    def num_rows(self) -> int:
-        pass
-
-    def num_nz(self) -> int:
-        pass
-
-    def num_int(self) -> int:
-        pass
-
-    def get_emphasis(self) -> SearchEmphasis:
-        pass
-
-    def set_emphasis(self, emph: SearchEmphasis):
-        pass
-
-    def get_cutoff(self) -> float:
-        pass
-
-    def set_cutoff(self, cutoff: float):
-        pass
-
-    def get_mip_gap_abs(self) -> float:
-        pass
-
-    def set_mip_gap_abs(self, mip_gap_abs: float):
-        pass
-
-    def get_mip_gap(self) -> float:
-        pass
-
-    def set_mip_gap(self, mip_gap: float):
-        pass
-
-    def get_verbose(self) -> int:
-        pass
-
-    def set_verbose(self, verbose: int):
-        pass
-
-    # Constraint-related getters/setters
-
-    def constr_get_expr(self, constr: Constr) -> LinExpr:
-        pass
-
-    def constr_set_expr(self, constr: Constr, value: LinExpr) -> LinExpr:
-        pass
-
-    def constr_get_name(self, idx: int) -> str:
-        pass
-
-    def constr_get_pi(self, constr: Constr) -> float:
-        pass
-
-    def constr_get_slack(self, constr: Constr) -> float:
-        pass
-
-    def remove_constrs(self, constrsList: List[int]):
-        pass
-
-    def constr_get_index(self, name: str) -> int:
-        pass
-
-    # Variable-related getters/setters
-
-    def var_get_lb(self, var: "Var") -> float:
-        pass
-
-    def var_set_lb(self, var: "Var", value: float):
-        pass
-
-    def var_get_ub(self, var: "Var") -> float:
-        pass
-
-    def var_set_ub(self, var: "Var", value: float):
-        pass
-
-    def var_get_obj(self, var: "Var") -> float:
-        pass
-
-    def var_set_obj(self, var: "Var", value: float):
-        pass
-
-    def var_get_var_type(self, var: "Var") -> str:
-        pass
-
-    def var_set_var_type(self, var: "Var", value: str):
-        pass
-
-    def var_get_column(self, var: "Var") -> Column:
-        pass
-
-    def var_set_column(self, var: "Var", value: Column):
-        pass
-
-    def var_get_rc(self, var: "Var") -> float:
-        pass
-
-    def var_get_x(self, var: "Var") -> float:
-        pass
-
-    def var_get_xi(self, var: "Var", i: int) -> float:
-        pass
-
-    def var_get_name(self, idx: int) -> str:
-        pass
-
-    def remove_vars(self, varsList: List[int]):
-        pass
-
-    def var_get_index(self, name: str) -> int:
-        pass
-
-    def get_problem_name(self) -> str:
-        pass
-
-    def set_problem_name(self, name: str):
-        pass
-
-    def get_status(self) -> OptimizationStatus:
-        pass
-
 
 class Var:
     """ Decision variable of the :class:`~mip.model.Model`. The creation of
@@ -1949,7 +1744,7 @@ class VVarList(Sequence):
             column: Column = None) -> Var:
         solver = self.__model.solver
         if not name:
-            name = 'var({})'.format(len(self.__vars))
+            name = 'var({})'.format(len(self))
         if var_type == BINARY:
             lb = 0.0
             ub = 1.0
@@ -1961,7 +1756,7 @@ class VVarList(Sequence):
         if (isinstance(key, str)):
             return self.__model.var_by_name(key)
         if (isinstance(key, slice)):
-            return VVarList(self.model, key.start, key.end)
+            return VVarList(self.__model, key.start, key.end)
         if (isinstance(key, int)):
             if key < 0:
                 key = self.__end - key

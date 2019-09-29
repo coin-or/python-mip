@@ -184,11 +184,11 @@ the initial model and then add the stronger sub-tour elimination constraints
 presented in the previous section as cuts. 
 
 In Python-MIP, CGC are implemented extending the
-:class:`~mip.callbacks.CutsGenerator` class. The following example implements
+:class:`~mip.callbacks.ConstrsGenerator` class. The following example implements
 the previous cut separation algorithm as a
-:class:`~mip.callbacks.CutsGenerator` class and includes it as a cut generator
+:class:`~mip.callbacks.ConstrsGenerator` class and includes it as a cut generator
 for the branch-and-cut solver engine. The method that needs to be implemented
-in this class is the :meth:`~mip.callbacks.CutsGenerator.generate_cuts`
+in this class is the :meth:`~mip.callbacks.ConstrsGenerator.generate_cuts`
 procedure. This method receives as parameter the object :code:`model` of type
 :class:`~mip.model.Model`. This object must be used to query the fractional
 values of the model :attr:`~mip.model.Model.vars`, using the
@@ -216,10 +216,10 @@ In our example, we temporarily store the generated cuts in our
     import networkx as nx
     from tspdata import TSPData
     from mip.model import Model, xsum, BINARY
-    from mip.callbacks import CutsGenerator, CutPool
+    from mip.callbacks import ConstrsGenerator, CutPool
 
 
-    class SubTourCutGenerator(CutsGenerator):
+    class SubTourCutGenerator(ConstrsGenerator):
         def __init__(self, Fl: List[Tuple[int, int]]):
             self.F = Fl
 
@@ -306,8 +306,8 @@ lazy constraints:
  :linenos:
     
     ...
-    m.cuts_generator = SubTourCutGenerator(F)
-    m.cuts_generator.lazy_constraints = True
+    m.constrs_generator = SubTourCutGenerator(F)
+    m.constrs_generator.lazy_constraints = True
     model.optimize()
     ...
 
