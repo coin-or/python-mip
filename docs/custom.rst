@@ -243,10 +243,10 @@ In our example, we temporarily store the generated cuts in our
                         cp.add(cut)
                         if len(cp.cuts) > 256:
                             for cut in cp.cuts:
-                                model.add_cut(cut)
+                                model += cut
                             return
             for cut in cp.cuts:
-                model.add_cut(cut)
+                model += cut
             return
 
 
