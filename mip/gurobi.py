@@ -234,6 +234,7 @@ GRBgetvars = grblib.GRBgetvars
 GRBsetcharattrelement = grblib.GRBsetcharattrelement
 GRBsetdblattrelement = grblib.GRBsetdblattrelement
 GRBsetintattr = grblib.GRBsetintattr
+GRBsetintattrelement = grblib.GRBsetintattrelement
 GRBsetdblattr = grblib.GRBsetdblattr
 GRBgetintattr = grblib.GRBgetintattr
 GRBgetintparam = grblib.GRBgetintparam
@@ -310,6 +311,7 @@ class SolverGurobi(Solver):
         self._model = ffi.NULL
         self._callback = None
         self._ownsModel = True
+        self._nlazy = 0
 
         if modelp == ffi.NULL:
             self._ownsModel = True
@@ -401,8 +403,6 @@ class SolverGurobi(Solver):
         return
 
     def add_constr(self, lin_expr: LinExpr, name: str = ""):
-        self.flush_cols()
-
         # collecting linear expression data
         nz = len(lin_expr.expr)
         cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
@@ -422,6 +422,13 @@ class SolverGurobi(Solver):
             raise Exception('Error adding constraint {} to the model'.format(
                 name))
         self.__n_rows_buffer += 1
+
+    def add_lazy_constr(self, lin_expr: "LinExpr"):
+        self.flush_rows()
+        self.set_int_param("LazyConstraints", 1)
+        self._nlazy += 1
+        self.add_constr(lin_expr, "lz({})".format(self._nlazy))
+        self.set_int_attr_element("Lazy", self.num_rows()-1, 3)
 
     def add_sos(self, sos: List[Tuple["Var", float]], sos_type: int):
         self.flush_cols()
@@ -511,68 +518,39 @@ class SolverGurobi(Solver):
                                     difu = abs(obj_best - log[-1][1][1])
                                     if difl >= 1e-6 or difu >= 1e-6:
                                         print('>>>>>>> {} {}'.format(
-                                              obj_bound, obj_best))
+                                            obj_bound, obj_best))
                                     log.append((sec, (obj_bound, obj_best)))
 
             # adding cuts or lazy constraints
-            if self.model.cuts_generator:
-                if where == GRB_CB_MIPNODE or \
-                    (where == GRB_CB_MIPSOL and
-                     hasattr(self.model.cuts_generator, 'lazy_constraints') and
-                     self.model.cuts_generator.lazy_constraints):
-                    if (where == GRB_CB_MIPNODE):
-                        st = ffi.new("int *")
-                        st[0] = 0
+            if self.model.cuts_generator and where == GRB_CB_MIPNODE:
+                st = ffi.new("int *")
+                st[0] = 0
 
-                        error = GRBcbget(p_cbdata, where,
-                                         GRB_CB_MIPNODE_STATUS, st)
-                        if error:
-                            raise Exception("Could not get gurobi status")
-                        if st[0] != GRB_OPTIMAL:
-                            return 0
+                error = GRBcbget(p_cbdata, where,
+                                 GRB_CB_MIPNODE_STATUS, st)
+                if error:
+                    raise Exception("Could not get gurobi status")
+                if st[0] != GRB_OPTIMAL:
+                    return 0
 
-                    mgc = ModelGurobiCB(p_model, p_cbdata, where)
-                    self.model.cuts_generator.generate_cuts(mgc)
+                mgc = ModelGurobiCB(p_model, p_cbdata, where)
+                self.model.cuts_generator.generate_constrs(mgc)
+                return 0
 
             # adding lazy constraints
-            elif self.model.lazy_constrs_generator and where == 4:  # MIPSOL==4
-                # obtaining relaxation solution and "translating" it
-                cb_solution = ffi.new('double[{}]'.format(self.num_cols))
-                GRBcbget(p_cbdata, where, GRB_CB_MIPSOL_SOL, cb_solution)
-                solution = []
-                for i in range(self.num_cols()):
-                    if abs(cb_solution[i]) > 1e-8:
-                        solution.append((self.model.vars[i], cb_solution[i]))
-
-                # calling constraint generator
-                lcg = self.model.lazy_constrs_generator
-                constrs = lcg.generate_lazy_constrs(solution)
-                # adding cuts
-                for lin_expr in constrs:
-                    # collecting linear expression data
-                    nz = len(lin_expr.expr)
-                    cind = ffi.new('int[]', [var.idx for
-                                             var in lin_expr.expr.keys()])
-                    cval = ffi.new('double[]', [c for c in
-                                                lin_expr.expr.values()])
-                    # constraint sense and rhs
-                    sense = lin_expr.sense.encode('utf-8')
-                    rhs = -lin_expr.const
-
-                    GRBcblazy(p_cbdata, nz, cind, cval, sense, rhs)
+            if self.model.lazy_constrs_generator and where == GRB_CB_MIPSOL:
+                mgc = ModelGurobiCB(p_model, p_cbdata, where)
+                self.model.lazy_constrs_generator.generate_constrs(mgc)
 
             return 0
 
         self.update()
         if self.model.cuts_generator is not None or \
+           self.model.lazy_constrs_generator is not None or \
            self.model.store_search_progress_log:
             GRBsetcallbackfunc(self._model, callback, ffi.NULL)
-
-        if (self.model.cuts_generator is not None and
-            hasattr(self.model.cuts_generator, 'lazy_constraints') and
-            self.model.cuts_generator.lazy_constraints) or \
-                self.model.lazy_constrs_generator is not None:
-            self.set_int_param("LazyConstraints", 1)
+            if self.model.lazy_constrs_generator:
+                self.set_int_param("LazyConstraints", 1)
 
         if self.__threads >= 1:
             self.set_int_param("Threads", self.__threads)
@@ -598,15 +576,15 @@ class SolverGurobi(Solver):
 
         # executing Gurobi to solve the formulation
         status = GRBoptimize(self._model)
-        if (status != 0):
+        if status != 0:
             if status == 10009:
                 raise Exception('gurobi found but license not accepted,\
      please check it')
-            elif status == 10001:
+            if status == 10001:
                 raise MemoryError('out of memory error')
-            else:
-                raise Exception('Gurobi error {} while\
-                                optimizing.'.format(status))
+
+            raise Exception('Gurobi error {} while\
+                             optimizing.'.format(status))
 
         status = self.get_int_attr("Status")
         # checking status for MIP optimization which
@@ -1062,6 +1040,16 @@ class SolverGurobi(Solver):
                 "Error modifying dbl attribute {} for element {} to value {}".
                 format(name, index, value))
 
+    def set_int_attr_element(self, name: str, index: int, value: int):
+        error = GRBsetintattrelement(self._model, name.encode('utf-8'),
+                                     index, value)
+        if error != 0:
+            raise Exception(
+                "Error modifying int attribute {} for element {} to value {}".
+                format(name, index, value))
+
+
+
     def set_int_attr(self, name: str, value: int):
         error = GRBsetintattr(self._model, name.encode('utf-8'), value)
         if error != 0:
@@ -1182,17 +1170,12 @@ class SolverGurobiCB(SolverGurobi):
         self._status = OptimizationStatus.LOADED
         self._where = where
 
-        if where not in [4, 5]:
+        if where not in [GRB_CB_MIPSOL, GRB_CB_MIPNODE]:
             return
-
-        # pre-allocate temporary space to query names
-        self.__name_space = ffi.new("char[{}]".format(MAX_NAME_SIZE))
-        # in cut generation
-        self.__name_spacec = ffi.new("char[{}]".format(MAX_NAME_SIZE))
 
         self.__relaxed = False
         gstatus = ffi.new('int *')
-        if where == 5:  # GRB_CB_MIPNODE
+        if where == GRB_CB_MIPNODE:
             res = GRBcbget(cb_data, where, GRB_CB_MIPNODE_STATUS, gstatus)
             if res != 0:
                 raise Exception('Error getting status')
@@ -1211,7 +1194,7 @@ class SolverGurobiCB(SolverGurobi):
                     raise Exception('Error getting fractional solution')
             else:
                 self._cb_sol = ffi.NULL
-        elif where == 4:  # GRB_CB_MIPSOL
+        elif where == GRB_CB_MIPSOL:
             self._status = OptimizationStatus.FEASIBLE
             ires = ffi.new('int *')
             st = GRBgetintattr(grb_model, 'NumVars'.encode('utf-8'), ires)
@@ -1226,24 +1209,80 @@ class SolverGurobiCB(SolverGurobi):
             if res != 0:
                 raise Exception('Error getting integer solution in gurobi \
                                 callback')
+            objp = ffi.new("double *")
+            res = GRBcbget(cb_data, where, GRB_CB_MIPSOL_OBJ, objp)
+            if res != 0:
+                raise Exception('Error getting solution obj in Gurobi')
+            self._obj_value = objp[0]
+
         else:
             self._cb_sol = ffi.NULL
 
-    def add_cut(self, cut: LinExpr):
-        numnz = len(cut.expr)
+    def add_cut(self, lin_expr: "LinExpr"):
+        numnz = len(lin_expr.expr)
 
-        cind = ffi.new("int[]", [var.idx for var in cut.expr.keys()])
+        cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
         cval = ffi.new("double[]", [coef for coef in
-                                    cut.expr.values()])
+                                    lin_expr.expr.values()])
 
         # constraint sense and rhs
-        sense = cut.sense.encode("utf-8")
-        rhs = -cut.const
+        sense = lin_expr.sense.encode("utf-8")
+        rhs = -lin_expr.const
 
         if self._where == GRB_CB_MIPNODE:
             GRBcbcut(self._cb_data, numnz, cind, cval, sense, rhs)
         elif self._where == GRB_CB_MIPSOL:
             GRBcblazy(self._cb_data, numnz, cind, cval, sense, rhs)
+
+    def add_constr(self, lin_expr: "LinExpr", name: str = ""):
+        # collecting linear expression data
+        nz = len(lin_expr.expr)
+        cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
+        cval = ffi.new("double[]", [coef for coef in lin_expr.expr.values()])
+
+        # constraint sense and rhs
+        sense = lin_expr.sense.encode('utf-8')
+        rhs = -lin_expr.const
+
+        if self._where == GRB_CB_MIPSOL:
+            res = GRBcblazy(self._cb_data, nz, cind, cval, sense, rhs)
+            if res != 0:
+                raise Exception("Error adding lazy constraint in Gurobi.")
+        elif self._where == GRB_CB_MIPNODE:
+            res = GRBcbcut(self._cb_data, nz, cind, cval, sense, rhs)
+            if res != 0:
+                raise Exception("Error adding lazy constraint in Gurobi.")
+
+    def add_lazy_constr(self, lin_expr: "LinExpr"):
+        if self._where == GRB_CB_MIPSOL:
+            # collecting linear expression data
+            nz = len(lin_expr.expr)
+            cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
+            cval = ffi.new("double[]", [coef for coef in lin_expr.expr.values()])
+
+            # constraint sense and rhs
+            sense = lin_expr.sense.encode('utf-8')
+            rhs = -lin_expr.const
+
+            res = GRBcblazy(self._cb_data, nz, cind, cval, sense, rhs)
+            if res != 0:
+                raise Exception("Error adding lazy constraint in Gurobi.")
+        elif self._where == GRB_CB_MIPNODE:
+            # collecting linear expression data
+            nz = len(lin_expr.expr)
+            cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
+            cval = ffi.new("double[]", [coef for coef in lin_expr.expr.values()])
+
+            # constraint sense and rhs
+            sense = lin_expr.sense.encode('utf-8')
+            rhs = -lin_expr.const
+
+            res = GRBcbcut(self._cb_data, nz, cind, cval, sense, rhs)
+            if res != 0:
+                raise Exception("Error adding cutting plane in Gurobi.")
+        else:
+            raise Exception("Calling add_lazy_constr in unknow callback \
+                            location")
 
     def get_status(self):
         return self._status
@@ -1277,7 +1316,7 @@ class ModelGurobiCB(Model):
         self.__cut_passes = -1
         self.__clique = -1
         self.__preprocess = -1
-        self.__cuts_generator = None
+        self.__constrs_generator = None
         self.__lazy_constrs_generator = None
         self.__start = None
         self.__threads = 0
