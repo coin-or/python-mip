@@ -2,7 +2,7 @@
 with the solver engine"""
 from collections import defaultdict
 from typing import List, Tuple
-from mip.model import LinExpr, Model, Var
+from mip.model import LinExpr, Model
 
 
 class BranchSelector:
@@ -51,19 +51,29 @@ class ColumnsGenerator:
 
 
 class ConstrsGenerator:
-    """abstract class for implementing cuts and lazy constraints generators"""
+    """Abstract class for implementing cuts and lazy constraints generators."""
 
-    def __init__(self):
-        self.lazy_constraints = False
+    def __init__(self):pass
 
-    def generate_constrs(self, model: Model):
-        """Method called by the solver engine to generate cuts or lazy constraints
+    def generate_constrs(self, model: "Model"):
+        """Method called by the solver engine to generate *cuts* or *lazy constraints*.
 
            After analyzing the contents of the solution in model
-           variables :meth:`~mip.model.Model.vars`, whose solution values can
-           be queried with the in :meth:`~mip.model.Var.x` method, one or more
+           variables :attr:`~mip.model.Model.vars`, whose solution values can
+           be queried with the in :attr:`~mip.model.Var.x` attribute, one or more
            constraints may be generated and added to the solver with
-           the :meth:`~mip.model.Model.add_constrs` method.
+           the :meth:`~mip.model.Model.add_cut` method for cuts. This method
+           can be called by the solver engine in two situations, in the first
+           one a fractional solution is found and one or more inequalities
+           can be generated (cutting planes) to remove this fractional
+           solution. In the second case an integer feasible solution is found
+           and then a new constraint can be generated (lazy constraint) to
+           report that this integer solution is not feasible.  To control when
+           the constraint generator will be called set your
+           :class:`~mip.callbacks.ConstrsGenerator` object in the attributes
+           :attr:`~mip.model.Model.cuts_generator` or
+           :attr:`~mip.model.Model.lazy_constrs_generator` (adding
+           to both is also possible).
 
         Args:
 

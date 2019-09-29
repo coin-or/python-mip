@@ -7,12 +7,12 @@
 from sys import stdout
 from mip.model import Model, xsum
 from mip.constants import MAXIMIZE, BINARY
-from mip.callbacks import CutsGenerator
+from mip.callbacks import ConstrsGenerator
 
 
-class DiagonalCutGenerator(CutsGenerator):
+class DiagonalCutGenerator(ConstrsGenerator):
 
-    def generate_cuts(self, model: Model):
+    def generate_constrs(self, model: Model):
         def row(vname: str) -> str:
             return int(vname.split('(')[1].split(',')[0].split(')')[0])
 
@@ -50,8 +50,7 @@ for j in range(n):
     queens += xsum(x[i][j] for i in range(n)) == 1, 'col({})'.format(j)
 
 
-queens.cuts_generator = DiagonalCutGenerator()
-queens.cuts_generator.lazy_constraints = True
+queens.lazy_constrs_generator = DiagonalCutGenerator();
 queens.optimize()
 
 stdout.write('\n')

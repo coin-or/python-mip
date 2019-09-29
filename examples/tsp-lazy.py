@@ -1,7 +1,8 @@
 """Example of a Branch-and-Cut implementation for the Traveling Salesman
-Problem using lazy constraints. Only a subset of all constraints is initially
-included and the remaining constraints (subtour elimination) are added 
-on demand in the cut generator callback."""
+Problem. Initially a compact (weak) formulation is created. This formulation
+is dinamically improved with cutting planes, sub-tour elimination inequalities,
+using a CutsGenerator implementation. Cut generation is called from the
+solver engine whenever a fractional solution is generated."""
 
 from collections import defaultdict
 from sys import argv
@@ -9,15 +10,15 @@ from typing import List, Tuple
 import networkx as nx
 import tsplib95
 from mip.model import Model, xsum, BINARY, minimize
-from mip.callbacks import CutsGenerator, CutPool
+from mip.callbacks import ConstrsGenerator, CutPool
 
 
-class SubTourCutGenerator(CutsGenerator):
+class SubTourCutGenerator(ConstrsGenerator):
     """Class to generate cutting planes for the TSP"""
     def __init__(self, Fl: List[Tuple[int, int]]):
         self.F = Fl
 
-    def generate_cuts(self, model: Model):
+    def generate_constrs(self, model: Model):
         G = nx.DiGraph()
         r = [(v, v.x) for v in model.vars if v.name.startswith('x(')]
         U = [int(v.name.split('(')[1].split(',')[0]) for v, f in r]
@@ -29,7 +30,7 @@ class SubTourCutGenerator(CutsGenerator):
             if u not in U or v not in V:
                 continue
             val, (S, NS) = nx.minimum_cut(G, u, v)
-            if val <= 0.99999:
+            if val <= 0.99:
                 arcsInS = [(v, f) for i, (v, f) in enumerate(r)
                            if U[i] in S and V[i] in S]
                 if sum(f for v, f in arcsInS) >= (len(S)-1)+1e-4:
@@ -74,16 +75,14 @@ print('solving TSP with {} cities'.format(len(N)))
 model = Model()
 
 # binary variables indicating if arc (i,j) is used on the route or not
-x = {a: model.add_var('x({},{})'.format(a[0], a[1]), var_type=BINARY)
-     for a in A.keys()}
+x = {a: model.add_var('x({},{})'.format(a[0], a[1]), var_type=BINARY) for a in A}
 
 # continuous variable to prevent subtours: each
 # city will have a different "identifier" in the planned route
 y = {i: model.add_var(name='y({})') for i in N}
 
 # objective function: minimize the distance
-model.objective = minimize(
-    xsum(A[a]*x[a] for a in A.keys()))
+model.objective = minimize(xsum(A[a]*x[a] for a in A))
 
 # constraint : enter each city coming from another city
 for i in N:
@@ -94,10 +93,9 @@ for i in N:
     model += xsum(x[a] for a in IN[i]) == 1
 
 # no subtours of size 2
-for a in A.keys():
+for a in A:
     if (a[1], a[0]) in A.keys():
         model += x[a] + x[a[1], a[0]] <= 1
-
 
 # computing farthest point for each point
 F = []
@@ -111,7 +109,7 @@ for i in N:
     F.append((i, DS[-1][0]))
 
 model.cuts_generator = SubTourCutGenerator(F)
-model.cuts_generator.lazy_constraints = True
+model.lazy_constrs_generator = SubTourCutGenerator(F)
 model.optimize()
 
 print(model.status)
