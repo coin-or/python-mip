@@ -1324,3 +1324,12 @@ class ModelGurobiCB(Model):
         self.__n_rows = 0
         self.__gap = INF
         self.__store_search_progress_log = False
+        self.where = where
+
+    def add_constr(self, lin_expr: LinExpr, name: str = "") -> "Constr":
+        if self.where == GRB_CB_MIPNODE:
+            self.add_cut(lin_expr)
+            return None
+
+        self.add_lazy_constr(lin_expr)
+        return None

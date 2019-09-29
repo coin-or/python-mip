@@ -549,6 +549,7 @@ class SolverCbc(Solver):
             osi_model = ModelOsi(osi_solver)
             osi_model._status = osi_model.solver.get_status()
             osi_model.solver.osi_cutsp = osi_cuts
+            osi_model.fractional = fractional
             if fractional and self.model.cuts_generator:
                 self.model.cuts_generator.generate_constrs(osi_model)
             if (not fractional) and self.model.lazy_constrs_generator:
@@ -995,6 +996,9 @@ class ModelOsi(Model):
         self.constrs = VConstrList(self)
         self.vars = VVarList(self)
 
+        # if a fractional solution is being processed
+        self.fractional = True
+
         if existing_solver:
             self._status = self.solver.get_status()
         else:
@@ -1013,6 +1017,14 @@ class ModelOsi(Model):
         self.__n_rows = 0
         self.__gap = INF
         self.__store_search_progress_log = False
+
+    def add_constr(self, lin_expr: LinExpr, name: str = "") -> "Constr":
+        if self.fractional:
+            self.add_cut(lin_expr)
+            return None
+
+        self.add_lazy_constr(lin_expr)
+        return None
 
 
 class SolverOsi(Solver):
