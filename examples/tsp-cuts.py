@@ -10,15 +10,15 @@ from typing import List, Tuple
 import networkx as nx
 import tsplib95
 from mip.model import Model, xsum, BINARY, minimize
-from mip.callbacks import CutsGenerator, CutPool
+from mip.callbacks import ConstrsGenerator, CutPool
 
 
-class SubTourCutGenerator(CutsGenerator):
+class SubTourCutGenerator(ConstrsGenerator):
     """Class to generate cutting planes for the TSP"""
     def __init__(self, Fl: List[Tuple[int, int]]):
         self.F = Fl
 
-    def generate_cuts(self, model: Model):
+    def generate_constrs(self, model: Model):
         G = nx.DiGraph()
         r = [(v, v.x) for v in model.vars if v.name.startswith('x(')]
         U = [int(v.name.split('(')[1].split(',')[0]) for v, f in r]
@@ -38,10 +38,10 @@ class SubTourCutGenerator(CutsGenerator):
                     cp.add(cut)
                     if len(cp.cuts) > 256:
                         for cut in cp.cuts:
-                            model.add_cut(cut)
+                            model += cut
                         return
         for cut in cp.cuts:
-            model.add_cut(cut)
+            model += cut
         return
 
 
@@ -75,8 +75,7 @@ print('solving TSP with {} cities'.format(len(N)))
 model = Model()
 
 # binary variables indicating if arc (i,j) is used on the route or not
-x = {a: model.add_var('x({},{})'.format(a[0], a[1]), var_type=BINARY)
-     for a in A.keys()}
+x = {a: model.add_var('x({},{})'.format(a[0], a[1]), var_type=BINARY) for a in A}
 
 # continuous variable to prevent subtours: each
 # city will have a different "identifier" in the planned route
@@ -87,8 +86,7 @@ y = {i: model.add_var(name='y({})') for i in N}
 y = {i: model.add_var(name='y({})') for i in N}
 
 # objective function: minimize the distance
-model.objective = minimize(
-    xsum(A[a]*x[a] for a in A.keys()))
+model.objective = minimize(xsum(A[a]*x[a] for a in A))
 
 # constraint : enter each city coming from another city
 for i in N:
@@ -99,12 +97,12 @@ for i in N:
     model += xsum(x[a] for a in IN[i]) == 1
 
 # (weak) subtour elimination
-for (i, j) in [a for a in A.keys() if n0 not in [a[0], a[1]]]:
+for (i, j) in [a for a in A if n0 not in [a[0], a[1]]]:
     model += \
         y[i] - (n+1)*x[(i, j)] >= y[j]-n, 'noSub({},{})'.format(i, j)
 
 # no subtours of size 2
-for a in A.keys():
+for a in A:
     if (a[1], a[0]) in A.keys():
         model += x[a] + x[a[1], a[0]] <= 1
 

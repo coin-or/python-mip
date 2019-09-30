@@ -38,4 +38,7 @@ performance of application specific solvers. Finally, the detailed
 reference information for the main classes is included in :ref:`Chapter
 6 <chapClasses>`.
 
+Acknowledgments
+---------------
 
+We would like to thank for the support of the `Combinatorial Optimization and Decision Support (CODeS) <https://set.kuleuven.be/codes>`_ research group in  `KU Leuven <https://www.kuleuven.be/english/>`_ through the senior research fellowship of Prof. Haroldo in 2018-2019, `CNPq <https://en.wikipedia.org/wiki/National_Council_for_Scientific_and_Technological_Development>`_ "Produtividade em Pesquisa" grant, `FAPEMIG <https://fapemig.br>`_ and the `GOAL <http://goal.ufop.br>`_ research group in the `Computing Department <http://www.decom.ufop.br>`_ of `UFOP <https://www.ufop.br/>`_.
