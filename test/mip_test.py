@@ -4,7 +4,7 @@ from itertools import product
 import networkx as nx
 from mip.model import Model, xsum
 from mip.constants import OptimizationStatus, MAXIMIZE, BINARY, INTEGER
-from mip.callbacks import CutsGenerator, CutPool
+from mip.callbacks import ConstrsGenerator, CutPool
 has_colors = True
 try:
     from termcolor import colored
@@ -157,10 +157,10 @@ def test_tsp(solver: str):
     print('')
 
 
-class SubTourCutGenerator(CutsGenerator):
+class SubTourCutGenerator(ConstrsGenerator):
     """Class to generate cutting planes for the TSP"""
 
-    def generate_cuts(self, model: Model):
+    def generate_constrs(self, model: Model):
         G = nx.DiGraph()
         r = [(v, v.x) for v in model.vars if v.name.startswith('x(')]
         U = [v.name.split('(')[1].split(',')[0] for v, f in r]
