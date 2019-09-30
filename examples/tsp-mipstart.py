@@ -48,11 +48,6 @@ m = Model()
 x = [[m.add_var(name='x({},{})'.format(i, j), var_type=BINARY)
       for j in range(n)] for i in range(n)]
 
-# adding heuristic initial solution
-hsol = gen_ini_sol(n, d)
-
-m.start = [(x[hsol[k-1]][hsol[k]], 1.0) for k in range(n)]
-
 # continuous variable to prevent subtours: each
 # city will have a different "identifier" in the planned route
 y = [m.add_var(name='y({})'.format(i), lb=0.0, ub=n)
@@ -79,6 +74,11 @@ for i in range(n):
 for i in range(1, n):
     for j in [k for k in range(1, n) if k != i]:
         m += y[i] - (n + 1) * x[i][j] >= y[j] - n, 'noSub({},{})'.format(i, j)
+
+# adding heuristic initial solution
+hsol = gen_ini_sol(n, d)
+
+m.start = [(x[hsol[k-1]][hsol[k]], 1.0) for k in range(n)]
 
 m.optimize(max_seconds=60)
 

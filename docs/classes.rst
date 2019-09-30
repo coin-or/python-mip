@@ -44,9 +44,9 @@ ConstrList
 .. autoclass:: mip.model.ConstrList
     :members:
 
-CutsGenerator
--------------
-.. autoclass:: mip.callbacks.CutsGenerator
+ConstrsGenerator
+----------------
+.. autoclass:: mip.callbacks.ConstrsGenerator
     :members:
 
 IncumbentUpdater
