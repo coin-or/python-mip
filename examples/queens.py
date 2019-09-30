@@ -9,7 +9,7 @@ from mip.model import Model, xsum
 from mip.constants import MAXIMIZE, BINARY
 
 # number of queens
-n = 75
+n = 100
 
 queens = Model('queens', MAXIMIZE)
 
