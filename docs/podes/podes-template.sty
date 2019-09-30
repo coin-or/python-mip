@@ -1,0 +1,205 @@
+% template para PODes - Pesquisa Operacional para o Desenvolvimento
+% 
+
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{podes-template}
+
+
+\RequirePackage[a4paper,top=3cm,left=3cm,right=3cm,bottom=2.5cm]{geometry}
+\RequirePackage[brazil]{babel}
+\RequirePackage[latin1, utf8]{inputenc}
+\RequirePackage[fleqn]{amsmath}
+\RequirePackage{amssymb,amsfonts,sectsty}
+\RequirePackage{indentfirst}
+\RequirePackage{graphicx,enumitem}
+\RequirePackage{natbib,url}
+\RequirePackage[none]{hyphenat}
+\setlength{\bibhang}{0pt}
+
+
+
+\RequirePackage{graphicx}
+\RequirePackage{fancyhdr}
+\RequirePackage{times}
+
+\setcounter{page}{1}
+
+\setlist[itemize,1]{noitemsep,topsep=0pt,parsep=0pt,partopsep=0pt,itemindent=8mm}
+ \setlength\itemsep{0pt}
+
+\newcommand{\IXPT}{\@setfontsize\ixpt{9}{13}}
+\newcommand{\XPT}{\@setfontsize\iixpt{10}{14}}
+\newcommand{\XIPT}{\@setfontsize\xipt{11}{15}}
+\newcommand{\XIIPT}{\@setfontsize\xiipt{12}{16}}
+\newcommand{\XIIIPT}{\@setfontsize\xiiipt{13}{17}}
+
+\parindent 1cm
+
+
+\fancypagestyle{capa}{
+\fancyhf{}%
+
+
+\vspace{-2mm}
+\fancyhead[L]{\hspace{-1cm} \includegraphics[scale=0.55]{logoSobrapo.pdf}}
+\fancyhead[C]{ 
+{ \XIIPT \textbf{Pesquisa Operacional para o Desenvolvimento}} \\ 
+{ \XIIPT Vol. XX, n. YY, pp. ZZ-ZZ, ANO: XXXX} \\
+{ \vspace{6mm} \XPT \textbf{ISSN 1984-3534} } \\
+{ \vspace{0mm} }
+}
+%\fancyhead[R]{\includegraphics[scale=0.4]{figs/logoPodes.pdf}}
+\setlength{\headsep}{3.4cm}
+
+\fancyfoot[L]{\vspace{-25mm} 
+\hspace*{4mm} \XPT DOI: xx.xxxx/PODes.xxxx.xxx
+\vspace*{7mm} \\
+\hspace*{4.7cm} \XPT \textit{$^1$Todos os autores assumem a responsabilidade pelo conteúdo do artigo.}}
+}
+
+\linespread{1}
+\renewcommand{\headrulewidth}{0pt}
+
+\newcommand{\authorrunning}[1]{
+	\fancypagestyle{defaultPage}{
+      \newgeometry{top=3cm,left=3cm,right=3cm,bottom=2cm}
+        \fancyhf{}%
+        \setlength{\voffset}{-8mm}
+        \chead{
+            {\XPT \textit{#1 et. al / vol (ano), pp. } }
+        }
+        \rfoot{
+            \vspace*{6mm} \thepage
+        }
+        \setlength{\headsep}{8mm}
+    }
+    \pagestyle{defaultPage}
+}
+
+
+\newcommand{\corresponding}[1]{
+    \footnote{
+    \vspace*{12mm}
+        \XPT Autor para correspondência. E-mail: \texttt{#1} \newline
+    	  %\indent \XPT DOI: xx.xxxx/PODes.xxxx.xxx
+    }
+}
+
+\RequirePackage{caption2}
+\setlength{\captionmargin}{0.8cm}
+\renewcommand{\captionfont}{\centering\XIPT}
+\renewcommand{\captionlabeldelim}{:}
+
+% new commands
+\newcommand{\authortag}[1]{\IXPT $^{\mbox{\normalfont#1}}$}
+\newcommand{\name}[1]{\XIPT \vspace{11pt}\centering\textbf{#1}}
+\newcommand{\institute}[1]{\XPT  \centering\normalfont #1 \\ \vspace{5mm}}
+\newcommand{\iaddress}[1]{\XPT \centering\normalfont#1\\}
+\newcommand{\email}[1]{\XPT \texttt{#1}\\}
+\newcommand{\titlesep}{\newpage}
+
+
+% sections
+\renewcommand\section{\@startsection{section}{1}{\z@}%
+                       {12\p@ \@plus -4\p@ \@minus -4\p@}%
+                       {12\p@ \@plus 4\p@ \@minus 4\p@}%
+                       {\normalfont\XIPT\bfseries\boldmath
+                       \rightskip=\z@ \@plus 8em\pretolerance=10000 }}
+
+\renewcommand\subsection{\@startsection{subsection}{2}{\z@}%
+                       {12\p@ \@plus -4\p@ \@minus -4\p@}%
+                       {12\p@ \@plus 4\p@ \@minus 4\p@}%
+                       {\normalfont\XIPT\bfseries\boldmath
+                       \rightskip=\z@ \@plus 8em\pretolerance=10000 }}
+
+\renewcommand\subsubsection{\@startsection{subsubsection}{2}{\z@}%
+                       {12\p@ \@plus -4\p@ \@minus -4\p@}%
+                       {12\p@ \@plus 4\p@ \@minus 4\p@}%
+                       {\normalfont\XIPT\bfseries\boldmath
+                       \rightskip=\z@ \@plus 8em\pretolerance=10000 }}
+
+\RequirePackage{titlesec}
+\titlelabel{\thetitle.\hspace{1ex}}
+
+% first page
+
+\def\address#1{\gdef\@address{#1}}
+
+\def\@maketitle{\newpage
+\begin{center}
+{\XIIIPT\bf\MakeUppercase\@title\par \vspace{5mm}}
+{\XIIIPT\bf\@author\par}
+
+\vspace{6mm}
+Recebido xx/xx/xxxx, aceito xx/xx/xxxx
+\vspace{-12mm}
+
+\end{center}\par
+}
+\let\maketitleOLD\maketitle
+\renewcommand{\maketitle}{\maketitleOLD\thispagestyle{capa}}
+
+\renewenvironment{abstract}{
+\vspace*{10mm}
+\begin{center}
+{\XIPT \bfseries  ABSTRACT}
+\end{center}
+\vspace*{-1pt}
+}
+
+\newenvironment{keywords}{
+\vspace*{0.2cm}
+\XIPT \noindent  \bfseries Keywords: 
+\vspace*{1pt}
+}
+
+%\XIIPT
+\newenvironment{resumo}{
+\vspace*{1cm}
+\begin{center}
+\XIPT\bfseries RESUMO
+\end{center}
+\vspace*{-1pt}
+}
+
+\newenvironment{palavras}{
+\vspace*{0.2cm}
+\XIPT \noindent \bfseries Palavras-chave: 
+\vspace*{1pt}
+}
+
+\newenvironment{agradecimentos}{
+\vspace{5mm}\noindent
+\XIPT {\textbf{\textit{Agradecimentos.}}}
+}
+
+% to avoid [...] in the bibliography
+% \item[] instead of \item[\@biblabel{#1}\hfill]
+%\def\@lbibitem[#1]#2{\item[]\if@filesw
+%{\let\protect\noexpand
+%\immediate
+%\write\@auxout{\string\bibcite{#2}{#1}}}\fi\ignorespaces}
+%\renewenvironment{thebibliography}[1]
+%{\section*{\refname
+%        \@mkboth{\MakeUppercase\refname}{\MakeUppercase\refname}}%
+%      \list{\@biblabel{\@arabic\c@enumiv}}%
+%           {\settowidth\labelwidth{\@biblabel{#1}}%
+%           \leftmargin\labelwidth
+%           \advance\leftmargin\labelsep
+%            %% changed!
+%            \itemindent -\leftmargin
+%            \itemsep 6pt
+%            %%%%%%%%%%%
+%            \@openbib@code
+%            \usecounter{enumiv}%
+%            \let\p@enumiv\@empty
+%            \renewcommand\theenumiv{\@arabic\c@enumiv}}%
+%            \sloppy
+%            \clubpenalty4000
+%            \@clubpenalty \clubpenalty
+%      \widowpenalty4000%
+%      \sfcode`\.\@m}
+%      {\def\@noitemerr
+%       {\@latex@warning{Empty `thebibliography' environment}}%
+%       \endlist} 
