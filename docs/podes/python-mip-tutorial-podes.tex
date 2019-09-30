@@ -1,0 +1,211 @@
+\documentclass[a4paper,11pt,fleqn]{article}
+\usepackage{podes-template}
+\usepackage{minted}
+\usepackage{xcolor}
+\definecolor{arsenic}{rgb}{0.23, 0.27, 0.29}
+\definecolor{coolblack}{rgb}{0.0, 0.18, 0.39}
+\usepackage[colorlinks=true,urlcolor=coolblack]{hyperref}
+ 
+%pacotes adicionais
+\usepackage[linesnumbered, algoruled, vlined, portuguese]{algorithm2e}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%título do artigo
+\title{Desenvolvendo Resolvedores de Programação Linear Inteira Mista em Python usando o pacote Python-MIP$^1$} 
+
+%define os autores
+\author{
+ \name{Haroldo G. Santos\authortag{a}\corresponding{haroldo@ufop.edu.br}}, 
+ \name{Túlio A.M. Toffolo\authortag{a}} \\
+ \authortag{a}
+ \institute{Instituto de Ciências Exatas e Biológicas, Departamento de Computação \\ Universidade Federal de Ouro Preto, Ouro Preto-MG, Brasil}
+}
+
+\authorrunning{Santos \& Toffolo}
+
+
+\begin{document}
+
+\maketitle
+
+
+\begin{resumo}
+O pacote Python MIP oferece ferramentas para a modelagem e resolução de Problemas de Programação Inteira Mista em Python. Além de uma linguagem de modelagem de alto nível, o pacote permite o desenvolvimento de resolvedores avançados, habilitando comunicação bidirecional com o resolvedor durante o processo de busca. Neste tutorial desenvolveremos resolvedores de Programação Linear Inteira Mista para o Problema do Caixeiro Viajante. Iniciando com um resolvedor simples baseado em uma formulação compacta iremos evoluir para um resolvedor que combina heurísticas, planos de corte e estratégias de ramificação para a resolução eficaz de problemas de grande porte.
+\end{resumo}
+
+\begin{palavras}
+Programação Linear Inteira Mista, Python, Caixeiro Viajante, Método de Ramificação e Corte.
+\end{palavras}
+
+\begin{abstract}
+TODO
+\end{abstract}
+
+\begin{keywords}
+First keyword, Second keyword, Third keyword, Last keyword. 
+\end{keywords}
+
+
+\newpage
+\thispagestyle{defaultPage}
+
+\section{Introdução}
+
+Python-MIP é um pacote para modelagem e resolução de Problemas de
+Programação Linear Inteira Mista (PLIM)\cite{Wolsey1998} em Python.
+O projeto do pacote foi feito com o objetivo de desenvolver uma ferramenta
+que atendesse os seguintes requisitos:
+\begin{enumerate}
+\item clareza de código e modelagem de alto nível
+\item alto desempenho
+\item extensibilidade e configurabilidade
+\end{enumerate}
+Tradicionalmente, os objetivos 1 e 2 foram considerados conflitantes.
+Até recentemente, as opções mais recomendada para os interessados
+em 1 eram linguagens algébricas de alto nível como AMPL\cite{Fourer1987}.
+A obtenção de desempenho máximo costumava requerer o uso de linguagens
+de mais baixo nível como C\cite{Johnson1991a}. Resolvedores estado-da-arte
+como o CPLEX\cite{Bixby2002} foram escritos nessa linguagem. Desse
+modo, a biblioteca completa de funções estava originalmente somente
+disponível somente nela. Recentemente, soluções como JuMP\cite{Dunning2015}
+demonstraram que os objetivos 1 e 2 não são necessariamente conflitantes:
+linguagens de alto nível como Julia juntamente com compiladores \emph{just-in-time}
+permitem o desenvolvimento rápido de resolvedores que apresentam alto
+desempenho. O objetivo do projeto Python-MIP é o desenvolvimento de
+um pacote de Programação Linear Inteira Mista para a linguagem Python
+que atenda plenamente os requisitos 1-3.
+
+Pesquisas recentes mostram que Python está se tornando a linguagem
+mais popular da atualidade\cite{pythonEconomist2018}. O projeto Python-MIP
+foi primariamente inspirado em dois projetos de código aberto para
+programação linear inteira em Python. O primeiro é o PuLP\cite{Mitchell2009},
+que oferece uma linguagem de modelagem de alto nível e interface para
+vários resolvedores. Recursos que requerem uma integração maior com
+o resolvedor, como geração dinâmica de planos de cortes, não estão
+disponíveis neste pacote. O pacote CyLP, por outro lado, suporta geração
+dinâmica de planos de corte mas não oferece uma linguagem de modelagem
+de alto nível\cite{Towhidi2016} e somente suporta o resolvedor COIN-OR
+CBC\cite{Forrest2005}. O pacote Python-MIP foi criado com o objetivo
+de prover a funcionalidade dos dois pacotes com máximo desempenho.
+A escrita de um um novo pacote de programação linear inteira em Python
+também permite que recursos relativamente novos da linguagem, como
+a tipagem estática e a comunicação direta com bibliotecas nativas
+(Python CFFI) sejam utilizados extensivamente no código.
+
+Neste tutorial desenvolveremos versões sucessivamente mais sofisticadas
+de um resolvedor para o clássico problema do caixeiro viajante no
+pacote Python-MIP.
+
+\section{Aplicação: Problema do Caixeiro Viajante}
+
+O problema do caixeiro viajante consiste em: dada uma malha viária
+e um conjunto de pontos que devem ser visitados, encontrar uma rota
+de distância mínima que percorra todos os pontos percorrendo-os exatamente
+uma vez. Formalmente, temos como dados de entrada um grafo direcionado
+$G=(V,A)$ com distâncias associadas aos arcos:
+\begin{description}
+\item [{$V$}] conjunto de vértices numerados sequencialmente a partir
+de 1
+\item [{$A$}] conjunto de arestas
+\item [{$d_{(i,j)}$}] distância do arco $a=(i,j)\in A$
+\end{description}
+Em todas as formulações que serão apresentadas, utilizaremos as seguintes
+variáveis binárias de decisão que representam a escolha dos arcos
+que compõe a rota:
+
+\[
+x_{(i,j)}=\begin{cases}
+1 & \textrm{se o arco }(i,j)\textrm{ foi escolhido para a rota}\\
+0 & \textrm{caso contrário}
+\end{cases}
+\]
+
+Como exemplo, considere o grafo de distâncias das Figura \ref{figG}:
+
+\begin{figure}
+\begin{centering}
+\includegraphics[scale=0.6]{/home/haroldo/dev/mip/docs/images/tspG}
+\par\end{centering}
+\caption{Grafo de distâncias de exemplo}
+
+\label{figG}
+\end{figure}
+
+
+\subsection{Uma Formulação Compacta}
+
+O problema do caixeiro viajante pode ser modelado utilizando-se uma
+formulação compacta, isto é, uma formulação com um número polinomial
+de variáveis e restrições. Formulações desse tipo, apesar de não serem
+a melhor opção de resolução em termos de desempenho para problemas
+deste tipo, são convenientes para uma primeira abordagem pois podem
+ser facilmente inseridas de uma vez só como entrada para um software
+resolvedor. A formulação abaixo foi proposta\cite{Miller1960} nos
+anos 60:
+
+\begin{align}
+\textrm{Minimize:}\nonumber \\
+ & \sum_{(i,j)\in A}d_{(i,j)}\ldotp x_{(i,j)}\nonumber \\
+\textrm{Sujeito a:}\nonumber \\
+\sum_{(i,j)\in A}x_{(i,j)} & =1\,\,\,\forall\,i\in V\label{eq:in}\\
+\sum_{(i,j)\in A}x_{(i,j)} & =1\,\,\,\forall\,j\in V\label{eq:out}\\
+y_{i} & \geq y_{j}-|V|+(|V|+1)x_{(i,j)}\,\,\,\forall\,(i,j)\in A:1\notin\{i,j\}\label{eq:st1}\\
+y_{i} & \geq0\,\,\,\forall\,i\in V\label{eq:y}\\
+x_{(i,j)} & \in\{0,1\}\,\,\,\forall\,(i,j)\in A\label{eq:x}
+\end{align}
+
+As equações \ref{eq:in} e \ref{eq:out} garantem que cada vértice
+é visitado somente uma vez enquanto variáveis auxiliares $y_{i}$
+são utilizadas nas equações \ref{eq:st1} para garantir que uma vez
+que um arco $(i,j)$ seja selecionado, o valor de $y_{i}$ seja maior
+do que o valor de $y_{j}$ em uma unidade. Essa propriedade é garantida
+para todos os vértices exceto o vértice 1 que é arbitrariamente selecionado
+como origem de modo a evitar a construção de sub-rotas desconectadas
+como no exemplo da Figura \ref{figSub}, onde os valores das variáveis
+$x_{(i,j)}$ indicados nos arcos representam uma solução viável caso
+somente as restrições \ref{eq:in} e \ref{eq:out} fossem consideradas.
+
+\begin{figure}
+\begin{centering}
+\includegraphics[scale=0.6]{/home/haroldo/dev/mip/docs/images/tspNo2Sub}
+\par\end{centering}
+\caption{Rotas desconectadas da origem}
+\label{figSub}
+
+\end{figure}
+
+asdfasdf
+
+\begin{minted}{python}
+    m = Model("TSP")
+    n, n0 = len(N), min(N)
+    x = { (i, j): m.add_var(var_type=BINARY) for (i, j) in A }
+    y = { i: m.add_var() for i in N }
+    m.objective = minimize(xsum(A[a]*x[a] for a in A))
+    for i in N:
+        m += xsum(x[a] for a in A if a[0] == i) == 1
+        m += xsum(x[a] for a in A if a[1] == i) == 1
+    for (i, j) in [a for a in A if n0 not in [a[0], a[1]]]:
+        m += y[i] - (n+1)*x[(i, j)] >= y[j] - n
+\end{minted}
+
+
+
+\bibliography{pmip-podes}
+\bibliographystyle{podes-bibstyle}
+
+
+\section*{Anexos e Apêndices (opcionais)}
+
+Anexos e apêndices são materiais complementares ao texto que só devem ser incluídos quando forem imprescindíveis à compreensão deste.
+
+APÊNDICES são textos elaborados pelo autor a fim de complementar sua argumentação.
+
+ANEXOS são os documentos não elaborados pelo autor, que servem de fundamentação, comprovação ou ilustração, como mapas, leis, estatutos, etc.
+
+Os anexos devem aparecer após as referências, e os apêndices, após os anexos.
+
+
+\end{document}
