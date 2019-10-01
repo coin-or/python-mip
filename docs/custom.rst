@@ -223,7 +223,7 @@ In our example, we temporarily store the generated cuts in our
         def __init__(self, Fl: List[Tuple[int, int]]):
             self.F = Fl
 
-        def generate_cuts(self, model: Model):
+        def generate_constrs(self, model: Model):
             G = nx.DiGraph()
             r = [(v, v.x) for v in model.vars if v.name.startswith('x(')]
             U = [int(v.name.split('(')[1].split(',')[0]) for v, f in r]
