@@ -1,46 +1,56 @@
 \documentclass[a4paper,11pt,fleqn]{article}
 \usepackage{podes-template}
-\usepackage{minted}
-\usepackage{xcolor}
-\definecolor{arsenic}{rgb}{0.23, 0.27, 0.29}
-\definecolor{coolblack}{rgb}{0.0, 0.18, 0.39}
-\usepackage[colorlinks=true,urlcolor=coolblack]{hyperref}
- 
+
 %pacotes adicionais
 \usepackage[linesnumbered, algoruled, vlined, portuguese]{algorithm2e}
+\usepackage{listings}
+\lstset
+{ %Formatting for code in appendix
+	language=Python,
+	numbers=left,
+	stepnumber=1,
+	showstringspaces=false,
+	tabsize=1,
+	breaklines=true,
+	breakatwhitespace=false,
+}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 %título do artigo
-\title{Desenvolvendo Resolvedores de Programação Linear Inteira Mista em Python usando o pacote Python-MIP$^1$} 
+\title{TÍTULO DO ARTIGO1$^1$} 
 
 %define os autores
 \author{
- \name{Haroldo G. Santos\authortag{a}\corresponding{haroldo@ufop.edu.br}}, 
- \name{Túlio A.M. Toffolo\authortag{a}} \\
+ \name{Primeiro Autor\authortag{a}\corresponding{autor@email.com}}, 
+ \name{Segundo Autor\authortag{b}} \\
  \authortag{a}
- \institute{Instituto de Ciências Exatas e Biológicas, Departamento de Computação \\ Universidade Federal de Ouro Preto, Ouro Preto-MG, Brasil}
+ \institute{Instituto, Departamento, Outro \\ Universidade, Cidade-UF, País}
+ \authortag{b}
+ \institute{Instituto, Departamento, Outro \\ Universidade, Cidade-UF, País}
 }
 
-\authorrunning{Santos \& Toffolo}
+\authorrunning{Cherri}
 
 
 \begin{document}
+
 
 \maketitle
 
 
 \begin{resumo}
 O pacote Python MIP oferece ferramentas para a modelagem e resolução de Problemas de Programação Inteira Mista em Python. Além de uma linguagem de modelagem de alto nível, o pacote permite o desenvolvimento de resolvedores avançados, habilitando comunicação bidirecional com o resolvedor durante o processo de busca. Neste tutorial desenvolveremos resolvedores de Programação Linear Inteira Mista para o Problema do Caixeiro Viajante. Iniciando com um resolvedor simples baseado em uma formulação compacta iremos evoluir para um resolvedor que combina heurísticas, planos de corte e estratégias de ramificação para a resolução eficaz de problemas de grande porte.
+
 \end{resumo}
 
 \begin{palavras}
-Programação Linear Inteira Mista, Python, Caixeiro Viajante, Método de Ramificação e Corte.
+Primeira, Segunda, Terceira, Quarta.
 \end{palavras}
 
 \begin{abstract}
-TODO
+This document presents the format for full papers to be published in the journal Pesquisa Operacional para o Desenvolvimento. The Abstract must not exceed 150 words.
 \end{abstract}
 
 \begin{keywords}
@@ -51,16 +61,14 @@ First keyword, Second keyword, Third keyword, Last keyword.
 \newpage
 \thispagestyle{defaultPage}
 
-\section{Introdução}
-
 Python-MIP é um pacote para modelagem e resolução de Problemas de
 Programação Linear Inteira Mista (PLIM)\cite{Wolsey1998} em Python.
 O projeto do pacote foi feito com o objetivo de desenvolver uma ferramenta
 que atendesse os seguintes requisitos:
 \begin{enumerate}
-\item clareza de código e modelagem de alto nível
-\item alto desempenho
-\item extensibilidade e configurabilidade
+	\item clareza de código e modelagem de alto nível
+	\item alto desempenho
+	\item extensibilidade e configurabilidade
 \end{enumerate}
 Tradicionalmente, os objetivos 1 e 2 foram considerados conflitantes.
 Até recentemente, as opções mais recomendada para os interessados
@@ -106,10 +114,10 @@ de distância mínima que percorra todos os pontos percorrendo-os exatamente
 uma vez. Formalmente, temos como dados de entrada um grafo direcionado
 $G=(V,A)$ com distâncias associadas aos arcos:
 \begin{description}
-\item [{$V$}] conjunto de vértices numerados sequencialmente a partir
-de 1
-\item [{$A$}] conjunto de arestas
-\item [{$d_{(i,j)}$}] distância do arco $a=(i,j)\in A$
+	\item [{$V$}] conjunto de vértices numerados sequencialmente a partir
+	de 1
+	\item [{$A$}] conjunto de arestas
+	\item [{$d_{(i,j)}$}] distância do arco $a=(i,j)\in A$
 \end{description}
 Em todas as formulações que serão apresentadas, utilizaremos as seguintes
 variáveis binárias de decisão que representam a escolha dos arcos
@@ -125,12 +133,12 @@ x_{(i,j)}=\begin{cases}
 Como exemplo, considere o grafo de distâncias das Figura \ref{figG}:
 
 \begin{figure}
-\begin{centering}
-\includegraphics[scale=0.6]{/home/haroldo/dev/mip/docs/images/tspG}
-\par\end{centering}
-\caption{Grafo de distâncias de exemplo}
-
-\label{figG}
+	\begin{centering}
+		\includegraphics[scale=0.6]{/home/haroldo/dev/mip/docs/images/tspG}
+		\par\end{centering}
+	\caption{Grafo de distâncias de exemplo}
+	
+	\label{figG}
 \end{figure}
 
 
@@ -147,7 +155,7 @@ anos 60:
 
 \begin{align}
 \textrm{Minimize:}\nonumber \\
- & \sum_{(i,j)\in A}d_{(i,j)}\ldotp x_{(i,j)}\nonumber \\
+& \sum_{(i,j)\in A}d_{(i,j)}\ldotp x_{(i,j)}\nonumber \\
 \textrm{Sujeito a:}\nonumber \\
 \sum_{(i,j)\in A}x_{(i,j)} & =1\,\,\,\forall\,i\in V\label{eq:in}\\
 \sum_{(i,j)\in A}x_{(i,j)} & =1\,\,\,\forall\,j\in V\label{eq:out}\\
@@ -168,44 +176,66 @@ $x_{(i,j)}$ indicados nos arcos representam uma solução viável caso
 somente as restrições \ref{eq:in} e \ref{eq:out} fossem consideradas.
 
 \begin{figure}
-\begin{centering}
-\includegraphics[scale=0.6]{/home/haroldo/dev/mip/docs/images/tspNo2Sub}
-\par\end{centering}
-\caption{Rotas desconectadas da origem}
-\label{figSub}
-
+	\begin{centering}
+		\includegraphics[scale=0.6]{/home/haroldo/dev/mip/docs/images/tspNo2Sub}
+		\par\end{centering}
+	\caption{Rotas desconectadas da origem}
+	\label{figSub}
+	
 \end{figure}
 
-asdfasdf
-
-\begin{minted}{python}
-    m = Model("TSP")
-    n, n0 = len(N), min(N)
-    x = { (i, j): m.add_var(var_type=BINARY) for (i, j) in A }
-    y = { i: m.add_var() for i in N }
-    m.objective = minimize(xsum(A[a]*x[a] for a in A))
-    for i in N:
-        m += xsum(x[a] for a in A if a[0] == i) == 1
-        m += xsum(x[a] for a in A if a[1] == i) == 1
-    for (i, j) in [a for a in A if n0 not in [a[0], a[1]]]:
-        m += y[i] - (n+1)*x[(i, j)] >= y[j] - n
-\end{minted}
+A seguir temos um exemplo completo de um resolvedor em Python-MIP onde para o problema do caixeiro viajante com os dados da Figura \ref{figG}, onde o resolvedor utilizará a formulação compacta descrita anteriormente:
 
 
+\begin{lstlisting}
+from mip import Model, BINARY, minimize, xsum
+from sys import stdout as out
 
+N = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+A = {('a', 'd'): 56, ('d', 'a'): 67, ('a', 'b'): 49, 
+  ('f', 'c'): 35, ('g', 'b'): 35, ('g', 'b'): 35, ('b', 'g'): 25,
+  ('a', 'c'): 80, ('c', 'a'): 99, ('e', 'f'): 20, ('f', 'e'): 20,
+  ('g', 'e'): 38, ('e', 'g'): 49, ('g', 'f'): 37, ('f', 'g'): 32,
+  ('b', 'e'): 21, ('e', 'b'): 30, ('a', 'g'): 47, ('g', 'a'): 68,
+  ('d', 'c'): 37, ('c', 'd'): 52, ('d', 'e'): 15, ('e', 'd'): 20,
+  ('d', 'b'): 39, ('b', 'd'): 37, ('c', 'f'): 35, ('b', 'a'): 50}
+  
+m = Model()
+n, n0 = len(N), min(N)
+
+x = { (i, j): m.add_var(var_type=BINARY) for (i, j) in A }
+y = { i: m.add_var() for i in N }
+
+m.objective = minimize(xsum(A[a]*x[a] for a in A))
+
+for i in N:
+    m += xsum(x[a] for a in A if a[0] == i) == 1
+    m += xsum(x[a] for a in A if a[1] == i) == 1
+	
+for (i, j) in [a for a in A if n0 not in [a[0], a[1]]]:
+    m += y[i] - (n+1)*x[(i, j)] >= y[j] - n
+	
+m.optimize()
+print('route with length {} found:'.format(m.objective_value))
+out.write(n0)
+nc = n0
+for i in N:
+    nc = [nl for nl in N if (nc, nl) in A and x[(nc,nl)].x>0.99][0]
+    out.write(' -> {}'.format(nc))
+\end{lstlisting}
+
+
+Nosso grafo com a malha viária da Figura \ref{figG} é informado nas linhas 3 e 4. A estrutura de dados dicionário, disponível na linguagem Python, permite mapear convenientemente os arcos do grafo (pares ordenados) com suas respectivas distâncias. A linha 13 cria o modelo de programação linear inteira. Na linha 14 armazenamos na variável \texttt{n} o número de pontos e em \texttt{t0} o primeiro ponto da lista, que será arbitrariamente escolhido como ponto de partida de nossa rota. 
+
+As variáveis do modelo são criadas nas linhas 16 e 17 utilizando o método \texttt{add\_var} em nosso modelo \texttt{m}. Durante a criação das restrições, será necessário referenciar as variáveis criadas. Por isso, utilizamos os dicionários \texttt{x} para mapear cada arco do grafo a sua respectiva variável binária e \texttt{y} para mapear cada nó com sua respectiva variável auxiliar contínua para eliminação de sub-rotas.
+
+A função objetivo que minimiza a distância total dos arcos selecionados é informada na linha 19. Nesse caso, para cada arco multiplicamos sua respectiva variável binária de seleção pela distância do arco armazenada em \texttt{A}.
+
+As restrições são criadas nas linhas 21-26. Em todos os casos utilizamos o operador \texttt{+=} sobre o modelo \texttt{m} para adicionar restrições lineares. Note que assim como na função objetivo, o somatório é efetuado com a função \texttt{xsum}. Esta função é similar a função \texttt{sum} disponível na linguagem Python mas otimizada para a situação específica de escrita de restrições lineares no pacote Python-MIP. O dicionário \texttt{A} que armazena as distâncias contém arcos \texttt{a} que são pares ordenados $(i,j)$=\texttt{(a[0], a[1])}. Dessa forma, a criação das restrições (1) e (2) é feita iterando-se em cada nó \texttt{i} e incluindo na linha 22 todos os arcos de saída em \texttt{i} \texttt{(a[0]==i)} em uma restrição cujo somatório das respectivas variáveis de seleção deve ser 1 e em 23 todos os arcos de entrada em \texttt{i} \texttt{(a[1]==i)} em restrições no mesmo formato.
+
+		
 \bibliography{pmip-podes}
 \bibliographystyle{podes-bibstyle}
-
-
-\section*{Anexos e Apêndices (opcionais)}
-
-Anexos e apêndices são materiais complementares ao texto que só devem ser incluídos quando forem imprescindíveis à compreensão deste.
-
-APÊNDICES são textos elaborados pelo autor a fim de complementar sua argumentação.
-
-ANEXOS são os documentos não elaborados pelo autor, que servem de fundamentação, comprovação ou ilustração, como mapas, leis, estatutos, etc.
-
-Os anexos devem aparecer após as referências, e os apêndices, após os anexos.
 
 
 \end{document}
