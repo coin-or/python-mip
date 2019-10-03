@@ -19,19 +19,17 @@
 
 
 %título do artigo
-\title{TÍTULO DO ARTIGO1$^1$} 
+\title{Desenvolvendo Resolvedores de Programação Linear Inteira Mista em Python usando o pacote Python-MIP$^1$} 
 
 %define os autores
 \author{
- \name{Primeiro Autor\authortag{a}\corresponding{autor@email.com}}, 
- \name{Segundo Autor\authortag{b}} \\
+ \name{Haroldo G. Santos\authortag{a}\corresponding{haroldo@ufop.edu.br}}, 
+ \name{Túlio A.M. Toffolo\authortag{a}} \\
  \authortag{a}
- \institute{Instituto, Departamento, Outro \\ Universidade, Cidade-UF, País}
- \authortag{b}
- \institute{Instituto, Departamento, Outro \\ Universidade, Cidade-UF, País}
+ \institute{Instituto de Ciências Exatas e Biológicas, Departamento de Computação\\ Universidade Federal de Ouro Preto, Ouro Preto, MG, Brasil}
 }
 
-\authorrunning{Cherri}
+\authorrunning{Santos \& Toffolo}
 
 
 \begin{document}
@@ -186,7 +184,7 @@ somente as restrições \ref{eq:in} e \ref{eq:out} fossem consideradas.
 
 A seguir temos um exemplo completo de um resolvedor em Python-MIP onde para o problema do caixeiro viajante com os dados da Figura \ref{figG}, onde o resolvedor utilizará a formulação compacta descrita anteriormente:
 
-
+{\small
 \begin{lstlisting}
 from mip import Model, BINARY, minimize, xsum
 from sys import stdout as out
@@ -223,7 +221,7 @@ for i in N:
     nc = [nl for nl in N if (nc, nl) in A and x[(nc,nl)].x>0.99][0]
     out.write(' -> {}'.format(nc))
 \end{lstlisting}
-
+}
 
 Nosso grafo com a malha viária da Figura \ref{figG} é informado nas linhas 3 e 4. A estrutura de dados dicionário, disponível na linguagem Python, permite mapear convenientemente os arcos do grafo (pares ordenados) com suas respectivas distâncias. A linha 13 cria o modelo de programação linear inteira. Na linha 14 armazenamos na variável \texttt{n} o número de pontos e em \texttt{t0} o primeiro ponto da lista, que será arbitrariamente escolhido como ponto de partida de nossa rota. 
 
