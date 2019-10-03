@@ -201,8 +201,9 @@ A = {('a', 'd'): 56, ('d', 'a'): 67, ('a', 'b'): 49,
 m = Model()
 n, n0 = len(N), min(N)
 
-x = { (i, j): m.add_var(var_type=BINARY) for (i, j) in A }
-y = { i: m.add_var() for i in N }
+x = { (i, j): m.add_var(var_type=BINARY, 
+                        name='x(%s,%s)' % (i,j)) for (i, j) in A }
+y = { i: m.add_var(name='y(%s)' % i) for i in N }
 
 m.objective = minimize(xsum(A[a]*x[a] for a in A))
 
@@ -231,8 +232,58 @@ A função objetivo que minimiza a distância total dos arcos selecionados é in
 
 As restrições são criadas nas linhas 21-26. Em todos os casos utilizamos o operador \texttt{+=} sobre o modelo \texttt{m} para adicionar restrições lineares. Note que assim como na função objetivo, o somatório é efetuado com a função \texttt{xsum}. Esta função é similar a função \texttt{sum} disponível na linguagem Python mas otimizada para a situação específica de escrita de restrições lineares no pacote Python-MIP. O dicionário \texttt{A} que armazena as distâncias contém arcos \texttt{a} que são pares ordenados $(i,j)$=\texttt{(a[0], a[1])}. Dessa forma, a criação das restrições (1) e (2) é feita iterando-se em cada nó \texttt{i} e incluindo na linha 22 todos os arcos de saída em \texttt{i} \texttt{(a[0]==i)} em uma restrição cujo somatório das respectivas variáveis de seleção deve ser 1 e em 23 todos os arcos de entrada em \texttt{i} \texttt{(a[1]==i)} em restrições no mesmo formato.
 
-A linha 28 dispara a otimização do modelo. Em nosso exemplo, assumimos que uma rota existe e será encontrada pelo otimizador\footnote{Em aplicações completas onde modelos de larga escala podem ser otimizados é recomendável a especificação de limites de tempo na otimização (propriedade \texttt{max\_seconds} do modelo) e a posterior checagem do sucesso do otimizador na prova da otimalidade e/ou obtenção de solução viável através da propriedade \texttt{status} do modelo.}. Desse modo, nas linhas seguintes imprimimos o custo e a sequência de visitas da rota encontrada. A linha 33 é um exemplo da expressividade da linguagem Python: para cada vértice criamos uma lista com uma variável \texttt{x} que indica a seleção do próximo vértice selecionado na rota ótima. Apesar de que em soluções viáveis somente haverá um vértice seguinte a cada um, a iteração pelos arcos em \texttt{A} resulta na criação de uma lista. Essa iteração é condicional, considerando somente variáveis binárias $x$ que aparecem $=1$ na solução ótima. Como resolvedores de programação linear inteira mista utilizam computação com precisão limitada, por segurança selecionamos as variáveis com valor próximo de 1 na solução ótima.
+A linha 28 dispara a otimização do modelo. Em nosso exemplo, assumimos que uma rota existe e será encontrada pelo otimizador\footnote{Em aplicações completas onde modelos de larga escala podem ser otimizados é recomendável a especificação de limites de tempo na otimização (propriedade \texttt{max\_seconds} do modelo) e a posterior checagem do sucesso do otimizador na prova da otimalidade e/ou obtenção de solução viável através da propriedade \texttt{status} do modelo.}. Desse modo, nas linhas seguintes imprimimos o custo e a sequência de visitas da rota encontrada. 
 
+A linha 33 é um exemplo da expressividade da linguagem Python: para cada vértice criamos uma lista contendo o próximo vértice selecionado na rota ótima. Apesar de que em soluções viáveis somente haverá um vértice seguinte a cada um, a iteração pelos arcos em \texttt{A} resulta na criação de uma lista dentro dos colchetes. Essa iteração é condicional, considerando somente variáveis binárias $x$ que aparecem $=1$ na solução ótima. Como resolvedores de programação linear inteira mista utilizam computação com precisão limitada, por segurança selecionamos as variáveis com valor próximo de 1 na solução ótima. 
+
+Os resolvedores de programação linear inteira executam uma busca em árvore onde são utilizados limites para a poda de nós. O limite superior é obtido a partir de qualquer solução viável que for encontrada durante a busca e o limite inferior corresponde ao custo obtido com a resolução do problema com as restrições de integralidade das variáveis binárias relaxadas. No nosso caso considerando domínio das variáveis $x$ como contínuo entre 0 e 1. A formulação aqui utilizada tem uma grave deficiência: o limite inferior por ela produzido é distante do custo ótimo da solução. Desse modo, a performance dos resolvedores de programação linear inteira em sua resolução é bastante pobre. 
+
+Um desempenho muito melhor pode ser obtido com a inserção das seguintes desigualdades:
+
+\begin{equation}
+\sum_{(i,j) \in A : i\in S \land j \in S} x_{(i,j)} \leq |S|-1 \,\,\, \forall S \subset V 
+\end{equation}
+
+O problema com as desigualdades acima é que elas devem ser geradas para cada subconjunto $S$ de vértices do grafo, ou seja, para uma grafo com $n$ vértices temos $2^n-1$ subconjuntos não vazios. Inseri-las no modelo inicial é inviável exceto para instâncias pequenas. Uma solução para esse problema é o método dos planos de corte \citep{Dantzig54}, onde somente as restrições \emph{necessárias} são inseridas. O pacote Python-MIP permite uma comunicação bi-direcional com o resolvedor para que as restrições necessárias sejam inseridas durante a busca. Para isso precisamos criar uma classe que derivada da classe \texttt{ConstrsGenerator} que implemente o método \texttt{generate\_constrs}. Esse método recebe como parâmetro um modelo, onde a solução a solução corrente pode ser consultada e restrições adicionais podem ser inseridas a medida do necessário.
+
+O código abaixo implementa um gerador dinâmico de cortes para o modelo acima.
+
+{\small
+\begin{lstlisting}
+import networkx as nx
+
+class SubTourCutGenerator(ConstrsGenerator):
+    def __init__(self, Fl: List[Tuple[int, int]]):
+        self.F = Fl
+
+    def generate_constrs(self, model: Model):
+        G = nx.DiGraph()
+        r = [(v, v.x) for v in model.vars if v.name.startswith('x(')]
+        U = [int(v.name.split('(')[1].split(',')[0]) for v, f in r]
+        V = [int(v.name.split(')')[0].split(',')[1]) for v, f in r]
+        cp = CutPool()
+        for i in range(len(U)):
+            G.add_edge(U[i], V[i], capacity=r[i][1])
+        for (u, v) in F:
+            if u not in U or v not in V:
+                continue
+            val, (S, NS) = nx.minimum_cut(G, u, v)
+            if val <= 0.99:
+                arcsInS = [(v, f) for i, (v, f) in enumerate(r)
+                           if U[i] in S and V[i] in S]
+                if sum(f for v, f in arcsInS) >= (len(S)-1)+1e-4:
+                    cut = xsum(1.0*v for v, fm in arcsInS) <= len(S)-1
+                    cp.add(cut)
+                    if len(cp.cuts) > 256:
+                        for cut in cp.cuts:
+                            model += cut
+                        return
+        for cut in cp.cuts:
+            model += cut
+        return
+\end{lstlisting}}
+
+Na criação de nosso gerador de cortes informamos uma lista \texttt{Fl} de pares $(i,j)$ de vértices cuja conectividade deve ser checada em toda solução gerada. No método \texttt{generate\_constrs} consultamos as variáveis do modelo (\texttt{model.vars}) e identificamos a qual arco cada variável se refere considerando o nome das variáveis (linhas 22 e  23), utilizando o seu valor (propriedade \texttt{x}) para construção do grafo onde iremos procurar sub-rotas desconexas para geração das restrições (6). A identificação dessas sub-rotas é feita resolvendo-se o problema do corte mínimo, com o algoritmo que está disponível no pacote \texttt{networkx} (linha 18). A descoberta de sub-rotas desconexas (linhas 19) gera a restrição de restrições (cortes) que são primeiramente armazenados em um conjunto (linha 24) e posteriormente adicionadas ao modelo. Separamos esses dois passos pois restrições repetidas podem ser geradas. Na linha 25 inserimos um critério de parada para a geração dos cortes: caso um número suficientemente grande já tenha sido gerado, inserimos os mesmos no modelo e prosseguimos a otimização sem procurar por cortes adicionais. Nesse ponto convém ressaltar a função dos cortes e sua relação com o restante do modelo. Como a formulação compacta que estamos utilizando define completamente o problema, a adição de cortes é opcional, ou seja, somente feita para melhorar o desempenho do modelo. A inserção de um número muito grande de cortes por iteração pode gerar o efeito inverso que é a perda de desempenho na resolução. Para utilizamos nosso gerador de cortes com a formulação anterior basta atribuir à propriedade \texttt{cuts\_generator} um objeto da nossa classe \texttt{SubTourCutGenerator} antes da otimização do modelo.
 		
 \bibliography{pmip-podes}
 \bibliographystyle{podes-bibstyle}
