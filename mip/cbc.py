@@ -660,7 +660,7 @@ class SolverCbc(Solver):
             if cbclib.Cbc_bestSolution(self._model):
                 return OptimizationStatus.FEASIBLE
 
-        return OptimizationStatus.INFEASIBLE
+        return OptimizationStatus.NO_SOLUTION_FOUND
 
     def get_objective_sense(self) -> str:
         obj = cbclib.Cbc_getObjSense(self._model)
@@ -681,6 +681,25 @@ class SolverCbc(Solver):
 
     def get_objective_value(self) -> float:
         return cbclib.Cbc_getObjValue(self._model)
+
+    def get_status(self) -> OptimizationStatus:
+        if cbclib.Cbc_isAbandoned(self._model):
+            return OptimizationStatus.ERROR
+
+        if cbclib.Cbc_isProvenOptimal(self._model):
+            return OptimizationStatus.OPTIMAL
+
+        if cbclib.Cbc_isProvenInfeasible(self._model):
+            return OptimizationStatus.INFEASIBLE
+
+        if cbclib.Cbc_isContinuousUnbounded(self._model):
+            return OptimizationStatus.UNBOUNDED
+
+        if cbclib.Cbc_getNumIntegers(self._model):
+            if cbclib.Cbc_bestSolution(self._model):
+                return OptimizationStatus.FEASIBLE
+
+        return OptimizationStatus.NO_SOLUTION_FOUND
 
     def get_log(self) -> List[Tuple[float, Tuple[float, float]]]:
         return self.__log
@@ -1164,11 +1183,13 @@ class SolverOsi(Solver):
                 cbclib.Osi_initialSolve(self.osi)
         else:
             cbclib.Osi_branchAndBound(self.osi)
+        return self.get_status()
 
     def get_status(self) -> OptimizationStatus:
         if cbclib.Osi_isProvenOptimal(self.osi):
             return OptimizationStatus.OPTIMAL
-        elif cbclib.Osi_isProvenPrimalInfeasible(self.osi) or \
+
+        if cbclib.Osi_isProvenPrimalInfeasible(self.osi) or \
                 cbclib.Osi_isProvenDualInfeasible(self.osi):
             return OptimizationStatus.INFEASIBLE
         elif cbclib.Osi_isAbandoned(self.osi):
