@@ -70,12 +70,12 @@ que atendesse os seguintes requisitos:
 \end{enumerate}
 Tradicionalmente, os objetivos 1 e 2 foram considerados conflitantes.
 Até recentemente, as opções mais recomendada para os interessados
-em 1 eram linguagens algébricas de alto nível como AMPL\cite{Fourer1987}.
+em 1 eram linguagens algébricas de alto nível como AMPL \citep{Fourer1987}.
 A obtenção de desempenho máximo costumava requerer o uso de linguagens
-de mais baixo nível como C\cite{Johnson1991a}. Resolvedores estado-da-arte
-como o CPLEX\cite{Bixby2002} foram escritos nessa linguagem. Desse
+de mais baixo nível como C\citep{Johnson1991a}. Resolvedores estado-da-arte
+como o CPLEX foram escritos nessa linguagem\citep{Bixby2002}. Desse
 modo, a biblioteca completa de funções estava originalmente somente
-disponível somente nela. Recentemente, soluções como JuMP\cite{Dunning2015}
+disponível somente nela. Recentemente, soluções como JuMP\citep{Dunning2015}
 demonstraram que os objetivos 1 e 2 não são necessariamente conflitantes:
 linguagens de alto nível como Julia juntamente com compiladores \emph{just-in-time}
 permitem o desenvolvimento rápido de resolvedores que apresentam alto
@@ -84,16 +84,16 @@ um pacote de Programação Linear Inteira Mista para a linguagem Python
 que atenda plenamente os requisitos 1-3.
 
 Pesquisas recentes mostram que Python está se tornando a linguagem
-mais popular da atualidade\cite{pythonEconomist2018}. O projeto Python-MIP
+mais popular da atualidade\citep{pythonEconomist2018}. O projeto Python-MIP
 foi primariamente inspirado em dois projetos de código aberto para
-programação linear inteira em Python. O primeiro é o PuLP\cite{Mitchell2009},
+programação linear inteira em Python. O primeiro é o PuLP\citep{Mitchell2009},
 que oferece uma linguagem de modelagem de alto nível e interface para
 vários resolvedores. Recursos que requerem uma integração maior com
 o resolvedor, como geração dinâmica de planos de cortes, não estão
 disponíveis neste pacote. O pacote CyLP, por outro lado, suporta geração
 dinâmica de planos de corte mas não oferece uma linguagem de modelagem
-de alto nível\cite{Towhidi2016} e somente suporta o resolvedor COIN-OR
-CBC\cite{Forrest2005}. O pacote Python-MIP foi criado com o objetivo
+de alto nível\citep{Towhidi2016} e somente suporta o resolvedor COIN-OR
+CBC\citep{Forrest2005}. O pacote Python-MIP foi criado com o objetivo
 de prover a funcionalidade dos dois pacotes com máximo desempenho.
 A escrita de um um novo pacote de programação linear inteira em Python
 também permite que recursos relativamente novos da linguagem, como
@@ -144,11 +144,10 @@ Como exemplo, considere o grafo de distâncias das Figura \ref{figG}:
 
 O problema do caixeiro viajante pode ser modelado utilizando-se uma
 formulação compacta, isto é, uma formulação com um número polinomial
-de variáveis e restrições. Formulações desse tipo, apesar de não serem
-a melhor opção de resolução em termos de desempenho para problemas
+de variáveis e restrições. Formulações desse tipo, apesar de usualmente não serem a melhor opção de resolução em termos de desempenho para problemas
 deste tipo, são convenientes para uma primeira abordagem pois podem
 ser facilmente inseridas de uma vez só como entrada para um software
-resolvedor. A formulação abaixo foi proposta\cite{Miller1960} nos
+resolvedor. A formulação abaixo foi proposta por \cite{Miller1960} nos
 anos 60:
 
 \begin{align}
@@ -157,21 +156,21 @@ anos 60:
 \textrm{Sujeito a:}\nonumber \\
 \sum_{(i,j)\in A}x_{(i,j)} & =1\,\,\,\forall\,i\in V\label{eq:in}\\
 \sum_{(i,j)\in A}x_{(i,j)} & =1\,\,\,\forall\,j\in V\label{eq:out}\\
-y_{i} & \geq y_{j}-|V|+(|V|+1)x_{(i,j)}\,\,\,\forall\,(i,j)\in A:1\notin\{i,j\}\label{eq:st1}\\
+y_{j} & \geq y_{i}-|V|+(|V|+1)x_{(i,j)}\,\,\,\forall\,(i,j)\in A:1\notin\{i,j\}\label{eq:st1}\\
 y_{i} & \geq0\,\,\,\forall\,i\in V\label{eq:y}\\
 x_{(i,j)} & \in\{0,1\}\,\,\,\forall\,(i,j)\in A\label{eq:x}
 \end{align}
 
-As equações \ref{eq:in} e \ref{eq:out} garantem que cada vértice
+As equações (\ref{eq:in}) e (\ref{eq:out}) garantem que cada vértice
 é visitado somente uma vez enquanto variáveis auxiliares $y_{i}$
-são utilizadas nas equações \ref{eq:st1} para garantir que uma vez
-que um arco $(i,j)$ seja selecionado, o valor de $y_{i}$ seja maior
-do que o valor de $y_{j}$ em uma unidade. Essa propriedade é garantida
+são utilizadas nas restrições (\ref{eq:st1}) para garantir que uma vez
+que um arco $(i,j)$ seja selecionado, o valor de $y_{j}$ seja maior
+do que o valor de $y_{i}$ em uma unidade. Essa propriedade é garantida
 para todos os vértices exceto o vértice 1 que é arbitrariamente selecionado
 como origem de modo a evitar a construção de sub-rotas desconectadas
 como no exemplo da Figura \ref{figSub}, onde os valores das variáveis
 $x_{(i,j)}$ indicados nos arcos representam uma solução viável caso
-somente as restrições \ref{eq:in} e \ref{eq:out} fossem consideradas.
+somente as restrições (\ref{eq:in}) e (\ref{eq:out}) fossem consideradas.
 
 \begin{figure}
 	\begin{centering}
@@ -182,69 +181,35 @@ somente as restrições \ref{eq:in} e \ref{eq:out} fossem consideradas.
 	
 \end{figure}
 
-A seguir temos um exemplo completo de um resolvedor em Python-MIP onde para o problema do caixeiro viajante com os dados da Figura \ref{figG}, onde o resolvedor utilizará a formulação compacta descrita anteriormente:
+A seguir temos um exemplo completo de um resolvedor em Python-MIP para o problema do caixeiro viajante com os dados da Figura \ref{figG}, onde o resolvedor utilizará a formulação compacta descrita anteriormente:
 
 {\small
-\begin{lstlisting}
-from mip import Model, BINARY, minimize, xsum
-from sys import stdout as out
-
-N = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
-A = {('a', 'd'): 56, ('d', 'a'): 67, ('a', 'b'): 49, 
-  ('f', 'c'): 35, ('g', 'b'): 35, ('g', 'b'): 35, ('b', 'g'): 25,
-  ('a', 'c'): 80, ('c', 'a'): 99, ('e', 'f'): 20, ('f', 'e'): 20,
-  ('g', 'e'): 38, ('e', 'g'): 49, ('g', 'f'): 37, ('f', 'g'): 32,
-  ('b', 'e'): 21, ('e', 'b'): 30, ('a', 'g'): 47, ('g', 'a'): 68,
-  ('d', 'c'): 37, ('c', 'd'): 52, ('d', 'e'): 15, ('e', 'd'): 20,
-  ('d', 'b'): 39, ('b', 'd'): 37, ('c', 'f'): 35, ('b', 'a'): 50}
-  
-m = Model()
-n, n0 = len(N), min(N)
-
-x = { (i, j): m.add_var(var_type=BINARY, 
-                        name='x(%s,%s)' % (i,j)) for (i, j) in A }
-y = { i: m.add_var(name='y(%s)' % i) for i in N }
-
-m.objective = minimize(xsum(A[a]*x[a] for a in A))
-
-for i in N:
-    m += xsum(x[a] for a in A if a[0] == i) == 1
-    m += xsum(x[a] for a in A if a[1] == i) == 1
-	
-for (i, j) in [a for a in A if n0 not in [a[0], a[1]]]:
-    m += y[i] - (n+1)*x[(i, j)] >= y[j] - n
-	
-m.optimize()
-print('route with length {} found:'.format(m.objective_value))
-out.write(n0)
-nc = n0
-for i in N:
-    nc = [nl for nl in N if (nc, nl) in A and x[(nc,nl)].x>0.99][0]
-    out.write(' -> {}'.format(nc))
-\end{lstlisting}
+\lstinputlisting[breaklines]{tsp-compact.py}
 }
 
-Nosso grafo com a malha viária da Figura \ref{figG} é informado nas linhas 3 e 4. A estrutura de dados dicionário, disponível na linguagem Python, permite mapear convenientemente os arcos do grafo (pares ordenados) com suas respectivas distâncias. A linha 13 cria o modelo de programação linear inteira. Na linha 14 armazenamos na variável \texttt{n} o número de pontos e em \texttt{t0} o primeiro ponto da lista, que será arbitrariamente escolhido como ponto de partida de nossa rota. 
+Nosso grafo com a malha viária da Figura \ref{figG} é informado nas linhas 4-11. A estrutura de dados dicionário, disponível na linguagem Python, permite mapear convenientemente os arcos do grafo (pares ordenados) com suas respectivas distâncias. Nas linhas 13 e 14 separamos nos dicionários \texttt{A\_out} e \texttt{A\_in} os arcos de saída e entrada de cada nó, respectivamente.
 
-As variáveis do modelo são criadas nas linhas 16 e 17 utilizando o método \texttt{add\_var} em nosso modelo \texttt{m}. Durante a criação das restrições, será necessário referenciar as variáveis criadas. Por isso, utilizamos os dicionários \texttt{x} para mapear cada arco do grafo a sua respectiva variável binária e \texttt{y} para mapear cada nó com sua respectiva variável auxiliar contínua para eliminação de sub-rotas.
+A linha 16 cria o modelo de programação linear inteira. Na linha 17 armazenamos na variável \texttt{n} o número de pontos e em \texttt{n0} o primeiro ponto da lista, que será arbitrariamente escolhido como ponto de partida de nossa rota. 
 
-A função objetivo que minimiza a distância total dos arcos selecionados é informada na linha 19. Nesse caso, para cada arco multiplicamos sua respectiva variável binária de seleção pela distância do arco armazenada em \texttt{A}.
+As variáveis do modelo são criadas nas linhas 19 e 21 utilizando o método \texttt{add\_var} em nosso modelo \texttt{m}. Durante a criação das restrições, será necessário referenciar as variáveis criadas. Por isso, utilizamos os dicionários \texttt{x} para mapear cada arco do grafo com sua respectiva variável binária e \texttt{y} para mapear cada nó com sua respectiva variável auxiliar contínua para eliminação de sub-rotas.
 
-As restrições são criadas nas linhas 21-26. Em todos os casos utilizamos o operador \texttt{+=} sobre o modelo \texttt{m} para adicionar restrições lineares. Note que assim como na função objetivo, o somatório é efetuado com a função \texttt{xsum}. Esta função é similar a função \texttt{sum} disponível na linguagem Python mas otimizada para a situação específica de escrita de restrições lineares no pacote Python-MIP\@. O dicionário \texttt{A} que armazena as distâncias contém arcos \texttt{a} que são pares ordenados $(i,j)$=\texttt{(a[0], a[1])}. Dessa forma, a criação das restrições (1) e (2) é feita iterando-se em cada nó \texttt{i} e incluindo na linha 22 todos os arcos de saída em \texttt{i} \texttt{(a[0]==i)} em uma restrição cujo somatório das respectivas variáveis de seleção deve ser 1 e em 23 todos os arcos de entrada em \texttt{i} \texttt{(a[1]==i)} em restrições no mesmo formato.
+A função objetivo que minimiza a distância total dos arcos selecionados é informada na linha 23. Nesse caso, para cada arco multiplicamos sua respectiva variável binária de seleção pela distância do arco armazenada em \texttt{A}.
+
+As restrições são criadas nas linhas 25-30. Em todos os casos utilizamos o operador \texttt{+=} sobre o modelo \texttt{m} para adicionar restrições lineares. Note que assim como na função objetivo, o somatório é efetuado com a função \texttt{xsum}. Esta função é similar a função \texttt{sum} disponível na linguagem Python mas otimizada para a situação específica de escrita de restrições lineares no pacote Python-MIP\@. O dicionário \texttt{A} que armazena as distâncias contém arcos \texttt{a} que são pares ordenados $(i,j)$=\texttt{(a[0], a[1])}. 
 
 A linha 28 dispara a otimização do modelo. Em nosso exemplo, assumimos que uma rota existe e será encontrada pelo otimizador\footnote{Em aplicações completas onde modelos de larga escala podem ser otimizados é recomendável a especificação de limites de tempo na otimização (propriedade \texttt{max\_seconds} do modelo) e a posterior checagem do sucesso do otimizador na prova da otimalidade e/ou obtenção de solução viável através da propriedade \texttt{status} do modelo.}. Desse modo, nas linhas seguintes imprimimos o custo e a sequência de visitas da rota encontrada. 
 
-A linha 33 é um exemplo da expressividade da linguagem Python: para cada vértice criamos uma lista contendo o próximo vértice selecionado na rota ótima. Apesar de que em soluções viáveis somente haverá um vértice seguinte a cada um, a iteração pelos arcos em \texttt{A} resulta na criação de uma lista dentro dos colchetes. Essa iteração é condicional, considerando somente variáveis binárias $x$ que aparecem $=1$ na solução ótima. Como resolvedores de programação linear inteira mista utilizam computação com precisão limitada, por segurança selecionamos as variáveis com valor próximo de 1 na solução ótima. 
+A linha 37 é um exemplo da expressividade da linguagem Python: para cada vértice criamos uma lista contendo o próximo vértice selecionado na rota ótima. Apesar de que em soluções viáveis somente haverá um vértice seguinte a cada um, a iteração pelos arcos em \texttt{A} resulta na criação de uma lista dentro dos colchetes. Essa iteração é condicional, considerando somente variáveis binárias $x$ que aparecem $=1$ na solução ótima. Como resolvedores de programação linear inteira mista utilizam computação com precisão limitada, por segurança selecionamos as variáveis com valor próximo de 1 na solução ótima. 
 
-Os resolvedores de programação linear inteira executam uma busca em árvore onde são utilizados limites para a poda de nós. O limite superior é obtido a partir de qualquer solução viável que for encontrada durante a busca e o limite inferior corresponde ao custo obtido com a resolução do problema com as restrições de integralidade das variáveis binárias relaxadas. No nosso caso considerando domínio das variáveis $x$ como contínuo entre 0 e 1. A formulação aqui utilizada tem uma grave deficiência: o limite inferior por ela produzido é distante do custo ótimo da solução. Desse modo, a performance dos resolvedores de programação linear inteira em sua resolução é bastante pobre. 
+Os resolvedores de programação linear inteira executam uma busca em árvore onde são utilizados limites para a poda de nós. O limite superior é obtido a partir de qualquer solução viável que for encontrada durante a busca e o limite inferior corresponde ao custo obtido com a resolução do problema com as restrições de integralidade das variáveis binárias relaxadas. No nosso caso considerando domínio das variáveis $x$ como contínuo entre 0 e 1. A formulação aqui utilizada tem uma grave deficiência: o limite inferior por ela produzido é distante do custo ótimo da solução. Desse modo, o desempenho dos resolvedores de programação linear inteira em sua resolução é bastante pobre. 
 
 Um desempenho muito melhor pode ser obtido com a inserção das seguintes desigualdades:
 
 \begin{equation}
-\sum_{(i,j) \in A : i\in S \land j \in S} x_{(i,j)} \leq |S|-1 \,\,\, \forall S \subset V 
+\sum_{(i,j) \in A : i\in S \land j \notin S} x_{(i,j)} \leq |S|-1 \,\,\, \forall S \subset V 
 \end{equation}
 
-O problema com as desigualdades acima é que elas devem ser geradas para cada subconjunto $S$ de vértices do grafo, ou seja, para uma grafo com $n$ vértices temos $2^n-1$ subconjuntos não vazios. Inseri-las no modelo inicial é inviável exceto para instâncias pequenas. Uma solução para esse problema é o método dos planos de corte \citep{Dantzig54}, onde somente as restrições \emph{necessárias} são inseridas. O pacote Python-MIP permite uma comunicação bi-direcional com o resolvedor para que as restrições necessárias sejam inseridas durante a busca. Para isso precisamos criar uma classe que derivada da classe \texttt{ConstrsGenerator} que implemente o método \texttt{generate\_constrs}. Esse método recebe como parâmetro um modelo, onde a solução a solução corrente pode ser consultada e restrições adicionais podem ser inseridas a medida do necessário.
+O problema com as desigualdades acima é que elas devem ser geradas para cada subconjunto $S$ de vértices do grafo, ou seja, para uma grafo com $n$ vértices temos $2^n-1$ subconjuntos não vazios. Inseri-las no modelo inicial é inviável exceto para instâncias pequenas. Uma solução para esse problema é o método dos planos de corte \citep{Dantzig54}, onde somente as restrições \emph{necessárias} são inseridas. O pacote Python-MIP permite uma comunicação bi-direcional com o resolvedor para que as restrições necessárias sejam inseridas \emph{durante} a busca. Para isso precisamos criar uma classe derivada da classe \texttt{ConstrsGenerator} que implemente o método \texttt{generate\_constrs}. Esse método recebe como parâmetro um modelo, onde a solução a solução corrente pode ser consultada e restrições adicionais podem ser inseridas na medida do necessário.
 
 \subsection{Geração de Planos de Corte}
 
@@ -285,11 +250,35 @@ class SubTourCutGenerator(ConstrsGenerator):
         return
 \end{lstlisting}}
 
-Na criação de nosso gerador de cortes informamos uma lista \texttt{Fl} de pares $(i,j)$ de vértices cuja conectividade deve ser checada em toda solução gerada. No método \texttt{generate\_constrs} consultamos as variáveis do modelo (\texttt{model.vars}) e identificamos a qual arco cada variável se refere considerando o nome das variáveis (linhas 22 e  23), utilizando o seu valor (propriedade \texttt{x}) para construção do grafo onde iremos procurar sub-rotas desconexas para geração das restrições (6). A identificação dessas sub-rotas é feita resolvendo-se o problema do corte mínimo, com o algoritmo que está disponível no pacote \texttt{networkx} (linha 18). A descoberta de sub-rotas desconexas (linhas 19) gera a restrição de restrições (cortes) que são primeiramente armazenados em um conjunto (linha 24) e posteriormente adicionadas ao modelo. Separamos esses dois passos pois restrições repetidas podem ser geradas. Na linha 25 inserimos um critério de parada para a geração dos cortes: caso um número suficientemente grande já tenha sido gerado, inserimos os mesmos no modelo e prosseguimos a otimização sem procurar por cortes adicionais. Nesse ponto convém ressaltar a função dos cortes e sua relação com o restante do modelo. Como a formulação compacta que estamos utilizando define completamente o problema, a adição de cortes é opcional, ou seja, somente feita para melhorar o desempenho do modelo. A inserção de um número muito grande de cortes por iteração pode gerar o efeito inverso que é a perda de desempenho na resolução. Para utilizamos nosso gerador de cortes com a formulação anterior basta atribuir à propriedade \texttt{cuts\_generator} um objeto da nossa classe \texttt{SubTourCutGenerator} antes da otimização do modelo.
+Na criação de nosso gerador de cortes informamos uma lista \texttt{Fl} de pares $(i,j)$ de vértices cuja conectividade deve ser checada em toda solução gerada. No método \texttt{generate\_constrs} consultamos as variáveis do modelo (\texttt{model.vars}) e identificamos a qual arco cada variável se refere considerando o nome das variáveis (linhas 22 e  23), utilizando o seu valor na solução (propriedade \texttt{x}) para construção do grafo onde iremos procurar sub-rotas desconexas para geração das restrições (6). A identificação dessas sub-rotas é feita resolvendo-se o problema do corte mínimo, com o algoritmo que está disponível no pacote \texttt{networkx} (linha 18). A descoberta de sub-rotas desconexas (linhas 19) gera a restrição de restrições (cortes) que são primeiramente armazenados em um conjunto (linha 24) e posteriormente adicionados ao modelo. Separamos esses dois passos pois restrições repetidas podem ser geradas. Na linha 25 inserimos um critério de parada para a geração dos cortes: caso um número suficientemente grande já tenha sido gerado, inserimos os mesmos no modelo e prosseguimos a otimização sem procurar por cortes adicionais. Nesse ponto convém ressaltar a função dos cortes e sua relação com o restante do modelo. Como a formulação compacta que estamos utilizando define completamente o problema, a adição de cortes é opcional, ou seja, somente feita para melhorar o desempenho do modelo. A inserção de um número muito grande de cortes por iteração pode gerar o efeito indesejado de perda de desempenho na resolução. Para utilizamos nosso gerador de cortes com a formulação anterior basta atribuir à propriedade \texttt{cuts\_generator} um objeto da nossa classe \texttt{SubTourCutGenerator} antes da otimização do modelo.
 
 \subsection{Integração com heurísticas}
 
-Resolvedores de programação linear inteira iniciam o processo de resolução computando uma solução, possivelmente fracionária, obtida através da relaxação do problema. Em instâncias difíceis, a obtenção da primeira solução inteira válida pode requerer a exploração de um grande número de nós na árvore de busca. Para essas instâncias, muitas vezes uma heurística simples e rápida pode ser utilizada para geração de uma solução inicial. No pacote Python-MIP soluções iniciais podem ser facilmente informadas ao resolvedor através da propriedade \texttt{start} do modelo.
+Resolvedores de programação linear inteira iniciam o processo de resolução computando uma solução possivelmente fracionária, obtida através da relaxação do problema. Em instâncias difíceis, a obtenção da primeira solução inteira válida pode requerer a exploração de um grande número de nós na árvore de busca. Para essas instâncias, muitas vezes uma heurística simples e rápida pode ser utilizada para geração de uma solução inicial. No pacote Python-MIP soluções iniciais podem ser facilmente informadas ao resolvedor através da propriedade \texttt{start} do modelo que recebe uma lista de pares $(x,v)$ onde x é uma referência para uma variável de decisão e v o seu valor na solução factível. No caso do problema do caixeiro viajante, caso o grafo não tenha todas as ligações possíveis, como é o caso de nosso exemplo, mesmo a geração de uma solução viável qualquer pode ser difícil. O código abaixo tenta produzir uma solução factível através da heurística de inserção mais barata: dada uma solução parcial, a inserção de um novo componente na rota é avaliada em todas as posições da subrota e a opção válida que incorrer o menor aumento de custo na rota é selecionada.
+{\small
+\begin{lstlisting}
+from itertools import product
+
+seq = [n0, max((A[n0, a[1]], a[1]) for a in A if a[0] == n0)[1]]
+Vout = set(N)-set(seq)
+while Vout:
+    L = [(A[(seq[p], nl)]+A[(nl, seq[p+1])], (nl, p))
+         for (nl, p) in product(Vout, range(len(seq)-1))
+         if (seq[p], nl) in A and (nl, seq[p+1]) in A]
+    if not L:
+        print('initial tour not found by heuristic')
+        break
+    LM = min(L)
+    nn, p = LM[1]
+    seq = seq[:p+1]+[nn]+seq[p+1:]
+    Vout = Vout - {nn}
+
+if len(seq) == n:
+    m.start = [(x[(seq[p], seq[p+1])], 1.0) for p in range(len(seq)-1)]
+\end{lstlisting}}
+
+Na linha 1 selecionamos arbitrariamente um arco de saída do ponto inicial para inclusão dos dois nós envolvidos como rota inicial, no caso o de distância máxima de \texttt{n0}. Em \texttt{Vout} guardamos os elementos que estão fora da rota. A cada iteração verificamos o custo de adicionar cada elemento de \texttt{Vout} em cada posição \texttt{p} (linhas 4-6) e selecionamos aquele que resulta no menor aumento de custo na rota. Eventualmente podemos ficar sem ligações que permitam passar somente uma vez em cada ponto, o que é verificado na linha 8. Finalmente, caso tenhamos sucesso, informamos a solução inicial da linha 18.
+
 		
 \bibliography{pmip-podes}
 \bibliographystyle{podes-bibstyle}

@@ -1,79 +1,77 @@
-"""Example that loads a distance matrix and solves the Traveling
-   Salesman Problem using the simple compact formulation
-   presented in Miller, C.E., Tucker, A.W and Zemlin, R.A. "Integer
-   Programming Formulation of Traveling Salesman Problems". Journal
-   of the ACM 7(4). 1960.
-"""
+"""Example that solves the Traveling Salesman Problem using the simple compact
+formulation presented in Miller, C.E., Tucker, A.W and Zemlin, R.A. "Integer
+Programming Formulation of Traveling Salesman Problems". Journal of the ACM
+7(4). 1960."""
 
-from collections import defaultdict
-from sys import argv
-import tsplib95
-from mip.model import Model, xsum, minimize
-from mip.constants import BINARY
+from itertools import product
+from sys import stdout as out
+from mip import Model, xsum, minimize, BINARY
 
+# names of places to visit
+places = ['Antwerp', 'Bruges', 'C-Mine', 'Dinant', 'Ghent',
+          'Grand-Place de Bruxelles', 'Hasselt', 'Leuven',
+          'Mechelen', 'Mons', 'Montagne de Bueren', 'Namur',
+          'Remouchamps', 'Waterloo']
 
-if len(argv) <= 1:
-    print('enter instance name.')
-    exit(1)
+# distances in an upper triangular matrix
+dists = [[83, 81, 113, 52, 42, 73, 44, 23, 91, 105, 90, 124, 57],
+         [161, 160, 39, 89, 151, 110, 90, 99, 177, 143, 193, 100],
+         [90, 125, 82, 13, 57, 71, 123, 38, 72, 59, 82],
+         [123, 77, 81, 71, 91, 72, 64, 24, 62, 63],
+         [51, 114, 72, 54, 69, 139, 105, 155, 62],
+         [70, 25, 22, 52, 90, 56, 105, 16],
+         [45, 61, 111, 36, 61, 57, 70],
+         [23, 71, 67, 48, 85, 29],
+         [74, 89, 69, 107, 36],
+         [117, 65, 125, 43],
+         [54, 22, 84],
+         [60, 44],
+         [97],
+         []]
 
-inst = tsplib95.load_problem(argv[1])
-N = [n for n in inst.get_nodes()]
-n = len(N)
-A = dict()
-for (i, j) in inst.get_edges():
-    if i != j:
-        A[(i, j)] = inst.wfunc(i, j)
+# number of nodes and list of vertices
+n, V = len(dists), range(len(dists))
 
-# set of edges leaving a node
-OUT = defaultdict(set)
-
-# set of edges entering a node
-IN = defaultdict(set)
-
-# an arbitrary initial point
-n0 = min(i for i in N)
-
-for a in A:
-    OUT[a[0]].add(a)
-    IN[a[1]].add(a)
-
-print('solving TSP with {} cities'.format(len(N)))
+# distances matrix
+c = [[0 if i == j
+      else dists[i][j-i-1] if j > i
+      else dists[j][i-j-1]
+      for j in V] for i in V]      
 
 model = Model()
 
 # binary variables indicating if arc (i,j) is used on the route or not
-x = {a: model.add_var('x({},{})'.format(a[0], a[1]), var_type=BINARY)
-     for a in A.keys()}
+x = [[model.add_var(var_type=BINARY) for j in V] for i in V]
 
-# continuous variable to prevent subtours: each
-# city will have a different "identifier" in the planned route
-y = {i: model.add_var(name='y({})') for i in N}
+# continuous variable to prevent subtours: each city will have a
+# different sequential id in the planned route except the first one
+y = [model.add_var() for i in V]
 
 # objective function: minimize the distance
-model.objective = minimize(
-    xsum(A[a]*x[a] for a in A.keys()))
+model.objective = minimize(xsum(c[i][j]*x[i][j] for i in V for j in V))
 
-# constraint : enter each city coming from another city
-for i in N:
-    model += xsum(x[a] for a in OUT[i]) == 1
+# constraint : leave each city only once
+for i in V:
+    model += xsum(x[i][j] for j in set(V) - {i}) == 1
 
-# constraint : leave each city coming from another city
-for i in N:
-    model += xsum(x[a] for a in IN[i]) == 1
+# constraint : enter each city only once
+for i in V:
+    model += xsum(x[j][i] for j in set(V) - {i}) == 1
 
 # subtour elimination
-for (i, j) in [a for a in A.keys() if n0 not in [a[0], a[1]]]:
-    model += \
-        y[i] - (n+1)*x[(i, j)] >= y[j]-n, 'noSub({},{})'.format(i, j)
+for (i, j) in set(product(set(V) - {0}, set(V) - {0})):
+        model += y[i] - (n+1)*x[i][j] >= y[j]-n
 
-print('model has {} variables, {} of which are integral and {} rows'
-      .format(model.num_cols, model.num_int, model.num_rows))
+# optimizing
+model.optimize(max_seconds = 30)
 
-model.max_nodes = 1000
-st = model.optimize(max_seconds=120)
-
-print('best route found has length {}, best possible (obj bound is) {} st: {}'
-      .format(model.objective_value, model.objective_bound, st))
-
-arcs = [(a) for a in A.keys() if x[a].x >= 0.99]
-print('optimal route : {}'.format(arcs))
+# checking if a solution was found
+if model.num_solutions:
+    out.write('route with total distance %g found: %s' % (model.objective_value, places[0]))
+    nc = 0
+    while True:
+        nc = [i for i in V if x[nc][i].x >= 0.99][0]
+        out.write(' -> %s' % places[nc])
+        if nc == 0:
+            break
+    out.write('\n')
