@@ -29,42 +29,13 @@ mathematical programming formulation is:
 The following python code creates, optimizes and prints the optimal solution for the
 0/1 knapsack problem
 
-.. code-block:: python
+.. literalinclude:: ../examples/knapsack.py
+    :caption: Solves the 0/1 knapsack problem: knapsack.py
     :linenos:
 
-    from mip.model import Model, xsum, maximize
-    from mip.constants import BINARY
-
-    p = [10, 13, 18, 31, 7, 15]
-    w = [11, 15, 20, 35, 10, 33]
-    c = 47
-    n = len(w)
-
-    m = Model('knapsack')
-
-    # creating variables
-    x = [ m.add_var(var_type=BINARY) for i in range(n) ]
-
-    # objective function
-    m.objective = maximize(xsum(p[i]*x[i] for i in range(n)))
-
-    # creating constraints
-    m += xsum(w[i]*x[i] for i in range(n)) <= c
-
-    # optimizing the model
-    m.optimize()
-
-    # printing the solution
-    selected = [ i for i in range(n) if x[i].x >= 0.99 ]
-    print('selected items: {}'.format(selected))
-
-Lines 1 and 2 import the required classes and definitions from Python-MIP.
-Lines 4-7 define the problem data. Line 9 creates an empty maximization
-problem :code:`m` with the (optional) name of "knapsack". Line 11 adds the
-binary decision variables to model :code:`m`. Line 13 defines the
-objective function of this model and line 15 adds the capacity constraint.
-The model is optimized in line 17 and the solution, a list of the selected
-items, is computed at line 19.
+Line 3 imports the required classes and definitions from Python-MIP. Lines 5-8 define the problem data. Line 10 creates an empty maximization
+problem :code:`m` with the (optional) name of "knapsack". Line 12 adds the binary decision variables to model :code:`m` and stores their references in a list :code:`x`. Line 14 defines the objective function of this model and line 16 adds the capacity constraint. The model is optimized in line 18 and the solution, a list of the selected
+items, is computed at line 20.
 
 .. _tsp-label:
 
@@ -82,8 +53,8 @@ attractions, depicted in the map bellow:
     :align: center
 
 You want to find the shortest possible tour to visit all these places. More
-formally, considering  :math:`n` points :math:`I=\{0,\ldots,n-1\}` and
-a distance matrix :math:`D_{n \times n}` with elements :math:`d_{i,j} \in
+formally, considering  :math:`n` points :math:`V=\{0,\ldots,n-1\}` and
+a distance matrix :math:`D_{n \times n}` with elements :math:`c_{i,j} \in
 \mathbb{R}^+`, a solution consists in a set of exactly :math:`n` (origin,
 destination) pairs indicating the itinerary of your trip, resulting in
 the following formulation:
@@ -91,13 +62,13 @@ the following formulation:
 .. math::
 
     \textrm{Minimize: }   &  \\
-    &  \sum_{i \in I, j \in I : i \neq j} d_{i,j} \ldotp x_{i,j} \\
+    &  \sum_{i \in I, j \in I} c_{i,j} \ldotp x_{i,j} \\
     \textrm{Subject to: }   &  \\
-    & \sum_{j \in I : i \neq j} x_{i,j} = 1 \,\,\, \forall i \in I  \\
-    & \sum_{i \in I : i \neq j} x_{i,j} = 1 \,\,\, \forall j \in I \\
-    & y_{i} -(n+1)\ldotp x_{i,j} \geq y_{j} -n  \,\,\, \forall i \in I\setminus \{0\}, j \in I\setminus \{0,i\}\\
-    & x_{i,j} \in \{0,1\} \,\,\, \forall i \in J, j \in I\setminus \{j\} \\
-    & y_i \geq 0 \,\,\, \forall i \in I
+    & \sum_{j \in V \setminus \{i\}} x_{i,j} = 1 \,\,\, \forall i \in V  \\
+    & \sum_{i \in V \setminus \{j\}} x_{i,j} = 1 \,\,\, \forall j \in V \\
+    & y_{i} -(n+1)\ldotp x_{i,j} \geq y_{j} -n  \,\,\, \forall i \in V\setminus \{0\}, j \in V\setminus \{0,i\}\\
+    & x_{i,j} \in \{0,1\} \,\,\, \forall i \in V, j \in V \\
+    & y_i \geq 0 \,\,\, \forall i \in V
 
 The first two sets of constraints enforce that we leave and arrive only
 once at each point. The optimal solution for the problem including only
@@ -108,76 +79,22 @@ one bellow.
     :width: 60%
     :align: center
 
-To enforce the production of connected routes, additional variables
-:math:`y_{i} \geq 0` are included in the model indicating the
-sequential order of each point in the produced route. Point zero is
-arbitrarily selected as the initial point and conditional constraints
-linking variables :math:`x_{i,j},y_{i}` and :math:`y_{j}` ensure that the
-selection of the arc :math:`x_{i,j}` implies that :math:`y_{j}\geq y_{i}+1`.
+To enforce the production of connected routes, additional variables :math:`y_{i} \geq 0` are included in the model indicating the sequential order of each point in the produced route. Point zero is arbitrarily selected as the initial point and conditional constraints
+linking variables :math:`x_{i,j}`, :math:`y_{i}` and :math:`y_{j}` are created for all nodes except the the initial one to ensure that the selection of the arc :math:`x_{i,j}` implies that :math:`y_{j}\geq y_{i}+1`.
 
 The Python code to create, optimize and print the optimal route for the TSP is
 included bellow:
 
-
-.. code-block:: python
+.. literalinclude:: ../examples/tsp-compact.py
+    :caption: Traveling salesman problem solver with compact formulation: tsp-compact.py
     :linenos:
 
-    from sys import argv
-    from tspdata import TSPData
-    from mip.model import Model, xsum, minimize
-    from mip.constants import BINARY
+In line 10 names of the places to visit are informed. In line 17 distances are informed in an upper triangular matrix. Line 33 stores the number of nodes and a list with nodes sequential ids starting from 0. In line 36 a full :math:`n \times n` distance matrix is filled. Line 41 creates an empty MIP model. In line 44 all binary decision variables for the selection of arcs are created and their references are stored a :math:`n \times n` matrix named :code:`x`. Differently from the :math:`x` variables, :math:`y` variables (line 48) are not required to be
+binary or integral, they can be declared just as continuous variables, the default variable type. In this case, the parameter :code:`var_type` can be omitted from the :code:`add_var` call.
 
-    inst = TSPData(argv[1])
-    (n, d) = (inst.n, inst.d)
-
-    model = Model()
-
-    x = [[model.add_var(var_type=BINARY) for j in range(n)] for i in range(n)]
-
-    y = [model.add_var() for i in range(n)]
-
-    model.objective = minimize(
-        xsum(d[i][j]*x[i][j] for j in range(n) for i in range(n)))
-
-    for i in range(n):
-        model += xsum(x[j][i] for j in range(n) if j != i) == 1
-        model += xsum(x[i][j] for j in range(n) if j != i) == 1
-
-    for i in range(1, n):
-        for j in [x for x in range(1, n) if x != i]:
-            model += y[i] - (n+1)*x[i][j] >= y[j] - n
-
-    model.optimize(max_seconds=30)
-
-    arcs = [(i, j) for i in range(n) for j in range(n) if x[i][j].x >= 0.99]
-    print('optimal route : {}'.format(arcs))
-
-
-This `example <https://raw.githubusercontent.com/coin-or/python-mip/master/examples/tsp-compact.py>`_ is included in the Python-MIP package in the example folder
-Additional code to load the problem data (called from line 5) is included in `tspdata.py <https://raw.githubusercontent.com/coin-or/python-mip/master/examples/tspdata.py>`_.
-File `belgium-tourism-14.tsp <https://raw.githubusercontent.com/coin-or/python-mip/master/examples/belgium-tourism-14.tsp>`_ contains the coordinates
-of the cities included in the example. To produce the optimal tourist tour for our Belgium example just enter:
-
-.. code-block:: bash
-
-    python tsp-compact.py belgium-tourism-14.tsp
-
-In the command line. Follows an explanation of the tsp-compact code: line
-11 creates the main binary decision variables for the selection of arcs
-and line 13 creates the auxiliary continuous variables. Differently
-from the :math:`x` variables, :math:`y` variables are not required to be
-binary or integral, they can be declared just as continuous variables, the
-default variable type. In this case, the parameter :code:`var_type` can be
-omitted from the :code:`add_var` call. Line 15 sets the total traveled
-distance as objective function and lines 17-23 include the constraints. In
-line 25 we call the optimizer specifying a time limit of 30 seconds. This
-will surely not be necessary for our Belgium example, which will be solved
-instantly, but may be important for larger problems: even though high
-quality solutions may be found very quickly by the MIP solver, the time
-required to *prove* that the current solution is optimal may be very
-large. With a time limit, the search is truncated and the best solution
-found during the search is reported. Finally, the optimal solution for our
-trip has length 547 and is depicted bellow:
+Line 51 sets the total traveled distance as objective function and lines 54-62 include the constraints. In line 66 we call the optimizer specifying a time limit of 30 seconds. This
+will surely not be necessary for our Belgium example, which will be solved instantly, but may be important for larger problems: even though high quality solutions may be found very quickly by the MIP solver, the time required to *prove* that the current solution is optimal may be very
+large. With a time limit, the search is truncated and the best solution found during the search is reported. In line 69 we check for the availability of a feasible solution. To repeatedly check for the next node in the route we check for the solution value (:code:`.x` attribute) of all variables of outgoing arcs of the current node in the route (line 73). The optimal solution for our trip has length 547 and is depicted bellow:
 
 .. image:: ./images/belgium-tourism-14-opt-547.png
     :width: 60%
@@ -203,40 +120,9 @@ can be used to solve this problem:
 
 The following code builds the previous model, solves it and prints the queen placements:
 
-.. code-block:: python
-
-    from sys import stdout
-    from mip.model import Model, xsum
-    from mip.constants import MAXIMIZE, BINARY
-
-    n = 75
-
-    queens = Model('queens', MAXIMIZE)
-
-    x = [[queens.add_var('x({},{})'.format(i, j), var_type=BINARY)
-          for j in range(n)] for i in range(n)]
-
-    for i in range(n):
-        queens += xsum(x[i][j] for j in range(n)) == 1, 'row({})'.format(i)
-
-    for j in range(n):
-        queens += xsum(x[i][j] for i in range(n)) == 1, 'col({})'.format(j)
-
-    for p, k in enumerate(range(2 - n, n - 2 + 1)):
-        queens += xsum(x[i][j] for i in range(n) for j in range(n)
-                       if i - j == k) <= 1, 'diag1({})'.format(p)
-
-    for p, k in enumerate(range(3, n + n)):
-        queens += xsum(x[i][j] for i in range(n) for j in range(n)
-                       if i + j == k) <= 1, 'diag2({})'.format(p)
-
-    queens.optimize()
-
-    stdout.write('\n')
-    for i, v in enumerate(queens.vars):
-        stdout.write('O ' if v.x >= 0.99 else '. ')
-        if i % n == n-1:
-        stdout.write('\n')
+.. literalinclude:: ../examples/queens.py
+    :caption: Solver for the n-queens problem: queens.py
+    :linenos:
 
 
 Frequency Assignment
@@ -448,48 +334,9 @@ jobs.
 The Python code for creating the binary programming model, optimize it and print the optimal scheduling
 for RCPSP is included below:
 
-.. code-block:: python
-
-    from itertools import product
-    from mip.model import Model, xsum, minimize
-    from mip.constants import BINARY
-
-    p = [0, 3, 2, 5, 4, 2, 3, 4, 2, 4, 6, 0]
-
-    u = [[0, 0], [5, 1], [0, 4], [1, 4], [1, 3], [3, 2], [3, 1], [2, 4], [4, 0],
-         [5, 2], [2, 5], [0, 0]]
-
-    c = [6, 8]
-
-    S = [[0, 1], [0, 2], [0, 3], [1, 4], [1, 5], [2, 9], [2, 10], [3, 8], [4, 6],
-         [4, 7], [5, 9], [5, 10], [6, 8], [6, 9], [7, 8], [8, 11], [9, 11],
-         [10, 11]]
-
-    (R, J, T) = (range(len(c)), range(len(p)), range(sum(p)))
-
-    model = Model()
-
-    x = [[model.add_var(name='x({},{})'.format(j, t), var_type=BINARY)
-          for t in T] for j in J]
-
-    model.objective = minimize(xsum(x[len(J)-1][t] * t for t in T))
-
-    for j in J:
-        model += xsum(x[j][t] for t in T) == 1
-
-    for (r, t) in product(R, T):
-        model += xsum(u[j][r] * x[j][t2] for j in J
-                      for t2 in range(max(0, t - p[j] + 1), t + 1)) <= c[r]
-
-    for (j, s) in S:
-        model += xsum(t * x[s][t] - t * x[j][t] for t in T) >= p[j]
-
-    model.optimize()
-
-    print('Makespan {}. Allocations: '.format(model.objective_value))
-    for (j, t) in product(J, T):
-        if x[j][t].x >= 0.99:
-            print('({},{})'.format(j, t))
+.. literalinclude:: ../examples/rcpsp.py
+    :caption: Solves the Resource Constrained Project Scheduling Problem: rcpsp.py
+    :linenos:
 
 The optimal solution is shown bellow, from the viewpoint of resource
 consumption:

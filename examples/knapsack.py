@@ -1,7 +1,6 @@
 """0/1 Knapsack example"""
 
-from mip.model import Model, xsum, maximize
-from mip.constants import BINARY
+from mip import Model, xsum, maximize, BINARY
 
 p = [10, 13, 18, 31, 7, 15]
 w = [11, 15, 20, 35, 10, 33]

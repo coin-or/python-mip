@@ -1,17 +1,14 @@
-"""Example of a solver to the n-queens problem:
-   n chess queens should be placed in a n x n
-   chess board so that no queen can attack another,
-   i.e., just one queen per line, column and diagonal.
-"""
+"""Example of a solver to the n-queens problem:  n chess queens should be
+placed in a n x n chess board so that no queen can attack another, i.e., just
+one queen per line, column and diagonal.  """
 
 from sys import stdout
-from mip.model import Model, xsum
-from mip.constants import MAXIMIZE, BINARY
+from mip import Model, xsum, MAXIMIZE, BINARY
 
 # number of queens
-n = 100
+n = 75
 
-queens = Model('queens', MAXIMIZE)
+queens = Model()
 
 x = [[queens.add_var('x({},{})'.format(i, j), var_type=BINARY)
       for j in range(n)] for i in range(n)]
@@ -36,8 +33,9 @@ for p, k in enumerate(range(3, n + n)):
 
 queens.optimize()
 
-stdout.write('\n')
-for i, v in enumerate(queens.vars):
-    stdout.write('O ' if v.x >= 0.99 else '. ')
-    if i % n == n-1:
-        stdout.write('\n')
+if queens.num_solutions:
+	stdout.write('\n')
+	for i, v in enumerate(queens.vars):
+		stdout.write('O ' if v.x >= 0.99 else '. ')
+		if i % n == n-1:
+			stdout.write('\n')

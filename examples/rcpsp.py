@@ -1,8 +1,7 @@
-"""Resource Constrained Project Scheduling Problem"""
+"""Resource Constrained Project Scheduling Problem solver"""
 
 from itertools import product
-from mip.model import Model, xsum
-from mip.constants import BINARY
+from mip import Model, xsum, BINARY
 
 p = [0, 3, 2, 5, 4, 2, 3, 4, 2, 4, 6, 0]
 
