@@ -142,23 +142,16 @@ of the first real cases discussed in literature are the Philadelphia
 :cite:`Ande73` instances, with the structure depicted bellow:
 
 
-.. image:: ./images/philadelphia.*
-    :width: 60%
+.. image:: ./images/bmcpsmall.*
+    :width: 40%
     :align: center
 
 
-Each cell has a demand with the required number of channels drawn at the center
-of the hexagon, and an identifier at the top left corner. Also, in this
-example, each cell has a set of at most 6 adjacent neighboring cells (distance
-1). The largest demand (77) occurs on cell 8. This cell has the following
-adjacent cells, with distance 1: (1, 2, 7, 9, 15, 16) neighbors of the
-neighbors have distance 2 and so on. The minimum distances between channels in
-base stations with distances :math:`\{0, \ldots, 4\}`, in this example
-instance, are :math:`[4, 2, 1, 1, 1]`, respectively, cells with distance 5 or
-more do not interfere each other.  In this example each one of the 77 channels
-allocated at cell 8 must be separated by at least 4 units and each of these
-channels must be also at least two unities far from each channel assigned to
-node 9, for example.
+Each cell has a demand with the required number of channels drawn at the
+center of the hexagon, and a sequential id at the top left corner. Also,
+in this example, each cell has a set of at most 6 adjacent neighboring
+cells (distance 1). The largest demand (8) occurs on cell 2. This cell has
+the following adjacent cells, with distance 1: (1, 6). The minimum distances between channels in the same cell in this example is 3 and channels in neighbor cells should differ by at least 2 units.
 
 A generalization of this problem (not restricted to the hexagonal topology), is
 the Bandwidth Multicoloring Problem (BMCP), which has the following input data:
@@ -209,52 +202,12 @@ be modeled with the following MIP formulation:
           z  \geq 0
 
 
-The following example creates this formulation and executes an heuristic to generate an
-initial feasible solution and consequently the set :math:`U`:
+Follows the example of a solver for the BMCP using the previous MIP formulation:
 
 
-.. code-block:: python
+.. literalinclude:: ../examples/bmcp.py
+    :caption: Solver for the bandwidth multi coloring problem: bmcp.py
     :linenos:
-
-    from itertools import product
-    import bmcp_data
-    import bmcp_greedy
-    from mip.model import Model, xsum, minimize
-    from mip.constants import MINIMIZE, BINARY
-
-    data = bmcp_data.read('P1.col')
-    N, r, d = data.N, data.r, data.d
-    S = bmcp_greedy.build(data)
-    C, U = S.C, [i for i in range(S.u_max+1)]
-
-    m = Model()
-
-    x = [[m.add_var('x({},{})'.format(i, c), var_type=BINARY)
-          for c in U] for i in N]
-
-    z = m.add_var('z')
-    m.objective = minimize(z)
-
-    for i in N:
-        m += xsum(x[i][c] for c in U) == r[i]
-
-    for i, j, c1, c2 in product(N, N, U, U):
-        if i != j and c1 <= c2 < c1+d[i][j]:
-            m += x[i][c1] + x[j][c2] <= 1
-
-    for i, c1, c2 in product(N, U, U):
-        if c1 < c2 < c1+d[i][i]:
-            m += x[i][c1] + x[i][c2] <= 1
-
-    for i, c in product(N, U):
-        m += z >= (c+1)*x[i][c]
-
-    m.start = [(x[i][c], 1.0) for i in N for c in C[i]]
-
-    m.optimize(max_seconds=100)
-
-    C = [[c for c in U if x[i][c] >= 0.99] for i in N]
-    print(C)
 
 
 Resource Constrained Project Scheduling
