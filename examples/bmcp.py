@@ -1,22 +1,31 @@
-"""Bandwidth multi coloring example
-   Frequency assignment problem as described here:
-   http://fap.zib.de/problems/Philadelphia/
-
-   to solve P1 instance (included in the examples) call python bmcp.py P1.col
+"""Bandwidth multi coloring problem, more specificially the Frequency
+assignment problem as described here: http://fap.zib.de/problems/Philadelphia/
 """
 
 from itertools import product
-import bmcp_data
-import bmcp_greedy
-from mip.model import Model, xsum, minimize
-from mip.constants import MINIMIZE, BINARY
+from mip import Model, xsum, minimize, BINARY
 
-data = bmcp_data.read('P1.col')
-N, r, d = data.N, data.r, data.d
-S = bmcp_greedy.build(data)
-C, U = S.C, [i for i in range(S.u_max+1)]
+# number of channels per node
+r = [3, 5, 8, 3, 6, 5, 7, 3]
 
-m = Model(sense=MINIMIZE)
+# distance between channels in the same node (i, i) and in adjacent nodes
+#      0  1  2  3  4  5  6  7
+d = [[3, 2, 0, 0, 2, 2, 0, 0],   # 0
+     [2, 3, 2, 0, 0, 2, 2, 0],   # 1
+     [0, 2, 3, 0, 0, 0, 3, 0],   # 2
+     [0, 0, 0, 3, 2, 0, 0, 2],   # 3
+     [2, 0, 0, 2, 3, 2, 0, 0],   # 4
+     [2, 2, 0, 0, 2, 3, 2, 0],   # 5
+     [0, 2, 2, 0, 0, 2, 3, 0],   # 6
+     [0, 0, 0, 2, 0, 0, 0, 3]]   # 7
+
+N = range(len(r))
+
+# in complete applications this upper bound should be obtained from a feasible
+# solution produced with some heuristic
+U = range(sum(d[i][j] for (i, j) in product(N, N)) + sum(el for el in r))
+
+m = Model()
 
 x = [[m.add_var('x({},{})'.format(i, c), var_type=BINARY)
       for c in U] for i in N]
@@ -38,9 +47,9 @@ for i, c1, c2 in product(N, U, U):
 for i, c in product(N, U):
     m += z >= (c+1)*x[i][c]
 
-m.start = [(x[i][c], 1.0) for i in N for c in C[i]]
-
 m.optimize(max_seconds=100)
 
-C = [[c for c in U if x[i][c] >= 0.99] for i in N]
-print(C)
+if m.num_solutions:
+    for i in N:
+        print('Channels of node %d: %s' % (i, [c for c in U if x[i][c].x >=
+                                               0.99]))
