@@ -940,7 +940,7 @@ class SolverCbc(Solver):
             cbc_set_parameter(self, 'timeMode', 'elapsed')
             cbc_set_parameter(self, 'seconds', '{}'.format(max_time))
         if max_nodes != INF:
-            cbc_set_parameter(self, 'max_nodes', '{}'.format(max_nodes))
+            cbc_set_parameter(self, 'maxnodes', '{}'.format(max_nodes))
         if max_sol != INF:
             cbc_set_parameter(self, 'max_solutions', '{}'.format(max_sol))
 
