@@ -155,6 +155,9 @@ class LinExpr:
                 self.add_var(variables[i], coeffs[i])
 
     def __add__(self, other) -> "LinExpr":
+        if sys.getrefcount(self) <= 3:
+            return self.__iadd__(other)
+
         result = self.copy()
         if isinstance(other, Var):
             result.add_var(other, 1)
@@ -165,6 +168,8 @@ class LinExpr:
         return result
 
     def __radd__(self, other) -> "LinExpr":
+        if sys.getrefcount(self) <= 3:
+            return self.__iadd__(other)
         return self.__add__(other)
 
     def __iadd__(self, other) -> "LinExpr":
@@ -177,6 +182,9 @@ class LinExpr:
         return self
 
     def __sub__(self, other) -> "LinExpr":
+        if sys.getrefcount(self) <= 3:
+            return self.__isub__(other)
+
         result = self.copy()
         if isinstance(other, Var):
             result.add_var(other, -1)
@@ -187,6 +195,9 @@ class LinExpr:
         return result
 
     def __rsub__(self, other) -> "LinExpr":
+        if sys.getrefcount(self) <= 3:
+            self.__imul__(-1)
+            return self.__iadd__(other)
         return (-self).__add__(other)
 
     def __isub__(self, other) -> "LinExpr":
@@ -199,6 +210,9 @@ class LinExpr:
         return self
 
     def __mul__(self, other) -> "LinExpr":
+        if sys.getrefcount(self) <= 3:
+            return self.__imul__(other)
+
         assert isinstance(other, (float, int))
         result = self.copy()
         result.__const *= other
@@ -214,6 +228,8 @@ class LinExpr:
         return result
 
     def __rmul__(self, other) -> "LinExpr":
+        if sys.getrefcount(self) <= 3:
+            return self.__imul__(other)
         return self.__mul__(other)
 
     def __imul__(self, other) -> "LinExpr":
@@ -224,6 +240,9 @@ class LinExpr:
         return self
 
     def __truediv__(self, other) -> "LinExpr":
+        if sys.getrefcount(self) <= 3:
+            return self.__itruediv__(other)
+
         assert isinstance(other, (int, float))
         result = self.copy()
         result.__const /= other
@@ -262,17 +281,26 @@ class LinExpr:
         return "".join(result)
 
     def __eq__(self, other) -> "LinExpr":
-        result = self - other
+        if sys.getrefcount(self) <= 3:
+            result = self.__isub__(other)
+        else:
+            result = self - other
         result.__sense = "="
         return result
 
     def __le__(self, other) -> "LinExpr":
-        result = self - other
+        if sys.getrefcount(self) <= 3:
+            result = self.__isub__(other)
+        else:
+            result = self - other
         result.__sense = "<"
         return result
 
     def __ge__(self, other) -> "LinExpr":
-        result = self - other
+        if sys.getrefcount(self) <= 3:
+            result = self.__isub__(other)
+        else:
+            result = self - other
         result.__sense = ">"
         return result
 
