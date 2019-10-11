@@ -1,3 +1,4 @@
+import sys
 from math import inf
 from typing import List, Tuple
 from builtins import property
@@ -351,7 +352,7 @@ class LinExpr:
             return False
         if abs(self.__const - other.__const) >= 1e-12:
             return False
-        other_contents = {vr.idx: coef  for vr, coef  in other.__expr.items()}
+        other_contents = {vr.idx: coef for vr, coef in other.__expr.items()}
         for (v, c) in self.__expr.items():
             if v.idx not in other_contents:
                 return False
@@ -1491,7 +1492,6 @@ class Model:
         else:
             raise Exception("Cannot handle removal of object of type "
                             + type(objects) + " from model.")
-
 
 
 class Var:
