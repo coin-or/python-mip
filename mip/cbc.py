@@ -990,15 +990,19 @@ class SolverCbc(Solver):
             raise Exception('row activity not available')
         rhs = float(cbclib.Cbc_getRowRHS(self._model, constr.idx))
         activity = float(pac[constr.idx])
-        if constr.sense == "<":
+
+        sense = cbclib.Cbc_getRowSense(self._model,
+                                       constr.idx).decode("utf-8").upper()
+
+        if sense in "<L":
             return rhs - activity
-        elif constr.sense == ">":
+        elif sense in ">G":
             return activity - rhs
-        elif constr.sense == "=":
+        elif sense in "=E":
             return abs(activity - rhs)
         else:
             raise Exception("not prepared to handle sense {} in \
-                            get_slack".format(constr.sense))
+                            get_slack".format(sense))
 
         return 0.0
 

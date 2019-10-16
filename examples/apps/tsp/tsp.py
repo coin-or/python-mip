@@ -4,10 +4,10 @@ is dinamically improved with cutting planes, sub-tour elimination inequalities,
 using a CutsGenerator implementation. Cut generation is called from the
 solver engine whenever a fractional solution is generated."""
 
-from collections import defaultdict
-from sys import argv
+from sys import argv, stdout as out
 from typing import List, Tuple
 from time import time
+import random as rnd
 from os.path import basename
 from itertools import product
 import networkx as nx
@@ -51,7 +51,7 @@ class SubTourCutGenerator(ConstrsGenerator):
 if len(argv) < 7:
     print('usage:tsp instanceName timeLimit threads useCuts useLazy useHeur')
     exit(1)
-    
+
 timeLimit = int(argv[2])
 threads = int(argv[3])
 useCuts = int(argv[4])
@@ -61,69 +61,50 @@ useHeur = int(argv[6])
 start = time()
 
 inst = tsplib95.load_problem(argv[1])
-N = [n for n in inst.get_nodes()]
-n = len(N)
-A = dict()
-for (i, j) in inst.get_edges():
+V = [n-1 for n in inst.get_nodes()]
+n, c = len(V), [[0.0 for j in V] for i in V]
+for (i, j) in product(V, V):
     if i != j:
-        A[(i, j)] = inst.wfunc(i, j)
-
-# set of edges leaving a node
-OUT = defaultdict(set)
-
-# set of edges entering a node
-IN = defaultdict(set)
-
-# an arbitrary initial point
-n0 = min(i for i in N)
-
-for a in A:
-    OUT[a[0]].add(a)
-    IN[a[1]].add(a)
-
-print('solving TSP with {} cities'.format(len(N)))
+        c[i][j] = inst.wfunc(i+1, j+1)
 
 model = Model()
 
 # binary variables indicating if arc (i,j) is used on the route or not
-x = {a: model.add_var('x({},{})'.format(a[0], a[1]), var_type=BINARY) for a in A}
+x = [[model.add_var(var_type=BINARY, name='x(%d,%d)' % (i, j)) for j in V]
+     for i in V]
 
-# continuous variable to prevent subtours: each
-# city will have a different "identifier" in the planned route
-y = {i: model.add_var(name='y({})') for i in N}
-
-# continuous variable to prevent subtours: each
-# city will have a different "identifier" in the planned route
-y = {i: model.add_var(name='y({})') for i in N}
+# continuous variable to prevent subtours: each city will have a
+# different sequential id in the planned route except the first one
+y = [model.add_var(name='y(%d)' % i) for i in V]
 
 # objective function: minimize the distance
-model.objective = minimize(xsum(A[a]*x[a] for a in A))
+model.objective = minimize(xsum(c[i][j]*x[i][j] for i in V for j in V))
 
-# constraint : enter each city coming from another city
-for i in N:
-    model += xsum(x[a] for a in OUT[i]) == 1
+# constraint : leave each city only once
+for i in V:
+    model += xsum(x[i][j] for j in set(V) - {i}) == 1
 
-# constraint : leave each city coming from another city
-for i in N:
-    model += xsum(x[a] for a in IN[i]) == 1
+# constraint : enter each city only once
+for i in V:
+    model += xsum(x[j][i] for j in set(V) - {i}) == 1
 
 if not useLazy:
     # (weak) subtour elimination
-    for (i, j) in [a for a in A if n0 not in [a[0], a[1]]]:
-        model += \
-            y[i] - (n+1)*x[(i, j)] >= y[j]-n, 'noSub({},{})'.format(i, j)
+    for (i, j) in set(product(set(V) - {0}, set(V) - {0})):
+        model += y[i] - (n+1)*x[i][j] >= y[j]-n
 
 # no subtours of size 2
-for a in A:
-    if (a[1], a[0]) in A.keys():
-        model += x[a] + x[a[1], a[0]] <= 1
+for (i, j) in product(V, V):
+    if i != j:
+        model += x[i][j] + x[j][i] <= 1
 
 # computing farthest point for each point
 F = []
 G = nx.DiGraph()
-for ((i, j), d) in A.items():
-    G.add_edge(i, j, weight=d)
-for i in N:
+for (i, j) in product(V, V):
+    if i != j:
+        G.add_edge(i, j, weight=c[i][j])
+for i in V:
     P, D = nx.dijkstra_predecessor_and_distance(G, source=i)
     DS = list(D.items())
     DS.sort(key=lambda x: x[1])
@@ -135,23 +116,56 @@ if useLazy:
     model.lazy_constrs_generator = SubTourCutGenerator(F)
 
 if useHeur:
-    seq = [n0, max((A[n0, a[1]], a[1]) for a in A if a[0] == n0)[1]]
-    Vout = set(N)-set(seq)
+    # running a best insertion heuristic to obtain an initial feasible
+    # solution: test every node j not yet inserted in the route at every
+    # intermediate position p and select the pair (j, p) that results in the
+    # smallest cost increase
+    seq = [0, max((c[0][j], j) for j in V)[1]] + [0]
+    Vout = set(V)-set(seq)
     while Vout:
-        L = [(A[(seq[p], nl)]+A[(nl, seq[p+1])], (nl, p))
-             for (nl, p) in product(Vout, range(len(seq)-1))
-             if (seq[p], nl) in A and (nl, seq[p+1]) in A]
-        if not L:
-            print('initial tour not found by heuristic')
-            break
-        LM = min(L)
-        nn, p = LM[1]
-        seq = seq[:p+1]+[nn]+seq[p+1:]
-        Vout = Vout - {nn}
-    
-    if len(seq) == n:
-        model.start = [(x[(seq[p], seq[p+1])], 1.0) for p in range(len(seq)-1)]    
-    
+        (j, p) = min([(c[seq[p]][j] + c[j][seq[p+1]], (j, p)) for j, p in
+                      product(Vout, range(len(seq)-1))])[1]
+
+        seq = seq[:p+1]+[j]+seq[p+1:]
+        assert(seq[-1] == 0)
+        Vout = Vout - {j}
+    cost = sum(c[seq[i]][seq[i+1]] for i in range(len(seq)-1))
+    print('route with cost %g built' % cost)
+
+    # function to evaluate the cost of swapping two positions in a route in
+    # constant time
+    def delta(d: List[List[float]], S: List[int], p1: int, p2: int) -> float:
+        p1, p2 = min(p1, p2), max(p1, p2)
+        e1, e2 = S[p1], S[p2]
+        if p1 == p2:
+            return 0
+        elif abs(p1-p2) == 1:
+            v1 = d[S[p1-1]][e1] + d[e1][e2] + d[e2][S[p2+1]]
+            v2 = d[S[p1-1]][e2] + d[e2][e1] + d[e1][S[p2+1]]
+        else:
+            v1 = d[S[p1-1]][e1] + d[e1][S[p1+1]] + d[S[p2-1]][e2]\
+                + d[e2][S[p2+1]]
+            v2 = d[S[p1-1]][e2] + d[e2][S[p1+1]] + d[S[p2-1]][e1]\
+                + d[e1][S[p2+1]]
+        return v2 - v1
+
+    # applying the Late Acceptance Hill Climbing
+    rnd.seed(0)
+    L = [cost for i in range(50)]
+    sl, cur_cost, best = seq.copy(), cost, cost
+    for it in range(5000000):
+        (i, j) = rnd.randint(1, len(sl)-2), rnd.randint(1, len(sl)-2)
+        dlt = delta(c, sl, i, j)
+        if cur_cost + dlt <= L[it % len(L)]:
+            sl[i], sl[j], cur_cost = sl[j], sl[i], cur_cost + dlt
+            if cur_cost < best:
+                seq, best = sl.copy(), cur_cost
+        L[it % len(L)] = cur_cost
+
+    print('improved cost %g' % best)
+
+    model.start = [(x[seq[i]][seq[i+1]], 1) for i in range(len(seq)-1)]
+
 model.max_seconds = timeLimit
 model.threads = threads
 model.optimize()
@@ -163,13 +177,22 @@ print(model.solver_name)
 
 objv = 1e20
 gap = 1e20
+
 if model.num_solutions:
-    print('best route found has length {}'.format(model.objective_value))
-    arcs = [a for a in A.keys() if x[a].x >= 0.99]
-    print('optimal route : {}'.format(arcs))
+    out.write('route with total distance %g found: 0'
+              % (model.objective_value))
+    nc = 0
+    while True:
+        nc = [i for i in V if x[nc][i].x >= 0.99][0]
+        out.write(' -> %s' % nc)
+        if nc == 0:
+            break
+    out.write('\n')
     objv = model.objective_value
     gap = model.gap
 
-f=open('results.csv', 'a')
-f.write('%s,%s,%d,%d,%d,%g,%g,%g\n' % (basename(argv[1]), model.solver_name, objv, useCuts, useLazy, useHeur, gap, end-start))
+f = open('results.csv', 'a')
+f.write('%s,%s,%d,%d,%d,%g,%g,%g\n' % (basename(argv[1]), model.solver_name,
+                                       objv, useCuts, useLazy, useHeur, gap,
+                                       end-start))
 f.close()
