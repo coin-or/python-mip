@@ -542,7 +542,7 @@ class SolverCbc(Solver):
             fractional = False
             for j in range(nc):
                 if Osi_isInteger(osi_solver, j):
-                    if (x[j] - floor(x[j]+0.5)) > itol:
+                    if abs(x[j] - round(x[j])) > itol:
                         fractional = True
                         break
 

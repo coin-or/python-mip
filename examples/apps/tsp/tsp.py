@@ -4,20 +4,70 @@ is dinamically improved with cutting planes, sub-tour elimination inequalities,
 using a CutsGenerator implementation. Cut generation is called from the
 solver engine whenever a fractional solution is generated."""
 
-from sys import argv, stdout as out
-from typing import List, Tuple
+from sys import argv, stdout as out, stderr as err
+from typing import List, Tuple, Set
 from time import time
 import random as rnd
 from os.path import basename
 from itertools import product
+from collections import defaultdict
 import networkx as nx
 import tsplib95
 from mip.model import Model, xsum, BINARY, minimize
 from mip.callbacks import ConstrsGenerator, CutPool
 
 
+def subtour(N: Set, out: defaultdict, node) -> List:
+    """checks if node 'node' belongs to a subtour, returns
+    elements in this sub-tour if true"""
+    ## BFS to search for disconected routes
+    queue = [node]
+    visited = set(queue)        
+    while queue:
+        n = queue.pop()
+        for nl in out[n]:
+            if nl not in visited:
+                queue.append(nl)
+                visited.add(nl)
+
+    if len(visited) != len(N):
+        return [v for v in visited]
+    else:
+        return list()
+
+
+class SubTourLazyGenerator(ConstrsGenerator):
+    """Generates lazy constraints. Removes sub-tours in integer solutions"""
+    def generate_constrs(self, model: Model):        
+        r = [(v, v.x) for v in model.vars 
+             if v.name.startswith('x(') and v.x >= 0.99]
+        mf = max(abs(v.x - round(v.x)) 
+                   for v in model.vars if v.name.startswith('x('))
+        print('max fractional value = %g' % mf)
+        assert mf <= 1e-4
+        U = [int(v.name.split('(')[1].split(',')[0]) for v, f in r]
+        V = [int(v.name.split(')')[0].split(',')[1]) for v, f in r]        
+        N, cp = set(U+V), CutPool()
+        # output nodes for each node
+        out = defaultdict(lambda: list())
+        for i in range(len(U)):
+            out[U[i]].append(V[i])
+
+        for n in N:
+            S = set(subtour(N, out, n))
+            if S:
+                arcsInS = [(v, f) for i, (v, f) in enumerate(r)
+                           if U[i] in S and V[i] in S]
+                if sum(f for v, f in arcsInS) >= (len(S)-1)+1e-4:
+                    cut = xsum(1.0*v for v, fm in arcsInS) <= len(S)-1
+                    cp.add(cut)
+        print('found cuts: %d', len(cp.cuts))
+        for cut in cp.cuts:
+            model += cut
+
+
 class SubTourCutGenerator(ConstrsGenerator):
-    """Class to generate cutting planes for the TSP"""
+    """Class to generate cutting planes. Removes sub-tours in fractional solutions"""
     def __init__(self, Fl: List[Tuple[int, int]]):
         self.F = Fl
 
@@ -113,7 +163,7 @@ for i in V:
 if useCuts:
     model.cuts_generator = SubTourCutGenerator(F)
 if useLazy:
-    model.lazy_constrs_generator = SubTourCutGenerator(F)
+    model.lazy_constrs_generator = SubTourLazyGenerator()
 
 if useHeur:
     # running a best insertion heuristic to obtain an initial feasible
@@ -178,11 +228,13 @@ print(model.solver_name)
 objv = 1e20
 gap = 1e20
 
+n_nodes = 0
 if model.num_solutions:
     out.write('route with total distance %g found: 0'
               % (model.objective_value))
     nc = 0
     while True:
+        n_nodes += 1
         nc = [i for i in V if x[nc][i].x >= 0.99][0]
         out.write(' -> %s' % nc)
         if nc == 0:
@@ -190,6 +242,10 @@ if model.num_solutions:
     out.write('\n')
     objv = model.objective_value
     gap = model.gap
+
+if n_nodes != n:
+	err.write('incomplete route (%d from %d) generated.\n' % (n_nodes, n))
+	exit(1)
 
 f = open('results.csv', 'a')
 f.write('%s,%s,%d,%d,%d,%g,%g,%g\n' % (basename(argv[1]), model.solver_name,
