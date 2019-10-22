@@ -20,9 +20,9 @@ from mip.callbacks import ConstrsGenerator, CutPool
 def subtour(N: Set, out: defaultdict, node) -> List:
     """checks if node 'node' belongs to a subtour, returns
     elements in this sub-tour if true"""
-    ## BFS to search for disconected routes
+    # BFS to search for disconected routes
     queue = [node]
-    visited = set(queue)        
+    visited = set(queue)
     while queue:
         n = queue.pop()
         for nl in out[n]:
@@ -33,20 +33,19 @@ def subtour(N: Set, out: defaultdict, node) -> List:
     if len(visited) != len(N):
         return [v for v in visited]
     else:
-        return list()
+        return []
 
 
 class SubTourLazyGenerator(ConstrsGenerator):
     """Generates lazy constraints. Removes sub-tours in integer solutions"""
-    def generate_constrs(self, model: Model):        
-        r = [(v, v.x) for v in model.vars 
+    def generate_constrs(self, model: Model):
+        r = [(v, v.x) for v in model.vars
              if v.name.startswith('x(') and v.x >= 0.99]
-        mf = max(abs(v.x - round(v.x)) 
-                   for v in model.vars if v.name.startswith('x('))
-        print('max fractional value = %g' % mf)
+        mf = max(abs(v.x - round(v.x))
+                 for v in model.vars if v.name.startswith('x('))
         assert mf <= 1e-4
         U = [int(v.name.split('(')[1].split(',')[0]) for v, f in r]
-        V = [int(v.name.split(')')[0].split(',')[1]) for v, f in r]        
+        V = [int(v.name.split(')')[0].split(',')[1]) for v, f in r]
         N, cp = set(U+V), CutPool()
         # output nodes for each node
         out = defaultdict(lambda: list())
@@ -61,7 +60,6 @@ class SubTourLazyGenerator(ConstrsGenerator):
                 if sum(f for v, f in arcsInS) >= (len(S)-1)+1e-4:
                     cut = xsum(1.0*v for v, fm in arcsInS) <= len(S)-1
                     cp.add(cut)
-        print('found cuts: %d', len(cp.cuts))
         for cut in cp.cuts:
             model += cut
 

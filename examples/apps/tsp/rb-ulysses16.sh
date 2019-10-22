@@ -1,0 +1,16 @@
+export SOLVER_NAME=CBC ; pypy3 tsp.py /home/haroldo/inst/tsp//ulysses16.tsp 36000 1 0 1 0 > ulysses16-CBC-0-1-0.log 2> ulysses16-CBC-0-1-0.error
+export SOLVER_NAME=GUROBI ; pypy3 tsp.py /home/haroldo/inst/tsp//ulysses16.tsp 36000 1 0 0 0 > ulysses16-GUROBI-0-0-0.log 2> ulysses16-GUROBI-0-0-0.error
+export SOLVER_NAME=CBC ; pypy3 tsp.py /home/haroldo/inst/tsp//ulysses16.tsp 36000 1 1 0 0 > ulysses16-CBC-1-0-0.log 2> ulysses16-CBC-1-0-0.error
+export SOLVER_NAME=CBC ; pypy3 tsp.py /home/haroldo/inst/tsp//ulysses16.tsp 36000 1 0 0 0 > ulysses16-CBC-0-0-0.log 2> ulysses16-CBC-0-0-0.error
+export SOLVER_NAME=GUROBI ; pypy3 tsp.py /home/haroldo/inst/tsp//ulysses16.tsp 36000 1 1 0 0 > ulysses16-GUROBI-1-0-0.log 2> ulysses16-GUROBI-1-0-0.error
+export SOLVER_NAME=CBC ; pypy3 tsp.py /home/haroldo/inst/tsp//ulysses16.tsp 36000 1 0 0 1 > ulysses16-CBC-0-0-1.log 2> ulysses16-CBC-0-0-1.error
+export SOLVER_NAME=GUROBI ; pypy3 tsp.py /home/haroldo/inst/tsp//ulysses16.tsp 36000 1 0 1 1 > ulysses16-GUROBI-0-1-1.log 2> ulysses16-GUROBI-0-1-1.error
+export SOLVER_NAME=GUROBI ; pypy3 tsp.py /home/haroldo/inst/tsp//ulysses16.tsp 36000 1 1 0 1 > ulysses16-GUROBI-1-0-1.log 2> ulysses16-GUROBI-1-0-1.error
+export SOLVER_NAME=GUROBI ; pypy3 tsp.py /home/haroldo/inst/tsp//ulysses16.tsp 36000 1 1 1 1 > ulysses16-GUROBI-1-1-1.log 2> ulysses16-GUROBI-1-1-1.error
+export SOLVER_NAME=GUROBI ; pypy3 tsp.py /home/haroldo/inst/tsp//ulysses16.tsp 36000 1 1 1 0 > ulysses16-GUROBI-1-1-0.log 2> ulysses16-GUROBI-1-1-0.error
+export SOLVER_NAME=CBC ; pypy3 tsp.py /home/haroldo/inst/tsp//ulysses16.tsp 36000 1 1 1 0 > ulysses16-CBC-1-1-0.log 2> ulysses16-CBC-1-1-0.error
+export SOLVER_NAME=CBC ; pypy3 tsp.py /home/haroldo/inst/tsp//ulysses16.tsp 36000 1 0 1 1 > ulysses16-CBC-0-1-1.log 2> ulysses16-CBC-0-1-1.error
+export SOLVER_NAME=GUROBI ; pypy3 tsp.py /home/haroldo/inst/tsp//ulysses16.tsp 36000 1 0 0 1 > ulysses16-GUROBI-0-0-1.log 2> ulysses16-GUROBI-0-0-1.error
+export SOLVER_NAME=GUROBI ; pypy3 tsp.py /home/haroldo/inst/tsp//ulysses16.tsp 36000 1 0 1 0 > ulysses16-GUROBI-0-1-0.log 2> ulysses16-GUROBI-0-1-0.error
+export SOLVER_NAME=CBC ; pypy3 tsp.py /home/haroldo/inst/tsp//ulysses16.tsp 36000 1 1 1 1 > ulysses16-CBC-1-1-1.log 2> ulysses16-CBC-1-1-1.error
+export SOLVER_NAME=CBC ; pypy3 tsp.py /home/haroldo/inst/tsp//ulysses16.tsp 36000 1 1 0 1 > ulysses16-CBC-1-0-1.log 2> ulysses16-CBC-1-0-1.error
