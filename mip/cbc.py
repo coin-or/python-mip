@@ -542,7 +542,7 @@ class SolverCbc(Solver):
             fractional = False
             for j in range(nc):
                 if Osi_isInteger(osi_solver, j):
-                    if (x[j] - floor(x[j]+0.5)) > itol:
+                    if abs(x[j] - round(x[j])) > itol:
                         fractional = True
                         break
 
@@ -940,7 +940,7 @@ class SolverCbc(Solver):
             cbc_set_parameter(self, 'timeMode', 'elapsed')
             cbc_set_parameter(self, 'seconds', '{}'.format(max_time))
         if max_nodes != INF:
-            cbc_set_parameter(self, 'max_nodes', '{}'.format(max_nodes))
+            cbc_set_parameter(self, 'maxnodes', '{}'.format(max_nodes))
         if max_sol != INF:
             cbc_set_parameter(self, 'max_solutions', '{}'.format(max_sol))
 
@@ -990,15 +990,19 @@ class SolverCbc(Solver):
             raise Exception('row activity not available')
         rhs = float(cbclib.Cbc_getRowRHS(self._model, constr.idx))
         activity = float(pac[constr.idx])
-        if constr.sense == "<":
+
+        sense = cbclib.Cbc_getRowSense(self._model,
+                                       constr.idx).decode("utf-8").upper()
+
+        if sense in "<L":
             return rhs - activity
-        elif constr.sense == ">":
+        elif sense in ">G":
             return activity - rhs
-        elif constr.sense == "=":
+        elif sense in "=E":
             return abs(activity - rhs)
         else:
             raise Exception("not prepared to handle sense {} in \
-                            get_slack".format(constr.sense))
+                            get_slack".format(sense))
 
         return 0.0
 
