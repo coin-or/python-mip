@@ -761,7 +761,7 @@ class SolverCbc(Solver):
         return cbclib.Cbc_getColNameIndex(self._model, name.encode("utf-8"))
 
     def constr_get_index(self, name: str) -> int:
-        return cbclib.Cbc_getRowNameIndex(name.encode("utf-8"))
+        return cbclib.Cbc_getRowNameIndex(self._model, name.encode("utf-8"))
 
     def var_get_obj(self, var: Var) -> float:
         obj = cbclib.Cbc_getObjCoefficients(self._model)
