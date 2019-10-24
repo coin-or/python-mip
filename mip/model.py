@@ -3,6 +3,7 @@ from typing import List, Tuple
 from builtins import property
 from os import environ
 from os.path import isfile
+from sys import stdout as out
 from collections.abc import Sequence
 from mip.constants import BINARY, CONTINUOUS, INTEGER, MINIMIZE, INF, \
     OptimizationStatus, SearchEmphasis, VERSION, GUROBI, CBC, \
@@ -1279,6 +1280,44 @@ class Model:
     def start(self, start: List[Tuple["Var", float]]):
         self.__start = start
         self.solver.set_start(start)
+
+    def validate_mip_start(self):
+        """Validates solution entered in MIPStart
+
+        If the solver engine printed messages indicating that the
+        initial feasible solution that you entered in :attr:`~mip.model.start`
+        is not valid then you can call this method to help discovering which
+        set of variables is causing infeasibility. The current version is quite 
+        simple: the model is relaxed and one variable entered in mipstart is fixed 
+        per iteration, indicating if the model still feasible or not.
+        """
+
+        out.write("Checking feasibility of MIPStart\n")
+        mc = self.copy()
+        mc.verbose = 0
+        mc.relax()
+        mc.optimize()
+        if mc.status == OptimizationStatus.INFEASIBLE:
+            out.write("Model is infeasible.\n")
+            return
+        if mc.status == OptimizationStatus.UNBOUNDED:
+            out.write("Model is unbounded. You probably need to insert additional constraints or bounds in variables.\n")
+            return
+        if mc.status != OptimizationStatus.OPTIMAL:
+            print("Unexpected status while optimizing LP relaxation: {}".format(mc.status))
+
+        print("Model LP relaxation bound is %g", mc.objective_value)
+
+        for (var, value) in self.start:
+            out.write("\tfixing %s to %g ... " % (var.name, value))
+            mc += var == value
+            mc.optimize()
+            if mc.status == OptimizationStatus.OPTIMAL:
+                print("ok, obj now: %g" % mc.objective)
+            else:
+                print("NOT OK, optimization status: %g" % mc.objective_value)
+                return
+
 
     @property
     def num_cols(self) -> int:
