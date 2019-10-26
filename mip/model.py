@@ -9,7 +9,6 @@ from mip.constants import BINARY, CONTINUOUS, INTEGER, MINIMIZE, INF, \
     OptimizationStatus, SearchEmphasis, VERSION, GUROBI, CBC, \
     LESS_OR_EQUAL, GREATER_OR_EQUAL, EPS, MAXIMIZE
 from mip.exceptions import InvalidLinExpr, SolutionNotAvailable
-from mip.solver import Solver
 
 
 class Column:

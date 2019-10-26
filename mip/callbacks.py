@@ -2,11 +2,11 @@
 with the solver engine"""
 from collections import defaultdict
 from typing import List, Tuple
-from mip.model import LinExpr, Model
+from mip.model import Model
 
 
 class BranchSelector:
-    def __init__(self, model: "Model"):
+    def __init__(self, model: Model):
         self.model = model
 
     def select_branch(self, rsol: List[Tuple["Var", float]]) \
@@ -100,7 +100,7 @@ class CutPool:
         # the search of repeated cuts
         self.__pos = defaultdict(list)
 
-    def add(self, cut: LinExpr) -> bool:
+    def add(self, cut: "LinExpr") -> bool:
         """tries to add a cut to the pool, returns true if this is a new cut,
         false if it is a repeated one
 
