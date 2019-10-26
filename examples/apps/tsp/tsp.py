@@ -13,9 +13,7 @@ from itertools import product
 from collections import defaultdict
 import networkx as nx
 import tsplib95
-from mip.model import Model, xsum, BINARY, minimize
-from mip.callbacks import ConstrsGenerator, CutPool
-
+from mip import Model, xsum, BINARY, minimize, ConstrsGenerator, CutPool, OptimizationStatus
 
 def subtour(N: Set, out: defaultdict, node) -> List:
     """checks if node 'node' belongs to a subtour, returns
@@ -227,7 +225,7 @@ objv = 1e20
 gap = 1e20
 
 n_nodes = 0
-if model.num_solutions:
+if model.status in [OptimizationStatus.OPTIMAL, OptimizationStatus.FEASIBLE]:
     out.write('route with total distance %g found: 0'
               % (model.objective_value))
     nc = 0
@@ -241,11 +239,11 @@ if model.num_solutions:
     objv = model.objective_value
     gap = model.gap
 
-if n_nodes != n:
-	err.write('incomplete route (%d from %d) generated.\n' % (n_nodes, n))
-	exit(1)
+    if n_nodes != n:
+        err.write('incomplete route (%d from %d) generated.\n' % (n_nodes, n))
+        exit(1)
 
-f = open('results.csv', 'a')
+f = open('results-{}.csv'.format(basename(argv[1])), 'a')
 f.write('%s,%s,%d,%d,%d,%g,%g,%g\n' % (basename(argv[1]), model.solver_name,
                                        objv, useCuts, useLazy, useHeur, gap,
                                        end-start))
