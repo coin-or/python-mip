@@ -7,8 +7,9 @@ import os
 from cffi import FFI
 from mip.model import xsum
 import mip
-from mip.model import Model, Solver, Var, Constr, Column, LinExpr, \
+from mip.model import Model, Var, Constr, Column, LinExpr, \
     VConstrList, VVarList
+from mip.solver import Solver
 from mip.constants import MAXIMIZE, SearchEmphasis, CONTINUOUS, BINARY, \
     INTEGER, MINIMIZE, EQUAL, LESS_OR_EQUAL, GREATER_OR_EQUAL, \
     OptimizationStatus
