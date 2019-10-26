@@ -1315,9 +1315,11 @@ class Model:
             if mc.status == OptimizationStatus.OPTIMAL:
                 print("ok, obj now: %g" % mc.objective)
             else:
-                print("NOT OK, optimization status: %g" % mc.objective_value)
+                print("NOT OK, optimization status: {}".format(mc.status))
                 return
-
+        
+        print("Linear Programming relaxation of model with fixations from MIPStart is feasible.")
+        print("MIP model may still be infeasible.")
 
     @property
     def num_cols(self) -> int:
