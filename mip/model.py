@@ -507,10 +507,10 @@ class Model:
             self.solver_name = environ["solver_name".upper()]
 
         # creating a solver instance
-        if self.solver_name.upper() == GUROBI:
+        if self.solver_name.upper() in ["GUROBI", "GRB"]:
             from mip.gurobi import SolverGurobi
             self.solver = SolverGurobi(self, name, sense)
-        elif self.solver_name.upper() == CBC:
+        elif self.solver_name.upper() == "CBC":
             from mip.cbc import SolverCbc
             self.solver = SolverCbc(self, name, sense)
         else:
