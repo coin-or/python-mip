@@ -13,7 +13,8 @@ from itertools import product
 from collections import defaultdict
 import networkx as nx
 import tsplib95
-from mip import Model, xsum, BINARY, minimize, ConstrsGenerator, CutPool, OptimizationStatus
+from mip import Model, xsum, BINARY, minimize, OptimizationStatus
+from mip.callbacks import ConstrsGenerator, CutPool
 
 def subtour(N: Set, out: defaultdict, node) -> List:
     """checks if node 'node' belongs to a subtour, returns
