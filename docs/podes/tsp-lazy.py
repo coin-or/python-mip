@@ -83,9 +83,6 @@ model = Model()
 # variáveis 0/1 indicando se um arco (i,j) participa da rota ou não
 x = [[model.add_var(var_type=BINARY) for j in V] for i in V]
 
-# variáveis auxiliares
-y = [model.add_var() for i in V]
-
 # função objetivo: minimizar tempo
 model.objective = minimize(xsum(c[i][j]*x[i][j] for i in V for j in V))
 
@@ -96,10 +93,6 @@ for i in V:
 # restrição: selecionar arco de entrada na cidade
 for i in V:
     model += xsum(x[j][i] for j in V - {i}) == 1
-
-# eliminação de sub-rotas
-for (i, j) in product(V - {0}, V - {0}):
-    model += y[i] - (n+1)*x[i][j] >= y[j]-n
 
 # chamada da otimização com limite tempo de 30 segundos
 model.lazy_constrs_generator = SubTourLazyGenerator()
