@@ -2,50 +2,39 @@ from itertools import product
 from sys import stdout as out
 from mip import Model, xsum, minimize, BINARY
 from mip.callbacks import ConstrsGenerator, CutPool
-from typing import Set, List
-from collections import defaultdict
+from typing import List, Tuple
 
-def subtour(N: Set, out: defaultdict, node) -> List:
-    """verifica se 'node' pertence a uma sub-rota. 
-    se positivo retorna os elementos dessa sub-rota"""
-    queue = [node]
-    visited = set(queue)
-    while queue:
-        n = queue.pop()
-        for nl in out[n]:
-            if nl not in visited:
-                queue.append(nl)
-                visited.add(nl)
+import networkx as nx
 
-    if len(visited) != len(N):
-        return [v for v in visited]
-    else:
-        return []
+class SubTourCutGenerator(ConstrsGenerator):
+    def __init__(self, Fl: List[Tuple[int, int]]):
+        self.F = Fl
 
-class SubTourLazyGenerator(ConstrsGenerator):
-    """Gera restrições de eliminação de sub-rotas em soluções inteiras"""
     def generate_constrs(self, model: Model):
-        r = [(v, v.x) for v in model.vars
-             if v.name.startswith('x(') and v.x >= 0.99]
+        G = nx.DiGraph()
+        r = [(v, v.x) for v in model.vars if v.name.startswith('x(')]
         U = [int(v.name.split('(')[1].split(',')[0]) for v, f in r]
         V = [int(v.name.split(')')[0].split(',')[1]) for v, f in r]
-        N, cp = set(U+V), CutPool()
-        # output nodes for each node
-        out = defaultdict(lambda: list())
+        cp = CutPool()
         for i in range(len(U)):
-            out[U[i]].append(V[i])
-
-        for n in N:
-            S = set(subtour(N, out, n))
-            if S:
+            G.add_edge(U[i], V[i], capacity=r[i][1])
+        for (u, v) in F:
+            if u not in U or v not in V:
+                continue
+            val, (S, NS) = nx.minimum_cut(G, u, v)
+            if val <= 0.99:
                 arcsInS = [(v, f) for i, (v, f) in enumerate(r)
                            if U[i] in S and V[i] in S]
                 if sum(f for v, f in arcsInS) >= (len(S)-1)+1e-4:
                     cut = xsum(1.0*v for v, fm in arcsInS) <= len(S)-1
                     cp.add(cut)
+                    if len(cp.cuts) > 256:
+                        for cut in cp.cuts:
+                            model += cut
+                        return
         for cut in cp.cuts:
             model += cut
-
+        return
 
 # locais a visitar
 places = ['Antwerp', 'Bruges', 'C-Mine', 'Dinant', 'Ghent',
@@ -83,6 +72,9 @@ model = Model()
 # variáveis 0/1 indicando se um arco (i,j) participa da rota ou não
 x = [[model.add_var(var_type=BINARY, name='x(%d,%d)' % (i, j)) for j in V] for i in V]
 
+# variáveis auxiliares
+y = [model.add_var() for i in V]
+
 # função objetivo: minimizar tempo
 model.objective = minimize(xsum(c[i][j]*x[i][j] for i in V for j in V))
 
@@ -94,8 +86,26 @@ for i in V:
 for i in V:
     model += xsum(x[j][i] for j in V - {i}) == 1
 
+# eliminação de sub-rotas
+for (i, j) in product(V - {0}, V - {0}):
+    model += y[i] - (n+1)*x[i][j] >= y[j]-n
+
+# computando pares de pontos distantes para posterior
+# verificação de sub-rotas desconectadas
+F = []
+G = nx.DiGraph()
+for (i, j) in product(V, V):
+	if i != j:
+		G.add_edge(i, j, weight=c[i][j])
+for i in V:
+    P, D = nx.dijkstra_predecessor_and_distance(G, source=i)
+    DS = list(D.items())
+    DS.sort(key=lambda x: x[1])
+    F.append((i, DS[-1][0]))
+
+model.cuts_generator = SubTourCutGenerator(F)
+
 # chamada da otimização com limite tempo de 30 segundos
-model.lazy_constrs_generator = SubTourLazyGenerator()
 model.optimize(max_seconds=30)
 
 # verificando se ao menos uma solução foi encontrada e a imprimindo
