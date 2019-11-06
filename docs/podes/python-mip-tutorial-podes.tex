@@ -13,6 +13,8 @@
 	tabsize=1,
 	breaklines=true,
 	breakatwhitespace=false,
+	extendedchars=true,
+	literate={á}{{\'a}}1 {õ}{{\~o}}1 {ã}{{\~a}}1 {í}{{\'i}}1 {é}{{\'e}}1 {ç}{{\,c}}1,
 }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -39,20 +41,20 @@
 
 
 \begin{resumo}
-O pacote Python MIP oferece ferramentas para a modelagem e resolução de Problemas de Programação Inteira Mista em Python. Além de uma linguagem de modelagem de alto nível, o pacote permite o desenvolvimento de resolvedores avançados, habilitando comunicação bidirecional com o resolvedor durante o processo de busca. Neste tutorial desenvolveremos resolvedores de Programação Linear Inteira Mista para o Problema do Caixeiro Viajante. Iniciando com um resolvedor simples baseado em uma formulação compacta iremos evoluir para um resolvedor que combina heurísticas, planos de corte e estratégias de ramificação para a resolução eficaz de problemas de grande porte.
+O pacote Python-MIP oferece um conjunto abrangente ferramentas para a modelagem e resolução de Problemas de Programação Inteira Mista em Python. Além de oferecer uma linguagem de modelagem de alto nível, o pacote permite o desenvolvimento de resolvedores avançados, habilitando comunicação bidirecional com o resolvedor durante o processo de busca. Neste tutorial desenvolveremos resolvedores de Programação Linear Inteira Mista para o Problema do Caixeiro Viajante. Iniciando com um resolvedor simples baseado em uma formulação compacta iremos evoluir para um resolvedor que combina heurísticas e planos de corte para a resolução eficaz de problemas de grande porte.
 
 \end{resumo}
 
 \begin{palavras}
-Primeira, Segunda, Terceira, Quarta.
+Otimização Combinatória, Caixeiro Viajante, Programação Linear Inteira, Python.
 \end{palavras}
 
 \begin{abstract}
-This document presents the format for full papers to be published in the journal Pesquisa Operacional para o Desenvolvimento. The Abstract must not exceed 150 words.
+The Python-MIP package offers a comprehensive set of tools for the modeling and solution of Integer Linear Programming Problems in Python. Besides providing a high level modeling language, the package allows the development of advanced solvers with di-directional communication with the solver during the search process. In this tutorial we develop solvers for the Traveling Salesman Problem. Starting with a simple solver based on a compact formulation we evolve to a solver combining heuristics and cutting planes for the effective solution of large scale instances.
 \end{abstract}
 
 \begin{keywords}
-First keyword, Second keyword, Third keyword, Last keyword. 
+Combinatorial Optimization, Traveling Salesman Problem, Integer Linear Programming, Python. 
 \end{keywords}
 
 
@@ -74,8 +76,8 @@ Tradicionalmente, os objetivos 1 e 2 foram considerados conflitantes.
 Até recentemente, as opções mais recomendada para os interessados
 em 1 eram linguagens algébricas de alto nível como AMPL \citep{Fourer1987}.
 A obtenção de desempenho máximo costumava requerer o uso de linguagens
-de mais baixo nível como C\citep{Johnson1991a}. Resolvedores estado-da-arte
-como o CPLEX foram escritos nessa linguagem\citep{Bixby2002}. Desse
+de mais baixo nível como C \citep{Johnson1991a}. Resolvedores estado-da-arte
+como o CPLEX foram escritos nessa linguagem \citep{Bixby2002}. Desse
 modo, a biblioteca completa de funções estava originalmente 
 disponível somente nela. Recentemente, soluções como JuMP\citep{Dunning2015}
 demonstraram que os objetivos 1 e 2 não são necessariamente conflitantes:
@@ -86,24 +88,14 @@ um pacote de Programação Linear Inteira Mista para a linguagem Python
 que atenda plenamente os requisitos 1-3.
 
 Pesquisas recentes mostram que Python está se tornando a linguagem
-mais popular da atualidade\citep{pythonEconomist2018}. O projeto Python-MIP
-foi primariamente inspirado em dois projetos de código aberto para
-programação linear inteira em Python. O primeiro é o PuLP \citep{Mitchell2009},
-que oferece uma linguagem de modelagem de alto nível e interface para
-vários resolvedores comerciais e de código aberto. Recursos que requerem 
-uma integração maior com o resolvedor, como geração dinâmica de planos de cortes, não estão
-disponíveis neste pacote. O pacote CyLP, por outro lado, suporta geração
-dinâmica de planos de corte mas não oferece uma linguagem de modelagem
-de alto nível\citep{Towhidi2016} e somente suporta o resolvedor COIN-OR
-CBC\citep{Forrest2005}. O pacote Python-MIP foi criado com o objetivo
-de prover a funcionalidade dos dois pacotes com máximo desempenho.
-A escrita de um um novo pacote de programação linear inteira em Python
+mais popular da atualidade \citep{pythonEconomist2018}. O projeto Python-MIP foi primariamente inspirado em dois projetos de código aberto para programação linear inteira em Python. O primeiro é o PuLP \citep{Mitchell2009}, que oferece uma linguagem de modelagem de alto nível e interface para vários resolvedores comerciais e de código aberto. Recursos que requerem uma integração maior com o resolvedor, como geração dinâmica de planos de cortes, não estão
+disponíveis neste pacote. O pacote CyLP, por outro lado, suporta geração dinâmica de planos de corte mas não oferece uma linguagem de modelagem de alto nível\citep{Towhidi2016} e somente suporta o resolvedor COIN-OR CBC\citep{Forrest2005}. O pacote Python-MIP foi criado com o objetivo de prover a funcionalidade dos dois pacotes com máximo desempenho. A escrita de um um novo pacote de programação linear inteira em Python
 também permite que recursos relativamente novos da linguagem, como
 a tipagem estática e a comunicação direta com bibliotecas nativas
 (Python CFFI) sejam utilizados extensivamente no código.
 
 Neste tutorial desenvolveremos versões sucessivamente mais sofisticadas
-de um resolvedor para o clássico problema do Caixeiro Viajante\citep{Applegate2006} no
+de um resolvedor para o clássico problema do Caixeiro Viajante \citep{Dantzig54,Miller1960,Applegate2006} no
 pacote Python-MIP. Enquanto na primeira versão a comunicação com o resolver 
 somente ocorre no momento em que o modelo criado é informado e na coleta dos resultados, 
 a versão final utiliza comunicação bidirecional com o resolvedor durante o processo de busca para o tratamento
@@ -132,11 +124,11 @@ x_{(i,j)}=\begin{cases}
 \end{cases}
 \]
 
-Como exemplo, considere o mapa da Figura \ref{figG} que inclui algumas cidades turísticas da Bélgica:
+Como exemplo, considere o mapa da Figura \ref{figG} que inclui algumas cidades turísticas da Bélgica.
 
 \begin{figure}
 	\begin{centering}
-		\includegraphics[width=0.6\textwidth]{belgium-tourism-14.png}
+		\includegraphics[width=0.6\textwidth]{../images/belgium-tourism-14.png}
 		\par\end{centering}
 	\caption{14 cidades turísticas da Bélgica}	
 	\label{figG}
@@ -150,13 +142,12 @@ formulação compacta, isto é, uma formulação com um número polinomial
 de variáveis e restrições. Formulações desse tipo, apesar de usualmente não serem a melhor opção de resolução em termos de desempenho para problemas
 deste tipo, são convenientes para uma primeira abordagem pois podem
 ser facilmente inseridas de uma vez só como entrada para um software
-resolvedor. A formulação abaixo foi proposta por \cite{Miller1960} nos
-anos 60:
+resolvedor. A formulação abaixo foi proposta por \cite{Miller1960}:
 
 \begin{align}
     \textrm{Minimize: }   & \nonumber \\
     &  \sum_{i \in I, j \in I} c_{i,j} \ldotp x_{i,j} \\
-    \textrm{Subject to: }   & \nonumber \\
+    \textrm{Sujeito a: }   & \nonumber \\
     & \sum_{j \in V \setminus \{i\}} x_{i,j} = 1 \,\,\, \forall i \in V \label{eq:in}  \\
     & \sum_{i \in V \setminus \{j\}} x_{i,j} = 1 \,\,\, \forall j \in V \label{eq:out} \\
     & y_{i} -(n+1)\ldotp x_{i,j} \geq y_{j} -n  \,\,\, \forall i \in V\setminus \{0\}, j \in V\setminus \{0,i\} \label{eq:st1} \\
@@ -169,8 +160,8 @@ As equações (\ref{eq:in}) e (\ref{eq:out}) garantem que cada vértice
 são utilizadas nas restrições (\ref{eq:st1}) para garantir que uma vez
 que um arco $(i,j)$ seja selecionado, o valor de $y_{j}$ seja maior
 do que o valor de $y_{i}$ em uma unidade. Essa propriedade é garantida
-para todos os vértices exceto o vértice 1 que é arbitrariamente selecionado
-como origem de modo a evitar a construção de sub-rotas desconectadas
+para todos os vértices exceto o vértice 0 que é arbitrariamente selecionado
+como origem de modo a evitar a construção de sub-rotas desconectadas,
 como no exemplo da Figura \ref{figSub}, onde os valores das variáveis
 $x_{(i,j)}$ indicados nos arcos representam uma solução viável caso
 somente as restrições (\ref{eq:in}) e (\ref{eq:out}) fossem consideradas.
@@ -190,29 +181,97 @@ A seguir temos um exemplo completo de um resolvedor em Python-MIP para o problem
 \lstinputlisting[breaklines]{tsp-compact.py}
 }
 
-Nas linhas 4 nomeamos nossos pontos turísticos. Nas linhas 10-23 informamos a distância entre cada par de cidades $(i, j)$ onde $i<j$, visto que em nosso exemplo consideramos que a distância de ida e volta é igual. Convertemos a matriz triangular \texttt{dists} em uma matriz completa nas linhas 27-20.
+Nas linhas 6-9 nomeamos nossos pontos turísticos. Nas linhas 12-25 informamos o tempo estimado de deslocamento entre cada par de cidades $(i, j)$ onde $i<j$, visto que em nosso exemplo consideramos que a distância de ida e volta é igual. Convertemos a matriz triangular \texttt{dists} em uma matriz completa nas linhas 31-34.
 
-A linha 30 cria o modelo de programação linear inteira. As variáveis do modelo são criadas nas linhas 32 e 34 utilizando o método \texttt{add\_var} em nosso modelo \texttt{m}. Durante a criação das restrições, será necessário referenciar as variáveis criadas. Por isso, utilizamos os dicionários \texttt{x} para mapear cada arco do grafo com sua respectiva variável binária e \texttt{y} para mapear cada nó com sua respectiva variável auxiliar contínua para eliminação de sub-rotas.
+A linha 36 cria o modelo de programação linear inteira. As variáveis do modelo são criadas nas linhas 39 e 42 utilizando o método \texttt{add\_var} em nosso modelo \texttt{m}. Durante a criação das restrições, será necessário referenciar as variáveis criadas. Por isso, utilizamos a matriz \texttt{x} para mapear cada arco do grafo com sua respectiva variável binária e  vetor \texttt{y} para mapear cada nó com sua respectiva variável auxiliar contínua para eliminação de sub-rotas.
 
-A função objetivo que minimiza o custo total dos arcos selecionados é informada na linha 36. Nesse caso, para cada arco multiplicamos sua respectiva variável binária de seleção pela distância do arco armazenada em \texttt{c}.
+A função objetivo que minimiza o tempo total dos arcos selecionados é informada na linha 45. Nesse caso, para cada arco multiplicamos sua respectiva variável binária de seleção pelo tempoo de deslocamento do arco armazenado em \texttt{c}.
 
-As restrições são criadas nas linhas 38-45. Em todos os casos utilizamos o operador \texttt{+=} sobre o modelo \texttt{m} para adicionar restrições lineares. Note que assim como na função objetivo, o somatório é efetuado com a função \texttt{xsum}. Esta função é similar a função \texttt{sum} disponível na linguagem Python mas otimizada para a situação específica de escrita de restrições lineares no pacote Python-MIP\@. 
+As restrições são criadas nas linhas 48-57. Em todos os casos utilizamos o operador \texttt{+=} sobre o modelo \texttt{m} para adicionar restrições lineares. Note que assim como na função objetivo, o somatório é efetuado com a função \texttt{xsum}. Esta função é similar a função \texttt{sum} disponível na linguagem Python mas otimizada para a situação específica de escrita de restrições lineares no pacote Python-MIP\@. 
 
-A linha 47 dispara a otimização do modelo. Na linha 49 verificamos se uma solução viável foi encontrada e se positivo a escrevemos nas linhas 50-58.
+A linha 60 dispara a otimização do modelo. Na linha 63 verificamos se uma solução viável foi encontrada e se positivo a escrevemos nas linhas 64-72.
 
-Os resolvedores de programação linear inteira executam uma busca em árvore onde são utilizados limites para a poda de nós. O limite superior é obtido a partir de qualquer solução viável que for encontrada durante a busca e o limite inferior corresponde ao custo obtido com a resolução do problema com as restrições de integralidade das variáveis binárias relaxadas. No nosso caso considerando domínio das variáveis $x$ como contínuo entre 0 e 1. A formulação aqui utilizada tem uma grave deficiência: o limite inferior por ela produzido é distante do custo ótimo da solução. Desse modo, o desempenho dos resolvedores de programação linear inteira em sua resolução é bastante pobre. 
+Os resolvedores de programação linear inteira executam uma busca em árvore onde são utilizados limites para a poda de nós. O limite superior é obtido a partir de qualquer solução viável que for encontrada durante a busca e o limite inferior corresponde ao custo obtido com a resolução do problema com as restrições de integralidade das variáveis relaxadas. No nosso caso considerando domínio das variáveis $x$ como contínuo entre 0 e 1. A formulação aqui utilizada tem uma grave deficiência: o limite inferior por ela produzido é distante do custo ótimo da solução. Desse modo, o desempenho dos resolvedores de programação linear inteira em sua resolução é bastante pobre. 
 
 Um desempenho muito melhor pode ser obtido com a inserção das seguintes desigualdades:
 
 \begin{equation}
-\sum_{(i,j) \in V \times V : i\in S \land j \notin S} x_{(i,j)} \leq |S|-1 \,\,\, \forall S \subset V 
+\sum_{(i,j) \in S \times S} x_{(i,j)} \leq |S|-1 \,\,\, \forall S \subset V 
 \end{equation}
 
-O problema com as desigualdades acima é que elas devem ser geradas para cada subconjunto $S$ de vértices do grafo, ou seja, para uma grafo com $n$ vértices temos $2^n-1$ subconjuntos não vazios. Inseri-las no modelo inicial é inviável exceto para instâncias pequenas. Uma solução para esse problema é o método dos planos de corte \citep{Dantzig54}, onde somente as restrições \emph{necessárias} são inseridas. O pacote Python-MIP permite uma comunicação bi-direcional com o resolvedor para que as restrições necessárias sejam inseridas \emph{durante} a busca. Para isso precisamos criar uma classe derivada da classe \texttt{ConstrsGenerator} que implemente o método \texttt{generate\_constrs}. Esse método recebe como parâmetro um modelo, onde a solução a solução corrente pode ser consultada e restrições adicionais podem ser inseridas na medida do necessário. 
+O problema com as desigualdades acima é que elas devem ser geradas para cada subconjunto $S$ de vértices do grafo, ou seja, para uma grafo com $n$ vértices temos $2^n-1$ subconjuntos não vazios. Inseri-las no modelo inicial é inviável exceto para instâncias pequenas. Uma solução para esse problema é o método dos planos de corte \citep{Dantzig54}, onde somente as restrições \emph{necessárias} são inseridas. O pacote Python-MIP permite uma comunicação bi-direcional com o resolvedor para que as restrições necessárias sejam inseridas \emph{durante} a busca. Para isso precisamos criar uma classe derivada da classe \texttt{ConstrsGenerator} que implemente o método \texttt{generate\_constrs}. Esse método recebe como parâmetro um modelo, onde a solução corrente pode ser consultada e restrições adicionais podem ser inseridas na medida do necessário. 
 
-\subsection{Geração de Planos de Corte}
+O pacote Python-MIP permite um controle sobre em que ponto da busca as restrições faltantes serão verificadas. Duas propriedades do modelo podem ser preenchidas com objeto(s) do tipo \texttt{ConstrsGenerator}:
 
-O código abaixo implementa um gerador dinâmico de restrições de eliminação de sub-rotas para nossa formulação compacta previamente implementada. 
+\begin{description}
+	\item[\texttt{cuts\_generator}]: caso o gerador de restrições seja informado nessa propriedade do modelo, a verificação por restrições faltantes (cortes violados) será realizada sempre que uma \emph{solução fracionária} for gerada durante a resolução de um nó na árvore de busca. Nesse caso, cortes são inseridos para \emph{reforçar} a formulação inserida inicialmente, ou seja, caso somente um \texttt{cuts\_generator} seja informado é necessário que a formulação inicial seja completa; assim, caso a restrição (7) seja inserida dessa forma, as variáveis auxiliares $y$ e as restrições (fracas) de eliminação de sub-ciclos devem ser mantidas na formulação inicial.
+	
+	\item[\texttt{lazy\_constrs\_generator}]: um gerador de restrições informado nessa propriedade será chamado sempre que uma \emph{solução inteira} for gerada. Nesse modo de uso é possível iniciar a busca com uma formulação incompleta, ou seja, sem as variáveis auxiliares $y$ e as restrições (4). Desse modo, a formulação inicial pode ficar muito mais leve. Uma possível desvantagem desta abordagem é que como o resolvedor deve considerar que a formulação inicial está incompleta, algumas fases do pré-processamento do mesmo precisam ser desligadas e o limite inferior inicial pode ser menor.
+\end{description}
+
+Uma vez que tenhamos um gerador de restrições implementado, podemos decidir em que situação o mesmo será chamado. É possível também especificar geradores de restrições para ambas as situações, ou seja, a formulação inicial será incompleta e portanto toda solução inteira deve ser checada mas soluções fracionárias também serão checadas. A melhor abordagem a ser utilizada deve ser determinada com experimentos no problema de interesse.
+
+\subsection{Geração Dinâmica de Restrições}
+
+Em soluções inteiras como a da Figura 2, a identificação de sub-rotas pode ser facilmente realizada executando-se uma busca em profundidade a partir de cada nó e verificando sua conectividade. 
+
+O código abaixo implementa um gerador dinâmico de restrições de eliminação de sub-rotas em soluções inteiras para nossa formulação compacta previamente implementada. 
+
+{\small
+\begin{lstlisting}
+from mip.callbacks import ConstrsGenerator, CutPool
+from typing import Set, List
+from collections import defaultdict
+
+def subtour(N: Set, out: defaultdict, node) -> List:
+    """verifica se 'node' pertence a uma sub-rota. 
+    se positivo retorna os elementos dessa sub-rota"""
+    queue = [node]
+    visited = set(queue)
+    while queue:
+        n = queue.pop()
+        for nl in out[n]:
+            if nl not in visited:
+                queue.append(nl)
+                visited.add(nl)
+
+    if len(visited) != len(N):
+        return [v for v in visited]
+    else:
+        return []
+
+class SubTourLazyGenerator(ConstrsGenerator):
+    """Gera restrições de eliminação de sub-rotas em soluções inteiras"""
+    def generate_constrs(self, model: Model):
+        r = [(v, v.x) for v in model.vars
+             if v.name.startswith('x(') and v.x >= 0.99]
+        U = [int(v.name.split('(')[1].split(',')[0]) for v, f in r]
+        V = [int(v.name.split(')')[0].split(',')[1]) for v, f in r]
+        N, cp = set(U+V), CutPool()
+        # output nodes for each node
+        out = defaultdict(lambda: list())
+        for i in range(len(U)):
+            out[U[i]].append(V[i])
+
+        for n in N:
+            S = set(subtour(N, out, n))
+            if S:
+                arcsInS = [(v, f) for i, (v, f) in enumerate(r)
+                           if U[i] in S and V[i] in S]
+                if sum(f for v, f in arcsInS) >= (len(S)-1)+1e-4:
+                    cut = xsum(1.0*v for v, fm in arcsInS) <= len(S)-1
+                    cp.add(cut)
+        for cut in cp.cuts:
+            model += cut
+\end{lstlisting}
+}
+
+Para que esse código seja executado durante a busca, antes de chamar a otimização do modelo no código anterior (linha 60), precisamos informar o gerador atribuindo um objeto desse tipo à propriedade \texttt{lazy\_constrs\_generator} com o código: 
+
+\begin{center}
+\texttt{model.lazy\_constrs\_generator = SubTourLazyGenerator()}
+\end{center}
+
 
 {\small
 \begin{lstlisting}
