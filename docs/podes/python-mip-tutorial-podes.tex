@@ -191,15 +191,18 @@ As restrições são criadas nas linhas 48-57. Em todos os casos utilizamos o op
 
 A linha 60 dispara a otimização do modelo. Na linha 63 verificamos se uma solução viável foi encontrada e se positivo a escrevemos nas linhas 64-72.
 
-Os resolvedores de programação linear inteira executam uma busca em árvore onde são utilizados limites para a poda de nós. O limite superior é obtido a partir de qualquer solução viável que for encontrada durante a busca e o limite inferior corresponde ao custo obtido com a resolução do problema com as restrições de integralidade das variáveis relaxadas. No nosso caso considerando domínio das variáveis $x$ como contínuo entre 0 e 1. A formulação aqui utilizada tem uma grave deficiência: o limite inferior por ela produzido é distante do custo ótimo da solução. Desse modo, o desempenho dos resolvedores de programação linear inteira em sua resolução é bastante pobre. 
+Os resolvedores de programação linear inteira executam uma busca em árvore onde são utilizados limites para a poda de nós. O limite superior é obtido a partir de qualquer solução viável que for encontrada durante a busca e o limite inferior corresponde ao custo obtido com a resolução do problema com as restrições de integralidade das variáveis relaxadas. No nosso caso considerando domínio das variáveis $x$ como contínuo entre 0 e 1. A formulação aqui utilizada tem uma grave deficiência: o limite inferior por ela produzido é distante do custo ótimo da solução. Desse modo, o desempenho dos resolvedores de programação linear inteira em sua resolução é bastante pobre. Essa deficiência não é visível quando resolvemos problemas pequenos como o de exemplo (apenas 14 cidades), mas faz com que o desempenho do resolvedor degenere muito rapidamente a medida que o tamanho do grafo de entrada aumenta.
 
-Um desempenho muito melhor pode ser obtido com a inserção das seguintes desigualdades:
+
+\subsection{Tratamento de Formulações Fortes com Geração Dinâmica de Restrições}
+
+A formulação do caixeiro viajante utilizada nos resolvedores de melhor desempenho inclui restrições de eliminação de sub-rotas do tipo:
 
 \begin{equation}
-\sum_{(i,j) \in S \times S} x_{(i,j)} \leq |S|-1 \,\,\, \forall S \subset V 
+	\sum_{(i,j) \in S \times S} x_{(i,j)} \leq |S|-1 \,\,\, \forall S \subset V 
 \end{equation}
 
-O problema com as desigualdades acima é que elas devem ser geradas para cada subconjunto $S$ de vértices do grafo, ou seja, para uma grafo com $n$ vértices temos $2^n-1$ subconjuntos não vazios. Inseri-las no modelo inicial é inviável exceto para instâncias pequenas. Uma solução para esse problema é o método dos planos de corte \citep{Dantzig54}, onde somente as restrições \emph{necessárias} são inseridas. O pacote Python-MIP permite uma comunicação bi-direcional com o resolvedor para que as restrições necessárias sejam inseridas \emph{durante} a busca. Para isso precisamos criar uma classe derivada da classe \texttt{ConstrsGenerator} que implemente o método \texttt{generate\_constrs}. Esse método recebe como parâmetro um modelo, onde a solução corrente pode ser consultada e restrições adicionais podem ser inseridas na medida do necessário. 
+O problema com as desigualdades acima é que elas devem ser geradas para \emph{cada subconjunto} $S$ de vértices do grafo, ou seja, para uma grafo com $n$ vértices temos $2^n-1$ subconjuntos não vazios. Inseri-las no modelo inicial é inviável exceto para instâncias pequenas. Uma solução para esse problema é o método dos planos de corte \citep{Dantzig54}, onde somente as restrições \emph{necessárias} são inseridas. O pacote Python-MIP permite uma comunicação bi-direcional com o resolvedor para que as restrições necessárias sejam inseridas \emph{durante} a busca. Para isso precisamos criar uma classe derivada da classe \texttt{ConstrsGenerator} que implemente o método \texttt{generate\_constrs}. Esse método recebe como parâmetro um modelo, onde a solução corrente pode ser consultada e restrições adicionais podem ser inseridas na medida do necessário. 
 
 O pacote Python-MIP permite um controle sobre em que ponto da busca as restrições faltantes serão verificadas. Duas propriedades do modelo podem ser preenchidas com objeto(s) do tipo \texttt{ConstrsGenerator}:
 
@@ -211,9 +214,8 @@ O pacote Python-MIP permite um controle sobre em que ponto da busca as restriç�
 
 Uma vez que tenhamos um gerador de restrições implementado, podemos decidir em que situação o mesmo será chamado. É possível também especificar geradores de restrições para ambas as situações, ou seja, a formulação inicial será incompleta e portanto toda solução inteira deve ser checada mas soluções fracionárias também serão checadas. A melhor abordagem a ser utilizada deve ser determinada com experimentos no problema de interesse.
 
-\subsection{Geração Dinâmica de Restrições}
 
-Em soluções inteiras como a da Figura 2, a identificação de sub-rotas pode ser facilmente realizada executando-se uma busca em profundidade a partir de cada nó e verificando sua conectividade. 
+Em soluções inteiras como a da Figura 2, a identificação de sub-rotas pode ser facilmente realizada executando-se uma busca em profundidade a partir de cada nó e verificando sua conectividade. A existência ou não de um arco depende do valor da respectiva variável $x$ na solução inteira.
 
 O código abaixo implementa um gerador dinâmico de restrições de eliminação de sub-rotas em soluções inteiras para nossa formulação compacta previamente implementada. 
 
@@ -272,8 +274,10 @@ Para que esse código seja executado durante a busca, antes de chamar a otimiza�
 \texttt{model.lazy\_constrs\_generator = SubTourLazyGenerator()}
 \end{center}
 
-A versão completa do cógido que inclui a geração dinâmica de restrições de eliminação de sub-rotas pode ser baixada no seguinte endereço: \url{https://raw.githubusercontent.com/coin-or/python-mip/master/docs/podes/tsp-lazy.py} .
+A versão completa do código que inclui a geração dinâmica de restrições de eliminação de sub-rotas em soluções inteiras pode ser baixada no seguinte endereço: \url{https://raw.githubusercontent.com/coin-or/python-mip/master/docs/podes/tsp-lazy.py} .
 
+A geração de desigualdades que eliminam soluções fracionárias determina o problema conhecido como \emph{separação de cortes}. No nosso caso queremos encontrar sub-conjuntos de vértices pouco conectados ao restante da rota. Esse problema pode ser resolvido solucionando-se o problema do corte mínimo considerando o grafo da malha viária do problema com o valor das variáveis $x$ como capacidades nos arcos.
+Em nosso exemplo utilizaremos a implementação do algoritmo de corte mínimo disponível no pacote Python \texttt{networkx}.
 
 {\small
 \begin{lstlisting}
@@ -310,7 +314,7 @@ class SubTourCutGenerator(ConstrsGenerator):
         return
 \end{lstlisting}}
 
-Na criação de nosso gerador de cortes informamos uma lista \texttt{Fl} de pares $(i,j)$ de vértices cuja conectividade deve ser checada em toda solução gerada. No método \texttt{generate\_constrs} consultamos as variáveis do modelo (\texttt{model.vars}) e identificamos a qual arco cada variável se refere considerando o nome das variáveis (linhas 22 e  23), utilizando o seu valor na solução (propriedade \texttt{x}) para construção do grafo onde iremos procurar sub-rotas desconexas para geração das restrições (6). A identificação dessas sub-rotas é feita resolvendo-se o problema do corte mínimo, com o algoritmo que está disponível no pacote \texttt{networkx} (linha 18). A descoberta de sub-rotas desconexas (linhas 19) gera a restrição de restrições (cortes) que são primeiramente armazenados em um conjunto (linha 24) e posteriormente adicionados ao modelo. Separamos esses dois passos pois restrições repetidas podem ser geradas. Na linha 25 inserimos um critério de parada para a geração dos cortes: caso um número suficientemente grande já tenha sido gerado, inserimos os mesmos no modelo e prosseguimos a otimização sem procurar por cortes adicionais. Nesse ponto convém ressaltar a função dos cortes e sua relação com o restante do modelo. Como a formulação compacta que estamos utilizando define completamente o problema, a adição de cortes é opcional, ou seja, somente feita para melhorar o desempenho do modelo. A inserção de um número muito grande de cortes por iteração pode gerar o efeito indesejado de perda de desempenho na resolução. Para utilizamos nosso gerador de cortes com a formulação anterior basta atribuir à propriedade \texttt{cuts\_generator} um objeto da nossa classe \texttt{SubTourCutGenerator} antes da otimização do modelo.
+Na criação de nosso gerador de cortes informamos uma lista \texttt{Fl} de pares $(i,j)$ de vértices cuja conectividade deve ser checada em toda solução gerada. No método \texttt{generate\_constrs} consultamos as variáveis do modelo (\texttt{model.vars}) e identificamos a qual arco cada variável se refere considerando o nome das variáveis (linhas 9-11), utilizando o seu valor na solução (propriedade \texttt{x}) para construção do grafo onde iremos procurar sub-rotas desconexas para geração das restrições (6). A descoberta de sub-rotas desconexas (linhas 19) gera a restrição de restrições (cortes) que são primeiramente armazenados em um conjunto (linha 24) e posteriormente adicionados ao modelo. Separamos esses dois passos pois restrições repetidas podem ser geradas. Na linha 25 inserimos um critério de parada para a geração dos cortes: caso um número suficientemente grande já tenha sido gerado, inserimos os mesmos no modelo e prosseguimos a otimização sem procurar por cortes adicionais. Nesse ponto convém ressaltar a função dos cortes e sua relação com o restante do modelo. Como a formulação compacta que estamos utilizando define completamente o problema, a adição de cortes é opcional, ou seja, somente feita para melhorar o desempenho do modelo. A inserção de um número muito grande de cortes por iteração pode gerar o efeito indesejado de perda de desempenho na resolução. Para utilizamos nosso gerador de cortes com a formulação anterior basta atribuir à propriedade \texttt{cuts\_generator} um objeto da nossa classe \texttt{SubTourCutGenerator} antes da otimização do modelo.
 
 \subsection{Integração com heurísticas}
 
