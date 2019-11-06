@@ -4,6 +4,7 @@
 %pacotes adicionais
 \usepackage[linesnumbered, algoruled, vlined, portuguese]{algorithm2e}
 \usepackage{listings}
+\usepackage{multirow}
 \lstset
 { %Formatting for code in appendix
 	language=Python,
@@ -314,7 +315,7 @@ class SubTourCutGenerator(ConstrsGenerator):
         return
 \end{lstlisting}}
 
-Na criação de nosso gerador de cortes informamos uma lista \texttt{Fl} de pares $(i,j)$ de vértices cuja conectividade deve ser checada em toda solução gerada. No método \texttt{generate\_constrs} consultamos as variáveis do modelo (\texttt{model.vars}) e identificamos a qual arco cada variável se refere considerando o nome das variáveis (linhas 9-11), utilizando o seu valor na solução (propriedade \texttt{x}) para construção do grafo onde iremos procurar sub-rotas desconexas para geração das restrições (6). A descoberta de sub-rotas desconexas (linhas 19) gera a restrição de restrições (cortes) que são primeiramente armazenados em um conjunto (linha 24) e posteriormente adicionados ao modelo. Separamos esses dois passos pois restrições repetidas podem ser geradas. Na linha 25 inserimos um critério de parada para a geração dos cortes: caso um número suficientemente grande já tenha sido gerado, inserimos os mesmos no modelo e prosseguimos a otimização sem procurar por cortes adicionais. Nesse ponto convém ressaltar a função dos cortes e sua relação com o restante do modelo. Como a formulação compacta que estamos utilizando define completamente o problema, a adição de cortes é opcional, ou seja, somente feita para melhorar o desempenho do modelo. A inserção de um número muito grande de cortes por iteração pode gerar o efeito indesejado de perda de desempenho na resolução. Para utilizamos nosso gerador de cortes com a formulação anterior basta atribuir à propriedade \texttt{cuts\_generator} um objeto da nossa classe \texttt{SubTourCutGenerator} antes da otimização do modelo.
+Na criação de nosso gerador de cortes informamos uma lista \texttt{Fl} de pares $(i,j)$ de vértices cuja conectividade deve ser checada em toda solução gerada. No método \texttt{generate\_constrs} consultamos as variáveis do modelo (\texttt{model.vars}) e identificamos a qual arco cada variável se refere considerando o nome das variáveis (linhas 9-11), utilizando o seu valor na solução (propriedade \texttt{x}) para construção do grafo onde iremos procurar sub-rotas desconexas para geração das restrições (6). A descoberta de sub-rotas desconexas (linhas 19) gera a restrição de restrições (cortes) que são primeiramente armazenados em um conjunto (linha 24) e posteriormente adicionados ao modelo. Separamos esses dois passos pois restrições repetidas podem ser geradas. Na linha 25 inserimos um critério de parada para a geração dos cortes: caso um número suficientemente grande já tenha sido gerado, inserimos os mesmos no modelo e prosseguimos a otimização sem procurar por cortes adicionais. Nesse ponto convém ressaltar a função dos cortes e sua relação com o restante do modelo. Como a formulação compacta que estamos utilizando define completamente o problema, a adição de cortes é opcional, ou seja, somente feita para melhorar o desempenho do modelo. A inserção de um número muito grande de cortes por iteração pode gerar o efeito indesejado de perda de desempenho na resolução. Para utilizamos nosso gerador de cortes com a formulação anterior basta atribuir à propriedade \texttt{cuts\_generator} um objeto da nossa classe \texttt{SubTourCutGenerator} antes da otimização do modelo. O exemplo completo está disponível na seguinte ligação: \url{https://raw.githubusercontent.com/coin-or/python-mip/master/docs/podes/tsp-cuts.py} .
 
 \subsection{Integração com heurísticas}
 
@@ -361,11 +362,62 @@ for it in range(int(1e7)):
 m.start = [(x[seq[i]][seq[i+1]], 1) for i in range(len(seq)-1)]    
 \end{lstlisting}}
 
-Nosso algoritmo construtivo (linhas 262-269) será o algoritmo da inserção mais barata: dada uma rota que não inclua todos as cidades, na inserção de uma nova cidade verificamos o custo de inserir cada cidade ainda fora da rota (elemento \texttt{j} conjunto \texttt{Vout} em cada posição intermediária possível (\texttt{p}) e selecionamos a opção mais barata.
+Nosso algoritmo construtivo (linhas 3-8) será o algoritmo da inserção mais barata: dada uma rota que não inclua todos os pontos, na inserção de um novo ponto verificamos o custo de inserir cada vértice ainda fora da rota (elemento \texttt{j} conjunto \texttt{Vout} em cada posição intermediária possível (\texttt{p}) e selecionamos a opção mais barata.
 
-Para melhoria da nossa solução inicial utilizaremos a metaheurística baseada em busca local Late Acceptance Hill Climbing \citep{burke2017} por sua simplicidade. O gargalo de métodos de busca local usualmente é a avaliação do custo da solução resultante da aplicação de dado movimento. Por isso, nas linhas 11-22 incluímos uma função que dada uma solução de entrada (sequência de cidades) \texttt{s} e duas posições dessa sequência, \texttt{p1} e \texttt{p2} calcula em \emph{tempo constante} a variação de custo que será obtida. Dessa forma, podemos executar rapidamente um grande número de movimentos cuja aceitação é controlada pelo arcabouço da metaheurística que é implementada nas linhas 25-33. Finalmente, informamos as variáveis de decisão relacionadas aos arcos existentes na melhor solução encontrada na linha 35.
+Para melhoria da nossa solução inicial utilizaremos a metaheurística baseada em busca local Late Acceptance Hill Climbing \citep{burke2017} por sua simplicidade. O gargalo de métodos de busca local usualmente é a avaliação do custo da solução resultante da aplicação de dado movimento. Por isso, nas linhas 11-22 incluímos uma função que dada uma solução de entrada (sequência de cidades) \texttt{s} e duas posições dessa sequencia, \texttt{p1} e \texttt{p2} calcula em \emph{tempo constante} a variação de custo que será obtida. Dessa forma, podemos executar rapidamente um grande número de movimentos cuja aceitação é controlada pelo arcabouço da metaheurística que é implementada nas linhas 25-33. Finalmente, informamos as variáveis de decisão relacionadas aos arcos existentes na melhor solução encontrada na linha 35.
 
+\section{Experimentos Computacionais}
 
+Para demonstrar a melhoria de desempenho que pode ser obtida com a geração dinâmica de restrições e com a integração com heurísticas, incluímos experimentos com diferentes versões de nosso algoritmo:
+
+\begin{description}
+	\item[\textsc{MTZ}] resolvedor que somente utiliza a formulação compacta;
+	\item[\textsc{MTZ+H}] resolvedor que utiliza a formulação compacta e a heurística para produção de uma solução inicial factível;
+	\item[\textsc{MTZ+C}] resolvedor que utiliza a formulação compacta e a geração dinâmica de restrições para eliminação de soluções fracionárias (planos de corte);
+	\item[\textsc{LAZY}] resolvedor onde somente as restrições de grau (2) e (3) são inicialmente informadas e restrições de eliminação de sub-rotas são inseridas por demanda;
+	\item[\textsc{LAZY+C+H}] resolvedor onde somente as restrições de grau (2) e (3) são inicialmente informadas, restrições de eliminação de sub-rotas e planos de corte são inseridas por demanda e uma solução inicial inteira é informada.	
+\end{description}
+
+Os testes foram executados tanto com o resolvedor CBC quanto com o resolvedor Gurobi 8.1 em algumas instâncias com até 202 vértices da biblioteca de problemas TSPLIB95 \citep{Reinelt95}.
+
+\begin{table}
+	\begin{center}		
+	\begin{tabular}{|r|r|r|r|r|r|}
+		\hline 
+		\multirow{2}{*}{instância} & \multicolumn{5}{c|}{CBC}\tabularnewline
+		\cline{2-6} \cline{3-6} \cline{4-6} \cline{5-6} \cline{6-6} 
+		& \textsc{mtz} & \textsc{mtz+h} & \textsc{mtz+c} & \textsc{lazy} & \textsc{lazy+c+h}\tabularnewline
+		\hline 
+		ulysses22 & 778,0 & 1.292,5 & 7,4 & 36.000,0 & \textbf{3,3}\tabularnewline
+		\hline 
+		att48 & 13.578,6 & 12.749,2 & 14,8 & 14.546,7 & \textbf{5,9}\tabularnewline
+		\hline 
+		bier127 & 36.000,0 & 5.217,8 & 5.217,8 & 36.000,0 & \textbf{136,3}\tabularnewline
+		\hline 
+		gr202 & 36.000,0 & 5.717,9 & 2.613,0 & 36.000,0 & \textbf{867,9}\tabularnewline
+		\hline 
+		\emph{average} & 17.271,3 & 17.208,3 & 1.570,6 & 24.509,3 & \textbf{202,7}\tabularnewline
+		\hline 
+		\multicolumn{1}{r}{} & \multicolumn{1}{r}{} & \multicolumn{1}{r}{} & \multicolumn{1}{r}{} & \multicolumn{1}{r}{} & \multicolumn{1}{r}{}\tabularnewline
+		\hline 
+		\multirow{2}{*}{instância} & \multicolumn{5}{c|}{GUROBI}\tabularnewline
+		\cline{2-6} \cline{3-6} \cline{4-6} \cline{5-6} \cline{6-6} 
+		& \textsc{mtz} & \textsc{mtz+h} & \textsc{mtz+c} & \textsc{lazy} & \textsc{lazy+c+h}\tabularnewline
+		\hline 
+		ulysses22 & 148,1 & 214,1 & 1,7 & 66,5 & \textbf{3,1}\tabularnewline
+		\hline 
+		att48 & 186,5 & 185,7 & 6,5 & 257,7 & \textbf{6,4}\tabularnewline
+		\hline 
+		bier127 & 36.000,0 & 25.508,8 & 209,3 & 884,0 & \textbf{79,7}\tabularnewline
+		\hline 
+		gr202 & 36.000,0 & 36.000,0 & \textbf{1.057,2} & 36.000,0 & 1.084,8\tabularnewline
+		\hline 
+		\emph{average} & 14.466,9 & 12.381,7 & 254,9 & 7.441,6 & \textbf{234,8}\tabularnewline
+		\hline 
+	\end{tabular}
+	\label{resExp} \caption{Resultados de experimentos com diferentes configurações do resolvedor utilizando CBC e Gurobi}
+	\end{center}	
+\end{table}
 		
 \bibliography{pmip-podes}
 \bibliographystyle{podes-bibstyle}
