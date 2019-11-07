@@ -61,6 +61,7 @@ class SubTourLazyGenerator(ConstrsGenerator):
                     cp.add(cut)
         for cut in cp.cuts:
             model += cut
+        print("cuts added: %d" % len(cp.cuts))
 
 
 class SubTourCutGenerator(ConstrsGenerator):

@@ -5,6 +5,9 @@
 \usepackage[linesnumbered, algoruled, vlined, portuguese]{algorithm2e}
 \usepackage{listings}
 \usepackage{multirow}
+
+\usepackage{colortbl}
+\usepackage{xcolor}
 \lstset
 { %Formatting for code in appendix
 	language=Python,
@@ -100,8 +103,7 @@ de um resolvedor para o clássico problema do Caixeiro Viajante \citep{Dantzig54
 pacote Python-MIP. Enquanto na primeira versão a comunicação com o resolver 
 somente ocorre no momento em que o modelo criado é informado e na coleta dos resultados, 
 a versão final utiliza comunicação bidirecional com o resolvedor durante o processo de busca para o tratamento
-de uma formulação com um número exponencial de restrições em um método de \emph{branch-\&-cut}. Resultados experimentais são apresentados na seção XXX 
-para demonstrar os ganhos substanciais de desempenho que podem ser obtidos com essa última versão.
+de uma formulação com um número exponencial de restrições em um método de \emph{branch-\&-cut}. Resultados experimentais são apresentados na seção \ref{secExp} para demonstrar os ganhos substanciais de desempenho que podem ser obtidos com essa última versão.
 
 \section{Aplicação: Problema do Caixeiro Viajante}
 
@@ -156,16 +158,16 @@ resolvedor. A formulação abaixo foi proposta por \cite{Miller1960}:
     & y_i \geq 0 \,\,\, \forall i \in V 
 \end{align}
 
-As equações (\ref{eq:in}) e (\ref{eq:out}) garantem que cada vértice
-é visitado somente uma vez enquanto variáveis auxiliares $y_{i}$
-são utilizadas nas restrições (\ref{eq:st1}) para garantir que uma vez
-que um arco $(i,j)$ seja selecionado, o valor de $y_{j}$ seja maior
-do que o valor de $y_{i}$ em uma unidade. Essa propriedade é garantida
-para todos os vértices exceto o vértice 0 que é arbitrariamente selecionado
-como origem de modo a evitar a construção de sub-rotas desconectadas,
-como no exemplo da Figura \ref{figSub}, onde os valores das variáveis
-$x_{(i,j)}$ indicados nos arcos representam uma solução viável caso
-somente as restrições (\ref{eq:in}) e (\ref{eq:out}) fossem consideradas.
+As equações (\ref{eq:in}) e (\ref{eq:out}), denominadas restrições de grau,
+garantem que cada vértice é visitado somente uma vez enquanto variáveis
+auxiliares $y_{i}$ são utilizadas nas restrições (\ref{eq:st1}) para garantir
+que uma vez que um arco $(i,j)$ seja selecionado, o valor de $y_{j}$ seja maior
+do que o valor de $y_{i}$ em uma unidade. Essa propriedade é garantida para
+todos os vértices exceto o vértice 0 que é arbitrariamente selecionado como
+origem de modo a evitar a construção de sub-rotas desconectadas, como no
+exemplo da Figura \ref{figSub}, onde os valores das variáveis $x_{(i,j)}$
+indicados nos arcos representam uma solução viável caso somente as restrições
+(\ref{eq:in}) e (\ref{eq:out}) fossem consideradas.
 
 \begin{figure}
 	\begin{centering}
@@ -184,15 +186,15 @@ A seguir temos um exemplo completo de um resolvedor em Python-MIP para o problem
 
 Nas linhas 6-9 nomeamos nossos pontos turísticos. Nas linhas 12-25 informamos o tempo estimado de deslocamento entre cada par de cidades $(i, j)$ onde $i<j$, visto que em nosso exemplo consideramos que a distância de ida e volta é igual. Convertemos a matriz triangular \texttt{dists} em uma matriz completa nas linhas 31-34.
 
-A linha 36 cria o modelo de programação linear inteira. As variáveis do modelo são criadas nas linhas 39 e 42 utilizando o método \texttt{add\_var} em nosso modelo \texttt{m}. Durante a criação das restrições, será necessário referenciar as variáveis criadas. Por isso, utilizamos a matriz \texttt{x} para mapear cada arco do grafo com sua respectiva variável binária e  vetor \texttt{y} para mapear cada nó com sua respectiva variável auxiliar contínua para eliminação de sub-rotas.
+A linha 36 cria o modelo de programação linear inteira. As variáveis do modelo são criadas nas linhas 39 e 42 utilizando o método \texttt{add\_var} em nosso modelo \texttt{model}. Durante a criação das restrições, será necessário referenciar as variáveis criadas. Por isso, utilizamos a matriz \texttt{x} para mapear cada arco do grafo com sua respectiva variável binária\footnote{Se um grafo esparso fosse informado poderíamos utilizar um vetor de dicionários para indicar os arcos de saída de cada nó.} e o vetor \texttt{y} para mapear cada nó com sua respectiva variável auxiliar contínua para eliminação de sub-rotas.
 
-A função objetivo que minimiza o tempo total dos arcos selecionados é informada na linha 45. Nesse caso, para cada arco multiplicamos sua respectiva variável binária de seleção pelo tempoo de deslocamento do arco armazenado em \texttt{c}.
+A função objetivo que minimiza o tempo total de percorrimento da rota é informada na linha 45. Nesse caso, para cada arco multiplicamos sua respectiva variável binária de seleção pelo tempo de deslocamento do arco armazenado em \texttt{c}.
 
 As restrições são criadas nas linhas 48-57. Em todos os casos utilizamos o operador \texttt{+=} sobre o modelo \texttt{m} para adicionar restrições lineares. Note que assim como na função objetivo, o somatório é efetuado com a função \texttt{xsum}. Esta função é similar a função \texttt{sum} disponível na linguagem Python mas otimizada para a situação específica de escrita de restrições lineares no pacote Python-MIP\@. 
 
 A linha 60 dispara a otimização do modelo. Na linha 63 verificamos se uma solução viável foi encontrada e se positivo a escrevemos nas linhas 64-72.
 
-Os resolvedores de programação linear inteira executam uma busca em árvore onde são utilizados limites para a poda de nós. O limite superior é obtido a partir de qualquer solução viável que for encontrada durante a busca e o limite inferior corresponde ao custo obtido com a resolução do problema com as restrições de integralidade das variáveis relaxadas. No nosso caso considerando domínio das variáveis $x$ como contínuo entre 0 e 1. A formulação aqui utilizada tem uma grave deficiência: o limite inferior por ela produzido é distante do custo ótimo da solução. Desse modo, o desempenho dos resolvedores de programação linear inteira em sua resolução é bastante pobre. Essa deficiência não é visível quando resolvemos problemas pequenos como o de exemplo (apenas 14 cidades), mas faz com que o desempenho do resolvedor degenere muito rapidamente a medida que o tamanho do grafo de entrada aumenta.
+Os resolvedores de programação linear inteira executam uma busca em árvore onde são utilizados \emph{limites} para a poda de nós. O limite superior é obtido a partir de qualquer solução viável que for encontrada durante a busca e o limite inferior corresponde ao custo obtido com a resolução do problema com as restrições de integralidade das variáveis relaxadas. No nosso caso considerando domínio das variáveis $x$ como contínuo entre 0 e 1. A formulação aqui utilizada tem uma grave deficiência: o limite inferior por ela produzido é distante do custo ótimo da solução. Desse modo, o desempenho dos resolvedores de programação linear inteira em sua resolução é bastante pobre. Essa deficiência não é visível quando resolvemos problemas pequenos como o de exemplo (apenas 14 cidades), mas faz com que o desempenho do resolvedor degenere muito rapidamente a medida que o tamanho do grafo de entrada aumenta. Na seção seguinte veremos o tratamento de uma formulação mais apropriada. 
 
 
 \subsection{Tratamento de Formulações Fortes com Geração Dinâmica de Restrições}
@@ -200,23 +202,20 @@ Os resolvedores de programação linear inteira executam uma busca em árvore on
 A formulação do caixeiro viajante utilizada nos resolvedores de melhor desempenho inclui restrições de eliminação de sub-rotas do tipo:
 
 \begin{equation}
-	\sum_{(i,j) \in S \times S} x_{(i,j)} \leq |S|-1 \,\,\, \forall S \subset V 
+	\sum_{(i,j) \in S \times S} x_{(i,j)} \leq |S|-1 \,\,\, \forall S \subset V \label{consSubTour}
 \end{equation}
 
-O problema com as desigualdades acima é que elas devem ser geradas para \emph{cada subconjunto} $S$ de vértices do grafo, ou seja, para uma grafo com $n$ vértices temos $2^n-1$ subconjuntos não vazios. Inseri-las no modelo inicial é inviável exceto para instâncias pequenas. Uma solução para esse problema é o método dos planos de corte \citep{Dantzig54}, onde somente as restrições \emph{necessárias} são inseridas. O pacote Python-MIP permite uma comunicação bi-direcional com o resolvedor para que as restrições necessárias sejam inseridas \emph{durante} a busca. Para isso precisamos criar uma classe derivada da classe \texttt{ConstrsGenerator} que implemente o método \texttt{generate\_constrs}. Esse método recebe como parâmetro um modelo, onde a solução corrente pode ser consultada e restrições adicionais podem ser inseridas na medida do necessário. 
+O problema com as desigualdades acima é que elas devem ser geradas para \emph{cada subconjunto} $S$ de vértices do grafo, ou seja, para uma grafo com $n$ vértices temos $2^n-1$ subconjuntos não vazios. Inseri-las no modelo inicial é inviável exceto para instâncias pequenas. Uma solução para esse problema é o método dos planos de corte \citep{Dantzig54}, onde somente as restrições \emph{necessárias} são inseridas. O pacote Python-MIP permite uma comunicação bi-direcional com o resolvedor para que as restrições necessárias sejam inseridas \emph{durante} a busca. Para isso precisamos criar uma classe derivada da classe \texttt{ConstrsGenerator} que implemente o método \texttt{generate\_constrs}. Esse método recebe como parâmetro um modelo, onde a solução corrente pode ser consultada e restrições adicionais podem ser inseridas na medida do necessário caso a solução corrente não as satisfaça. 
 
 O pacote Python-MIP permite um controle sobre em que ponto da busca as restrições faltantes serão verificadas. Duas propriedades do modelo podem ser preenchidas com objeto(s) do tipo \texttt{ConstrsGenerator}:
 
 \begin{description}
-	\item[\texttt{cuts\_generator}]: caso o gerador de restrições seja informado nessa propriedade do modelo, a verificação por restrições faltantes (cortes violados) será realizada sempre que uma \emph{solução fracionária} for gerada durante a resolução de um nó na árvore de busca. Nesse caso, cortes são inseridos para \emph{reforçar} a formulação inserida inicialmente, ou seja, caso somente um \texttt{cuts\_generator} seja informado é necessário que a formulação inicial seja completa; assim, caso a restrição (7) seja inserida dessa forma, as variáveis auxiliares $y$ e as restrições (fracas) de eliminação de sub-ciclos devem ser mantidas na formulação inicial.
+	\item[\texttt{cuts\_generator}]: caso o gerador de restrições seja informado nessa propriedade do modelo, a verificação por restrições faltantes (cortes violados) será realizada sempre que uma \emph{solução fracionária} for gerada durante a resolução de um nó na árvore de busca. Nesse caso, cortes são inseridos para \emph{reforçar} a formulação inserida inicialmente, ou seja, caso somente um \texttt{cuts\_generator} seja informado é necessário que a formulação inicial seja completa; assim, caso a restrição (\ref{consSubTour}) seja inserida dessa forma, as variáveis auxiliares $y$ e as restrições (fracas) de eliminação de sub-ciclos devem ser mantidas na formulação inicial.
 	
-	\item[\texttt{lazy\_constrs\_generator}]: um gerador de restrições informado nessa propriedade será chamado sempre que uma \emph{solução inteira} for gerada. Nesse modo de uso é possível iniciar a busca com uma formulação incompleta, ou seja, sem as variáveis auxiliares $y$ e as restrições (4). Desse modo, a formulação inicial pode ficar muito mais leve. Uma possível desvantagem desta abordagem é que como o resolvedor deve considerar que a formulação inicial está incompleta, algumas fases do pré-processamento do mesmo precisam ser desligadas e o limite inferior inicial pode ser menor.
+	\item[\texttt{lazy\_constrs\_generator}]: um gerador de restrições informado nessa propriedade será chamado sempre que uma \emph{solução inteira} for gerada. Nesse modo de uso é possível iniciar a busca com uma formulação incompleta, ou seja, sem as variáveis auxiliares $y$ e as restrições (4). Desse modo, a formulação inicial pode ficar muito mais leve. Uma possível desvantagem dessa abordagem é que como o resolvedor deve considerar que a formulação inicial está \emph{incompleta}, algumas fases do pré-processamento do mesmo precisam ser desligadas e o limite inferior inicial pode ser menor.
 \end{description}
 
-Uma vez que tenhamos um gerador de restrições implementado, podemos decidir em que situação o mesmo será chamado. É possível também especificar geradores de restrições para ambas as situações, ou seja, a formulação inicial será incompleta e portanto toda solução inteira deve ser checada mas soluções fracionárias também serão checadas. A melhor abordagem a ser utilizada deve ser determinada com experimentos no problema de interesse.
-
-
-Em soluções inteiras como a da Figura 2, a identificação de sub-rotas pode ser facilmente realizada executando-se uma busca em profundidade a partir de cada nó e verificando sua conectividade. A existência ou não de um arco depende do valor da respectiva variável $x$ na solução inteira.
+Assim, uma vez que tenhamos um gerador de restrições implementado (especialização da classe \texttt{ConstrsGenerator}), podemos decidir em que situação o mesmo será chamado. É possível também especificar geradores de restrições para ambas as situações, ou seja, a formulação inicial será incompleta e portanto toda solução inteira deve ser checada mas soluções fracionárias também serão checadas. A melhor abordagem a ser utilizada deve ser determinada com experimentos no problema de interesse. Na seção (\ref{secExp}) são incluídos experimentos para diferentes configurações do nosso código.
 
 O código abaixo implementa um gerador dinâmico de restrições de eliminação de sub-rotas em soluções inteiras para nossa formulação compacta previamente implementada. 
 
@@ -251,7 +250,6 @@ class SubTourLazyGenerator(ConstrsGenerator):
         U = [int(v.name.split('(')[1].split(',')[0]) for v, f in r]
         V = [int(v.name.split(')')[0].split(',')[1]) for v, f in r]
         N, cp = set(U+V), CutPool()
-        # output nodes for each node
         out = defaultdict(lambda: list())
         for i in range(len(U)):
             out[U[i]].append(V[i])
@@ -261,13 +259,15 @@ class SubTourLazyGenerator(ConstrsGenerator):
             if S:
                 arcsInS = [(v, f) for i, (v, f) in enumerate(r)
                            if U[i] in S and V[i] in S]
-                if sum(f for v, f in arcsInS) >= (len(S)-1)+1e-4:
-                    cut = xsum(1.0*v for v, fm in arcsInS) <= len(S)-1
-                    cp.add(cut)
+                cut = xsum(1.0*v for v, fm in arcsInS) <= len(S)-1
+                cp.add(cut)
         for cut in cp.cuts:
             model += cut
 \end{lstlisting}
 }
+
+Em soluções inteiras como a da Figura 2, a identificação de sub-rotas pode ser facilmente realizada executando-se uma busca em profundidade a partir de cada nó e verificando sua conectividade (função \texttt{subtour}). A existência ou não de um arco depende do valor da respectiva variável $x$ na solução inteira. Dentro do método \texttt{generate\_constrs}, as linhas (25-28) consultam as variáveis do modelo (\texttt{model.vars}) pelo nome, identificando as varáveis \texttt{x} e os respectivos pontos de saída e chegada de cada arco que são então armazenados nos vetores \texttt{U} e \texttt{V}. Nesse ponto pode-se questionar se a matriz \texttt{x} previamente definida não poderia ser usada para a consulta das variáveis relacionadas aos arcos. Essa abordagem é desencorajada dentro do gerador de restrições pois alguns resolvedores criam um novo problema durante a busca, possivelmente removendo algumas variáveis na fase de pré-processamento e as referências originais podem se tornar inválidas. Para cada nó, caso uma sub-rota desconectada seja identificada (linha 36) uma restrição do tipo (\ref{consSubTour}) é gerada para o subconjunto \texttt{S} envolvido. Os cortes são temporariamente armazenados em um objeto do tipo \texttt{CutPool} pois o mesmo descarta cortes repetidos. Finalmente, nas linhas 42-43, os cortes são adicionados ao modelo.
+
 
 Para que esse código seja executado durante a busca, antes de chamar a otimização do modelo no código anterior (linha 60), precisamos informar o gerador atribuindo um objeto desse tipo à propriedade \texttt{lazy\_constrs\_generator} com o código: 
 
@@ -277,8 +277,7 @@ Para que esse código seja executado durante a busca, antes de chamar a otimiza�
 
 A versão completa do código que inclui a geração dinâmica de restrições de eliminação de sub-rotas em soluções inteiras pode ser baixada no seguinte endereço: \url{https://raw.githubusercontent.com/coin-or/python-mip/master/docs/podes/tsp-lazy.py} .
 
-A geração de desigualdades que eliminam soluções fracionárias determina o problema conhecido como \emph{separação de cortes}. No nosso caso queremos encontrar sub-conjuntos de vértices pouco conectados ao restante da rota. Esse problema pode ser resolvido solucionando-se o problema do corte mínimo considerando o grafo da malha viária do problema com o valor das variáveis $x$ como capacidades nos arcos.
-Em nosso exemplo utilizaremos a implementação do algoritmo de corte mínimo disponível no pacote Python \texttt{networkx}.
+A geração de desigualdades que eliminam \emph{soluções fracionárias} determina o problema conhecido como \emph{separação de cortes}. No nosso caso queremos encontrar sub-conjuntos de vértices pouco conectados (não necessariamente desconectados) do restante da rota. Esse problema pode ser resolvido solucionando-se o problema do \emph{corte mínimo} considerando o grafo da malha viária do problema com o valor das variáveis $x$ como capacidades nos arcos. Em nosso exemplo utilizaremos a implementação do algoritmo de corte mínimo disponível no pacote Python \texttt{networkx} para resolver esse problema.
 
 {\small
 \begin{lstlisting}
@@ -315,11 +314,11 @@ class SubTourCutGenerator(ConstrsGenerator):
         return
 \end{lstlisting}}
 
-Na criação de nosso gerador de cortes informamos uma lista \texttt{Fl} de pares $(i,j)$ de vértices cuja conectividade deve ser checada em toda solução gerada. No método \texttt{generate\_constrs} consultamos as variáveis do modelo (\texttt{model.vars}) e identificamos a qual arco cada variável se refere considerando o nome das variáveis (linhas 9-11), utilizando o seu valor na solução (propriedade \texttt{x}) para construção do grafo onde iremos procurar sub-rotas desconexas para geração das restrições (6). A descoberta de sub-rotas desconexas (linhas 19) gera a restrição de restrições (cortes) que são primeiramente armazenados em um conjunto (linha 24) e posteriormente adicionados ao modelo. Separamos esses dois passos pois restrições repetidas podem ser geradas. Na linha 25 inserimos um critério de parada para a geração dos cortes: caso um número suficientemente grande já tenha sido gerado, inserimos os mesmos no modelo e prosseguimos a otimização sem procurar por cortes adicionais. Nesse ponto convém ressaltar a função dos cortes e sua relação com o restante do modelo. Como a formulação compacta que estamos utilizando define completamente o problema, a adição de cortes é opcional, ou seja, somente feita para melhorar o desempenho do modelo. A inserção de um número muito grande de cortes por iteração pode gerar o efeito indesejado de perda de desempenho na resolução. Para utilizamos nosso gerador de cortes com a formulação anterior basta atribuir à propriedade \texttt{cuts\_generator} um objeto da nossa classe \texttt{SubTourCutGenerator} antes da otimização do modelo. O exemplo completo está disponível na seguinte ligação: \url{https://raw.githubusercontent.com/coin-or/python-mip/master/docs/podes/tsp-cuts.py} .
+Na criação de nosso gerador de cortes informamos uma lista \texttt{Fl} de pares $(i,j)$ de vértices cuja conectividade deve ser checada em toda solução gerada. No método \texttt{generate\_constrs} consultamos as variáveis do modelo (\texttt{model.vars}) e identificamos a qual arco cada variável se refere considerando o nome das variáveis (linhas 9-11), utilizando o seu valor na solução (propriedade \texttt{x}) para construção do grafo onde iremos procurar sub-rotas desconexas para geração das restrições (6). A descoberta de sub-rotas desconexas é feita nas linhas 18-19. Na linha 25 inserimos um critério de parada para a geração dos cortes: caso um número suficientemente grande já tenha sido gerado, inserimos os mesmos no modelo e prosseguimos a otimização sem procurar por cortes adicionais. Nesse ponto convém ressaltar a função dos cortes e sua relação com o restante do modelo. Como a formulação compacta que estamos utilizando define completamente o problema, a adição de cortes é opcional, ou seja, somente feita para melhorar o desempenho do modelo. A inserção de um número muito grande de cortes por iteração pode gerar o efeito indesejado de perda de desempenho na resolução. Para utilizarmos nosso gerador de cortes com a formulação anterior basta atribuir à propriedade \texttt{cuts\_generator} um objeto da nossa classe \texttt{SubTourCutGenerator} antes da otimização do modelo. O exemplo completo está disponível na seguinte ligação: \url{https://raw.githubusercontent.com/coin-or/python-mip/master/docs/podes/tsp-cuts.py} .
 
 \subsection{Integração com heurísticas}
 
-Resolvedores de programação linear inteira iniciam o processo de resolução computando uma solução possivelmente fracionária, obtida através da relaxação do problema. Em instâncias difíceis, a obtenção da primeira solução \emph{inteira} válida pode requerer a exploração de um grande número de nós na árvore de busca. Para essas instâncias, muitas vezes uma heurística simples e rápida pode ser utilizada para geração de uma solução inicial. No pacote Python-MIP soluções iniciais podem ser facilmente informadas ao resolvedor através da propriedade \texttt{start} do modelo que recebe uma lista de pares \texttt{(x, v)} onde \texttt{x} é uma referência para uma variável de decisão e \texttt{v} o seu valor na solução factível. 
+Resolvedores de programação linear inteira iniciam o processo de resolução computando uma solução possivelmente fracionária, obtida através da relaxação do problema. Em instâncias difíceis, a obtenção da primeira solução \emph{inteira} válida pode requerer a exploração de um grande número de nós na árvore de busca. Para essas instâncias, muitas vezes uma heurística simples e rápida pode ser utilizada para geração de uma solução inicial. No pacote Python-MIP, soluções iniciais podem ser facilmente informadas ao resolvedor através da propriedade \texttt{start} do modelo que recebe uma lista de pares \texttt{(x, v)} onde \texttt{x} é uma referência para uma variável de decisão e \texttt{v} o seu valor na solução factível. 
 
 O código abaixo demonstra a utilização de um algoritmo construtivo e de uma metaheurística de busca local para construção de uma solução inicial factível para nosso modelo.
  
@@ -362,63 +361,74 @@ for it in range(int(1e7)):
 m.start = [(x[seq[i]][seq[i+1]], 1) for i in range(len(seq)-1)]    
 \end{lstlisting}}
 
-Nosso algoritmo construtivo (linhas 3-8) será o algoritmo da inserção mais barata: dada uma rota que não inclua todos os pontos, na inserção de um novo ponto verificamos o custo de inserir cada vértice ainda fora da rota (elemento \texttt{j} conjunto \texttt{Vout} em cada posição intermediária possível (\texttt{p}) e selecionamos a opção mais barata.
+Nosso algoritmo construtivo (linhas 3-8) será o algoritmo da inserção mais barata: iniciamos uma rota parcial incluindo arbritrariamente as ligações $(0, j)$ e $(j, 0)$ (linha 6), onde $j$ é o ponto mais distante do ponto inicial e prosseguimos aumentando a rota. Na inserção de um novo ponto verificamos o custo de inserir \emph{cada vértice} ainda fora da rota (conjunto \texttt{Vout} em \emph{cada posição} intermediária possível (\texttt{p}) e selecionamos a opção mais barata. A inserção de um novo ponto utiliza os recursos de fatiamento e adição de listas da linguagem Python (linha 7).
 
-Para melhoria da nossa solução inicial utilizaremos a metaheurística baseada em busca local Late Acceptance Hill Climbing \citep{burke2017} por sua simplicidade. O gargalo de métodos de busca local usualmente é a avaliação do custo da solução resultante da aplicação de dado movimento. Por isso, nas linhas 11-22 incluímos uma função que dada uma solução de entrada (sequência de cidades) \texttt{s} e duas posições dessa sequencia, \texttt{p1} e \texttt{p2} calcula em \emph{tempo constante} a variação de custo que será obtida. Dessa forma, podemos executar rapidamente um grande número de movimentos cuja aceitação é controlada pelo arcabouço da metaheurística que é implementada nas linhas 25-33. Finalmente, informamos as variáveis de decisão relacionadas aos arcos existentes na melhor solução encontrada na linha 35.
+Para melhoria da nossa solução inicial utilizaremos a metaheurística baseada em busca local Late Acceptance Hill Climbing \citep{burke2017} por sua simplicidade. O gargalo de métodos de busca local usualmente é a avaliação do custo da solução resultante da aplicação de dado movimento. Por isso, nas linhas 11-22 incluímos uma função que dada uma solução de entrada (sequência de cidades) \texttt{s} e duas posições dessa sequência, \texttt{p1} e \texttt{p2} calcula em \emph{tempo constante} a variação de custo que será obtida. Dessa forma, podemos executar rapidamente um grande número de movimentos cuja aceitação é controlada pelo arcabouço da metaheurística que é implementada nas linhas 25-33. Finalmente, informamos as variáveis de decisão relacionadas aos arcos existentes na melhor solução encontrada na linha 35.
 
-\section{Experimentos Computacionais}
+\section{Experimentos Computacionais} \label{secExp}
 
-Para demonstrar a melhoria de desempenho que pode ser obtida com a geração dinâmica de restrições e com a integração com heurísticas, incluímos experimentos com diferentes versões de nosso algoritmo:
+Para demonstrar a melhoria de desempenho que pode ser obtida com a geração
+dinâmica de restrições e com a integração com heurísticas, incluímos
+experimentos com diferentes versões de nosso algoritmo:
 
 \begin{description}
-	\item[\textsc{MTZ}] resolvedor que somente utiliza a formulação compacta;
-	\item[\textsc{MTZ+H}] resolvedor que utiliza a formulação compacta e a heurística para produção de uma solução inicial factível;
-	\item[\textsc{MTZ+C}] resolvedor que utiliza a formulação compacta e a geração dinâmica de restrições para eliminação de soluções fracionárias (planos de corte);
-	\item[\textsc{LAZY}] resolvedor onde somente as restrições de grau (2) e (3) são inicialmente informadas e restrições de eliminação de sub-rotas são inseridas por demanda;
-	\item[\textsc{LAZY+C+H}] resolvedor onde somente as restrições de grau (2) e (3) são inicialmente informadas, restrições de eliminação de sub-rotas e planos de corte são inseridas por demanda e uma solução inicial inteira é informada.	
+	\item[\textsc{MTZ}]: resolvedor que somente utiliza a formulação compacta;
+	\item[\textsc{MTZ+H}]: resolvedor que utiliza a formulação compacta e a heurística para produção de uma solução inicial factível;
+	\item[\textsc{MTZ+C}]: resolvedor que utiliza a formulação compacta e a geração dinâmica de restrições para eliminação de soluções fracionárias (planos de corte);
+	\item[\textsc{LAZY}]: resolvedor onde somente as restrições de grau (2) e (3) são inicialmente informadas e restrições de eliminação de sub-rotas são inseridas por demanda;
+	\item[\textsc{LAZY+C+H}]: resolvedor onde somente as restrições de grau (2) e (3) são inicialmente informadas, restrições de eliminação de sub-rotas e planos de corte são inseridas por demanda e uma solução inicial inteira é informada.
 \end{description}
 
-Os testes foram executados tanto com o resolvedor CBC quanto com o resolvedor Gurobi 8.1 em algumas instâncias com até 202 vértices da biblioteca de problemas TSPLIB95 \citep{Reinelt95}.
+Os testes utilizaram a versão 1.5.3 do pacote Python-MIP. Foram avaliados como motor de busca ou o resolvedor COIN-OR CBC, incluso no pacote, ou o resolvedor comercial estado-da-arte Gurobi 8.1\footnote{\url{https://www.gurobi.com/}}. Uma das vantagens do pacote Python-MIP é que nenhuma linha de código precisa ser modificada caso o usuário queira trocar de motor de busca: todas as funcionalidades são compatíveis com ambos os motores. Os experimentos executaram em um computador com processador Intel $\textregistered$ Core i7-4960X 3.6 GHz com 32 Gb de RAM. Cada teste executou de maneira sequencial, sendo que o pacote GNU Parallel \citep{Tange2011} foi utilizado para que 2 núcleos fossem utilizados em paralelo. Um tempo limite de dez horas (36.000 segundos) foi estipulado para cada execução. Algumas instâncias com até 202 nós da coleção de problemas TSPLIB95 \citep{Reinelt95} foram selecionadas. Os resultados (tempos de execução em segundos) são apresentados na Tabela \ref{resExp}. O sufixo numérico no nome das instâncias indica o número de pontos que cada uma inclui. O melhor resultado para cada instância é enfatizado em negrito. Células com execuções que foram truncadas por tempo foram sombreadas.
+
 
 \begin{table}
 	\begin{center}		
-	\begin{tabular}{|r|r|r|r|r|r|}
-		\hline 
-		\multirow{2}{*}{instância} & \multicolumn{5}{c|}{CBC}\tabularnewline
-		\cline{2-6} \cline{3-6} \cline{4-6} \cline{5-6} \cline{6-6} 
-		& \textsc{mtz} & \textsc{mtz+h} & \textsc{mtz+c} & \textsc{lazy} & \textsc{lazy+c+h}\tabularnewline
-		\hline 
-		ulysses22 & 778,0 & 1.292,5 & 7,4 & 36.000,0 & \textbf{3,3}\tabularnewline
-		\hline 
-		att48 & 13.578,6 & 12.749,2 & 14,8 & 14.546,7 & \textbf{5,9}\tabularnewline
-		\hline 
-		bier127 & 36.000,0 & 5.217,8 & 5.217,8 & 36.000,0 & \textbf{136,3}\tabularnewline
-		\hline 
-		gr202 & 36.000,0 & 5.717,9 & 2.613,0 & 36.000,0 & \textbf{867,9}\tabularnewline
-		\hline 
-		\emph{average} & 17.271,3 & 17.208,3 & 1.570,6 & 24.509,3 & \textbf{202,7}\tabularnewline
-		\hline 
-		\multicolumn{1}{r}{} & \multicolumn{1}{r}{} & \multicolumn{1}{r}{} & \multicolumn{1}{r}{} & \multicolumn{1}{r}{} & \multicolumn{1}{r}{}\tabularnewline
-		\hline 
-		\multirow{2}{*}{instância} & \multicolumn{5}{c|}{GUROBI}\tabularnewline
-		\cline{2-6} \cline{3-6} \cline{4-6} \cline{5-6} \cline{6-6} 
-		& \textsc{mtz} & \textsc{mtz+h} & \textsc{mtz+c} & \textsc{lazy} & \textsc{lazy+c+h}\tabularnewline
-		\hline 
-		ulysses22 & 148,1 & 214,1 & 1,7 & 66,5 & \textbf{3,1}\tabularnewline
-		\hline 
-		att48 & 186,5 & 185,7 & 6,5 & 257,7 & \textbf{6,4}\tabularnewline
-		\hline 
-		bier127 & 36.000,0 & 25.508,8 & 209,3 & 884,0 & \textbf{79,7}\tabularnewline
-		\hline 
-		gr202 & 36.000,0 & 36.000,0 & \textbf{1.057,2} & 36.000,0 & 1.084,8\tabularnewline
-		\hline 
-		\emph{average} & 14.466,9 & 12.381,7 & 254,9 & 7.441,6 & \textbf{234,8}\tabularnewline
-		\hline 
-	\end{tabular}
+\begin{tabular}{|r|r|r|r|r|r|}
+\hline 
+\multirow{2}{*}{instância} & \multicolumn{5}{c|}{CBC}\tabularnewline
+\cline{2-6} \cline{3-6} \cline{4-6} \cline{5-6} \cline{6-6} 
+ & \textsc{mtz} & \textsc{mtz+h} & \textsc{mtz+c} & \textsc{lazy} & \textsc{lazy+c+h}\tabularnewline
+\hline 
+\hline 
+ulysses22 & 778,0 & 1.292,5 & 7,4 & \cellcolor{gray}36.000,0 & 3,3\tabularnewline
+\hline 
+att48 & 13.578,6 & 12.749,2 & 14,8 & 14.546,7 & \textbf{5,9}\tabularnewline
+\hline 
+bier127 & \cellcolor{gray}36.000,0 & 5.217,8 & 5.217,8 & \cellcolor{gray}36.000,0 & \textbf{136,3}\tabularnewline
+\hline 
+gr202 & \cellcolor{gray}36.000,0 & 5.717,9 & 2.613,0 & \cellcolor{gray}36.000,0 & \textbf{867,9}\tabularnewline
+\hline 
+\hline 
+\emph{average} & 17.271,3 & 17.208,3 & 1.570,6 & 24.509,3 & \textbf{202,7}\tabularnewline
+\hline 
+\multicolumn{1}{r}{} & \multicolumn{1}{r}{} & \multicolumn{1}{r}{} & \multicolumn{1}{r}{} & \multicolumn{1}{r}{} & \multicolumn{1}{r}{}\tabularnewline
+\hline 
+\multirow{2}{*}{instância} & \multicolumn{5}{c|}{GUROBI}\tabularnewline
+\cline{2-6} \cline{3-6} \cline{4-6} \cline{5-6} \cline{6-6} 
+ & \textsc{mtz} & \textsc{mtz+h} & \textsc{mtz+c} & \textsc{lazy} & \textsc{lazy+c+h}\tabularnewline
+\hline 
+\hline 
+ulysses22 & 148,1 & 214,1 & 1,7 & 66,5 & \textbf{3,1}\tabularnewline
+\hline 
+att48 & 186,5 & 185,7 & 6,5 & 257,7 & \textbf{6,4}\tabularnewline
+\hline 
+bier127 & \cellcolor{gray}36.000,0 & 25.508,8 & 209,3 & 884,0 & \textbf{79,7}\tabularnewline
+\hline 
+gr202 & \cellcolor{gray}36.000,0 & \cellcolor{gray}36.000,0 & \textbf{1.057,2} & 36.000,0 & 1.084,8\tabularnewline
+\hline 
+\hline 
+\emph{average} & 14.466,9 & 12.381,7 & 254,9 & 7.441,6 & \textbf{234,8}\tabularnewline
+\hline 
+\end{tabular}
 	\label{resExp} \caption{Resultados de experimentos com diferentes configurações do resolvedor utilizando CBC e Gurobi}
 	\end{center}	
 \end{table}
-		
+
+\section{Conclusões}
+
+Neste tutorial foram desenvolvidos e avaliados computacionalmente diferentes resolvedores exatos para o problema clássico do caixeiro viajante utilizando o pacote Python-MIP. Experimentos computacionais foram realizados demonstrando os ganhos expressivos que podem ser obtidos com adições relativamente simples ao resolvedor inicial. As técnicas aqui aplicadas são facilmente adaptáveis a problemas similares de otimização combinatória, onde diferentes formulações estão disponíveis. Nesse sentido, enfatiza-se a vantagem de utilização da linguagem de alto nível de modelagem do pacote Python-MIP para acelerar o desenvolvimento de resolvedores de alto desempenho para problemas de otimização combinatória.
+
 \bibliography{pmip-podes}
 \bibliographystyle{podes-bibstyle}
 
