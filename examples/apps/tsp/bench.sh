@@ -9,7 +9,7 @@
 rm -f results.csv
 rm -f runbench.sh
 idir='/home/haroldo/inst/tsp/'
-insts='ulysses16 ulysses22 att48 bier127 gr202 lin318 d493'
+insts='ulysses16 ulysses22 att48 bier127 gr202 lin318 d493 brg180'
 TIMELIMIT=36000
 
 
@@ -23,19 +23,41 @@ do
     ifile=${idir}/${inst}.tsp
     for solver in GUROBI CBC;
     do
-        for cut in 0 1;
-        do
-            for lazy in 0 1;
-            do
-                for heur in 0 1;
-                do
-                    export SOLVER_NAME=$solver
-                    flog=${inst}-${solver}-${cut}-${lazy}-${heur}.log
-                    ferror=${inst}-${solver}-${cut}-${lazy}-${heur}.error
-                    echo "export SOLVER_NAME=${solver} ; pypy3 tsp.py $ifile ${TIMELIMIT} 1 ${cut} ${lazy} ${heur} > $flog 2> $ferror" >> trunbench-${inst}.sh
-               done
-            done
-        done
+        export SOLVER_NAME=$solver
+        cut=0
+        lazy=0
+        heur=0
+        flog=${inst}-${solver}-${cut}-${lazy}-${heur}.log
+        ferror=${inst}-${solver}-${cut}-${lazy}-${heur}.error
+        echo "export SOLVER_NAME=${solver} ; pypy3 tsp.py $ifile ${TIMELIMIT} 1 ${cut} ${lazy} ${heur} > $flog 2> $ferror" >> trunbench-${inst}.sh
+
+        cut=1
+        lazy=0
+        heur=0
+        flog=${inst}-${solver}-${cut}-${lazy}-${heur}.log
+        ferror=${inst}-${solver}-${cut}-${lazy}-${heur}.error
+        echo "export SOLVER_NAME=${solver} ; pypy3 tsp.py $ifile ${TIMELIMIT} 1 ${cut} ${lazy} ${heur} > $flog 2> $ferror" >> trunbench-${inst}.sh
+
+        cut=0
+        lazy=1
+        heur=0
+        flog=${inst}-${solver}-${cut}-${lazy}-${heur}.log
+        ferror=${inst}-${solver}-${cut}-${lazy}-${heur}.error
+        echo "export SOLVER_NAME=${solver} ; pypy3 tsp.py $ifile ${TIMELIMIT} 1 ${cut} ${lazy} ${heur} > $flog 2> $ferror" >> trunbench-${inst}.sh
+
+        cut=0
+        lazy=0
+        heur=1
+        flog=${inst}-${solver}-${cut}-${lazy}-${heur}.log
+        ferror=${inst}-${solver}-${cut}-${lazy}-${heur}.error
+        echo "export SOLVER_NAME=${solver} ; pypy3 tsp.py $ifile ${TIMELIMIT} 1 ${cut} ${lazy} ${heur} > $flog 2> $ferror" >> trunbench-${inst}.sh
+
+        cut=1
+        lazy=1
+        heur=1
+        flog=${inst}-${solver}-${cut}-${lazy}-${heur}.log
+        ferror=${inst}-${solver}-${cut}-${lazy}-${heur}.error
+        echo "export SOLVER_NAME=${solver} ; pypy3 tsp.py $ifile ${TIMELIMIT} 1 ${cut} ${lazy} ${heur} > $flog 2> $ferror" >> trunbench-${inst}.sh
     done
 done
 
