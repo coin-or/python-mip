@@ -105,6 +105,12 @@ somente ocorre no momento em que o modelo criado é informado e na coleta dos re
 a versão final utiliza comunicação bidirecional com o resolvedor durante o processo de busca para o tratamento
 de uma formulação com um número exponencial de restrições em um método de \emph{branch-\&-cut}. Resultados experimentais são apresentados na seção \ref{secExp} para demonstrar os ganhos substanciais de desempenho que podem ser obtidos com essa última versão.
 
+A instalação do pacote é bastante simples. Depois da instalação da linguagem Python, o gerenciador de pacotes da mesma (pip) pode ser invocado para instalação. Para isso, pode-se usar o seguinte comando no terminal do sistema:
+
+\begin{lstlisting}[language=bash,numbers=none]
+pip install mip --user
+\end{lstlisting}
+
 \section{Aplicação: Problema do Caixeiro Viajante}
 
 O problema do caixeiro viajante consiste em: dada uma malha viária
@@ -379,14 +385,15 @@ experimentos com diferentes versões de nosso algoritmo:
 	\item[\textsc{LAZY+C+H}]: resolvedor onde somente as restrições de grau (2) e (3) são inicialmente informadas, restrições de eliminação de sub-rotas e planos de corte são inseridas por demanda e uma solução inicial inteira é informada.
 \end{description}
 
-Os testes utilizaram a versão 1.5.3 do pacote Python-MIP. Foram avaliados como motor de busca ou o resolvedor COIN-OR CBC, incluso no pacote, ou o resolvedor comercial estado-da-arte Gurobi 8.1\footnote{\url{https://www.gurobi.com/}}. Uma das vantagens do pacote Python-MIP é que nenhuma linha de código precisa ser modificada caso o usuário queira trocar de motor de busca: todas as funcionalidades são compatíveis com ambos os motores. Os experimentos executaram em um computador com processador Intel $\textregistered$ Core i7-4960X 3.6 GHz com 32 Gb de RAM. Cada teste executou de maneira sequencial, sendo que o pacote GNU Parallel \citep{Tange2011} foi utilizado para que 2 núcleos fossem utilizados em paralelo. Um tempo limite de dez horas (36.000 segundos) foi estipulado para cada execução. Algumas instâncias com até 202 nós da coleção de problemas TSPLIB95 \citep{Reinelt95} foram selecionadas. Os resultados (tempos de execução em segundos) são apresentados na Tabela \ref{resExp}. O sufixo numérico no nome das instâncias indica o número de pontos que cada uma inclui. O melhor resultado para cada instância é enfatizado em negrito. Células com execuções que foram truncadas por tempo foram sombreadas.
-
+Os testes utilizaram a versão 1.5.3 do pacote Python-MIP. Foram avaliados como motor de busca ou o resolvedor COIN-OR CBC, incluso no pacote, ou o resolvedor comercial Gurobi 8.1\footnote{\url{https://www.gurobi.com/}}. Uma das vantagens do pacote Python-MIP é que nenhuma linha de código precisa ser modificada caso o usuário queira trocar de motor de busca: todas as funcionalidades são compatíveis com ambos os motores. Os experimentos executaram em um computador com processador Intel $\textregistered$ Core i7-4960X 3.6 GHz com 32 Gb de RAM. Cada teste executou de maneira sequencial, sendo que o pacote GNU Parallel \citep{Tange2011} foi utilizado para que 2 núcleos fossem utilizados em paralelo em diferentes testes. Um tempo limite de dez horas (36.000 segundos) foi estipulado para cada execução. Algumas instâncias com até 202 nós da coleção de problemas TSPLIB95 \citep{Reinelt95} foram selecionadas. Os resultados (tempos de execução em segundos) são apresentados na Tabela \ref{resExp}. O sufixo numérico no nome das instâncias indica o número de pontos que cada uma inclui. O melhor resultado para cada instância é enfatizado em negrito. Células com execuções que foram truncadas por tempo foram sombreadas.
+    
+Como pode-se observar, instâncias com algumas centenas de nós são claramente difíceis de resolver utilizando a formulação fraca MTZ, independente do resolvedor utilizado. A adição por demanda de restrições de eliminação de sub-rotas (versões com +C e/ou LAZY) oferece ganhos expressivos, de modo similar nos dois resolvedores. A aceleração média obtida com o resolvedor CBC foi de mais de 80 vezes e no resolvedor Gurobi de mais de 60 vezes. Esse número é uma estimativa baixa da aceleração obtida pois as execuções foram truncadas por tempo. Esses resultados ilustram a importância do estudo e implementação computacional de diferentes formulações para o tratamento de um problema de otimização combinatória.
 
 \begin{table}
 	\begin{center}		
 \begin{tabular}{|r|r|r|r|r|r|}
 \hline 
-\multirow{2}{*}{instância} & \multicolumn{5}{c|}{CBC}\tabularnewline
+\multirow{2}{*}{instância} & \multicolumn{5}{c|}{Python-MIP 1.5.3 com CBC}\tabularnewline
 \cline{2-6} \cline{3-6} \cline{4-6} \cline{5-6} \cline{6-6} 
  & \textsc{mtz} & \textsc{mtz+h} & \textsc{mtz+c} & \textsc{lazy} & \textsc{lazy+c+h}\tabularnewline
 \hline 
@@ -395,39 +402,40 @@ ulysses22 & 778,0 & 1.292,5 & 7,4 & \cellcolor{gray}36.000,0 & 3,3\tabularnewlin
 \hline 
 att48 & 13.578,6 & 12.749,2 & 14,8 & 14.546,7 & \textbf{5,9}\tabularnewline
 \hline 
-bier127 & \cellcolor{gray}36.000,0 & 5.217,8 & 5.217,8 & \cellcolor{gray}36.000,0 & \textbf{136,3}\tabularnewline
+bier127 & \cellcolor{gray}36.000,0 & \cellcolor{gray}36.000,0 & 2.637,6 & \cellcolor{gray}36.000,0 & 136,3\tabularnewline
 \hline 
-gr202 & \cellcolor{gray}36.000,0 & 5.717,9 & 2.613,0 & \cellcolor{gray}36.000,0 & \textbf{867,9}\tabularnewline
+gr202 & \cellcolor{gray}36.000,0 & \cellcolor{gray}36.000,0 & 2.613,0 & \cellcolor{gray}36.000,0 & \textbf{867,9}\tabularnewline
 \hline 
 \hline 
-\emph{average} & 17.271,3 & 17.208,3 & 1.570,6 & 24.509,3 & \textbf{202,7}\tabularnewline
+\emph{média} & 17.271,3 & 17.208,3 & 1.054,6 & 24.509,3 & \textbf{202,7}\tabularnewline
 \hline 
 \multicolumn{1}{r}{} & \multicolumn{1}{r}{} & \multicolumn{1}{r}{} & \multicolumn{1}{r}{} & \multicolumn{1}{r}{} & \multicolumn{1}{r}{}\tabularnewline
 \hline 
-\multirow{2}{*}{instância} & \multicolumn{5}{c|}{GUROBI}\tabularnewline
+\multirow{2}{*}{instância} & \multicolumn{5}{c|}{Python-MIP 1.5.3 com GUROBI}\tabularnewline
 \cline{2-6} \cline{3-6} \cline{4-6} \cline{5-6} \cline{6-6} 
  & \textsc{mtz} & \textsc{mtz+h} & \textsc{mtz+c} & \textsc{lazy} & \textsc{lazy+c+h}\tabularnewline
 \hline 
 \hline 
 ulysses22 & 148,1 & 214,1 & 1,7 & 66,5 & \textbf{3,1}\tabularnewline
 \hline 
-att48 & 186,5 & 185,7 & 6,5 & 257,7 & \textbf{6,4}\tabularnewline
+att48 & 186,5 & 185,7 & 6,5 & 257,7 & 6,4\tabularnewline
 \hline 
 bier127 & \cellcolor{gray}36.000,0 & 25.508,8 & 209,3 & 884,0 & \textbf{79,7}\tabularnewline
 \hline 
-gr202 & \cellcolor{gray}36.000,0 & \cellcolor{gray}36.000,0 & \textbf{1.057,2} & 36.000,0 & 1.084,8\tabularnewline
+gr202 & \cellcolor{gray}36.000,0 & \cellcolor{gray}36.000,0 & 1.057,2 & 36.000,0 & 1.084,8\tabularnewline
 \hline 
 \hline 
-\emph{average} & 14.466,9 & 12.381,7 & 254,9 & 7.441,6 & \textbf{234,8}\tabularnewline
+\emph{média} & 14.466,9 & 12.381,7 & 254,9 & 7.441,6 & 234,8\tabularnewline
 \hline 
 \end{tabular}
+
 	\label{resExp} \caption{Resultados de experimentos com diferentes configurações do resolvedor utilizando CBC e Gurobi}
 	\end{center}	
 \end{table}
 
 \section{Conclusões}
 
-Neste tutorial foram desenvolvidos e avaliados computacionalmente diferentes resolvedores exatos para o problema clássico do caixeiro viajante utilizando o pacote Python-MIP. Experimentos computacionais foram realizados demonstrando os ganhos expressivos que podem ser obtidos com adições relativamente simples ao resolvedor inicial. As técnicas aqui aplicadas são facilmente adaptáveis a problemas similares de otimização combinatória, onde diferentes formulações estão disponíveis. Nesse sentido, enfatiza-se a vantagem de utilização da linguagem de alto nível de modelagem do pacote Python-MIP para acelerar o desenvolvimento de resolvedores de alto desempenho para problemas de otimização combinatória.
+Neste tutorial foram desenvolvidos e avaliados computacionalmente diferentes resolvedores exatos para o problema clássico do caixeiro viajante utilizando o pacote Python-MIP. Experimentos computacionais foram realizados demonstrando os ganhos expressivos que podem ser obtidos com adições relativamente simples ao resolvedor inicial. As técnicas aqui aplicadas são facilmente adaptáveis a problemas similares de otimização combinatória, onde diferentes formulações estão disponíveis. Nesse sentido, enfatiza-se a vantagem de utilização da linguagem de alto nível de modelagem do pacote Python-MIP para acelerar o desenvolvimento de resolvedores de alto desempenho para problemas de otimização combinatória. O pacote tem uma extensa documentação disponível\footnote{\url{https://python-mip.readthedocs.io/en/latest/}}, incluindo vários exemplos de modelagem.
 
 \bibliography{pmip-podes}
 \bibliographystyle{podes-bibstyle}
