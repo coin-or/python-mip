@@ -6,15 +6,18 @@
 """
 
 from itertools import product
+from sys import argv
+from time import time
 import bmcp_data
 import bmcp_greedy
 from mip import Model, xsum, minimize, MINIMIZE, BINARY
 
-data = bmcp_data.read('P1.col')
+data = bmcp_data.read(argv[1])
 N, r, d = data.N, data.r, data.d
 S = bmcp_greedy.build(data)
 C, U = S.C, [i for i in range(S.u_max+1)]
 
+st = time()
 m = Model()
 
 x = [[m.add_var('x({},{})'.format(i, c), var_type=BINARY)
@@ -36,10 +39,13 @@ for i, c1, c2 in product(N, U, U):
 
 for i, c in product(N, U):
     m += z >= (c+1)*x[i][c]
+ed = time()
 
-m.start = [(x[i][c], 1.0) for i in N for c in C[i]]
+print('Model creation time: %.2f' % (ed-st))
 
-m.optimize(max_seconds=100)
+# m.start = [(x[i][c], 1.0) for i in N for c in C[i]]
 
-C = [[c for c in U if x[i][c] >= 0.99] for i in N]
-print(C)
+# m.optimize(max_seconds=100)
+
+# C = [[c for c in U if x[i][c] >= 0.99] for i in N]
+# print(C)

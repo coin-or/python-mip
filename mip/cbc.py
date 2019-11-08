@@ -13,7 +13,6 @@ from mip.solver import Solver
 from mip.constants import MAXIMIZE, SearchEmphasis, CONTINUOUS, BINARY, \
     INTEGER, MINIMIZE, EQUAL, LESS_OR_EQUAL, GREATER_OR_EQUAL, \
     OptimizationStatus
-from math import floor
 
 warningMessages = 0
 
@@ -368,6 +367,10 @@ class SolverCbc(Solver):
 
         self._model = cbclib.Cbc_newModel()
         cbclib.Cbc_storeNameIndexes(self._model, CHAR_ONE)
+
+        self.iidx_space = 4096
+        self.iidx = ffi.new('int[%d]' % self.iidx_space)
+        self.dvec = ffi.new('double[%d]' % self.iidx_space)
 
         self._objconst = 0.0
 
@@ -802,8 +805,18 @@ class SolverCbc(Solver):
         # collecting linear expression data
         numnz = len(lin_expr.expr)
 
-        cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
-        cval = ffi.new("double[]", [coef for coef in lin_expr.expr.values()])
+        if numnz > self.iidx_space:
+            self.iidx_space = numnz * 2
+            self.iidx = ffi.new('int[%d]' % self.iidx_space)
+            self.dvec = ffi.new('double[%d]' % self.iidx_space)
+
+        # cind = self.iidx
+        self.iidx = [var.idx for var in lin_expr.expr.keys()]
+
+        # cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
+        # cval = ffi.new("double[]", [coef for coef in lin_expr.expr.values()])
+        # cval = self.dvec
+        self.dvec = [coef for coef in lin_expr.expr.values()]
 
         # constraint sense and rhs
         sense = lin_expr.sense.encode("utf-8")
@@ -811,7 +824,7 @@ class SolverCbc(Solver):
 
         namestr = name.encode("utf-8")
         mp = self._model
-        cbclib.Cbc_addRow(mp, namestr, numnz, cind, cval, sense, rhs)
+        cbclib.Cbc_addRow(mp, namestr, numnz, self.iidx, self.dvec, sense, rhs)
 
     def add_lazy_constr(self, lin_expr: LinExpr):
         # collecting linear expression data
