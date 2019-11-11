@@ -806,7 +806,7 @@ class SolverCbc(Solver):
         numnz = len(lin_expr.expr)
 
         if numnz > self.iidx_space:
-            self.iidx_space = numnz * 2
+            self.iidx_space = max(numnz, self.iidx_space*2)
             self.iidx = ffi.new('int[%d]' % self.iidx_space)
             self.dvec = ffi.new('double[%d]' % self.iidx_space)
 
