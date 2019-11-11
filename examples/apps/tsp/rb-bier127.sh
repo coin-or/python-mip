@@ -1,10 +1,10 @@
-export SOLVER_NAME=CBC ; pypy3 tsp.py /home/haroldo/inst/tsp//bier127.tsp 36000 1 1 0 0 > bier127-CBC-1-0-0.log 2> bier127-CBC-1-0-0.error
-export SOLVER_NAME=GUROBI ; pypy3 tsp.py /home/haroldo/inst/tsp//bier127.tsp 36000 1 1 1 1 > bier127-GUROBI-1-1-1.log 2> bier127-GUROBI-1-1-1.error
-export SOLVER_NAME=CBC ; pypy3 tsp.py /home/haroldo/inst/tsp//bier127.tsp 36000 1 0 0 1 > bier127-CBC-0-0-1.log 2> bier127-CBC-0-0-1.error
-export SOLVER_NAME=CBC ; pypy3 tsp.py /home/haroldo/inst/tsp//bier127.tsp 36000 1 0 1 0 > bier127-CBC-0-1-0.log 2> bier127-CBC-0-1-0.error
-export SOLVER_NAME=GUROBI ; pypy3 tsp.py /home/haroldo/inst/tsp//bier127.tsp 36000 1 0 1 0 > bier127-GUROBI-0-1-0.log 2> bier127-GUROBI-0-1-0.error
-export SOLVER_NAME=GUROBI ; pypy3 tsp.py /home/haroldo/inst/tsp//bier127.tsp 36000 1 1 0 0 > bier127-GUROBI-1-0-0.log 2> bier127-GUROBI-1-0-0.error
 export SOLVER_NAME=GUROBI ; pypy3 tsp.py /home/haroldo/inst/tsp//bier127.tsp 36000 1 0 0 1 > bier127-GUROBI-0-0-1.log 2> bier127-GUROBI-0-0-1.error
 export SOLVER_NAME=CBC ; pypy3 tsp.py /home/haroldo/inst/tsp//bier127.tsp 36000 1 1 1 1 > bier127-CBC-1-1-1.log 2> bier127-CBC-1-1-1.error
-export SOLVER_NAME=CBC ; pypy3 tsp.py /home/haroldo/inst/tsp//bier127.tsp 36000 1 0 0 0 > bier127-CBC-0-0-0.log 2> bier127-CBC-0-0-0.error
+export SOLVER_NAME=CBC ; pypy3 tsp.py /home/haroldo/inst/tsp//bier127.tsp 36000 1 1 0 0 > bier127-CBC-1-0-0.log 2> bier127-CBC-1-0-0.error
 export SOLVER_NAME=GUROBI ; pypy3 tsp.py /home/haroldo/inst/tsp//bier127.tsp 36000 1 0 0 0 > bier127-GUROBI-0-0-0.log 2> bier127-GUROBI-0-0-0.error
+export SOLVER_NAME=CBC ; pypy3 tsp.py /home/haroldo/inst/tsp//bier127.tsp 36000 1 0 1 0 > bier127-CBC-0-1-0.log 2> bier127-CBC-0-1-0.error
+export SOLVER_NAME=CBC ; pypy3 tsp.py /home/haroldo/inst/tsp//bier127.tsp 36000 1 0 0 0 > bier127-CBC-0-0-0.log 2> bier127-CBC-0-0-0.error
+export SOLVER_NAME=GUROBI ; pypy3 tsp.py /home/haroldo/inst/tsp//bier127.tsp 36000 1 1 0 0 > bier127-GUROBI-1-0-0.log 2> bier127-GUROBI-1-0-0.error
+export SOLVER_NAME=GUROBI ; pypy3 tsp.py /home/haroldo/inst/tsp//bier127.tsp 36000 1 1 1 1 > bier127-GUROBI-1-1-1.log 2> bier127-GUROBI-1-1-1.error
+export SOLVER_NAME=GUROBI ; pypy3 tsp.py /home/haroldo/inst/tsp//bier127.tsp 36000 1 0 1 0 > bier127-GUROBI-0-1-0.log 2> bier127-GUROBI-0-1-0.error
+export SOLVER_NAME=CBC ; pypy3 tsp.py /home/haroldo/inst/tsp//bier127.tsp 36000 1 0 0 1 > bier127-CBC-0-0-1.log 2> bier127-CBC-0-0-1.error
