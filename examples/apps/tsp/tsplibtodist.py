@@ -20,6 +20,7 @@ if iname.endswith('.tsp'):
 N = set([i for i in P.get_nodes()])
 
 fo = open('%s.dist' % iname, 'w')
+fo.write('%d\n' % len(P))
 for i in N:
     for j in N:
         fo.write('%d\n' % P.wfunc(i, j))
