@@ -7,7 +7,7 @@ from sys import stdout as out
 from collections.abc import Sequence
 from mip.constants import BINARY, CONTINUOUS, INTEGER, MINIMIZE, INF, \
     OptimizationStatus, SearchEmphasis, VERSION, GUROBI, CBC, \
-    LESS_OR_EQUAL, GREATER_OR_EQUAL, EPS, MAXIMIZE
+    LESS_OR_EQUAL, GREATER_OR_EQUAL, EPS, MAXIMIZE, LP_Method
 from mip.exceptions import InvalidLinExpr, SolutionNotAvailable
 
 
@@ -545,6 +545,7 @@ class Model:
         self.__lazy_constrs_generator = None
         self.__start = None
         self.__threads = 0
+        self.__lp_method = LP_Method.AUTO
         self.__n_cols = 0
         self.__n_rows = 0
         self.__gap = INF
@@ -1024,6 +1025,17 @@ class Model:
         self.solver.set_verbose(verbose)
 
     @property
+    def lp_method(self) -> LP_Method:
+        """Which  method should be used to solve the linear programming
+        problem. If the problem has integer variables that this affects only
+        the solution of the first linear programming relaxation."""
+        return self.__lp_method
+
+    @lp_method.setter
+    def lp_method(self, lpm: LP_Method):
+        self.__lp_method = lpm
+
+    @property
     def threads(self) -> int:
         """number of threads to be used when solving the problem.
         0 uses solver default configuration, -1 uses the number of available
@@ -1283,12 +1295,12 @@ class Model:
     def validate_mip_start(self):
         """Validates solution entered in MIPStart
 
-        If the solver engine printed messages indicating that the
-        initial feasible solution that you entered in :attr:`~mip.model.start`
-        is not valid then you can call this method to help discovering which
-        set of variables is causing infeasibility. The current version is quite 
-        simple: the model is relaxed and one variable entered in mipstart is fixed 
-        per iteration, indicating if the model still feasible or not.
+        If the solver engine printed messages indicating that the initial
+        feasible solution that you entered in :attr:`~mip.model.start` is not
+        valid then you can call this method to help discovering which set of
+        variables is causing infeasibility. The current version is quite
+        simple: the model is relaxed and one variable entered in mipstart is
+        fixed per iteration, indicating if the model still feasible or not.
         """
 
         out.write("Checking feasibility of MIPStart\n")
@@ -1316,7 +1328,7 @@ class Model:
             else:
                 print("NOT OK, optimization status: {}".format(mc.status))
                 return
-        
+
         print("Linear Programming relaxation of model with fixations from MIPStart is feasible.")
         print("MIP model may still be infeasible.")
 
