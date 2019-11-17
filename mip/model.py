@@ -73,7 +73,7 @@ class Constr:
         elif self.expr.sense == '<':
             res += ' <= {}'.format(rhs)
         elif self.expr.sense == '>':
-            res += ' <= {}'.format(rhs)
+            res += ' >= {}'.format(rhs)
 
         return res
 
