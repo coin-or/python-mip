@@ -80,3 +80,19 @@ class SearchEmphasis(Enum):
     DEFAULT = 0
     FEASIBILITY = 1
     OPTIMALITY = 2
+
+
+class LP_Method(Enum):
+    """Different methods to solve the linear programming problem."""
+
+    AUTO = 0
+    """Let the solver decide which is the best method"""
+
+    DUAL = 1
+    """The dual simplex algorithm"""
+
+    PRIMAL = 2
+    """The primal simplex algorithm"""
+
+    BARRIER = 3
+    """The barrier algorithm"""
