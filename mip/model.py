@@ -1,16 +1,17 @@
-from builtins import property
 from math import inf
+from typing import List, Tuple
+from builtins import property
 from os import environ
 from os.path import isfile
 from sys import stdout as out
-from typing import List, Tuple
-
-from mip.constants import *
-from mip.constr import Constr, ConstrList
-from mip.exceptions import InvalidLinExpr
+from collections.abc import Sequence
+from mip.constants import BINARY, CONTINUOUS, INTEGER, MINIMIZE, INF, \
+    OptimizationStatus, SearchEmphasis, VERSION, GUROBI, CBC, \
+    LESS_OR_EQUAL, GREATER_OR_EQUAL, EPS, MAXIMIZE, LP_Method
+from mip.constr import Constr, ConstrList, VConstrList
+from mip.exceptions import InvalidLinExpr, SolutionNotAvailable
 from mip.expr import LinExpr
-from mip.solver import Solver
-from mip.var import Column, Var, VarList
+from mip.var import Column, Var, VarList, VVarList
 
 
 class ProgressLog:
@@ -97,7 +98,7 @@ class Model:
     def __init__(self, name: str = "",
                  sense: str = MINIMIZE,
                  solver_name: str = "",
-                 solver: Solver = None):
+                 solver=None):
         """Model constructor
 
         Creates a Mixed-Integer Linear Programming Model. The default model
@@ -113,44 +114,41 @@ class Model:
             sense (str): MINIMIZATION ("MIN") or MAXIMIZATION ("MAX")
             solver_name: gurobi or cbc, searches for which
                 solver is available if not informed
-            solver: a solver object -- note that when this argument is
-                specified, the argument solver_name is ignored
         """
+        self._ownSolver = True
         # initializing variables with default values
         self.solver_name = solver_name
-        self.solver = solver
+        self.solver = None
 
         # reading solver_name from an environment variable (if applicable)
-        if not solver:
-            if not self.solver_name:
-                if "solver_name" in environ:
-                    self.solver_name = environ["solver_name"]
-                elif "solver_name".upper() in environ:
-                    self.solver_name = environ["solver_name".upper()]
+        if not self.solver_name and "solver_name" in environ:
+            self.solver_name = environ["solver_name"]
+        if not self.solver_name and "solver_name".upper() in environ:
+            self.solver_name = environ["solver_name".upper()]
 
-            # creating a solver instance
-            if self.solver_name.upper() in ["GUROBI", "GRB"]:
+        # creating a solver instance
+        if self.solver_name.upper() in ["GUROBI", "GRB"]:
+            from mip.gurobi import SolverGurobi
+            self.solver = SolverGurobi(self, name, sense)
+        elif self.solver_name.upper() == "CBC":
+            from mip.cbc import SolverCbc
+            self.solver = SolverCbc(self, name, sense)
+        else:
+            # checking which solvers are available
+            try:
+                from mip.gurobi import SolverGurobi
+                has_gurobi = True
+            except ImportError:
+                has_gurobi = False
+
+            if has_gurobi:
                 from mip.gurobi import SolverGurobi
                 self.solver = SolverGurobi(self, name, sense)
-            elif self.solver_name.upper() == "CBC":
+                self.solver_name = GUROBI
+            else:
                 from mip.cbc import SolverCbc
                 self.solver = SolverCbc(self, name, sense)
-            else:
-                # checking which solvers are available
-                try:
-                    from mip.gurobi import SolverGurobi
-                    has_gurobi = True
-                except ImportError:
-                    has_gurobi = False
-
-                if has_gurobi:
-                    from mip.gurobi import SolverGurobi
-                    self.solver = SolverGurobi(self, name, sense)
-                    self.solver_name = GUROBI
-                else:
-                    from mip.cbc import SolverCbc
-                    self.solver = SolverCbc(self, name, sense)
-                    self.solver_name = CBC
+                self.solver_name = CBC
 
         # list of constraints and variables
         self.constrs = ConstrList(self)
@@ -204,7 +202,7 @@ class Model:
                 ub: float = INF,
                 obj: float = 0.0,
                 var_type: str = CONTINUOUS,
-                column: Column = None) -> Var:
+                column: "Column" = None) -> "Var":
         """ Creates a new variable in the model, returning its reference
 
         Args:
@@ -232,7 +230,7 @@ class Model:
         """
         return self.vars.add(name, lb, ub, obj, var_type, column)
 
-    def add_constr(self, lin_expr: LinExpr, name: str = "") -> Constr:
+    def add_constr(self, lin_expr: LinExpr, name: str = "") -> "Constr":
         """Creates a new constraint (row).
 
         Adds a new constraint to the model, returning its reference.
@@ -289,7 +287,7 @@ class Model:
         """
         self.solver.add_lazy_constr(expr)
 
-    def add_sos(self, sos: List[Tuple[Var, float]], sos_type: int):
+    def add_sos(self, sos: List[Tuple["Var", float]], sos_type: int):
         """Adds an Special Ordered Set (SOS) to the model
 
         In models with binary variables it is often the case that from a list
@@ -399,7 +397,7 @@ class Model:
 
         return copy
 
-    def constr_by_name(self, name: str) -> Constr:
+    def constr_by_name(self, name: str) -> "Constr":
         """ Queries a constraint by its name
 
         Args:
@@ -413,7 +411,7 @@ class Model:
             return None
         return self.constrs[cidx]
 
-    def var_by_name(self, name: str) -> Var:
+    def var_by_name(self, name: str) -> "Var":
         """Searchers a variable by its name
 
         Returns:
@@ -744,7 +742,7 @@ class Model:
         return self.__store_search_progress_log
 
     @store_search_progress_log.setter
-    def store_search_progress_log(self, store: bool):
+    def store_search_progress_log(self, store: bool) -> bool:
         self.__store_search_progress_log = store
 
     # def plot_bounds_evolution(self):
@@ -899,7 +897,7 @@ class Model:
         self.__clique = clq
 
     @property
-    def start(self) -> List[Tuple[Var, float]]:
+    def start(self) -> List[Tuple["Var", float]]:
         """Initial feasible solution
 
         Enters an initial feasible solution. Only the main binary/integer
@@ -910,7 +908,7 @@ class Model:
         return self.__start
 
     @start.setter
-    def start(self, start: List[Tuple[Var, float]]):
+    def start(self, start: List[Tuple["Var", float]]):
         self.__start = start
         self.solver.set_start(start)
 
@@ -1026,7 +1024,7 @@ class Model:
 
     @opt_tol.setter
     def opt_tol(self, tol: float):
-        return self.__opt_tol # TODO: fix error
+        return self.__opt_tol
 
     @property
     def max_mip_gap_abs(self) -> float:
