@@ -1,5 +1,6 @@
 """Python-MIP constants"""
 
+from math import inf
 from enum import Enum
 
 VERSION = '1.5.3'
@@ -8,7 +9,7 @@ VERSION = '1.5.3'
 EPS = 10e-6
 
 # infinity representation
-INF = float("inf")
+INF = inf
 
 # constraint senses
 EQUAL = "="
@@ -23,11 +24,11 @@ MAXIMIZE = "MAX"
 
 # solvers
 CBC = "CBC"
-CPX = "CPX"   # will be supported in the future
-CPLEX = "CPX" # will be supported in the future
+CPX = "CPX"  # we plan to support CPLEX in the future
+CPLEX = "CPX"  # we plan to support CPLEX in the future
 GRB = "GRB"
 GUROBI = "GRB"
-SCIP = "SCIP" # will be supported in the future
+SCIP = "SCIP"  # we plan to support SCIP in the future
 
 # variable types
 BINARY = "B"

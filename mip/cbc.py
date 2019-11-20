@@ -7,9 +7,7 @@ import os
 from cffi import FFI
 from mip.model import xsum
 import mip
-from mip.model import Model, Var, Constr, Column, LinExpr, \
-    VConstrList, VVarList
-from mip.solver import Solver
+from mip import Model, Var, Constr, Column, LinExpr, VConstrList, VVarList, Solver
 from mip.constants import MAXIMIZE, SearchEmphasis, CONTINUOUS, BINARY, \
     INTEGER, MINIMIZE, EQUAL, LESS_OR_EQUAL, GREATER_OR_EQUAL, \
     OptimizationStatus
@@ -19,7 +17,7 @@ warningMessages = 0
 ffi = FFI()
 CData = ffi.CData
 has_cbc = False
-os_is_64_bit = maxsize > 2**32
+os_is_64_bit = maxsize > 2 ** 32
 INF = float('inf')
 cut_idx = 0
 
@@ -53,7 +51,6 @@ except Exception:
     print('cbc not found')
 
 if has_cbc:
-
     ffi.cdef("""
     typedef int(*cbc_progress_callback)(void *model,
                                         int phase,
@@ -356,6 +353,7 @@ Osi_getIntegerTolerance = cbclib.Osi_getIntegerTolerance
 Osi_isInteger = cbclib.Osi_isInteger
 Osi_isProvenOptimal = cbclib.Osi_isProvenOptimal
 
+
 def cbc_set_parameter(model: Model, param: str, value: str):
     cbclib.Cbc_setParameter(model._model, param.encode("utf-8"),
                             value.encode("utf-8"))
@@ -411,7 +409,7 @@ class SolverCbc(Solver):
 
         isInt = \
             CHAR_ONE if coltype.upper() == "B" or coltype.upper() == "I" \
-            else CHAR_ZERO
+                else CHAR_ZERO
         cbclib.Cbc_addCol(
             self._model, name.encode("utf-8"),
             lb, ub, obj,
@@ -424,8 +422,8 @@ class SolverCbc(Solver):
         obj = cbclib.Cbc_getObjCoefficients(self._model)
         if obj == ffi.NULL:
             raise Exception("Error getting objective function coefficients")
-        return xsum(obj[j]*self.model.vars[j] for j in range(self.num_cols())
-                    if abs(obj[j]) >= 1e-15)
+        return xsum(obj[j] * self.model.vars[j] for j in range(self.num_cols())
+                    if abs(obj[j]) >= 1e-15) + self._objconst
 
     def set_objective(self, lin_expr: "LinExpr", sense: str = "") -> None:
         # collecting variable coefficients
@@ -623,7 +621,7 @@ class SolverCbc(Solver):
 
         if self.model.cut_passes != -1:
             cbc_set_parameter(self, 'passc', '{}'.format(
-                              self.model.cut_passes))
+                self.model.cut_passes))
 
         if self.model.clique == 0:
             cbc_set_parameter(self, 'clique', 'off')
@@ -684,7 +682,7 @@ class SolverCbc(Solver):
                                                                      MINIMIZE))
 
     def get_objective_value(self) -> float:
-        return cbclib.Cbc_getObjValue(self._model)
+        return cbclib.Cbc_getObjValue(self._model) + self._objconst
 
     def get_status(self) -> OptimizationStatus:
         if cbclib.Cbc_isAbandoned(self._model):
@@ -709,7 +707,7 @@ class SolverCbc(Solver):
         return self.__log
 
     def get_objective_bound(self) -> float:
-        return cbclib.Cbc_getBestPossibleObjValue(self._model)
+        return cbclib.Cbc_getBestPossibleObjValue(self._model) + self._objconst
 
     def var_get_x(self, var: Var) -> float:
         if cbclib.Cbc_getNumIntegers(self._model) > 0:
@@ -724,7 +722,7 @@ class SolverCbc(Solver):
         return cbclib.Cbc_numberSavedSolutions(self._model)
 
     def get_objective_value_i(self, i: int) -> float:
-        return cbclib.Cbc_savedSolutionObj(self._model, i)
+        return cbclib.Cbc_savedSolutionObj(self._model, i) + self._objconst
 
     def var_get_xi(self, var: "Var", i: int) -> float:
         x = cbclib.Cbc_savedSolution(self._model, i)
@@ -806,7 +804,7 @@ class SolverCbc(Solver):
         numnz = len(lin_expr.expr)
 
         if numnz > self.iidx_space:
-            self.iidx_space = max(numnz, self.iidx_space*2)
+            self.iidx_space = max(numnz, self.iidx_space * 2)
             self.iidx = ffi.new('int[%d]' % self.iidx_space)
             self.dvec = ffi.new('double[%d]' % self.iidx_space)
 
@@ -1071,7 +1069,7 @@ class SolverOsi(Solver):
     model is available"""
 
     def __init__(self, model: Model, osi_ptr: CData =
-                 ffi.NULL):
+    ffi.NULL):
         super().__init__(model)
 
         self._objconst = 0.0
@@ -1092,7 +1090,7 @@ class SolverOsi(Solver):
         # name indexes, created if necessary
         self.colNames = None
         self.rowNames = None
-        self._obj_const = 0.0
+        self._objconst = 0.0
         self.osi_cutsp = ffi.NULL
 
     def __del__(self):
@@ -1117,7 +1115,7 @@ class SolverOsi(Solver):
 
         isInt = \
             CHAR_ONE if var_type.upper() == "B" or var_type.upper() == "I" \
-            else CHAR_ZERO
+                else CHAR_ZERO
         cbclib.Osi_addCol(
             self.osi, name.encode("utf-8"),
             lb, ub, obj,
@@ -1183,8 +1181,8 @@ class SolverOsi(Solver):
         obj = cbclib.Osi_getObjCoefficients(self.osi)
         if obj == ffi.NULL:
             raise Exception("Error getting objective function coefficients")
-        return xsum(obj[j]*self.model.vars[j] for j in range(self.num_cols())
-                    if abs(obj[j]) >= 1e-15)
+        return xsum(obj[j] * self.model.vars[j] for j in range(self.num_cols())
+                    if abs(obj[j]) >= 1e-15) + self._objconst
 
     def get_objective_const(self) -> float:
         return self._objconst
@@ -1255,7 +1253,7 @@ class SolverOsi(Solver):
             cbclib.Osi_setObjCoeff(self.osi, var.idx, coeff)
 
         # objective function constant
-        self._obj_const = lin_expr.const
+        self._objconst = lin_expr.const
 
         # setting objective sense
         if sense == MAXIMIZE:
@@ -1523,6 +1521,5 @@ class SolverOsi(Solver):
 
     def set_problem_name(self, name: str):
         raise Exception('Not supported in OsiSolver')
-
 
 # vim: ts=4 sw=4 et
