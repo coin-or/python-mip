@@ -1,16 +1,19 @@
 """Tests of Python-MIP framework, should be executed before each new
 release"""
+import sys, os
+
+sys.path.insert(0, os.getcwd())
 from itertools import product
 import networkx as nx
 from mip.model import Model, xsum
 from mip.constants import OptimizationStatus, MAXIMIZE, BINARY, INTEGER
 from mip.callbacks import ConstrsGenerator, CutPool
+
 has_colors = True
 try:
     from termcolor import colored
 except ModuleNotFoundError:
     has_colors = False
-
 
 SOLVERS = ['CBC', 'Gurobi']
 
@@ -19,11 +22,11 @@ def announce_test(descr: str, engine: str):
     """print test starting message"""
     if has_colors:
         test = colored('> Test: ', 'cyan') + \
-            colored('{} '.format(descr), 'cyan',
-                    attrs=['bold']) + \
-            colored('    Solver engine: ', 'cyan') + \
-            colored('{} '.format(engine), 'cyan',
-                    attrs=['bold'])
+               colored('{} '.format(descr), 'cyan',
+                       attrs=['bold']) + \
+               colored('    Solver engine: ', 'cyan') + \
+               colored('{} '.format(engine), 'cyan',
+                       attrs=['bold'])
     else:
         test = '> Test: {} Solver engine: {}'.format(descr, engine)
 
@@ -36,10 +39,10 @@ def check_result(descr: str, test: bool):
 
     if test:
         if has_colors:
-            text = '\t'+colored('{}'.format(descr), 'cyan') + \
-                ' : ' + colored('OK', 'green')
+            text = '\t' + colored('{}'.format(descr), 'cyan') + \
+                   ' : ' + colored('OK', 'green')
         else:
-            text = '\t'+'{} : OK'.format(descr)
+            text = '\t' + '{} : OK'.format(descr)
 
         print(text)
     else:
@@ -90,7 +93,7 @@ def test_queens(solver: str):
     # solution feasibility
     rows_with_queens = 0
     for i in range(n):
-        if abs(sum(x[i][j].x for j in range(n))-1) <= 0.001:
+        if abs(sum(x[i][j].x for j in range(n)) - 1) <= 0.001:
             rows_with_queens += 1
 
     check_result("feasible solution", abs(total_queens - n) <= 0.001 and
@@ -122,7 +125,7 @@ def test_tsp(solver: str):
     x = {a: m.add_var(name='x({},{})'.format(a[0], a[1]),
                       var_type=BINARY) for a in A}
 
-    m.objective = xsum(c*x[a] for a, c in A.items())
+    m.objective = xsum(c * x[a] for a, c in A.items())
 
     for i in N:
         m += xsum(x[a] for a in Aout[i]) == 1, 'out({})'.format(i)
@@ -136,7 +139,7 @@ def test_tsp(solver: str):
     for (i, j) in A:
         if i0 not in [i, j]:
             m.add_constr(
-                y[i] - (n+1)*x[(i, j)] >= y[j]-n)
+                y[i] - (n + 1) * x[(i, j)] >= y[j] - n)
 
     m.relax()
     m.optimize()
@@ -165,7 +168,7 @@ class SubTourCutGenerator(ConstrsGenerator):
         r = [(v, v.x) for v in model.vars if v.name.startswith('x(')]
         U = [v.name.split('(')[1].split(',')[0] for v, f in r]
         V = [v.name.split(')')[0].split(',')[1] for v, f in r]
-        N = list(set(U+V))
+        N = list(set(U + V))
         cp = CutPool()
         for i in range(len(U)):
             G.add_edge(U[i], V[i], capacity=r[i][1])
@@ -176,8 +179,8 @@ class SubTourCutGenerator(ConstrsGenerator):
             if val <= 0.99:
                 arcsInS = [(v, f) for i, (v, f) in enumerate(r)
                            if U[i] in S and V[i] in S]
-                if sum(f for v, f in arcsInS) >= (len(S)-1)+1e-4:
-                    cut = xsum(1.0*v for v, fm in arcsInS) <= len(S)-1
+                if sum(f for v, f in arcsInS) >= (len(S) - 1) + 1e-4:
+                    cut = xsum(1.0 * v for v, fm in arcsInS) <= len(S) - 1
                     cp.add(cut)
                     if len(cp.cuts) > 256:
                         for cut in cp.cuts:
@@ -212,7 +215,7 @@ def test_tsp_cuts(solver: str):
     x = {a: m.add_var(name='x({},{})'.format(a[0], a[1]),
                       var_type=BINARY) for a in A}
 
-    m.objective = xsum(c*x[a] for a, c in A.items())
+    m.objective = xsum(c * x[a] for a, c in A.items())
 
     for i in N:
         m += xsum(x[a] for a in Aout[i]) == 1, 'out({})'.format(i)
@@ -226,7 +229,7 @@ def test_tsp_cuts(solver: str):
     for (i, j) in A:
         if i0 not in [i, j]:
             m.add_constr(
-                y[i] - (n+1)*x[(i, j)] >= y[j]-n)
+                y[i] - (n + 1) * x[(i, j)] >= y[j] - n)
 
     m.cuts_generator = SubTourCutGenerator()
 
@@ -267,7 +270,7 @@ def test_tsp_mipstart(solver: str):
     x = {a: m.add_var(name='x({},{})'.format(a[0], a[1]),
                       var_type=BINARY) for a in A}
 
-    m.objective = xsum(c*x[a] for a, c in A.items())
+    m.objective = xsum(c * x[a] for a, c in A.items())
 
     for i in N:
         m += xsum(x[a] for a in Aout[i]) == 1, 'out({})'.format(i)
@@ -281,10 +284,10 @@ def test_tsp_mipstart(solver: str):
     for (i, j) in A:
         if i0 not in [i, j]:
             m.add_constr(
-                y[i] - (n+1)*x[(i, j)] >= y[j]-n)
+                y[i] - (n + 1) * x[(i, j)] >= y[j] - n)
 
     route = ['a', 'g', 'f', 'c', 'd', 'e', 'b', 'a']
-    m.start = [(x[route[i-1], route[i]], 1.0) for i in range(1, len(route))]
+    m.start = [(x[route[i - 1], route[i]], 1.0) for i in range(1, len(route))]
     m.optimize()
 
     check_result("mip model status", m.status == OptimizationStatus.OPTIMAL)
