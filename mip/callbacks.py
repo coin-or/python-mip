@@ -2,23 +2,20 @@
 with the solver engine"""
 from collections import defaultdict
 from typing import List, Tuple
-from mip.expr import LinExpr
 from mip.model import Model
-from mip.var import Var
 
 
 class BranchSelector:
     def __init__(self, model: Model):
         self.model = model
 
-    def select_branch(self, rsol: List[Tuple[Var, float]]) \
-            -> Tuple[Var, int]:
+    def select_branch(self, rsol: List[Tuple["Var", float]]) \
+            -> Tuple["Var", int]:
         raise NotImplementedError()
 
 
 class CallbackModel(Model):
     def __init__(self, model, where=None):
-        super().__init__()
         self.__model = model
         self.__where = where  # used to determine the type of callback
 
@@ -56,7 +53,7 @@ class ColumnsGenerator:
 class ConstrsGenerator:
     """Abstract class for implementing cuts and lazy constraints generators."""
 
-    def __init__(self): pass
+    def __init__(self):pass
 
     def generate_constrs(self, model: "Model"):
         """Method called by the solver engine to generate *cuts* or *lazy constraints*.
@@ -103,7 +100,7 @@ class CutPool:
         # the search of repeated cuts
         self.__pos = defaultdict(list)
 
-    def add(self, cut: LinExpr) -> bool:
+    def add(self, cut: "LinExpr") -> bool:
         """tries to add a cut to the pool, returns true if this is a new cut,
         false if it is a repeated one
 
@@ -122,7 +119,7 @@ class CutPool:
         return True
 
     @property
-    def cuts(self) -> List[LinExpr]:
+    def cuts(self) -> List["LinExpr"]:
         return self.__cuts
 
 
@@ -136,15 +133,14 @@ class IncumbentUpdater:
         self.model = model
 
     def update_incumbent(self, objective_value: float, best_bound: float,
-                         solution: List[Tuple[Var, float]]) \
-            -> List[Tuple[Var, float]]:
+                         solution: List[Tuple["Var", float]]) \
+            -> List[Tuple["Var", float]]:
         """method that is called when a new integer feasible solution is found
 
         Args:
             objective_value(float): cost of the new solution found
             best_bound(float): current lower bound for the optimal solution
-                cost
-            solution(List[Tuple[Var,float]]): non-zero variables
-                in the solution
+            cost solution(List[Tuple[Var,float]]): non-zero variables
+            in the solution
         """
         raise NotImplementedError()
