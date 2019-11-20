@@ -7,9 +7,7 @@ from glob import glob
 from os import environ
 from sys import platform
 from cffi import FFI
-from mip import Model, Column, Var, LinExpr, Constr, \
-    VConstrList, VVarList
-from mip.solver import Solver
+from mip import Model, Column, Var, LinExpr, Constr, Solver, VConstrList, VVarList
 from mip.constants import MAXIMIZE, MINIMIZE, CONTINUOUS, INTEGER, BINARY, \
     OptimizationStatus, EQUAL, LESS_OR_EQUAL, GREATER_OR_EQUAL, SearchEmphasis
 
