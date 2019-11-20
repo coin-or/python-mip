@@ -5,13 +5,18 @@ from math import inf
 from typing import List, Tuple
 from mip.constants import INF, CONTINUOUS
 from mip.constants import SearchEmphasis, OptimizationStatus
+from mip.constr import Constr
+from mip.callbacks import BranchSelector, ConstrsGenerator, IncumbentUpdater
+from mip.expr import LinExpr
+from mip.model import Model
+from mip.var import Column, Var
 
 
 class Solver:
     """The solver is an abstract class with the solver independent
     API to communicate with the solver engine"""
 
-    def __init__(self, model: "Model", name: str = '', sense: str = ''):
+    def __init__(self, model: Model, name: str = '', sense: str = ''):
         self.model = model
         if name:
             self.name = name
@@ -30,22 +35,22 @@ class Solver:
                 column: "Column" = None):
         pass
 
-    def add_constr(self, lin_expr: "LinExpr", name: str = ""):
+    def add_constr(self, lin_expr: LinExpr, name: str = ""):
         pass
 
-    def add_lazy_constr(self, lin_expr: "LinExpr"):
+    def add_lazy_constr(self, lin_expr: LinExpr):
         pass
 
-    def add_sos(self, sos: List[Tuple["Var", float]], sos_type: int):
+    def add_sos(self, sos: List[Tuple[Var, float]], sos_type: int):
         pass
 
-    def add_cut(self, lin_expr: "LinExpr"):
+    def add_cut(self, lin_expr: LinExpr):
         pass
 
     def get_objective_bound(self) -> float:
         pass
 
-    def get_objective(self) -> "LinExpr":
+    def get_objective(self) -> LinExpr:
         pass
 
     def get_objective_const(self) -> float:
@@ -75,19 +80,19 @@ class Solver:
     def set_objective_sense(self, sense: str):
         pass
 
-    def set_start(self, start: List[Tuple["Var", float]]):
+    def set_start(self, start: List[Tuple[Var, float]]):
         pass
 
-    def set_objective(self, lin_expr: "LinExpr", sense: str = ""):
+    def set_objective(self, lin_expr: LinExpr, sense: str = ""):
         pass
 
     def set_objective_const(self, const: float):
         pass
 
     def set_callbacks(self,
-                      branch_selector: "BranchSelector" = None,
-                      incumbent_updater: "IncumbentUpdater" = None,
-                      lazy_constrs_generator: "LazyConstrsGenerator" = None):
+                      branch_selector: BranchSelector = None,
+                      incumbent_updater: IncumbentUpdater = None,
+                      lazy_constrs_generator: ConstrsGenerator = None):
         pass
 
     def set_processing_limits(self,
@@ -171,79 +176,6 @@ class Solver:
     def set_verbose(self, verbose: int):
         pass
 
-    # Constraint-related getters/setters
-
-    def constr_get_expr(self, constr: "Constr") -> "LinExpr":
-        pass
-
-    def constr_set_expr(self, constr: "Constr", value: "LinExpr") -> "LinExpr":
-        pass
-
-    def constr_get_name(self, idx: int) -> str:
-        pass
-
-    def constr_get_pi(self, constr: "Constr") -> float:
-        pass
-
-    def constr_get_slack(self, constr: "Constr") -> float:
-        pass
-
-    def remove_constrs(self, constrsList: List[int]):
-        pass
-
-    def constr_get_index(self, name: str) -> int:
-        pass
-
-    # Variable-related getters/setters
-
-    def var_get_lb(self, var: "Var") -> float:
-        pass
-
-    def var_set_lb(self, var: "Var", value: float):
-        pass
-
-    def var_get_ub(self, var: "Var") -> float:
-        pass
-
-    def var_set_ub(self, var: "Var", value: float):
-        pass
-
-    def var_get_obj(self, var: "Var") -> float:
-        pass
-
-    def var_set_obj(self, var: "Var", value: float):
-        pass
-
-    def var_get_var_type(self, var: "Var") -> str:
-        pass
-
-    def var_set_var_type(self, var: "Var", value: str):
-        pass
-
-    def var_get_column(self, var: "Var") -> "Column":
-        pass
-
-    def var_set_column(self, var: "Var", value: "Column"):
-        pass
-
-    def var_get_rc(self, var: "Var") -> float:
-        pass
-
-    def var_get_x(self, var: "Var") -> float:
-        pass
-
-    def var_get_xi(self, var: "Var", i: int) -> float:
-        pass
-
-    def var_get_name(self, idx: int) -> str:
-        pass
-
-    def remove_vars(self, varsList: List[int]):
-        pass
-
-    def var_get_index(self, name: str) -> int:
-        pass
-
     def get_problem_name(self) -> str:
         pass
 
@@ -251,4 +183,77 @@ class Solver:
         pass
 
     def get_status(self) -> OptimizationStatus:
+        pass
+
+    # Constraint-related getters/setters
+
+    def constr_get_expr(self, constr: Constr) -> LinExpr:
+        pass
+
+    def constr_set_expr(self, constr: Constr, value: LinExpr) -> LinExpr:
+        pass
+
+    def constr_get_name(self, idx: int) -> str:
+        pass
+
+    def constr_get_pi(self, constr: Constr) -> float:
+        pass
+
+    def constr_get_slack(self, constr: Constr) -> float:
+        pass
+
+    def constr_get_index(self, name: str) -> int:
+        pass
+
+    def remove_constrs(self, constrsList: List[int]):
+        pass
+
+    # Variable-related getters/setters
+
+    def var_get_lb(self, var: Var) -> float:
+        pass
+
+    def var_set_lb(self, var: Var, value: float):
+        pass
+
+    def var_get_ub(self, var: Var) -> float:
+        pass
+
+    def var_set_ub(self, var: Var, value: float):
+        pass
+
+    def var_get_obj(self, var: Var) -> float:
+        pass
+
+    def var_set_obj(self, var: Var, value: float):
+        pass
+
+    def var_get_var_type(self, var: Var) -> str:
+        pass
+
+    def var_set_var_type(self, var: Var, value: str):
+        pass
+
+    def var_get_column(self, var: Var) -> "Column":
+        pass
+
+    def var_set_column(self, var: Var, value: "Column"):
+        pass
+
+    def var_get_rc(self, var: Var) -> float:
+        pass
+
+    def var_get_x(self, var: Var) -> float:
+        pass
+
+    def var_get_xi(self, var: Var, i: int) -> float:
+        pass
+
+    def var_get_name(self, idx: int) -> str:
+        pass
+
+    def var_get_index(self, name: str) -> int:
+        pass
+
+    def remove_vars(self, varsList: List[int]):
         pass
