@@ -1,5 +1,7 @@
 from mip.constants import *
-from mip.model import Var
+from typing import List, Tuple
+import mip.var as var
+
 
 class LinExpr:
     """
@@ -28,7 +30,7 @@ class LinExpr:
     """
 
     def __init__(self,
-                 variables: List[Var] = None,
+                 variables: List[var.Var] = None,
                  coeffs: List[float] = None,
                  const: float = 0.0,
                  sense: str = ""):
@@ -45,7 +47,7 @@ class LinExpr:
 
     def __add__(self, other) -> "LinExpr":
         result = self.copy()
-        if isinstance(other, Var):
+        if isinstance(other, var.Var):
             result.add_var(other, 1)
         elif isinstance(other, LinExpr):
             result.add_expr(other)
@@ -57,7 +59,7 @@ class LinExpr:
         return self.__add__(other)
 
     def __iadd__(self, other) -> "LinExpr":
-        if isinstance(other, Var):
+        if isinstance(other, var.Var):
             self.add_var(other, 1)
         elif isinstance(other, LinExpr):
             self.add_expr(other)
@@ -67,7 +69,7 @@ class LinExpr:
 
     def __sub__(self, other) -> "LinExpr":
         result = self.copy()
-        if isinstance(other, Var):
+        if isinstance(other, var.Var):
             result.add_var(other, -1)
         elif isinstance(other, LinExpr):
             result.add_expr(other, -1)
@@ -79,7 +81,7 @@ class LinExpr:
         return (-self).__add__(other)
 
     def __isub__(self, other) -> "LinExpr":
-        if isinstance(other, Var):
+        if isinstance(other, var.Var):
             self.add_var(other, -1)
         elif isinstance(other, LinExpr):
             self.add_expr(other, -1)
@@ -179,14 +181,14 @@ class LinExpr:
     def add_term(self, __expr, coeff: float = 1):
         """extends a linear expression with another multiplied by a constant
         value coefficient"""
-        if isinstance(__expr, Var):
+        if isinstance(__expr, var.Var):
             self.add_var(__expr, coeff)
         elif isinstance(__expr, LinExpr):
             self.add_expr(__expr, coeff)
         elif isinstance(__expr, float) or isinstance(__expr, int):
             self.add_const(__expr)
 
-    def add_var(self, var: Var, coeff: float = 1):
+    def add_var(self, var: var.Var, coeff: float = 1):
         """adds a variable with a coefficient to the constraint"""
         if var in self.__expr:
             if -EPS <= self.__expr[var] + coeff <= EPS:
@@ -212,7 +214,7 @@ class LinExpr:
             return False
         if abs(self.__const - other.__const) >= 1e-12:
             return False
-        other_contents = {vr.idx: coef  for vr, coef  in other.__expr.items()}
+        other_contents = {vr.idx: coef for vr, coef in other.__expr.items()}
         for (v, c) in self.__expr.items():
             if v.idx not in other_contents:
                 return False
@@ -281,4 +283,3 @@ class LinExpr:
             viol = max(rhs - lhs, 0.0)
 
         return viol
-
