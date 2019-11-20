@@ -1,4 +1,6 @@
-from mip.model import Model
+from collections.abc import Sequence
+from typing import List
+
 
 class Constr:
     """ A row (constraint) in the constraint matrix.
@@ -21,7 +23,7 @@ class Constr:
           m += xsum(x[i] for i in range(n)) == 1
     """
 
-    def __init__(self, model: Model, idx: int):
+    def __init__(self, model: "Model", idx: int):
         self.__model = model
         self.idx = idx
 
@@ -92,7 +94,7 @@ class Constr:
 class ConstrList(Sequence):
     """ List of problem constraints"""
 
-    def __init__(self, model: Model):
+    def __init__(self, model: "Model"):
         self.__model = model
         self.__constrs = []
 
@@ -102,7 +104,7 @@ class ConstrList(Sequence):
         return self.__constrs[key]
 
     def add(self,
-            lin_expr: LinExpr,
+            lin_expr: "LinExpr",
             name: str = '') -> Constr:
         if not name:
             name = 'constr({})'.format(len(self.__constrs))
@@ -136,11 +138,12 @@ class ConstrList(Sequence):
         self.__constrs = [Constr(self.__model, i) for i in range(n_constrs)]
 
 
-# same as ConstrList, but does not store
-# anything and is immutable (used in callbacks)
+# same as previous class, but does not stores
+# anything and does not allows modification,
+# used in callbacks
 class VConstrList(Sequence):
 
-    def __init__(self, model: Model):
+    def __init__(self, model: "Model"):
         self.__model = model
 
     def __getitem__(self, key):
@@ -155,4 +158,3 @@ class VConstrList(Sequence):
 
     def __len__(self) -> int:
         return self.__model.solver.num_rows()
-

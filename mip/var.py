@@ -1,6 +1,9 @@
+from collections.abc import Sequence
+from typing import List
 from mip.constants import *
 from mip.exceptions import SolutionNotAvailable
 from mip.expr import LinExpr
+
 
 class Column:
     """A column contains all the non-zero entries of a variable in the
@@ -19,7 +22,7 @@ class Var:
     variables is performed calling the :meth:`~mip.model.Model.add_var`."""
 
     def __init__(self,
-                 model: Model,
+                 model: "Model",
                  idx: int):
         self.__model = model
         self.idx = idx
@@ -219,7 +222,7 @@ class VarList(Sequence):
             print(m.vars['z'].lb)
     """
 
-    def __init__(self, model: Model):
+    def __init__(self, model: "Model"):
         self.__model = model
         self.__vars = []
 
@@ -270,11 +273,12 @@ class VarList(Sequence):
                        if v.idx != -1]
 
 
-# same as VarList but does not store
-# variables references (used in callbacks)
+# same as VarList but does not stores
+# references for variables, used in
+# callbacks
 class VVarList(Sequence):
 
-    def __init__(self, model: Model, start: int = -1, end: int = -1):
+    def __init__(self, model: "Model", start: int = -1, end: int = -1):
         self.__model = model
         if start == -1:
             self.__start = 0
@@ -316,4 +320,3 @@ class VVarList(Sequence):
 
     def __len__(self) -> int:
         return self.__model.solver.num_cols()
-
