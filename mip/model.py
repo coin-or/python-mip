@@ -1,397 +1,16 @@
-from math import inf
-from typing import List, Tuple
 from builtins import property
+from math import inf
 from os import environ
 from os.path import isfile
 from sys import stdout as out
-from collections.abc import Sequence
-from mip.constants import BINARY, CONTINUOUS, INTEGER, MINIMIZE, INF, \
-    OptimizationStatus, SearchEmphasis, VERSION, GUROBI, CBC, \
-    LESS_OR_EQUAL, GREATER_OR_EQUAL, EPS, MAXIMIZE, LP_Method
-from mip.exceptions import InvalidLinExpr, SolutionNotAvailable
-
-
-class Column:
-    """A column contains all the non-zero entries of a variable in the
-    constraint matrix. To create a variable see
-    :meth:`~mip.model.model.add_var`."""
-
-    def __init__(self,
-                 constrs: List["Constr"] = None,
-                 coeffs: List[float] = None):
-        self.constrs = constrs
-        self.coeffs = coeffs
-
-
-class Constr:
-    """ A row (constraint) in the constraint matrix.
-
-        A constraint is a specific :class:`~mip.model.LinExpr` that includes a
-        sense (<, > or == or less-or-equal, greater-or-equal and equal,
-        respectively) and a right-hand-side constant value. Constraints can be
-        added to the model using the overloaded operator :code:`+=` or using
-        the method :meth:`~mip.model.Model.add_constr` of the
-        :class:`~mip.model.Model` class:
-
-        .. code:: python
-
-          m += 3*x1 + 4*x2 <= 5
-
-        summation expressions are also supported:
-
-        .. code:: python
-
-          m += xsum(x[i] for i in range(n)) == 1
-    """
-
-    def __init__(self, model: "Model", idx: int):
-        self.__model = model
-        self.idx = idx
-
-    def __hash__(self) -> int:
-        return self.idx
-
-    def __str__(self) -> str:
-        if self.name:
-            res = self.name + ':'
-        else:
-            res = 'constr({}): '.format(self.idx + 1)
-        line = ''
-        len_line = 0
-        for (var, val) in self.expr.expr.items():
-            astr = ' {:+} {}'.format(val, var.name)
-            len_line += len(astr)
-            line += astr
-
-            if len_line > 75:
-                line += '\n\t'
-                len_line = 0
-        res += line
-        rhs = self.expr.const * -1.0
-        if self.expr.sense == '=':
-            res += ' = {}'.format(rhs)
-        elif self.expr.sense == '<':
-            res += ' <= {}'.format(rhs)
-        elif self.expr.sense == '>':
-            res += ' >= {}'.format(rhs)
-
-        return res
-
-    @property
-    def slack(self) -> float:
-
-        """Value of the slack in this constraint in the optimal
-        solution. Available only if the formulation was solved.
-        """
-
-        return self.__model.solver.constr_get_slack(self)
-
-    @property
-    def pi(self) -> float:
-
-        """Value for the dual variable of this constraint in the optimal
-        solution of a linear programming :class:`~mip.model.Model`. Only
-        available if a pure linear programming problem was solved (only
-        continuous variables).
-        """
-
-        return self.__model.solver.constr_get_pi(self)
-
-    @property
-    def expr(self) -> "LinExpr":
-        """contents of the constraint"""
-        return self.__model.solver.constr_get_expr(self)
-
-    @expr.setter
-    def expr(self, value: "LinExpr"):
-        self.__model.solver.constr_set_expr(self, value)
-
-    @property
-    def name(self) -> str:
-        """constraint name"""
-        return self.__model.solver.constr_get_name(self.idx)
-
-
-class LinExpr:
-    """
-    Linear expressions are used to enter the objective function and the model \
-    constraints. These expressions are created using operators and variables.
-
-    Consider a model object m, the objective function of :code:`m` can be
-    specified as:
-
-    .. code:: python
-
-     m.objective = 10*x1 + 7*x4
-
-    In the example bellow, a constraint is added to the model
-
-    .. code:: python
-
-     m += xsum(3*x[i] i in range(n)) - xsum(x[i] i in range(m))
-
-    A constraint is just a linear expression with the addition of a sense (==,
-    <= or >=) and a right hand side, e.g.:
-
-    .. code:: python
-
-     m += x1 + x2 + x3 == 1
-    """
-
-    def __init__(self,
-                 variables: List["Var"] = None,
-                 coeffs: List[float] = None,
-                 const: float = 0.0,
-                 sense: str = ""):
-        self.__const = const
-        self.__expr = {}
-        self.__sense = sense
-
-        if variables:
-            assert len(variables) == len(coeffs)
-            for i in range(len(coeffs)):
-                if abs(coeffs[i]) <= 1e-12:
-                    continue
-                self.add_var(variables[i], coeffs[i])
-
-    def __add__(self, other) -> "LinExpr":
-        result = self.copy()
-        if isinstance(other, Var):
-            result.add_var(other, 1)
-        elif isinstance(other, LinExpr):
-            result.add_expr(other)
-        elif isinstance(other, (int, float)):
-            result.add_const(other)
-        return result
-
-    def __radd__(self, other) -> "LinExpr":
-        return self.__add__(other)
-
-    def __iadd__(self, other) -> "LinExpr":
-        if isinstance(other, Var):
-            self.add_var(other, 1)
-        elif isinstance(other, LinExpr):
-            self.add_expr(other)
-        elif isinstance(other, (int, float)):
-            self.add_const(other)
-        return self
-
-    def __sub__(self, other) -> "LinExpr":
-        result = self.copy()
-        if isinstance(other, Var):
-            result.add_var(other, -1)
-        elif isinstance(other, LinExpr):
-            result.add_expr(other, -1)
-        elif isinstance(other, (int, float)):
-            result.add_const(-other)
-        return result
-
-    def __rsub__(self, other) -> "LinExpr":
-        return (-self).__add__(other)
-
-    def __isub__(self, other) -> "LinExpr":
-        if isinstance(other, Var):
-            self.add_var(other, -1)
-        elif isinstance(other, LinExpr):
-            self.add_expr(other, -1)
-        elif isinstance(other, (int, float)):
-            self.add_const(-other)
-        return self
-
-    def __mul__(self, other) -> "LinExpr":
-        assert isinstance(other, (float, int))
-        result = self.copy()
-        result.__const *= other
-        for var in result.__expr.keys():
-            result.__expr[var] *= other
-
-        # if constraint __sense will change
-        if self.__sense == GREATER_OR_EQUAL and other <= -1e-8:
-            self.__sense = LESS_OR_EQUAL
-        if self.__sense == LESS_OR_EQUAL and other <= -1e-8:
-            self.__sense = GREATER_OR_EQUAL
-
-        return result
-
-    def __rmul__(self, other) -> "LinExpr":
-        return self.__mul__(other)
-
-    def __imul__(self, other) -> "LinExpr":
-        assert isinstance(other, (int, float))
-        self.__const *= other
-        for var in self.__expr.keys():
-            self.__expr[var] *= other
-        return self
-
-    def __truediv__(self, other) -> "LinExpr":
-        assert isinstance(other, (int, float))
-        result = self.copy()
-        result.__const /= other
-        for var in result.__expr.keys():
-            result.__expr[var] /= other
-        return result
-
-    def __itruediv__(self, other) -> "LinExpr":
-        assert isinstance(other, int) or isinstance(other, float)
-        self.__const /= other
-        for var in self.__expr.keys():
-            self.__expr[var] /= other
-        return self
-
-    def __neg__(self) -> "LinExpr":
-        return self.__mul__(-1)
-
-    def __str__(self) -> str:
-        result = []
-
-        if self.__expr:
-            for var, coeff in self.__expr.items():
-                result.append("+ " if coeff >= 0 else "- ")
-                result.append(str(abs(coeff)) if abs(coeff) != 1 else "")
-                result.append("{var} ".format(**locals()))
-
-        if self.__sense:
-            result.append(self.__sense + "= ")
-            result.append(str(abs(self.__const)) if self.__const < 0 else
-                          "- " + str(abs(self.__const)))
-        elif self.__const != 0:
-            result.append(
-                "+ " + str(abs(self.__const)) if self.__const > 0
-                else "- " + str(abs(self.__const)))
-
-        return "".join(result)
-
-    def __eq__(self, other) -> "LinExpr":
-        result = self - other
-        result.__sense = "="
-        return result
-
-    def __le__(self, other) -> "LinExpr":
-        result = self - other
-        result.__sense = "<"
-        return result
-
-    def __ge__(self, other) -> "LinExpr":
-        result = self - other
-        result.__sense = ">"
-        return result
-
-    def add_const(self, __const: float):
-        """adds a constant value to the linear expression, in the case of
-        a constraint this correspond to the right-hand-side"""
-        self.__const += __const
-
-    def add_expr(self, __expr: "LinExpr", coeff: float = 1):
-        """extends a linear expression with the contents of another"""
-        self.__const += __expr.__const * coeff
-        for var, coeff_var in __expr.__expr.items():
-            self.add_var(var, coeff_var * coeff)
-
-    def add_term(self, __expr, coeff: float = 1):
-        """extends a linear expression with another multiplied by a constant
-        value coefficient"""
-        if isinstance(__expr, Var):
-            self.add_var(__expr, coeff)
-        elif isinstance(__expr, LinExpr):
-            self.add_expr(__expr, coeff)
-        elif isinstance(__expr, float) or isinstance(__expr, int):
-            self.add_const(__expr)
-
-    def add_var(self, var: "Var", coeff: float = 1):
-        """adds a variable with a coefficient to the constraint"""
-        if var in self.__expr:
-            if -EPS <= self.__expr[var] + coeff <= EPS:
-                del self.__expr[var]
-            else:
-                self.__expr[var] += coeff
-        else:
-            self.__expr[var] = coeff
-
-    def copy(self) -> "LinExpr":
-        copy = LinExpr()
-        copy.__const = self.__const
-        copy.__expr = self.__expr.copy()
-        copy.__sense = self.__sense
-        return copy
-
-    def equals(self: "LinExpr", other: "LinExpr") -> bool:
-        """returns true if a linear expression equals to another,
-        false otherwise"""
-        if self.__sense != other.__sense:
-            return False
-        if len(self.__expr) != len(other.__expr):
-            return False
-        if abs(self.__const - other.__const) >= 1e-12:
-            return False
-        other_contents = {vr.idx: coef  for vr, coef  in other.__expr.items()}
-        for (v, c) in self.__expr.items():
-            if v.idx not in other_contents:
-                return False
-            oc = other_contents[v.idx]
-            if abs(c - oc) > 1e-12:
-                return False
-        return True
-
-    def __hash__(self):
-        hash_el = [v.idx for v in self.__expr.keys()]
-        for c in self.__expr.values():
-            hash_el.append(c)
-        hash_el.append(self.__const)
-        hash_el.append(self.__sense)
-        return hash(tuple(hash_el))
-
-    @property
-    def const(self) -> float:
-        """constant part of the linear expression"""
-        return self.__const
-
-    @property
-    def expr(self) -> dict:
-        """the non-constant part of the linear expression
-
-        Dictionary with pairs: (variable, coefficient) where coefficient
-        is a float.
-        """
-        return self.__expr
-
-    @property
-    def sense(self) -> str:
-        """sense of the linear expression
-
-        sense can be EQUAL("="), LESS_OR_EQUAL("<"), GREATER_OR_EQUAL(">") or
-        empty ("") if this is an affine expression, such as the objective
-        function
-        """
-        return self.__sense
-
-    @sense.setter
-    def sense(self, value):
-        """sense of the linear expression
-
-        sense can be EQUAL("="), LESS_OR_EQUAL("<"), GREATER_OR_EQUAL(">") or
-        empty ("") if this is an affine expression, such as the objective
-        function
-        """
-        self.__sense = value
-
-    @property
-    def violation(self):
-        """Amount that current solution violates this constraint
-
-        If a solution is available, than this property indicates how much
-        the current solution violates this constraint.
-        """
-        lhs = sum(coef * var.x for (var, coef) in self.__expr.items())
-        rhs = -self.const
-        viol = 0.0
-        if self.sense == '=':
-            viol = abs(lhs - rhs)
-        elif self.sense == '<':
-            viol = max(lhs - rhs, 0.0)
-        elif self.sense == '>':
-            viol = max(rhs - lhs, 0.0)
-
-        return viol
+from typing import List, Tuple
+
+from mip.constants import *
+from mip.constr import Constr, ConstrList
+from mip.exceptions import InvalidLinExpr
+from mip.expr import LinExpr
+from mip.solver import Solver
+from mip.var import Column, Var, VarList
 
 
 class ProgressLog:
@@ -478,7 +97,7 @@ class Model:
     def __init__(self, name: str = "",
                  sense: str = MINIMIZE,
                  solver_name: str = "",
-                 solver=None):
+                 solver: Solver = None):
         """Model constructor
 
         Creates a Mixed-Integer Linear Programming Model. The default model
@@ -494,41 +113,44 @@ class Model:
             sense (str): MINIMIZATION ("MIN") or MAXIMIZATION ("MAX")
             solver_name: gurobi or cbc, searches for which
                 solver is available if not informed
+            solver: a solver object -- note that when this argument is
+                specified, the argument solver_name is ignored
         """
-        self._ownSolver = True
         # initializing variables with default values
         self.solver_name = solver_name
-        self.solver = None
+        self.solver = solver
 
         # reading solver_name from an environment variable (if applicable)
-        if not self.solver_name and "solver_name" in environ:
-            self.solver_name = environ["solver_name"]
-        if not self.solver_name and "solver_name".upper() in environ:
-            self.solver_name = environ["solver_name".upper()]
+        if not solver:
+            if not self.solver_name:
+                if "solver_name" in environ:
+                    self.solver_name = environ["solver_name"]
+                elif "solver_name".upper() in environ:
+                    self.solver_name = environ["solver_name".upper()]
 
-        # creating a solver instance
-        if self.solver_name.upper() in ["GUROBI", "GRB"]:
-            from mip.gurobi import SolverGurobi
-            self.solver = SolverGurobi(self, name, sense)
-        elif self.solver_name.upper() == "CBC":
-            from mip.cbc import SolverCbc
-            self.solver = SolverCbc(self, name, sense)
-        else:
-            # checking which solvers are available
-            try:
-                from mip.gurobi import SolverGurobi
-                has_gurobi = True
-            except ImportError:
-                has_gurobi = False
-
-            if has_gurobi:
+            # creating a solver instance
+            if self.solver_name.upper() in ["GUROBI", "GRB"]:
                 from mip.gurobi import SolverGurobi
                 self.solver = SolverGurobi(self, name, sense)
-                self.solver_name = GUROBI
-            else:
+            elif self.solver_name.upper() == "CBC":
                 from mip.cbc import SolverCbc
                 self.solver = SolverCbc(self, name, sense)
-                self.solver_name = CBC
+            else:
+                # checking which solvers are available
+                try:
+                    from mip.gurobi import SolverGurobi
+                    has_gurobi = True
+                except ImportError:
+                    has_gurobi = False
+
+                if has_gurobi:
+                    from mip.gurobi import SolverGurobi
+                    self.solver = SolverGurobi(self, name, sense)
+                    self.solver_name = GUROBI
+                else:
+                    from mip.cbc import SolverCbc
+                    self.solver = SolverCbc(self, name, sense)
+                    self.solver_name = CBC
 
         # list of constraints and variables
         self.constrs = ConstrList(self)
@@ -582,7 +204,7 @@ class Model:
                 ub: float = INF,
                 obj: float = 0.0,
                 var_type: str = CONTINUOUS,
-                column: "Column" = None) -> "Var":
+                column: Column = None) -> Var:
         """ Creates a new variable in the model, returning its reference
 
         Args:
@@ -610,7 +232,7 @@ class Model:
         """
         return self.vars.add(name, lb, ub, obj, var_type, column)
 
-    def add_constr(self, lin_expr: LinExpr, name: str = "") -> "Constr":
+    def add_constr(self, lin_expr: LinExpr, name: str = "") -> Constr:
         """Creates a new constraint (row).
 
         Adds a new constraint to the model, returning its reference.
@@ -667,7 +289,7 @@ class Model:
         """
         self.solver.add_lazy_constr(expr)
 
-    def add_sos(self, sos: List[Tuple["Var", float]], sos_type: int):
+    def add_sos(self, sos: List[Tuple[Var, float]], sos_type: int):
         """Adds an Special Ordered Set (SOS) to the model
 
         In models with binary variables it is often the case that from a list
@@ -777,7 +399,7 @@ class Model:
 
         return copy
 
-    def constr_by_name(self, name: str) -> "Constr":
+    def constr_by_name(self, name: str) -> Constr:
         """ Queries a constraint by its name
 
         Args:
@@ -791,7 +413,7 @@ class Model:
             return None
         return self.constrs[cidx]
 
-    def var_by_name(self, name: str) -> "Var":
+    def var_by_name(self, name: str) -> Var:
         """Searchers a variable by its name
 
         Returns:
@@ -1122,7 +744,7 @@ class Model:
         return self.__store_search_progress_log
 
     @store_search_progress_log.setter
-    def store_search_progress_log(self, store: bool) -> bool:
+    def store_search_progress_log(self, store: bool):
         self.__store_search_progress_log = store
 
     # def plot_bounds_evolution(self):
@@ -1277,7 +899,7 @@ class Model:
         self.__clique = clq
 
     @property
-    def start(self) -> List[Tuple["Var", float]]:
+    def start(self) -> List[Tuple[Var, float]]:
         """Initial feasible solution
 
         Enters an initial feasible solution. Only the main binary/integer
@@ -1288,7 +910,7 @@ class Model:
         return self.__start
 
     @start.setter
-    def start(self, start: List[Tuple["Var", float]]):
+    def start(self, start: List[Tuple[Var, float]]):
         self.__start = start
         self.solver.set_start(start)
 
@@ -1404,7 +1026,7 @@ class Model:
 
     @opt_tol.setter
     def opt_tol(self, tol: float):
-        return self.__opt_tol
+        return self.__opt_tol # TODO: fix error
 
     @property
     def max_mip_gap_abs(self) -> float:
@@ -1515,381 +1137,6 @@ class Model:
         else:
             raise Exception("Cannot handle removal of object of type "
                             + type(objects) + " from model.")
-
-
-
-class Var:
-    """ Decision variable of the :class:`~mip.model.Model`. The creation of
-    variables is performed calling the :meth:`~mip.model.Model.add_var`."""
-
-    def __init__(self,
-                 model: Model,
-                 idx: int):
-        self.__model = model
-        self.idx = idx
-
-    def __hash__(self) -> int:
-        return self.idx
-
-    def __add__(self, other) -> LinExpr:
-        if isinstance(other, Var):
-            return LinExpr([self, other], [1, 1])
-        elif isinstance(other, LinExpr):
-            return other.__add__(self)
-        elif isinstance(other, int) or isinstance(other, float):
-            return LinExpr([self], [1], other)
-
-    def __radd__(self, other) -> LinExpr:
-        return self.__add__(other)
-
-    def __sub__(self, other) -> LinExpr:
-        if isinstance(other, Var):
-            return LinExpr([self, other], [1, -1])
-        elif isinstance(other, LinExpr):
-            return (-other).__iadd__(self)
-        elif isinstance(other, int) or isinstance(other, float):
-            return LinExpr([self], [1], -other)
-
-    def __rsub__(self, other) -> LinExpr:
-        if isinstance(other, Var):
-            return LinExpr([self, other], [-1, 1])
-        elif isinstance(other, LinExpr):
-            return other.__sub__(self)
-        elif isinstance(other, int) or isinstance(other, float):
-            return LinExpr([self], [-1], other)
-
-    def __mul__(self, other) -> LinExpr:
-        assert isinstance(other, int) or isinstance(other, float)
-        return LinExpr([self], [other])
-
-    def __rmul__(self, other) -> LinExpr:
-        return self.__mul__(other)
-
-    def __truediv__(self, other) -> LinExpr:
-        assert isinstance(other, int) or isinstance(other, float)
-        return self.__mul__(1.0 / other)
-
-    def __neg__(self) -> LinExpr:
-        return LinExpr([self], [-1.0])
-
-    def __eq__(self, other) -> LinExpr:
-        if isinstance(other, Var):
-            return LinExpr([self, other], [1, -1], sense="=")
-        elif isinstance(other, LinExpr):
-            return other == self
-        elif isinstance(other, int) or isinstance(other, float):
-            if other != 0:
-                return LinExpr([self], [1], -1 * other, sense="=")
-            return LinExpr([self], [1], sense="=")
-
-    def __le__(self, other) -> LinExpr:
-        if isinstance(other, Var):
-            return LinExpr([self, other], [1, -1], sense="<")
-        elif isinstance(other, LinExpr):
-            return other >= self
-        elif isinstance(other, int) or isinstance(other, float):
-            if other != 0:
-                return LinExpr([self], [1], -1 * other, sense="<")
-            return LinExpr([self], [1], sense="<")
-
-    def __ge__(self, other) -> LinExpr:
-        if isinstance(other, Var):
-            return LinExpr([self, other], [1, -1], sense=">")
-        elif isinstance(other, LinExpr):
-            return other <= self
-        elif isinstance(other, int) or isinstance(other, float):
-            if other != 0:
-                return LinExpr([self], [1], -1 * other, sense=">")
-            return LinExpr([self], [1], sense=">")
-
-    @property
-    def name(self) -> str:
-        """Variable name."""
-        return self.__model.solver.var_get_name(self.idx)
-
-    def __str__(self) -> str:
-        return self.name
-
-    @property
-    def lb(self) -> float:
-        """Variable lower bound."""
-        return self.__model.solver.var_get_lb(self)
-
-    @lb.setter
-    def lb(self, value: float):
-        self.__model.solver.var_set_lb(self, value)
-
-    @property
-    def ub(self) -> float:
-        """Variable upper bound."""
-        return self.__model.solver.var_get_ub(self)
-
-    @ub.setter
-    def ub(self, value: float):
-        self.__model.solver.var_set_ub(self, value)
-
-    @property
-    def obj(self) -> float:
-        """Coefficient of variable in the objective function."""
-        return self.__model.solver.var_get_obj(self)
-
-    @obj.setter
-    def obj(self, value: float):
-        self.__model.solver.var_set_obj(self, value)
-
-    @property
-    def var_type(self) -> str:
-        """Variable type: ('B') BINARY, ('C') CONTINUOUS and ('I') INTEGER."""
-        return self.__model.solver.var_get_var_type(self)
-
-    @var_type.setter
-    def var_type(self, value: str):
-        assert value in (BINARY, CONTINUOUS, INTEGER)
-        self.__model.solver.var_set_var_type(self, value)
-
-    @property
-    def column(self) -> Column:
-        """Variable coefficients in constraints."""
-        return self.__model.solver.var_get_column(self)
-
-    @column.setter
-    def column(self, value: Column):
-        self.__model.solver.var_set_column(self, value)
-
-    @property
-    def rc(self) -> float:
-        """Reduced cost, only available after a linear programming model (only
-        continuous variables) is optimized"""
-        if self.__model.status != OptimizationStatus.OPTIMAL:
-            raise SolutionNotAvailable('Solution not available.')
-
-        return self.__model.solver.var_get_rc(self)
-
-    @property
-    def x(self) -> float:
-        """Value of this variable in the solution."""
-        if self.__model.status == OptimizationStatus.LOADED:
-            raise SolutionNotAvailable('Model was not optimized, \
-                solution not available.')
-        elif (self.__model.status == OptimizationStatus.INFEASIBLE
-              or self.__model.status == OptimizationStatus.CUTOFF):
-            raise SolutionNotAvailable('Infeasible __model, \
-                solution not available.')
-        elif self.__model.status == OptimizationStatus.UNBOUNDED:
-            raise SolutionNotAvailable('Unbounded __model, solution not \
-                available.')
-        elif self.__model.status == OptimizationStatus.NO_SOLUTION_FOUND:
-            raise SolutionNotAvailable('Solution not found \
-                during optimization.')
-
-        return self.__model.solver.var_get_x(self)
-
-    def xi(self, i: int) -> float:
-        """Value for this variable in the :math:`i`-th solution from
-        the solution pool."""
-        if self.__model.status == OptimizationStatus.LOADED:
-            raise SolutionNotAvailable('Model was not optimized, \
-                solution not available.')
-        elif (self.__model.status == OptimizationStatus.INFEASIBLE or
-              self.__model.status == OptimizationStatus.CUTOFF):
-            raise SolutionNotAvailable('Infeasible __model, \
-                solution not available.')
-        elif self.__model.status == OptimizationStatus.UNBOUNDED:
-            raise SolutionNotAvailable('Unbounded __model, \
-                solution not available.')
-        elif self.__model.status == OptimizationStatus.NO_SOLUTION_FOUND:
-            raise SolutionNotAvailable('Solution not found \
-                during optimization.')
-
-        return self.__model.solver.var_get_xi(self, i)
-
-
-class VarList(Sequence):
-    """ List of model variables (:class:`~mip.model.Var`).
-
-        The number of variables of a model :code:`m` can be queried as
-        :code:`len(m.vars)` or as :code:`m.num_cols`.
-
-        Specific variables can be retrieved by their indices or names.
-        For example, to print the lower bounds of the first
-        variable or of a varible named :code:`z`, you can use, respectively:
-
-        .. code-block:: python
-
-            print(m.vars[0].lb)
-
-        .. code-block:: python
-
-            print(m.vars['z'].lb)
-    """
-
-    def __init__(self, model: Model):
-        self.__model = model
-        self.__vars = []
-
-    def add(self,
-            name: str = "",
-            lb: float = 0.0,
-            ub: float = INF,
-            obj: float = 0.0,
-            var_type: str = CONTINUOUS,
-            column: Column = None) -> Var:
-        if not name:
-            name = 'var({})'.format(len(self.__vars))
-        if var_type == BINARY:
-            lb = 0.0
-            ub = 1.0
-        new_var = Var(self.__model, len(self.__vars))
-        self.__model.solver.add_var(obj, lb, ub, var_type, column, name)
-        self.__vars.append(new_var)
-        return new_var
-
-    def __getitem__(self, key):
-        if (isinstance(key, str)):
-            return self.__model.var_by_name(key)
-        return self.__vars[key]
-
-    def __len__(self) -> int:
-        return len(self.__vars)
-
-    def update_vars(self, n_vars: int):
-        self.__vars = [Var(self.__model, i) for i in range(n_vars)]
-
-    def remove(self, vars: List[Var]):
-        iv = [1 for i in range(len(self.__vars))]
-        vlist = [v.idx for v in vars]
-        vlist.sort()
-        for i in vlist:
-            iv[i] = 0
-        self.__model.solver.remove_vars(vlist)
-        i = 0
-        for v in self.__vars:
-            if iv[v.idx] == 0:
-                v.idx = -1
-            else:
-                v.idx = i
-                i += 1
-        self.__vars = [v for v in
-                       self.__vars
-                       if v.idx != -1]
-
-
-# same as VarList but does not stores
-# references for variables, used in
-# callbacks
-class VVarList(Sequence):
-
-    def __init__(self, model: Model, start: int = -1, end: int = -1):
-        self.__model = model
-        if start == -1:
-            self.__start = 0
-            self.__end = model.solver.num_cols()
-        else:
-            self.__start = start
-            self.__end = end
-
-    def add(self, name: str = "",
-            lb: float = 0.0,
-            ub: float = INF,
-            obj: float = 0.0,
-            var_type: str = CONTINUOUS,
-            column: Column = None) -> Var:
-        solver = self.__model.solver
-        if not name:
-            name = 'var({})'.format(len(self))
-        if var_type == BINARY:
-            lb = 0.0
-            ub = 1.0
-        new_var = Var(self.__model, solver.num_cols())
-        solver.add_var(obj, lb, ub, var_type, column, name)
-        return new_var
-
-    def __getitem__(self, key):
-        if (isinstance(key, str)):
-            return self.__model.var_by_name(key)
-        if (isinstance(key, slice)):
-            return VVarList(self.__model, key.start, key.end)
-        if (isinstance(key, int)):
-            if key < 0:
-                key = self.__end - key
-            if key >= self.__end:
-                raise IndexError
-
-            return Var(self.__model, key + self.__start)
-
-        raise Exception('Unknow type')
-
-    def __len__(self) -> int:
-        return self.__model.solver.num_cols()
-
-
-class ConstrList(Sequence):
-    """ List of problem constraints"""
-
-    def __init__(self, model: Model):
-        self.__model = model
-        self.__constrs = []
-
-    def __getitem__(self, key):
-        if (isinstance(key, str)):
-            return self.__model.constr_by_name(key)
-        return self.__constrs[key]
-
-    def add(self,
-            lin_expr: LinExpr,
-            name: str = '') -> Constr:
-        if not name:
-            name = 'constr({})'.format(len(self.__constrs))
-        new_constr = Constr(self.__model, len(self.__constrs))
-        self.__model.solver.add_constr(lin_expr, name)
-        self.__constrs.append(new_constr)
-        return new_constr
-
-    def __len__(self) -> int:
-        return len(self.__constrs)
-
-    def remove(self, constrs: List[Constr]):
-        iv = [1 for i in range(len(self.__constrs))]
-        clist = [c.idx for c in constrs]
-        clist.sort()
-        for i in clist:
-            iv[i] = 0
-        self.__model.solver.remove_constrs(clist)
-        i = 0
-        for c in self.__constrs:
-            if iv[c.idx] == 0:
-                c.idx = -1
-            else:
-                c.idx = i
-                i += 1
-        self.__constrs = [c for c in
-                          self.__constrs
-                          if c.idx != -1]
-
-    def update_constrs(self, n_constrs: int):
-        self.__constrs = [Constr(self.__model, i) for i in range(n_constrs)]
-
-
-# same as previous class, but does not stores
-# anything and does not allows modification,
-# used in callbacks
-class VConstrList(Sequence):
-
-    def __init__(self, model: Model):
-        self.__model = model
-
-    def __getitem__(self, key):
-        if (isinstance(key, str)):
-            return self.__model.constr_by_name(key)
-        elif (isinstance(key, int)):
-            return Constr(self.__model, key)
-        elif (isinstance(key, slice)):
-            return self[key]
-
-        raise Exception('Use int or string as key')
-
-    def __len__(self) -> int:
-        return self.__model.solver.num_rows()
 
 
 def maximize(expr: LinExpr) -> LinExpr:
