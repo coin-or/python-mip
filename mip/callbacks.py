@@ -2,22 +2,15 @@
 with the solver engine"""
 from collections import defaultdict
 from typing import List, Tuple
-from mip.model import Model
 
 
 class BranchSelector:
-    def __init__(self, model: Model):
+    def __init__(self, model: "Model"):
         self.model = model
 
     def select_branch(self, rsol: List[Tuple["Var", float]]) \
             -> Tuple["Var", int]:
         raise NotImplementedError()
-
-
-class CallbackModel(Model):
-    def __init__(self, model, where=None):
-        self.__model = model
-        self.__where = where  # used to determine the type of callback
 
 
 class ColumnsGenerator:
@@ -26,7 +19,7 @@ class ColumnsGenerator:
     def __init__(self):
         self.lazy_constraints = False
 
-    def generate_columns(self, model: Model):
+    def generate_columns(self, model: "Model"):
         """Method called by the solver engine to generate cuts
 
            After analyzing the contents of the fractional solution in model
@@ -53,7 +46,7 @@ class ColumnsGenerator:
 class ConstrsGenerator:
     """Abstract class for implementing cuts and lazy constraints generators."""
 
-    def __init__(self):pass
+    def __init__(self): pass
 
     def generate_constrs(self, model: "Model"):
         """Method called by the solver engine to generate *cuts* or *lazy constraints*.

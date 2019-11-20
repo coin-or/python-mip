@@ -1,9 +1,10 @@
 from os import environ
 from os.path import isfile
 from sys import stdout as out
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 from mip.constants import *
+from mip.callbacks import BranchSelector, ConstrsGenerator, ColumnsGenerator, CutPool, IncumbentUpdater
 from mip.log import ProgressLog
 from mip.lists import ConstrList, VarList, VConstrList, VVarList
 from mip.entities import Column, Constr, LinExpr, Var
@@ -136,7 +137,7 @@ class Model:
                 ub: float = INF,
                 obj: float = 0.0,
                 var_type: str = CONTINUOUS,
-                column: "Column" = None) -> "Var":
+                column: Column = None) -> Var:
         """ Creates a new variable in the model, returning its reference
 
         Args:
@@ -164,7 +165,7 @@ class Model:
         """
         return self.vars.add(name, lb, ub, obj, var_type, column)
 
-    def add_constr(self, lin_expr: LinExpr, name: str = "") -> "Constr":
+    def add_constr(self, lin_expr: LinExpr, name: str = "") -> Constr:
         """Creates a new constraint (row).
 
         Adds a new constraint to the model, returning its reference.
@@ -221,7 +222,7 @@ class Model:
         """
         self.solver.add_lazy_constr(expr)
 
-    def add_sos(self, sos: List[Tuple["Var", float]], sos_type: int):
+    def add_sos(self, sos: List[Tuple[Var, float]], sos_type: int):
         """Adds an Special Ordered Set (SOS) to the model
 
         In models with binary variables it is often the case that from a list
@@ -331,7 +332,7 @@ class Model:
 
         return copy
 
-    def constr_by_name(self, name: str) -> "Constr":
+    def constr_by_name(self, name: str) -> Optional[Constr]:
         """ Queries a constraint by its name
 
         Args:
@@ -345,7 +346,7 @@ class Model:
             return None
         return self.constrs[cidx]
 
-    def var_by_name(self, name: str) -> "Var":
+    def var_by_name(self, name: str) -> Optional[Var]:
         """Searchers a variable by its name
 
         Returns:
@@ -444,7 +445,7 @@ class Model:
             for name, value in mip_start:
                 var = self.var_by_name(name)
                 if var is not None:
-                    var_list.append(var, value)
+                    var_list.append((var, value))
             if not var_list:
                 raise Exception('Invalid variable(s) name(s) in \
                                  mipstart file {}'.format(path))
@@ -676,7 +677,7 @@ class Model:
         return self.__store_search_progress_log
 
     @store_search_progress_log.setter
-    def store_search_progress_log(self, store: bool) -> bool:
+    def store_search_progress_log(self, store: bool):
         self.__store_search_progress_log = store
 
     # def plot_bounds_evolution(self):
@@ -727,7 +728,7 @@ class Model:
         return self.__cuts_generator
 
     @cuts_generator.setter
-    def cuts_generator(self, cuts_generator: "ConstrsGenerator"):
+    def cuts_generator(self, cuts_generator: ConstrsGenerator):
         self.__cuts_generator = cuts_generator
 
     @property
@@ -747,8 +748,7 @@ class Model:
         return self.__lazy_constrs_generator
 
     @lazy_constrs_generator.setter
-    def lazy_constrs_generator(self,
-                               lazy_constrs_generator: "ConstrsGenerator"):
+    def lazy_constrs_generator(self, lazy_constrs_generator: ConstrsGenerator):
         self.__lazy_constrs_generator = lazy_constrs_generator
 
     @property
@@ -831,7 +831,7 @@ class Model:
         self.__clique = clq
 
     @property
-    def start(self) -> List[Tuple["Var", float]]:
+    def start(self) -> List[Tuple[Var, float]]:
         """Initial feasible solution
 
         Enters an initial feasible solution. Only the main binary/integer
@@ -842,7 +842,7 @@ class Model:
         return self.__start
 
     @start.setter
-    def start(self, start: List[Tuple["Var", float]]):
+    def start(self, start: List[Tuple[Var, float]]):
         self.__start = start
         self.solver.set_start(start)
 
@@ -958,7 +958,7 @@ class Model:
 
     @opt_tol.setter
     def opt_tol(self, tol: float):
-        return self.__opt_tol
+        self.__opt_tol = tol
 
     @property
     def max_mip_gap_abs(self) -> float:
@@ -1131,7 +1131,7 @@ def load_mipstart(file_name: str) -> \
         line = line.rstrip().lstrip().lower()
         line = ' '.join(line.split())
         lc = line.split(' ')
-        result.append(lc[1], float(lc[2]))
+        result.append((lc[1], float(lc[2])))
     return result
 
 
