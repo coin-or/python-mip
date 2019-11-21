@@ -138,6 +138,8 @@ class ConstrList(Sequence):
     def add(self,
             lin_expr: LinExpr,
             name: str = '') -> Constr:
+        if len(lin_expr) == 0:
+            return None
         if not name:
             name = 'constr({})'.format(len(self.__constrs))
         new_constr = Constr(self.__model, len(self.__constrs))
