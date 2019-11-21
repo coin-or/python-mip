@@ -26,6 +26,15 @@ pypy3 queens-pulp.py
 rm -f queens-pulp-pypy.csv
 mv queens-pulp.csv queens-pulp-pypy.csv
 
+for inst in ./data/bmcp/*.col;
+do
+    python3 bmcp.py $inst gurobi | grep RRR | cut -d ':' -f 2 >> bmcp-mip-grb-cpython.csv
+    pypy3 bmcp.py $inst gurobi | grep RRR | cut -d ':' -f 2 >> bmcp-mip-grb-pypy.csv
+
+    python3 bmcp.py $inst cbc | grep RRR | cut -d ':' -f 2 >> bmcp-mip-cbc-cpython.csv
+    pypy3 bmcp.py $inst cbc | grep RRR | cut -d ':' -f 2 >> bmcp-mip-cbc-pypy.csv
+done
+
 pypy3 summarize.py
 
 txt2tags -t tex bench-results.t2t
