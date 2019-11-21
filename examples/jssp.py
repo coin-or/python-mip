@@ -1,16 +1,22 @@
-"""Job Shop Scheduling Problem Python-MIP exaxmple
+"""Job Shop Scheduling Problem Python-MIP example
    To execute it on the example instance ft03.jssp call
    python jssp.py ft03.jssp
    by Victor Silva"""
 
 from itertools import product
-from sys import argv
-from jssp_instance import JSSPInstance
-from mip.model import Model
-from mip.constants import BINARY
+from mip import Model, BINARY
 
-inst = JSSPInstance(argv[1])
-n, m, machines, times, M = inst.n, inst.m, inst.machines, inst.times, inst.M
+n = m = 3
+
+times = [[2, 1, 2],
+         [1, 2, 2],
+         [1, 2, 1]]
+
+M = sum(times[i][j] for i in range(n) for j in range(m))
+
+machines = [[2, 0, 1],
+            [1, 2, 0],
+            [2, 1, 0]]
 
 model = Model('JSSP')
 
@@ -37,8 +43,11 @@ for j in range(n):
 
 model.optimize()
 
-print("C: ", c.x)
-for j in range(n):
-    for i in range(m):
-        print('x({},{}) = {} '.format(j+1, i+1, x[j][i].x), end='')
-    print()
+print("Completion time: ", c.x)
+for (j, i) in product(range(n), range(m)):
+    print("task %d starts on machine %d at time %g " % (j+1, i+1, x[j][i].x))
+
+# sanity tests
+from mip import OptimizationStatus
+assert model.status == OptimizationStatus.OPTIMAL
+assert round(c.x) == 7
