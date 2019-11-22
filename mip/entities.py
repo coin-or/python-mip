@@ -15,6 +15,13 @@ class Column:
         self.constrs = constrs
         self.coeffs = coeffs
 
+    def __str__(self) -> str:
+        res = "["
+        for k in range(len(self.constrs)):
+            res += "{}: {}, ".format(self.constrs[k].idx, self.coeffs[k])
+        res += "]"
+        return res
+
 
 class LinExpr:
     """

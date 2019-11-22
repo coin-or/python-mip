@@ -209,7 +209,7 @@ Follows the example of a solver for the BMCP using the previous MIP formulation:
 
 
 .. literalinclude:: ../examples/bmcp.py
-    :caption: Solver for the frequency assignment problem: bmcp.py
+    :caption: Solver for the bandwidth multi coloring problem: bmcp.py
     :linenos:
     :lines: 5-55
 
@@ -402,8 +402,38 @@ constraints indicate variable domains.
 The following Python-MIP code creates the previous formulation, optimizes it and prints
 the optimal solution found:
 
-.. literalinclude:: ../examples/jssp.py 
-    :caption: Solves the Job Shop Scheduling Problem
+.. literalinclude:: ../examples/jssp.py
+    :caption: Solves the Job Shop Scheduling Problem (examples/jssp.py)
     :linenos:
     :lines: 6-48
 
+
+Cutting Stock / One-dimensional Bin Packing Problem
+-----------------------------------
+
+The One-dimensional Cutting Stock Problem (also often referred to as One-dimensional Bin Packing Problem) is an NP-hard problem first studied by Kantorovich in 1939 :cite:`Kantorovich60`. The problem consists of deciding how to cut a set of pieces out of a set of stock materials (paper rolls, metals, etc.) in a way that minimizes the number of stock materials used.
+
+:cite:`Kantorovich60` proposed an integer programming formulation for the problem, given below:
+
+
+.. math::
+    \textrm{min:}
+        & \sum_{j=1}^{n} y_{j}  \\
+    \textrm{s.t.:}
+        & \sum_{j=1}^{n} x_{i,j}      \geq b_{i}   \;\; \forall i \in \{ 1 \ldots m \} \\
+        & \sum_{i=1}^{m} w_{i}x_{i,j} \leq L y_{j} \;\; \forall j \in \{ 1 \ldots n \} \\
+        & y_{j} \in \{0,1\}                        \;\; \forall j\in \{1 \ldots n\} \\
+        & x_{i,j} \in \mathbb{Z}^+                 \;\; \forall i\in \{1 \ldots m\}, \forall j\in \{1 \ldots n\}
+
+This formulation can be improved by including symmetry reducing constraints, such as:
+
+.. math::
+        y_{j-1} \geq y_{j}  \;\; \forall j \in \{ 2 \ldots m \} \\
+
+
+The following Python-MIP code creates the formulation proposed by :cite:`Kantorovich60`, optimizes it and prints the optimal solution found.
+
+.. literalinclude:: ../examples/cuttingstock_kantorovich.py
+    :caption: Formulation for the One-dimensional Cutting Stock Problem (examples/cuttingstock_kantorovich.py)
+    :linenos:
+    :lines: 4-
