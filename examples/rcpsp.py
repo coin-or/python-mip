@@ -40,3 +40,9 @@ for (j, t) in product(J, T):
     if x[j][t].x >= 0.99:
         print('({},{})'.format(j, t))
 print('Makespan = {}'.format(model.objective_value))
+
+
+# sanity tests
+from mip import OptimizationStatus
+assert model.status == OptimizationStatus.OPTIMAL
+assert round(model.objective_value) == 21
