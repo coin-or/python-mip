@@ -77,3 +77,8 @@ if model.num_solutions:
         if nc == 0:
             break
     out.write('\n')
+
+# sanity tests
+from mip import OptimizationStatus
+assert model.status == OptimizationStatus.OPTIMAL
+assert round(model.objective_value) == 547
