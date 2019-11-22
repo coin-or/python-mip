@@ -89,6 +89,7 @@ included bellow:
 .. literalinclude:: ../examples/tsp-compact.py
     :caption: Traveling salesman problem solver with compact formulation: tsp-compact.py
     :linenos:
+    :lines: 6-79
 
 In line 10 names of the places to visit are informed. In line 17 distances are informed in an upper triangular matrix. Line 33 stores the number of nodes and a list with nodes sequential ids starting from 0. In line 36 a full :math:`n \times n` distance matrix is filled. Line 41 creates an empty MIP model. In line 44 all binary decision variables for the selection of arcs are created and their references are stored a :math:`n \times n` matrix named :code:`x`. Differently from the :math:`x` variables, :math:`y` variables (line 48) are not required to be
 binary or integral, they can be declared just as continuous variables, the default variable type. In this case, the parameter :code:`var_type` can be omitted from the :code:`add_var` call.
@@ -124,6 +125,7 @@ The following code builds the previous model, solves it and prints the queen pla
 .. literalinclude:: ../examples/queens.py
     :caption: Solver for the n-queens problem: queens.py
     :linenos:
+    :lines: 5-41
 
 
 Frequency Assignment
@@ -207,8 +209,9 @@ Follows the example of a solver for the BMCP using the previous MIP formulation:
 
 
 .. literalinclude:: ../examples/bmcp.py
-    :caption: Solver for the bandwidth multi coloring problem: bmcp.py
+    :caption: Solver for the frequency assignment problem: bmcp.py
     :linenos:
+    :lines: 5-55
 
 
 Resource Constrained Project Scheduling
@@ -291,6 +294,7 @@ for RCPSP is included below:
 .. literalinclude:: ../examples/rcpsp.py
     :caption: Solves the Resource Constrained Project Scheduling Problem: rcpsp.py
     :linenos:
+    :lines: 3-42
 
 The optimal solution is shown bellow, from the viewpoint of resource
 consumption:

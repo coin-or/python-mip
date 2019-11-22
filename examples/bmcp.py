@@ -53,3 +53,8 @@ if m.num_solutions:
     for i in N:
         print('Channels of node %d: %s' % (i, [c for c in U if x[i][c].x >=
                                                0.99]))
+
+# sanity tests
+from mip import OptimizationStatus
+assert m.status == OptimizationStatus.OPTIMAL
+assert round(m.objective_value) == 21
