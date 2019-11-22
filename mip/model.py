@@ -8,7 +8,7 @@ from mip.callbacks import BranchSelector, ConstrsGenerator, ColumnsGenerator, Cu
 from mip.log import ProgressLog
 from mip.lists import ConstrList, VarList, VConstrList, VVarList
 from mip.entities import Column, Constr, LinExpr, Var
-from mip.exceptions import InvalidLinExpr, InvalidParameter, ParameterNotAvailable, SolutionNotAvailable
+from mip.exceptions import InvalidLinExpr, InvalidParameter, ParameterNotAvailable
 from mip.solver import Solver
 
 
@@ -199,8 +199,7 @@ class Model:
         """
 
         if isinstance(lin_expr, bool):
-            raise InvalidLinExpr("A boolean (true/false) cannot be \
-            used as a constraint.")
+            raise InvalidLinExpr("A boolean (true/false) cannot be used as a constraint.")
         return self.constrs.add(lin_expr, name)
 
     def add_lazy_constr(self, expr: LinExpr):

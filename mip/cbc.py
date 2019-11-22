@@ -370,8 +370,6 @@ class SolverCbc(Solver):
         self.iidx = ffi.new('int[%d]' % self.iidx_space)
         self.dvec = ffi.new('double[%d]' % self.iidx_space)
 
-        self.iv = [-1 for i in range(1024)]
-
         self._objconst = 0.0
 
         # to not add cut generators twice when reoptimizing
@@ -430,8 +428,9 @@ class SolverCbc(Solver):
     def set_objective(self, lin_expr: "LinExpr", sense: str = "") -> None:
         # collecting variable coefficients
 
-        for (i, idx) in enumerate(lin_expr.idx):
-            cbclib.Cbc_setObjCoeff(self._model, idx, lin_expr.coef[i])
+        for var, coeff in lin_expr.expr.items():
+            cbclib.Cbc_setObjCoeff(self._model, var.idx, coeff)
+
         # objective function constant
         self._objconst = lin_expr.const
 
@@ -801,14 +800,8 @@ class SolverCbc(Solver):
         return col
 
     def add_constr(self, lin_expr: LinExpr, name: str = ""):
-
-        if (self.num_cols() > len(self.iv)):
-            self.iv = [-1 for i in range(max(len(self.iv)*2, self.num_cols()))]
-
         # collecting linear expression data
-        lin_expr.pack(self.iv)
-
-        numnz = len(lin_expr)
+        numnz = len(lin_expr.expr)
 
         if numnz > self.iidx_space:
             self.iidx_space = max(numnz, self.iidx_space * 2)
@@ -816,9 +809,12 @@ class SolverCbc(Solver):
             self.dvec = ffi.new('double[%d]' % self.iidx_space)
 
         # cind = self.iidx
-        self.iidx = [idx for idx in lin_expr.idx]
+        self.iidx = [var.idx for var in lin_expr.expr.keys()]
 
-        self.dvec = [coef for coef in lin_expr.coef]
+        # cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
+        # cval = ffi.new("double[]", [coef for coef in lin_expr.expr.values()])
+        # cval = self.dvec
+        self.dvec = [coef for coef in lin_expr.expr.values()]
 
         # constraint sense and rhs
         sense = lin_expr.sense.encode("utf-8")
@@ -830,10 +826,10 @@ class SolverCbc(Solver):
 
     def add_lazy_constr(self, lin_expr: LinExpr):
         # collecting linear expression data
-        numnz = len(lin_expr)
+        numnz = len(lin_expr.expr)
 
-        cind = ffi.new("int[]", [idx for idx in lin_expr.idx])
-        cval = ffi.new("double[]", [coef for coef in lin_expr.coef])
+        cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
+        cval = ffi.new("double[]", [coef for coef in lin_expr.expr.values()])
 
         # constraint sense and rhs
         sense = lin_expr.sense.encode("utf-8")
@@ -1127,10 +1123,10 @@ class SolverOsi(Solver):
 
     def add_constr(self, lin_expr: "LinExpr", name: str = ""):
         # collecting linear expression data
-        numnz = len(lin_expr)
+        numnz = len(lin_expr.expr)
 
-        cind = ffi.new("int[]", [idx for idx in lin_expr.idx])
-        cval = ffi.new("double[]", [coef for coef in lin_expr.coef])
+        cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
+        cval = ffi.new("double[]", [coef for coef in lin_expr.expr.values()])
 
         # constraint sense and rhs
         sense = lin_expr.sense.encode("utf-8")
@@ -1142,10 +1138,11 @@ class SolverOsi(Solver):
 
     def add_cut(self, lin_expr: LinExpr):
         if self.osi_cutsp != ffi.NULL:
-            numnz = len(lin_expr)
+            numnz = len(lin_expr.expr)
 
-            cind = ffi.new("int[]", [idx for idx in lin_expr.idx])
-            cval = ffi.new("double[]", [coef for coef in lin_expr.coef])
+            cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
+            cval = ffi.new("double[]", [coef for coef in
+                                        lin_expr.expr.values()])
 
             # constraint sense and rhs
             sense = lin_expr.sense.encode("utf-8")
@@ -1160,10 +1157,11 @@ class SolverOsi(Solver):
 
     def add_lazy_constr(self, lin_expr: LinExpr):
         if self.osi_cutsp != ffi.NULL:
-            numnz = len(lin_expr)
+            numnz = len(lin_expr.expr)
 
-            cind = ffi.new("int[]", [idx for idx in lin_expr.idx])
-            cval = ffi.new("double[]", [coef for coef in lin_expr.coef])
+            cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
+            cval = ffi.new("double[]", [coef for coef in
+                                        lin_expr.expr.values()])
 
             # constraint sense and rhs
             sense = lin_expr.sense.encode("utf-8")
@@ -1251,8 +1249,8 @@ class SolverOsi(Solver):
 
     def set_objective(self, lin_expr: "LinExpr", sense: str = ""):
         # collecting variable coefficients
-        for (i, idx) in enumerate(lin_expr.idx):
-            cbclib.Osi_setObjCoeff(self.osi, idx, lin_expr.coef[i])
+        for var, coeff in lin_expr.expr.items():
+            cbclib.Osi_setObjCoeff(self.osi, var.idx, coeff)
 
         # objective function constant
         self._objconst = lin_expr.const

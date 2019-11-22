@@ -14,9 +14,3 @@ class ParameterNotAvailable(Exception):
     """Exception that is raised when some parameter is not
     available for the current solver"""
     pass
-
-
-class SolutionNotAvailable(Exception):
-    """Exception that is raised when some method to query some
-    solution property is used but no solution is available"""
-    pass

@@ -1,13 +1,13 @@
-"""Gurobi solver wrapper for Python-MIP"""
 from ctypes.util import find_library
-from sys import maxsize, platform
+from sys import maxsize
 from typing import List, Tuple
-from os import environ
-from os.path import isfile, join
+from os.path import isfile
+import os.path
 from glob import glob
+from os import environ
+from sys import platform
 from cffi import FFI
-from mip import Model, Column, Var, LinExpr, Constr, Solver, VConstrList, \
-    VVarList
+from mip import Model, Column, Var, LinExpr, Constr, Solver, VConstrList, VVarList
 from mip.constants import MAXIMIZE, MINIMIZE, CONTINUOUS, INTEGER, BINARY, \
     OptimizationStatus, EQUAL, LESS_OR_EQUAL, GREATER_OR_EQUAL, SearchEmphasis
 
@@ -18,11 +18,11 @@ try:
 
     if 'GUROBI_HOME' in environ:
         if platform.lower().startswith('win'):
-            libfile = glob(join(environ['GUROBI_HOME'],
-                                'bin\\gurobi[0-9][0-9].dll'))
+            libfile = glob(os.path.join(os.environ['GUROBI_HOME'],
+                                        'bin\\gurobi[0-9][0-9].dll'))
         else:
-            libfile = glob(join(environ['GUROBI_HOME'],
-                                'lib/libgurobi[0-9][0-9].*'))
+            libfile = glob(os.path.join(os.environ['GUROBI_HOME'],
+                                        'lib/libgurobi[0-9][0-9].*'))
 
         if libfile:
             lib_path = libfile[0]
@@ -403,9 +403,9 @@ class SolverGurobi(Solver):
 
     def add_constr(self, lin_expr: LinExpr, name: str = ""):
         # collecting linear expression data
-        nz = len(lin_expr)
-        cind = ffi.new("int[]", [idx for idx in lin_expr.idx])
-        cval = ffi.new("double[]", [coef for coef in lin_expr.coef])
+        nz = len(lin_expr.expr)
+        cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
+        cval = ffi.new("double[]", [coef for coef in lin_expr.expr.values()])
 
         # constraint sense and rhs
         sense = lin_expr.sense.encode('utf-8')
@@ -690,9 +690,9 @@ class SolverGurobi(Solver):
     def set_objective(self, lin_expr: LinExpr, sense: str = "") -> None:
         self.flush_cols()
         # collecting linear expression data
-        nz = len(lin_expr)
-        cind = ffi.new("int[]", [idx for idx in lin_expr.idx])
-        cval = ffi.new("double[]", [coef for coef in lin_expr.coef])
+        nz = len(lin_expr.expr)
+        cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
+        cval = ffi.new("double[]", [coef for coef in lin_expr.expr.values()])
 
         # objective function constant
         const = lin_expr.const
@@ -1218,10 +1218,11 @@ class SolverGurobiCB(SolverGurobi):
             self._cb_sol = ffi.NULL
 
     def add_cut(self, lin_expr: "LinExpr"):
-        numnz = len(lin_expr)
+        numnz = len(lin_expr.expr)
 
-        cind = ffi.new("int[]", [idx for idx in lin_expr.idx])
-        cval = ffi.new("double[]", [coef for coef in lin_expr.coef])
+        cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
+        cval = ffi.new("double[]", [coef for coef in
+                                    lin_expr.expr.values()])
 
         # constraint sense and rhs
         sense = lin_expr.sense.encode("utf-8")
@@ -1234,9 +1235,9 @@ class SolverGurobiCB(SolverGurobi):
 
     def add_constr(self, lin_expr: "LinExpr", name: str = ""):
         # collecting linear expression data
-        nz = len(lin_expr)
-        cind = ffi.new("int[]", [idx for idx in lin_expr.idx])
-        cval = ffi.new("double[]", [coef for coef in lin_expr.coef])
+        nz = len(lin_expr.expr)
+        cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
+        cval = ffi.new("double[]", [coef for coef in lin_expr.expr.values()])
 
         # constraint sense and rhs
         sense = lin_expr.sense.encode('utf-8')
@@ -1254,9 +1255,9 @@ class SolverGurobiCB(SolverGurobi):
     def add_lazy_constr(self, lin_expr: "LinExpr"):
         if self._where == GRB_CB_MIPSOL:
             # collecting linear expression data
-            nz = len(lin_expr)
-            cind = ffi.new("int[]", [idx for idx in lin_expr.idx])
-            cval = ffi.new("double[]", [coef for coef in lin_expr.coef])
+            nz = len(lin_expr.expr)
+            cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
+            cval = ffi.new("double[]", [coef for coef in lin_expr.expr.values()])
 
             # constraint sense and rhs
             sense = lin_expr.sense.encode('utf-8')
@@ -1267,9 +1268,9 @@ class SolverGurobiCB(SolverGurobi):
                 raise Exception("Error adding lazy constraint in Gurobi.")
         elif self._where == GRB_CB_MIPNODE:
             # collecting linear expression data
-            nz = len(lin_expr)
-            cind = ffi.new("int[]", [idx for idx in lin_expr.idx])
-            cval = ffi.new("double[]", [coef for coef in lin_expr.coef])
+            nz = len(lin_expr.expr)
+            cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
+            cval = ffi.new("double[]", [coef for coef in lin_expr.expr.values()])
 
             # constraint sense and rhs
             sense = lin_expr.sense.encode('utf-8')
