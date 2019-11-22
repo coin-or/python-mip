@@ -1,10 +1,7 @@
-"""Different entities in the model (variables, constraints)"""
 from builtins import property
-from typing import List, Optional, Union
+from typing import List, Optional
 
-from mip.constants import BINARY, CONTINUOUS, INTEGER, \
-        OptimizationStatus
-from mip.exceptions import SolutionNotAvailable
+from mip.constants import BINARY, CONTINUOUS, INTEGER, OptimizationStatus, EPS
 
 
 class Column:
@@ -13,27 +10,25 @@ class Column:
     :meth:`~mip.model.Model.add_var`."""
 
     def __init__(self,
-                 constrs: Optional[List["Constr"]] = None,
-                 coeffs: Optional[List[float]] = None):
+                 constrs: List["Constr"] = None,
+                 coeffs: List[float] = None):
         self.constrs = constrs
         self.coeffs = coeffs
 
 
 class LinExpr:
     """
-    Linear expressions are used to express the model constraints and optionally
-    the objective function. These expressions are created using operators and
-    variables. Summation of variables with coefficients can be included using the
-    function xsum.
+    Linear expressions are used to enter the objective function and the model \
+    constraints. These expressions are created using operators and variables.
 
-    Consider a :class:`~mip.model.Model` object m, the objective function of :code:`m` can be
+    Consider a model object m, the objective function of :code:`m` can be
     specified as:
 
     .. code:: python
 
      m.objective = 10*x1 + 7*x4
 
-    In the example bellow, a constraint is added to the model.
+    In the example bellow, a constraint is added to the model
 
     .. code:: python
 
@@ -48,43 +43,22 @@ class LinExpr:
     """
 
     def __init__(self,
-                 variables: Optional[List[Union["Var", int]]] = None,
-                 coeffs: Optional[List[float]] = None,
+                 variables: List["Var"] = None,
+                 coeffs: List[float] = None,
                  const: float = 0.0,
-                 sense: str = "",
-                 model: Optional["Model"] = None):
-        assert isinstance(const, (int, float))
+                 sense: str = ""):
         self.__const = const
-        self.__model = model
-        if variables:
-            if isinstance(variables[0], Var):
-                self.__idx: List[int] = [var.idx for var in variables]
-                self.__model = variables[0].model
-            elif isinstance(variables[0], int):
-                self.__idx: List[int] = variables.copy()
-                assert self.__model is not None
-            self.__coef: List[float] = [coef for coef in coeffs]
-        else:
-            self.__idx: List[int] = []
-            self.__coef: List[float] = []
+        self.__expr = {}
         self.__sense = sense
 
-    @property
-    def idx(self) -> List[int]:
-        """List of variable indexes in the linear expression."""
-        return self.__idx
+        if variables:
+            assert len(variables) == len(coeffs)
+            for i in range(len(coeffs)):
+                if abs(coeffs[i]) <= 1e-12:
+                    continue
+                self.add_var(variables[i], coeffs[i])
 
-    @property
-    def coef(self) -> List[float]:
-        """List of variable coefficients in the liner expression."""
-        return self.__coef
-
-    @property
-    def model(self) -> Optional["Model"]:
-        """Model that this linear expression refers to."""
-        return self.__model
-
-    def __add__(self, other: Union["Var", "LinExpr", int, float]) -> "LinExpr":
+    def __add__(self, other) -> "LinExpr":
         result = self.copy()
         if isinstance(other, Var):
             result.add_var(other, 1)
@@ -94,10 +68,10 @@ class LinExpr:
             result.add_const(other)
         return result
 
-    def __radd__(self, other: Union["Var", "LinExpr", int, float]) -> "LinExpr":
+    def __radd__(self, other) -> "LinExpr":
         return self.__add__(other)
 
-    def __iadd__(self, other: Union["Var", "LinExpr", int, float]) -> "LinExpr":
+    def __iadd__(self, other) -> "LinExpr":
         if isinstance(other, Var):
             self.add_var(other, 1)
         elif isinstance(other, LinExpr):
@@ -106,23 +80,20 @@ class LinExpr:
             self.add_const(other)
         return self
 
-    def __sub__(self, other: Union["Var", "LinExpr", int, float]) -> "LinExpr":
+    def __sub__(self, other) -> "LinExpr":
         result = self.copy()
         if isinstance(other, Var):
             result.add_var(other, -1)
-            return result
-        if isinstance(other, LinExpr):
+        elif isinstance(other, LinExpr):
             result.add_expr(other, -1)
-            return result
-
-        assert isinstance(other, (int, float))
-        result.add_const(-other)
+        elif isinstance(other, (int, float)):
+            result.add_const(-other)
         return result
 
-    def __rsub__(self, other: Union["Var", "LinExpr", int, float]) -> "LinExpr":
+    def __rsub__(self, other) -> "LinExpr":
         return (-self).__add__(other)
 
-    def __isub__(self, other: Union["Var", "LinExpr", int, float]) -> "LinExpr":
+    def __isub__(self, other) -> "LinExpr":
         if isinstance(other, Var):
             self.add_var(other, -1)
         elif isinstance(other, LinExpr):
@@ -131,189 +102,139 @@ class LinExpr:
             self.add_const(-other)
         return self
 
-    def __mul__(self, other: Union[int, float]) -> "LinExpr":
-        assert isinstance(other, (float, int))
+    def __mul__(self, other) -> "LinExpr":
+        assert isinstance(other, (int, float))
         result = self.copy()
         result.__const *= other
-        for i in range(len(result.__coef)):
-            result.__coef[i] *= other
-
+        for var in result.__expr.keys():
+            result.__expr[var] *= other
         return result
 
-    def __rmul__(self, other: Union[int, float]) -> "LinExpr":
+    def __rmul__(self, other) -> "LinExpr":
         return self.__mul__(other)
 
-    def __imul__(self, other: Union[int, float]) -> "LinExpr":
+    def __imul__(self, other) -> "LinExpr":
         assert isinstance(other, (int, float))
         self.__const *= other
-        for i in range(len(self.__coef)):
-            self.__coef[i] *= other
+        for var in self.__expr.keys():
+            self.__expr[var] *= other
         return self
 
-    def __truediv__(self, other: Union[int, float]) -> "LinExpr":
+    def __truediv__(self, other) -> "LinExpr":
         assert isinstance(other, (int, float))
         result = self.copy()
         result.__const /= other
-        for i in range(len(result.__coef)):
-            result.__coef[i] /= other
+        for var in result.__expr.keys():
+            result.__expr[var] /= other
         return result
 
-    def __itruediv__(self, other: Union[int, float]) -> "LinExpr":
+    def __itruediv__(self, other) -> "LinExpr":
         assert isinstance(other, (int, float))
         self.__const /= other
-        for i in range(len(self.__coef)):
-            self.__coef[i] /= other
+        for var in self.__expr.keys():
+            self.__expr[var] /= other
         return self
 
     def __neg__(self) -> "LinExpr":
         return self.__mul__(-1)
 
     def __str__(self) -> str:
-        result = ""
+        result = []
 
-        for i, idx in enumerate(self.__idx):
-            coeff = self.__coef[i]
-            result += "+ " if coeff >= 0 else "- "
-            result += str(abs(coeff)) if abs(coeff) != 1 else ""
-            result += ' %s ' % self.__model.vars[idx].name
+        if self.__expr:
+            for var, coeff in self.__expr.items():
+                result.append("+ " if coeff >= 0 else "- ")
+                result.append(str(abs(coeff)) if abs(coeff) != 1 else "")
+                result.append("{var} ".format(**locals()))
 
         if self.__sense:
-            result += self.__sense + "= "
-            result += (str(abs(self.__const)) if self.__const < 0 else
-                       "- " + str(abs(self.__const)))
+            result.append(self.__sense + "= ")
+            result.append(str(abs(self.__const)) if self.__const < 0 else
+                          "- " + str(abs(self.__const)))
         elif self.__const != 0:
-            result += ("+ " + str(abs(self.__const)) if self.__const > 0
-                       else "- " + str(abs(self.__const)))
+            result.append(
+                "+ " + str(abs(self.__const)) if self.__const > 0
+                else "- " + str(abs(self.__const)))
 
-        return result
+        return "".join(result)
 
-    def __len__(self) -> int:
-        return len(self.idx)
-
-    def __eq__(self, other: Union["Var", "LinExpr", int, float]) -> "LinExpr":
+    def __eq__(self, other) -> "LinExpr":
         result = self - other
-        result.sense = "="
+        result.__sense = "="
         return result
 
-    def __le__(self, other: Union["Var", "LinExpr", int, float]) -> "LinExpr":
+    def __le__(self, other) -> "LinExpr":
         result = self - other
-        result.sense = "<"
+        result.__sense = "<"
         return result
 
-    def __ge__(self, other: Union["Var", "LinExpr", int, float]) -> "LinExpr":
+    def __ge__(self, other) -> "LinExpr":
         result = self - other
-        result.sense = ">"
+        result.__sense = ">"
         return result
 
-    def add_const(self, __const: Union[int, float]):
+    def add_const(self, __const: float):
         """adds a constant value to the linear expression, in the case of
         a constraint this correspond to the right-hand-side"""
-        assert isinstance(__const, (int, float))
         self.__const += __const
 
-    def add_expr(self, __expr: "LinExpr", coeff: Union[int, float] = 1):
+    def add_expr(self, __expr: "LinExpr", coeff: float = 1):
         """extends a linear expression with the contents of another"""
-        self.__const += __expr.const * coeff
-        for i, idx in enumerate(__expr.idx):
-            self.__idx.append(idx)
-            self.__coef.append(__expr.coef[i]*coeff)
-        if __expr.model:
-            self.__model = __expr.model
+        self.__const += __expr.__const * coeff
+        for var, coeff_var in __expr.__expr.items():
+            self.add_var(var, coeff_var * coeff)
 
-    def add_term(self, expr: Union["Var", "LinExpr", int, float],
-                 coeff: Union[int, float] = 1):
+    def add_term(self, __expr, coeff: float = 1):
         """extends a linear expression with another multiplied by a constant
         value coefficient"""
-        if isinstance(expr, Var):
-            self.add_var(expr, coeff)
-            return
-        if isinstance(expr, LinExpr):
-            self.add_expr(expr, coeff)
-            return
+        if isinstance(__expr, Var):
+            self.add_var(__expr, coeff)
+        elif isinstance(__expr, LinExpr):
+            self.add_expr(__expr, coeff)
+        elif isinstance(__expr, (int, float)):
+            self.add_const(__expr)
 
-        # int, float
-        assert isinstance(expr, (int, float))
-        self.add_const(expr)
-
-    def add_var(self, var: "Var", coeff: Union[int, float] = 1.0):
+    def add_var(self, var: "Var", coeff: float = 1):
         """adds a variable with a coefficient to the constraint"""
-        self.__idx.append(var.idx)
-        self.__coef.append(float(coeff))
-        self.__model = var.model
-
-    def pack(self, iv: Optional[List[int]]):
-        """Groups variable's coefficients. This is automatically called before
-            adding a linear expression to the model."""
-        if iv is None:
-            iv = [-1 for i in range(len(self.__model.num_cols))]
+        if var in self.__expr:
+            if -EPS <= self.__expr[var] + coeff <= EPS:
+                del self.__expr[var]
+            else:
+                self.__expr[var] += coeff
         else:
-            if self.__model.num_cols > len(iv):
-                iv = [-1 for i in range(max(len(self.__model.num_cols),
-                                            len(iv)*2))]
-
-        new_idx: List[int] = []
-        new_coef: List[float] = []
-        for i, idx in enumerate(self.__idx):
-            if iv[idx] == -1:
-                iv[idx] = len(new_idx)
-                new_idx.append(idx)
-                new_coef.append(self.__coef[i])
-            else:
-                new_coef[iv[idx]] += self.__coef[i]
-
-        # clearing incidence vector, since it may be reused
-        for idx in new_idx:
-            iv[idx] = -1
-
-        # after grouping variables coefficients, some coefficients
-        # may be zero, removing those at the end
-        while new_coef and abs(new_coef[-1]) <= 1e-20:
-            new_coef.pop()
-            new_idx.pop()
-
-        self.__idx = new_idx
-        self.__coef = new_coef
-
-        # removing elements with zero coefficient in the middle of the vector,
-        # if still any
-
-        i = 0
-        while i < len(self.__coef):
-            if abs(self.__coef[i]) <= 1e-20:
-                if i < len(self.__coef)-1:
-                    self.__idx[i], self.__idx[-1] = \
-                        self.__idx[-1], self.__idx[i]
-                    self.__coef[i], self.__coef[-1] = \
-                        self.__coef[-1], self.__coef[i]
-                self.__idx.pop()
-                self.__coef.pop()
-            else:
-                i += 1
+            self.__expr[var] = coeff
 
     def copy(self) -> "LinExpr":
-        """Returns a copy of the LinExpr object."""
-        return LinExpr(self.__idx, self.__coef, self.__const, self.__sense,
-                       self.__model)
+        copy = LinExpr()
+        copy.__const = self.__const
+        copy.__expr = self.__expr.copy()
+        copy.__sense = self.__sense
+        return copy
 
     def equals(self: "LinExpr", other: "LinExpr") -> bool:
         """returns true if a linear expression equals to another,
         false otherwise"""
-        if self.__sense != other.sense:
+        if self.__sense != other.__sense:
             return False
-        if len(self.__idx) != len(other.idx):
+        if len(self.__expr) != len(other.__expr):
             return False
-        for (i, idx) in enumerate(self.__idx):
-            if idx != other.idx[i]:
+        if abs(self.__const - other.__const) >= 1e-12:
+            return False
+        other_contents = {vr.idx: coef for vr, coef in other.__expr.items()}
+        for (v, c) in self.__expr.items():
+            if v.idx not in other_contents:
                 return False
-        for (i, coef) in enumerate(self.__coef):
-            if abs(coef - other.coef[i]) > 1e-12:
+            oc = other_contents[v.idx]
+            if abs(c - oc) > 1e-12:
                 return False
         return True
 
     def __hash__(self):
-        hash_el = [self.__const, self.__sense]
-        hash_el += self.__idx
-        hash_el += self.__coef
+        hash_el = [v.idx for v in self.__expr.keys()]
+        for c in self.__expr.values():
+            hash_el.append(c)
+        hash_el.append(self.__const)
+        hash_el.append(self.__sense)
         return hash(tuple(hash_el))
 
     @property
@@ -328,8 +249,7 @@ class LinExpr:
         Dictionary with pairs: (variable, coefficient) where coefficient
         is a float.
         """
-        return {self.__model.vars[self.__idx[i]]: self.__coef[i] for i in
-                range(len(self.__idx))}
+        return self.__expr
 
     @property
     def sense(self) -> str:
@@ -343,6 +263,12 @@ class LinExpr:
 
     @sense.setter
     def sense(self, value):
+        """sense of the linear expression
+
+        sense can be EQUAL("="), LESS_OR_EQUAL("<"), GREATER_OR_EQUAL(">") or
+        empty ("") if this is an affine expression, such as the objective
+        function
+        """
         self.__sense = value
 
     @property
@@ -352,9 +278,8 @@ class LinExpr:
         If a solution is available, than this property indicates how much
         the current solution violates this constraint.
         """
-        lhs = sum(self.__coef[i] * self.__model.vars[idx].x
-                  for i, idx in enumerate(self.__idx))
-        rhs = -self.__const
+        lhs = sum(coef * var.x for (var, coef) in self.__expr.items())
+        rhs = -self.const
         viol = 0.0
         if self.sense == '=':
             viol = abs(lhs - rhs)
@@ -421,32 +346,28 @@ class Constr:
         return res
 
     @property
-    def slack(self) -> float:
-
+    def slack(self) -> Optional[float]:
         """Value of the slack in this constraint in the optimal
         solution. Available only if the formulation was solved.
         """
-
         return self.__model.solver.constr_get_slack(self)
 
     @property
-    def pi(self) -> float:
-
+    def pi(self) -> Optional[float]:
         """Value for the dual variable of this constraint in the optimal
         solution of a linear programming :class:`~mip.model.Model`. Only
         available if a pure linear programming problem was solved (only
         continuous variables).
         """
-
         return self.__model.solver.constr_get_pi(self)
 
     @property
-    def expr(self) -> "LinExpr":
+    def expr(self) -> LinExpr:
         """contents of the constraint"""
         return self.__model.solver.constr_get_expr(self)
 
     @expr.setter
-    def expr(self, value: "LinExpr"):
+    def expr(self, value: LinExpr):
         self.__model.solver.constr_set_expr(self, value)
 
     @property
@@ -455,107 +376,87 @@ class Constr:
         return self.__model.solver.constr_get_name(self.idx)
 
 
-
 class Var:
     """ Decision variable of the :class:`~mip.model.Model`. The creation of
     variables is performed calling the :meth:`~mip.model.Model.add_var`."""
 
-    def __init__(self,
-                 model: "Model",
-                 idx: int):
+    def __init__(self, model: "Model", idx: int):
         self.__model = model
         self.idx = idx
-
-    @property
-    def model(self) -> "Model":
-        """Model that this variable refers to"""
-        return self.__model
 
     def __hash__(self) -> int:
         return self.idx
 
-    def __add__(self, other: Union["Var", "LinExpr", float, int]) -> LinExpr:
+    def __add__(self, other) -> LinExpr:
         if isinstance(other, Var):
-            return LinExpr([self.idx, other.idx], [1.0, 1.0], 0.0,
-                           "", self.model)
-        if isinstance(other, LinExpr):
+            return LinExpr([self, other], [1, 1])
+        elif isinstance(other, LinExpr):
             return other.__add__(self)
-
-        # int or float
-        assert isinstance(other, (int, float))
-        return LinExpr([self.idx], [1.0], other, "", self.model)
+        elif isinstance(other, (int, float)):
+            return LinExpr([self], [1], other)
 
     def __radd__(self, other) -> LinExpr:
         return self.__add__(other)
 
-    def __sub__(self, other: Union["Var", "LinExpr", float, int]) -> LinExpr:
+    def __sub__(self, other) -> LinExpr:
         if isinstance(other, Var):
-            return LinExpr([self.idx, other.idx], [1.0, -1.0], 0.0,
-                           "", self.model)
-        if isinstance(other, LinExpr):
+            return LinExpr([self, other], [1, -1])
+        elif isinstance(other, LinExpr):
             return (-other).__iadd__(self)
+        elif isinstance(other, (int, float)):
+            return LinExpr([self], [1], -other)
 
-        # int or float
-        return LinExpr([self.idx], [1.0], -other, "", self.model)
-
-    def __rsub__(self, other: Union["Var", "LinExpr", float, int]) -> LinExpr:
+    def __rsub__(self, other) -> LinExpr:
         if isinstance(other, Var):
-            return LinExpr([self.idx, other.idx], [-1.0, 1.0], 0.0,
-                           "", self.model)
-        if isinstance(other, LinExpr):
+            return LinExpr([self, other], [-1, 1])
+        elif isinstance(other, LinExpr):
             return other.__sub__(self)
+        elif isinstance(other, (int, float)):
+            return LinExpr([self], [-1], other)
 
-        # int or float
+    def __mul__(self, other) -> LinExpr:
         assert isinstance(other, (int, float))
-        return LinExpr([self.idx], [-1.0], other, "", self.model)
+        return LinExpr([self], [other])
 
-    def __mul__(self, other: Union[int, float]) -> LinExpr:
-        return LinExpr([self.idx], [other], 0.0, "", self.model)
-
-    def __rmul__(self, other: Union[int, float]) -> LinExpr:
+    def __rmul__(self, other) -> LinExpr:
         return self.__mul__(other)
 
-    def __truediv__(self, other: Union[int, float]) -> LinExpr:
+    def __truediv__(self, other) -> LinExpr:
+        assert isinstance(other, (int, float))
         return self.__mul__(1.0 / other)
 
     def __neg__(self) -> LinExpr:
-        return LinExpr([self.idx], [-1.0], 0.0, "", self.model)
+        return LinExpr([self], [-1.0])
 
-    def __eq__(self, other: Union["Var", "LinExpr", float, int]) -> LinExpr:
+    def __eq__(self, other) -> LinExpr:
         if isinstance(other, Var):
-            return LinExpr([self.idx, other.idx], [1, -1], 0.0, "=", self.model)
-        if isinstance(other, LinExpr):
+            return LinExpr([self, other], [1, -1], sense="=")
+        elif isinstance(other, LinExpr):
             return other == self
+        elif isinstance(other, (int, float)):
+            if other != 0:
+                return LinExpr([self], [1], -1 * other, sense="=")
+            return LinExpr([self], [1], sense="=")
 
-        # int or float
-        assert isinstance(other, (int, float))
-        if other != 0:
-            return LinExpr([self.idx], [1], -1 * other, "=", self.model)
-        return LinExpr([self], [1.0], 0.0, "=", self.model)
-
-    def __le__(self, other: Union["Var", "LinExpr", float, int]) -> LinExpr:
+    def __le__(self, other) -> LinExpr:
         if isinstance(other, Var):
-            return LinExpr([self.idx, other.idx], [1, -1], 0.0, "<", self.model)
-        if isinstance(other, LinExpr):
+            return LinExpr([self, other], [1, -1], sense="<")
+        elif isinstance(other, LinExpr):
             return other >= self
+        elif isinstance(other, (int, float)):
+            if other != 0:
+                return LinExpr([self], [1], -1 * other, sense="<")
+            return LinExpr([self], [1], sense="<")
 
-        # int or float
-        assert isinstance(other, (int, float))
-        if other != 0:
-            return LinExpr([self.idx], [1], -1 * other, "<", self.model)
-        return LinExpr([self.idx], [1], 0.0, "<", self.model)
-
-    def __ge__(self, other: Union["Var", "LinExpr", float, int]) -> LinExpr:
+    def __ge__(self, other) -> LinExpr:
         if isinstance(other, Var):
-            return LinExpr([self.idx, other.idx], [1, -1], 0.0, ">", self.model)
-        if isinstance(other, LinExpr):
+            return LinExpr([self, other], [1, -1], sense=">")
+        elif isinstance(other, LinExpr):
             return other <= self
-
-        # int or float
-        assert isinstance(other, (int, float))
-        if other != 0:
-            return LinExpr([self], [1], -1 * other, ">", self.model)
-        return LinExpr([self], [1], 0.0, ">", self.model)
+        elif isinstance(other, (int, float)):
+            if other != 0:
+                return LinExpr([self], [1], -1 * other, sense=">")
+            return LinExpr([self], [1], sense=">")
 
     @property
     def name(self) -> str:
@@ -563,7 +464,7 @@ class Var:
         return self.__model.solver.var_get_name(self.idx)
 
     def __str__(self) -> str:
-        return 'var: (name=%s, lb=%g, ub=%g, obj=%g)' % (self.name, self.lb, self.ub, self.obj)
+        return self.name
 
     @property
     def lb(self) -> float:
@@ -612,28 +513,27 @@ class Var:
         self.__model.solver.var_set_column(self, value)
 
     @property
-    def rc(self) -> float:
+    def rc(self) -> Optional[float]:
         """Reduced cost, only available after a linear programming model (only
-        continuous variables) is optimized"""
+        continuous variables) is optimized. Note that None is returned if no
+        optimum solution is available"""
         if self.__model.status != OptimizationStatus.OPTIMAL:
-            raise SolutionNotAvailable('Solution not available.')
-
+            return None
         return self.__model.solver.var_get_rc(self)
 
     @property
     def x(self) -> Optional[float]:
-        """Value of this variable in the solution."""
+        """Value of this variable in the solution. Note that None is returned
+        if no solution is not available."""
         if self.__model.status in [OptimizationStatus.OPTIMAL,
                                    OptimizationStatus.FEASIBLE]:
             return self.__model.solver.var_get_x(self)
-
         return None
 
     def xi(self, i: int) -> Optional[float]:
-        """Value for this variable in the :math:`i`-th solution from
-        the solution pool."""
+        """Value for this variable in the :math:`i`-th solution from the solution
+        pool. Note that None is returned if the solution is not available."""
         if self.__model.status in [OptimizationStatus.OPTIMAL,
                                    OptimizationStatus.FEASIBLE]:
             return self.__model.solver.var_get_xi(self, i)
-
         return None
