@@ -3,10 +3,10 @@ placed in a n x n chess board so that no queen can attack another, i.e., just
 one queen per line, column and diagonal.  """
 
 from sys import stdout
-from mip import Model, xsum, MAXIMIZE, BINARY
+from mip import Model, xsum, BINARY
 
 # number of queens
-n = 75
+n = 40
 
 queens = Model()
 
@@ -34,8 +34,8 @@ for p, k in enumerate(range(3, n + n)):
 queens.optimize()
 
 if queens.num_solutions:
-	stdout.write('\n')
-	for i, v in enumerate(queens.vars):
-		stdout.write('O ' if v.x >= 0.99 else '. ')
-		if i % n == n-1:
-			stdout.write('\n')
+    stdout.write('\n')
+    for i, v in enumerate(queens.vars):
+        stdout.write('O ' if v.x >= 0.99 else '. ')
+        if i % n == n-1:
+            stdout.write('\n')
