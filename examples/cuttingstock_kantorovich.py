@@ -37,3 +37,8 @@ for v in model.vars:
     if v.x > 1e-5:
         print('{v.name} = {v.x:.3}'.format(**locals()))
         print('          ', end='')
+
+# sanity tests
+from mip import OptimizationStatus
+assert abs(model.objective_value - 3) <= 1e-4
+assert sum(x.x for x in model.vars) >= 5
