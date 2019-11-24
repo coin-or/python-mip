@@ -165,123 +165,28 @@ can be obtained with the `Branch-&-Cut algorithm
 the previous Section to separate inequalities for your application you can
 combine it with the complete BC algorithm implemented in the solver engine
 using *callbacks*. Cut generation callbacks (CGC) are called at each node of
-the search tree where a fractional solution is found. Cuts are generated in the
-callback and returned to the MIP solver engine which adds these cuts to the
-*Cut Pool*. These cuts are merged with the cuts generated with the solver
-builtin cut generators and a *subset* of these cuts in included to the LP
+the search tree where a fractional solution is found. Cuts are generated in the callback and returned to the MIP solver engine which adds these cuts to the *Cut Pool*. These cuts are merged with the cuts generated with the solver
+builtin cut generators and a *subset* of these cuts is included to the LP
 relaxation model. Please note that in the Branch-&-Cut algorithm context cuts
 are *optional* components and only those that are classified as *good* cuts by
-the solver engine will be accepted, i.e., cuts that are too dense and/or have a
-small violation could be discarded, since the cost of solving a much larger
+the solver engine will be accepted, i.e., cuts that are too dense and/or have
+a small violation could be discarded, since the cost of solving a much larger
 linear program may not be worth the resulting bound improvement.
 
 When using cut callbacks be sure that cuts are used only to *improve* the LP
 relaxation but not to *define* feasible solutions, which need to be defined by
 the initial formulation. In other words, the initial model without cuts may be
-*weak* but needs to be *complete*. In the case of TSP, we can include the weak
+*weak* but needs to be *complete* [#f1]_. In the case of TSP, we can include the weak
 sub-tour elimination constraints presented in :numref:`tsp-label` in
 the initial model and then add the stronger sub-tour elimination constraints
 presented in the previous section as cuts. 
 
-In Python-MIP, CGC are implemented extending the
-:class:`~mip.callbacks.ConstrsGenerator` class. The following example implements
-the previous cut separation algorithm as a
-:class:`~mip.callbacks.ConstrsGenerator` class and includes it as a cut generator
-for the branch-and-cut solver engine. The method that needs to be implemented
-in this class is the :meth:`~mip.callbacks.ConstrsGenerator.generate_cuts`
-procedure. This method receives as parameter the object :code:`model` of type
-:class:`~mip.model.Model`. This object must be used to query the fractional
-values of the model :attr:`~mip.model.Model.vars`, using the
-:attr:`~mip.model.Var.x` property. Other model properties can be queried, such
-as the problem constraints (:attr:`~mip.model.Model.constrs`). Please note that,
-depending on which solver engine you use, some variables/constraints from the
-original model may have been removed by pre-processing. Thus, direct references
-to the original problem variables may be invalid. Since for variables that
-remain in this model Python-MIP ensures that the names from the original
-variables are preserved, it is a good practice to query again the variables
-list. In our example, the relationship of the variables with the arcs of the
-input graph can be inferred by examining variable names which are in the format
-":code:`x(i,j)`" (lines 15-17). Whenever a violated inequality is discovered, 
-it can be added to the solver's engine cut pool using the 
-:meth:`~mip.model.Model.add_cut` :class:`~mip.model.Model` method (lines 33 and 35). 
-In our example, we temporarily store the generated cuts in our 
-:class:`~mip.callbacks.CutPool` object (line 30).
+In Python-MIP, CGC are implemented extending the :class:`~mip.callbacks.ConstrsGenerator` class. The following example implements the previous cut separation algorithm as a :class:`~mip.callbacks.ConstrsGenerator` class and includes it as a cut generator for the branch-and-cut solver engine. The method that needs to be implemented in this class is the :meth:`~mip.callbacks.ConstrsGenerator.generate_constrs` procedure. This method receives as parameter the object :code:`model` of type :class:`~mip.model.Model`. This object must be used to query the fractional values of the model :attr:`~mip.model.Model.vars`, using the :attr:`~mip.model.Var.x` property. Other model properties can be queried, such as the problem constraints (:attr:`~mip.model.Model.constrs`). Please note that, depending on which solver engine you use, some variables/constraints from the original model may have been removed in the pre-processing phase. Thus, direct references to the original problem variables may be invalid. The method :meth:`~mip.model.Model.translate` (line 15) translates references of variables from the original model to references of variables in the model received in the callback procedure. Whenever a violated inequality is discovered, it can be added to the model using the :code:`+=` operator (line 31). In our example, we temporarily store the generated cuts in a :class:`~mip.callbacks.CutPool` object (line 25) to discard repeated cuts that eventually are found.
 
-
-.. code-block:: python
- :linenos:
-
-    from sys import argv
-    from typing import List, Tuple
-    import networkx as nx
-    from tspdata import TSPData
-    from mip.model import Model, xsum, BINARY
-    from mip.callbacks import ConstrsGenerator, CutPool
-
-
-    class SubTourCutGenerator(ConstrsGenerator):
-        def __init__(self, Fl: List[Tuple[int, int]]):
-            self.F = Fl
-
-        def generate_constrs(self, model: Model):
-            G = nx.DiGraph()
-            r = [(v, v.x) for v in model.vars if v.name.startswith('x(')]
-            U = [int(v.name.split('(')[1].split(',')[0]) for v, f in r]
-            V = [int(v.name.split(')')[0].split(',')[1]) for v, f in r]
-            cp = CutPool()
-            for i in range(len(U)):
-                G.add_edge(U[i], V[i], capacity=r[i][1])
-            for (u, v) in F:
-                if u not in U or v not in V:
-                    continue
-                val, (S, NS) = nx.minimum_cut(G, u, v)
-                if val <= 0.99:
-                    arcsInS = [(v, f) for i, (v, f) in enumerate(r)
-                               if U[i] in S and V[i] in S]
-                    if sum(f for v, f in arcsInS) >= (len(S)-1)+1e-4:
-                        cut = xsum(1.0*v for v, fm in arcsInS) <= len(S)-1
-                        cp.add(cut)
-                        if len(cp.cuts) > 256:
-                            for cut in cp.cuts:
-                                model += cut
-                            return
-            for cut in cp.cuts:
-                model += cut
-            return
-
-
-    inst = TSPData(argv[1])
-    n, d = inst.n, inst.d
-
-    model = Model()
-
-    x = [[model.add_var(name='x({},{})'.format(i, j),
-                        var_type=BINARY) for j in range(n)] for i in range(n)]
-    y = [model.add_var(name='y({})'.format(i),
-                       lb=0.0, ub=n) for i in range(n)]
-
-    model.objective = xsum(d[i][j] * x[i][j] for j in range(n) for i in range(n))
-
-    for i in range(n):
-        model += xsum(x[j][i] for j in range(n) if j != i) == 1
-        model += xsum(x[i][j] for j in range(n) if j != i) == 1
-    for (i, j) in [(i, j) for (i, j) in
-                   product(range(1, n), range(1, n)) if i != j]:
-        model += y[i] - (n + 1) * x[i][j] >= y[j] - n
-
-    F = []
-    for i in range(n):
-        (md, dp) = (0, -1)
-        for j in [k for k in range(n) if k != i]:
-            if d[i][j] > md:
-                (md, dp) = (d[i][j], j)
-        F.append((i, dp))
-
-    m.cuts_generator = SubTourCutGenerator(F)
-    model.optimize()
-
-    arcs = [(i, j) for i in range(n) for j in range(n) if x[i][j].x >= 0.99]
-    print('optimal route : {}'.format(arcs))
+.. literalinclude:: ../examples/tsp-cuts.py
+    :caption: Branch-and-cut for the traveling salesman problem (examples/tsp-cuts.py)
+    :linenos:
+    :lines: 8-95
 
 
 .. _lazy-constraints-label:
@@ -289,25 +194,23 @@ In our example, we temporarily store the generated cuts in our
 Lazy Constraints
 ~~~~~~~~~~~~~~~~
 
-Python-MIP also supports the use of cut generators to produce *lazy
+Python-MIP also supports the use of constraint generators to produce *lazy
 constraints*. Lazy constraints are dynamically generated, just as cutting
 planes, with the difference that lazy constraints are also applied to *integer
 solutions*. They should be used when the initial formulation is *incomplete*.
 In the case of our previous TSP example, this approach allow us to use in the
 initial formulation only the degree constraints and add all required sub-tour
 elimination constraints on demand. Auxiliary variables :math:`y` would also not
-be necessary. The lazy constraints TSP example is exaclty as the cut generator
+be necessary. The lazy constraints TSP example is exactly as the cut generator
 callback example with the difference that, besides starting with a smaller
-formulation,  we have to inform that the cut generator will be used to generate
-lazy constraints:
+formulation,  we have to inform that the constraint generator will be used to generate lazy constraints using the model property :attr:`~mip.model.Model.lazy_constrs_generator`.
 
 
 .. code-block:: python
- :linenos:
-    
+
     ...
-    m.constrs_generator = SubTourCutGenerator(F)
-    m.constrs_generator.lazy_constraints = True
+    model.cuts_generator = SubTourCutGenerator(F, x, V)
+    model.lazy_constrs_generator = SubTourCutGenerator(F, x, V)
     model.optimize()
     ...
 
@@ -354,3 +257,7 @@ feasible solutions are informed in a list (line 4) of :code:`(var, value)`
 pairs. Please note that only the original non-zero problem variables need to be
 informed, i.e., the solver will automatically compute the values of the
 auxiliary :math:`y` variables which are used only to eliminate sub-tours.
+
+.. rubric:: Footnotes
+
+.. [#f1] If you want to initally enter an incomplete formulation than see the next sub-section on Lazy-Constraints.
