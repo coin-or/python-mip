@@ -436,4 +436,4 @@ The following Python-MIP code creates the formulation proposed by :cite:`Kantoro
 .. literalinclude:: ../examples/cuttingstock_kantorovich.py
     :caption: Formulation for the One-dimensional Cutting Stock Problem (examples/cuttingstock_kantorovich.py)
     :linenos:
-    :lines: 4-
+    :lines: 4-39

@@ -1,7 +1,7 @@
 from os import environ
 from os.path import isfile
 from sys import stdout as out
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Union, Dict
 
 from mip.constants import *
 from mip.callbacks import BranchSelector, ConstrsGenerator, ColumnsGenerator, CutPool, IncumbentUpdater
@@ -1068,6 +1068,30 @@ class Model:
         else:
             raise Exception("Cannot handle removal of object of type "
                             + type(objects) + " from model.")
+
+    def translate(self, ref):
+        """Translates references of variables/containers of variables
+        from another model to this model. Can be used to translate
+        references of variables in the original model to references
+        of variables in the pre-processed model."""
+
+        if isinstance(ref, Var):
+            return self.var_by_name(ref.name)
+        if isinstance(ref, list):
+            res = list()
+            for el in ref:
+                res.append(self.translate(el))
+            return res
+        if isinstance(ref, dict):
+            res = dict()
+            for key, value in ref.items():
+                res[key] = self.translate(value)
+            return res
+
+        return ref
+
+    def __trans(self, refs: Union[List, Dict, Var]) -> Union[List, Dict, Var]:
+        """Recursive translation of references"""
 
 
 def maximize(expr: LinExpr) -> LinExpr:
