@@ -1,40 +1,34 @@
 """Example of a Branch-and-Cut implementation for the Traveling Salesman
-Problem. Initially a compact (weak) formulation is created. This formulation
-is dinamically improved with cutting planes, sub-tour elimination inequalities,
-using a CutsGenerator implementation. Cut generation is called from the
-solver engine whenever a fractional solution is generated."""
+Problem. Initially a compact (weak) formulation is created. This formulation is
+dynamically improved with sub-tour elimination inequalities, using a
+CutsGenerator implementation that repeatedly solves the min-cut problem between
+pairs of distant nodes to find isolated sets of nodes. Cut generation is called
+from the solver engine whenever a fractional solution is generated."""
 
-from collections import defaultdict
-from sys import argv
 from typing import List, Tuple
+from random import seed, randint
+from itertools import product
+from math import sqrt
 import networkx as nx
-import tsplib95
-from mip.model import Model, xsum, BINARY, minimize
-from mip.callbacks import ConstrsGenerator, CutPool
+from mip import Model, xsum, BINARY, minimize, ConstrsGenerator, CutPool
 
 
 class SubTourCutGenerator(ConstrsGenerator):
     """Class to generate cutting planes for the TSP"""
-    def __init__(self, Fl: List[Tuple[int, int]]):
-        self.F = Fl
+    def __init__(self, Fl: List[Tuple[int, int]], x_, V_):
+        self.F, self.x, self.V = Fl, x_, V_
 
     def generate_constrs(self, model: Model):
-        G = nx.DiGraph()
-        r = [(v, v.x) for v in model.vars if v.name.startswith('x(')]
-        U = [int(v.name.split('(')[1].split(',')[0]) for v, f in r]
-        V = [int(v.name.split(')')[0].split(',')[1]) for v, f in r]
-        cp = CutPool()
-        for i in range(len(U)):
-            G.add_edge(U[i], V[i], capacity=r[i][1])
+        xf, V_, cp = model.translate(self.x), self.V, CutPool()
+        for (u, v) in [(k, l) for (k, l) in product(V_, V_) if k != l and xf[k][l]]:
+            G.add_edge(u, v, capacity=xf[u][v].x)
         for (u, v) in F:
-            if u not in U or v not in V:
-                continue
             val, (S, NS) = nx.minimum_cut(G, u, v)
             if val <= 0.99:
-                arcsInS = [(v, f) for i, (v, f) in enumerate(r)
-                           if U[i] in S and V[i] in S]
-                if sum(f for v, f in arcsInS) >= (len(S)-1)+1e-4:
-                    cut = xsum(1.0*v for v, fm in arcsInS) <= len(S)-1
+                aInS = [(xf[i][j], xf[i][j].x)
+                        for (i, j) in product(V_, V_) if i != j and xf[i][j] and i in S and j in S]
+                if sum(f for v, f in aInS) >= (len(S)-1)+1e-4:
+                    cut = xsum(1.0*v for v, fm in aInS) <= len(S)-1
                     cp.add(cut)
                     if len(cp.cuts) > 256:
                         for cut in cp.cuts:
@@ -42,88 +36,59 @@ class SubTourCutGenerator(ConstrsGenerator):
                         return
         for cut in cp.cuts:
             model += cut
-        return
 
 
-if len(argv) <= 1:
-    print('enter instance name.')
-    exit(1)
+n = 30  # number of points
+V = set(range(n))
+seed(0)
+p = [(randint(1, 100), randint(1, 100)) for i in V]  # coordinates
+Arcs = [(i, j) for (i, j) in product(V, V) if i != j]
 
-inst = tsplib95.load_problem(argv[1])
-N = [n for n in inst.get_nodes()]
-n = len(N)
-A = dict()
-for (i, j) in inst.get_edges():
-    if i != j:
-        A[(i, j)] = inst.wfunc(i, j)
-
-# set of edges leaving a node
-OUT = defaultdict(set)
-
-# set of edges entering a node
-IN = defaultdict(set)
-
-# an arbitrary initial point
-n0 = min(i for i in N)
-
-for a in A:
-    OUT[a[0]].add(a)
-    IN[a[1]].add(a)
-
-print('solving TSP with {} cities'.format(len(N)))
+# distance matrix
+c = [[round(sqrt((p[i][0]-p[j][0])**2 + (p[i][1]-p[j][1])**2)) for j in V] for i in V]
 
 model = Model()
 
 # binary variables indicating if arc (i,j) is used on the route or not
-x = {a: model.add_var('x({},{})'.format(a[0], a[1]), var_type=BINARY) for a in A}
+x = [[model.add_var(var_type=BINARY) for j in V] for i in V]
 
-# continuous variable to prevent subtours: each
-# city will have a different "identifier" in the planned route
-y = {i: model.add_var(name='y({})') for i in N}
-
-# continuous variable to prevent subtours: each
-# city will have a different "identifier" in the planned route
-y = {i: model.add_var(name='y({})') for i in N}
+# continuous variable to prevent subtours: each city will have a
+# different sequential id in the planned route except the first one
+y = [model.add_var() for i in V]
 
 # objective function: minimize the distance
-model.objective = minimize(xsum(A[a]*x[a] for a in A))
+model.objective = minimize(xsum(c[i][j]*x[i][j] for (i, j) in Arcs))
 
-# constraint : enter each city coming from another city
-for i in N:
-    model += xsum(x[a] for a in OUT[i]) == 1
+# constraint : leave each city only once
+for i in V:
+    model += xsum(x[i][j] for j in V - {i}) == 1
 
-# constraint : leave each city coming from another city
-for i in N:
-    model += xsum(x[a] for a in IN[i]) == 1
+# constraint : enter each city only once
+for i in V:
+    model += xsum(x[j][i] for j in V - {i}) == 1
 
 # (weak) subtour elimination
-for (i, j) in [a for a in A if n0 not in [a[0], a[1]]]:
-    model += \
-        y[i] - (n+1)*x[(i, j)] >= y[j]-n, 'noSub({},{})'.format(i, j)
+# subtour elimination
+for (i, j) in product(V - {0}, V - {0}):
+    if i != j:
+        model += y[i] - (n+1)*x[i][j] >= y[j]-n
 
 # no subtours of size 2
-for a in A:
-    if (a[1], a[0]) in A.keys():
-        model += x[a] + x[a[1], a[0]] <= 1
+for (i, j) in Arcs:
+    model += x[i][j] + x[j][i] <= 1
 
-
-# computing farthest point for each point
-F = []
-G = nx.DiGraph()
-for ((i, j), d) in A.items():
-    G.add_edge(i, j, weight=d)
-for i in N:
+# computing farthest point for each point, these will be checked first for
+# isolated subtours
+F, G = [], nx.DiGraph()
+for (i, j) in Arcs:
+    G.add_edge(i, j, weight=c[i][j])
+for i in V:
     P, D = nx.dijkstra_predecessor_and_distance(G, source=i)
     DS = list(D.items())
     DS.sort(key=lambda x: x[1])
     F.append((i, DS[-1][0]))
 
-model.cuts_generator = SubTourCutGenerator(F)
+model.cuts_generator = SubTourCutGenerator(F, x, V)
 model.optimize()
 
-print(model.status)
-
-print('best route found has length {}'.format(model.objective_value))
-
-arcs = [a for a in A.keys() if x[a].x >= 0.99]
-print('optimal route : {}'.format(arcs))
+print('status: %s route length %g' % (model.status, model.objective_value))

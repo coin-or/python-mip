@@ -108,7 +108,6 @@ for i in N:
     DS.sort(key=lambda x: x[1])
     F.append((i, DS[-1][0]))
 
-model.cuts_generator = SubTourCutGenerator(F)
 model.lazy_constrs_generator = SubTourCutGenerator(F)
 model.optimize()
 
