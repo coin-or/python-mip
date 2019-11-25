@@ -256,11 +256,11 @@ class TestCBC(object):
 
         # one per row
         for i in range(n):
-            queens += xsum(x[i][j] for j in range(n)) == 1, 'row({})'.format(i)
+            queens += xsum(x[i][j] for j in range(n)) == 1, 'row{}'.format(i)
 
         # one per column
         for j in range(n):
-            queens += xsum(x[i][j] for i in range(n)) == 1, 'col({})'.format(j)
+            queens += xsum(x[i][j] for i in range(n)) == 1, 'col{}'.format(j)
 
         # diagonal \
         for p, k in enumerate(range(2 - n, n - 2 + 1)):
@@ -271,26 +271,30 @@ class TestCBC(object):
         for p, k in enumerate(range(3, n + n)):
             queens += xsum(x[i][j] for i in range(n) for j in range(n)
                            if i + j == k) <= 1, 'diag2({})'.format(p)
+
+        if solver.upper() in ['GUROBI', 'GRB']:
+            queens.solver.update()
+
         return queens
 
     @pytest.mark.parametrize("solver", SOLVERS)
     def test_constr_get_index(self, solver):
         model = self.build_model(solver)
 
-        idx = model.solver.constr_get_index('row(0)')
+        idx = model.solver.constr_get_index('row0')
         assert idx >= 0
 
-        idx = model.solver.constr_get_index('col(0)')
+        idx = model.solver.constr_get_index('col0')
         assert idx >= 0
 
     @pytest.mark.parametrize("solver", SOLVERS)
     def test_remove_constrs(self, solver):
         model = self.build_model(solver)
 
-        idx1 = model.solver.constr_get_index('row(0)')
+        idx1 = model.solver.constr_get_index('row0')
         assert idx1 >= 0
 
-        idx2 = model.solver.constr_get_index('col(0)')
+        idx2 = model.solver.constr_get_index('col0')
         assert idx2 >= 0
 
         model.solver.remove_constrs([idx1, idx2])
