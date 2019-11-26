@@ -873,6 +873,7 @@ class SolverGurobi(Solver):
         return self.get_dbl_attr_element("Pi", constr.idx)
 
     def constr_get_index(self, name: str) -> int:
+        GRBupdatemodel(self._model)
         idx = ffi.new('int *')
         st = GRBgetconstrbyname(self._model, name.encode('utf-8'), idx)
         if st != 0:
