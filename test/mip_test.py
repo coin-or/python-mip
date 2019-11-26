@@ -1,6 +1,7 @@
+"""Tests for Python-MIP"""
+from itertools import product
 import pytest
 import networkx as nx
-from itertools import product
 from mip.model import Model, xsum
 from mip.constants import OptimizationStatus, MAXIMIZE, BINARY, INTEGER
 from mip.callbacks import ConstrsGenerator, CutPool
@@ -271,9 +272,6 @@ class TestCBC(object):
         for p, k in enumerate(range(3, n + n)):
             queens += xsum(x[i][j] for i in range(n) for j in range(n)
                            if i + j == k) <= 1, 'diag2({})'.format(p)
-
-        if solver.upper() in ['GUROBI', 'GRB']:
-            queens.solver.update()
 
         return queens
 
