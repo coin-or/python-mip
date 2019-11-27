@@ -179,7 +179,7 @@ class Solver:
     def constr_set_expr(self, constr: "Constr", value: "LinExpr") -> "LinExpr":
         pass
 
-    def const_get_rhs(self, idx: int) -> float:
+    def constr_get_rhs(self, idx: int) -> float:
         pass
 
     def constr_set_rhs(self, idx: int, rhs: float):

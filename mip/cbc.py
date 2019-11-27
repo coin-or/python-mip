@@ -103,6 +103,8 @@ if has_cbc:
 
     double Cbc_getRowRHS(Cbc_Model *model, int row);
 
+    Cbc_setRowRHS(Cbc_Model *model, int row, double rhs);
+
     char Cbc_getRowSense(Cbc_Model *model, int row);
 
     const double *Cbc_getRowActivity(Cbc_Model *model);
@@ -323,7 +325,8 @@ if has_cbc:
 
     void Cbc_setDualTolerance(Cbc_Model *model, double tol);
 
-    void Cbc_addCutCallback(Cbc_Model *model, cbc_cut_callback cutcb, const char *name, void *appData, int howOften, char atSolution );
+    void Cbc_addCutCallback(Cbc_Model *model, cbc_cut_callback cutcb,
+        const char *name, void *appData, int howOften, char atSolution );
 
     void Cbc_addIncCallback(
         void *model, cbc_incumbent_callback inccb,
@@ -766,8 +769,10 @@ class SolverCbc(Solver):
         return cbclib.Cbc_getRowNameIndex(self._model, name.encode("utf-8"))
 
     def const_get_rhs(self, idx: int) -> float:
-        return float(cbclib.Cbc_getRowRHS(idx))
+        return float(cbclib.Cbc_getRowRHS(self._model, idx))
 
+    def constr_set_rhs(self, idx: int, rhs: float):
+        cbclib.Cbc_setRowRHS(self._model, idx, rhs)
 
     def var_get_obj(self, var: Var) -> float:
         obj = cbclib.Cbc_getObjCoefficients(self._model)
