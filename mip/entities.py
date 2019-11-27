@@ -353,6 +353,15 @@ class Constr:
         return res
 
     @property
+    def rhs(self) -> float:
+        """The right-hand-side (constant value) of the linear constraint."""
+        return self.__model.solver.constr_get_rhs(self.idx)
+
+    @rhs.setter
+    def rhs(self, rhs: float):
+        return self.__model.solver.constr_set_rhs(self.idx, rhs)
+
+    @property
     def slack(self) -> Optional[float]:
         """Value of the slack in this constraint in the optimal
         solution. Available only if the formulation was solved.

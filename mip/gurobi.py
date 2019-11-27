@@ -7,9 +7,11 @@ from glob import glob
 from os import environ
 from sys import platform
 from cffi import FFI
-from mip import Model, Column, Var, LinExpr, Constr, Solver, VConstrList, VVarList
+from mip import Model, Column, Var, LinExpr, Constr, Solver, VConstrList, \
+    VVarList
 from mip.constants import MAXIMIZE, MINIMIZE, CONTINUOUS, INTEGER, BINARY, \
-    OptimizationStatus, EQUAL, LESS_OR_EQUAL, GREATER_OR_EQUAL, SearchEmphasis
+    OptimizationStatus, EQUAL, LESS_OR_EQUAL, GREATER_OR_EQUAL, \
+    SearchEmphasis, LP_Method
 
 
 try:
@@ -573,6 +575,15 @@ class SolverGurobi(Solver):
         if self.model.opt_tol >= 0.0:
             self.set_dbl_param("OptimalityTol", self.model.opt_tol)
 
+        if self.model.lp_method == LP_Method.PRIMAL:
+            self.set_int_param("Method", 0)
+        elif self.model.lp_method == LP_Method.DUAL:
+            self.set_int_param("Method", 1)
+        elif self.model.lp_method == LP_Method.BARRIER:
+            self.set_int_param("Method", 2)
+        else:
+            self.set_int_param("Method", 3)
+
         # executing Gurobi to solve the formulation
         status = GRBoptimize(self._model)
         if status != 0:
@@ -858,6 +869,12 @@ class SolverGurobi(Solver):
             expr.add_var(self.model.vars[cind[i]], cval[i])
 
         return expr
+
+    def constr_get_rhs(self, idx: int) -> float:
+        return self.get_dbl_attr_element("RHS", idx)
+
+    def constr_set_rhs(self, idx: int, rhs: float):
+        self.set_dbl_attr_element("RHS", idx, rhs)
 
     def constr_get_name(self, idx: int) -> str:
         self.flush_rows()
