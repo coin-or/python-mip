@@ -278,7 +278,7 @@ def test_tsp_mipstart(solver: str):
     assert abs(m.objective_value - 262) <= TOL
 
 
-class TestCBC(object):
+class TestAPI(object):
 
     def build_model(self, solver):
         """MIP model n-queens"""
@@ -307,11 +307,11 @@ class TestCBC(object):
             queens += xsum(x[i][j] for i in range(n) for j in range(n)
                            if i + j == k) <= 1, 'diag2({})'.format(p)
 
-        return queens
+        return n, queens
 
     @pytest.mark.parametrize("solver", SOLVERS)
     def test_constr_get_index(self, solver):
-        model = self.build_model(solver)
+        _, model = self.build_model(solver)
 
         idx = model.solver.constr_get_index('row0')
         assert idx >= 0
@@ -321,7 +321,7 @@ class TestCBC(object):
 
     @pytest.mark.parametrize("solver", SOLVERS)
     def test_remove_constrs(self, solver):
-        model = self.build_model(solver)
+        _, model = self.build_model(solver)
 
         idx1 = model.solver.constr_get_index('row0')
         assert idx1 >= 0
@@ -330,3 +330,30 @@ class TestCBC(object):
         assert idx2 >= 0
 
         model.solver.remove_constrs([idx1, idx2])
+
+    @pytest.mark.parametrize("solver", SOLVERS)
+    def test_constr_get_rhs(self, solver):
+        n, model = self.build_model(solver)
+
+        # test RHS of rows
+        for i in range(n):
+            idx1 = model.solver.constr_get_index('row{}'.format(i))
+            assert idx1 >= 0
+            assert model.solver.constr_get_rhs(idx1) == 1
+
+        # test RHS of columns
+        for i in range(n):
+            idx1 = model.solver.constr_get_index('col{}'.format(i))
+            assert idx1 >= 0
+            assert model.solver.constr_get_rhs(idx1) == 1
+
+    @pytest.mark.parametrize("solver", SOLVERS)
+    def test_constr_set_rhs(self, solver):
+        n, model = self.build_model(solver)
+
+        idx1 = model.solver.constr_get_index('row0')
+        assert idx1 >= 0
+
+        val = 10
+        model.solver.constr_set_rhs(idx1, val)
+        assert model.solver.constr_get_rhs(idx1) == val
