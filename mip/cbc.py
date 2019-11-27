@@ -103,7 +103,7 @@ if has_cbc:
 
     double Cbc_getRowRHS(Cbc_Model *model, int row);
 
-    Cbc_setRowRHS(Cbc_Model *model, int row, double rhs);
+    void Cbc_setRowRHS(Cbc_Model *model, int row, double rhs);
 
     char Cbc_getRowSense(Cbc_Model *model, int row);
 
@@ -768,7 +768,7 @@ class SolverCbc(Solver):
     def constr_get_index(self, name: str) -> int:
         return cbclib.Cbc_getRowNameIndex(self._model, name.encode("utf-8"))
 
-    def const_get_rhs(self, idx: int) -> float:
+    def constr_get_rhs(self, idx: int) -> float:
         return float(cbclib.Cbc_getRowRHS(self._model, idx))
 
     def constr_set_rhs(self, idx: int, rhs: float):
