@@ -3,12 +3,46 @@ from itertools import product
 import pytest
 import networkx as nx
 from mip.model import Model, xsum
-from mip.constants import OptimizationStatus, MAXIMIZE, BINARY, INTEGER
-from mip.callbacks import ConstrsGenerator, CutPool
+from mip import OptimizationStatus, MAXIMIZE, BINARY, INTEGER, \
+    ConstrsGenerator, CutPool, maximize
 
 
 TOL = 1E-4
 SOLVERS = ['CBC', 'Gurobi']
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_knapsack(solver: str):
+
+    p = [10, 13, 18, 31, 7, 15]
+    w = [11, 15, 20, 35, 10, 33]
+    c, I = 47, range(len(w))
+
+    m = Model('knapsack', solver_name=solver)
+
+    x = [m.add_var(var_type=BINARY) for i in I]
+
+    m.objective = maximize(xsum(p[i] * x[i] for i in I))
+
+    m += xsum(w[i] * x[i] for i in I) <= c, 'cap'
+
+    m.optimize()
+
+    selected = [i for i in I if x[i].x >= 0.99]
+    print('selected items: {} profit {}'.format(selected, m.objective_value))
+
+    assert m.status == OptimizationStatus.OPTIMAL
+    assert round(m.objective_value) == 41
+
+    m.constr_by_name('cap').rhs = 60
+
+    m.optimize()
+
+    selected = [i for i in I if x[i].x >= 0.99]
+    print('selected items: {} profit {}'.format(selected, m.objective_value))
+
+    assert m.status == OptimizationStatus.OPTIMAL
+    assert round(m.objective_value) == 51
+
 
 
 @pytest.mark.parametrize("solver", SOLVERS)
