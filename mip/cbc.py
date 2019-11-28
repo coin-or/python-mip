@@ -1,6 +1,6 @@
 """Python-MIP interface to the COIN-OR Branch-and-Cut solver CBC"""
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 from sys import platform, maxsize
 from os.path import dirname, isfile
 import os
@@ -978,9 +978,9 @@ class SolverCbc(Solver):
         idx = ffi.new("int[]", constrs)
         cbclib.Cbc_deleteRows(self._model, len(constrs), idx)
 
-    def remove_vars(self, cols: List[int]):
-        idx = ffi.new("int[]", cols)
-        cbclib.Cbc_deleteCols(self._model, len(cols), idx)
+    def remove_vars(self, varsList: List[int]):
+        idx = ffi.new("int[]", varsList)
+        cbclib.Cbc_deleteCols(self._model, len(varsList), idx)
 
     def __del__(self):
         cbclib.Cbc_deleteModel(self._model)
@@ -999,16 +999,21 @@ class SolverCbc(Solver):
     def set_pump_passes(self, passes: int):
         self.__pumpp = passes
 
-    def constr_get_pi(self, constr: Constr) -> float:
+    def constr_get_pi(self, constr: Constr) -> Optional[float]:
+        if self.model.status != OptimizationStatus.OPTIMAL:
+            return None
         rp = cbclib.Cbc_getRowPrice(self._model)
         if rp == ffi.NULL:
-            raise Exception('row prices not available')
+            return None
         return float(rp[constr.idx])
 
-    def constr_get_slack(self, constr: Constr) -> float:
+    def constr_get_slack(self, constr: Constr) -> Optional[float]:
+        if self.model.status not in [OptimizationStatus.OPTIMAL,
+                                     OptimizationStatus.FEASIBLE]:
+            return None
         pac = cbclib.Cbc_getRowActivity(self._model)
         if pac == ffi.NULL:
-            raise Exception('row activity not available')
+            return None
         rhs = float(cbclib.Cbc_getRowRHS(self._model, constr.idx))
         activity = float(pac[constr.idx])
 
@@ -1017,15 +1022,12 @@ class SolverCbc(Solver):
 
         if sense in "<L":
             return rhs - activity
-        elif sense in ">G":
+        if sense in ">G":
             return activity - rhs
-        elif sense in "=E":
+        if sense in "=E":
             return abs(activity - rhs)
-        else:
-            raise Exception("not prepared to handle sense {} in \
-                            get_slack".format(sense))
 
-        return 0.0
+        return None
 
 
 class ModelOsi(Model):
@@ -1399,12 +1401,6 @@ class SolverOsi(Solver):
                               namep, MAX_NAME_SIZE)
         return ffi.string(namep).decode('utf-8')
 
-    def constr_get_pi(self, constr: Constr) -> float:
-        rp = cbclib.Osi_getRowPrice(self.osi)
-        if rp == ffi.NULL:
-            raise Exception('row prices not available')
-        return float(rp[constr.idx])
-
     def remove_constrs(self, constrsList: List[int]):
         raise Exception('Not available in OsiSolver')
 
@@ -1418,6 +1414,36 @@ class SolverOsi(Solver):
             return self.rowNames[name]
 
         return -1
+
+    def constr_get_pi(self, constr: Constr) -> Optional[float]:
+        if self.model.status != OptimizationStatus.OPTIMAL:
+            return None
+        rp = cbclib.Osi_getRowPrice(self.osi)
+        if rp == ffi.NULL:
+            return None
+        return float(rp[constr.idx])
+
+    def constr_get_slack(self, constr: Constr) -> Optional[float]:
+        if self.model.status not in [OptimizationStatus.OPTIMAL,
+                                     OptimizationStatus.FEASIBLE]:
+            return None
+        pac = cbclib.Osi_getRowActivity(self.osi)
+        if pac == ffi.NULL:
+            return None
+        rhs = float(cbclib.Osi_getRowRHS(self.osi, constr.idx))
+        activity = float(pac[constr.idx])
+
+        sense = cbclib.Osi_getRowSense(self.osi,
+                                       constr.idx).decode("utf-8").upper()
+
+        if sense in "<L":
+            return rhs - activity
+        if sense in ">G":
+            return activity - rhs
+        if sense in "=E":
+            return abs(activity - rhs)
+
+        return None
 
     # Variable-related getters/setters
     def var_get_lb(self, var: "Var") -> float:
