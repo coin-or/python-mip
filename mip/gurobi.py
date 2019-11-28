@@ -871,6 +871,7 @@ class SolverGurobi(Solver):
         return expr
 
     def constr_get_rhs(self, idx: int) -> float:
+        GRBupdatemodel(self._model)
         return self.get_dbl_attr_element("RHS", idx)
 
     def constr_set_rhs(self, idx: int, rhs: float):
