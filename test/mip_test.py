@@ -357,3 +357,11 @@ class TestAPI(object):
         val = 10
         model.solver.constr_set_rhs(idx1, val)
         assert model.solver.constr_get_rhs(idx1) == val
+
+    @pytest.mark.parametrize("solver", SOLVERS)
+    def test_constr_by_name_rhs(self, solver):
+        n, model = self.build_model(solver)
+
+        val = 10
+        model.constr_by_name('row0').rhs = val
+        assert model.constr_by_name('row0').rhs == val
