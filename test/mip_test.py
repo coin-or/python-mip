@@ -4,10 +4,13 @@ import pytest
 import networkx as nx
 from mip import Model, xsum, OptimizationStatus, MAXIMIZE, BINARY, INTEGER
 from mip import ConstrsGenerator, CutPool, maximize, CBC, GUROBI, Column
+from os import environ
 
 TOL = 1E-4
-SOLVERS = [CBC, GUROBI]
 
+SOLVERS = [CBC]
+if 'GUROBI_HOME' in environ:
+    SOLVERS += [GUROBI]
 
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_column_generation(solver: str):
