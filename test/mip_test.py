@@ -2,17 +2,114 @@
 from itertools import product
 import pytest
 import networkx as nx
-from mip.model import Model, xsum
-from mip import OptimizationStatus, MAXIMIZE, BINARY, INTEGER, \
-    ConstrsGenerator, CutPool, maximize
-
+from mip import Model, xsum, OptimizationStatus, MAXIMIZE, BINARY, INTEGER, \
+    ConstrsGenerator, CutPool, maximize, CBC, GUROBI, Column
 
 TOL = 1E-4
-SOLVERS = ['CBC', 'Gurobi']
+SOLVERS = [CBC, GUROBI]
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_column_generation(solver: str):
+    L = 250  # bar length
+    m = 4  # number of requests
+    w = [187, 119, 74, 90]  # size of each item
+    b = [1, 2, 2, 1]  # demand for each item
+
+    # creating master model
+    master = Model(solver_name=solver)
+
+    # creating an initial set of patterns which cut one item per bar
+    # to provide the restricted master problem with a feasible solution
+    lambdas = [master.add_var(obj=1, name='lambda_%d' % (j + 1))
+               for j in range(m)]
+
+    # creating constraints
+    constraints = []
+    for i in range(m):
+        constraints.append(master.add_constr(lambdas[i] >= b[i], name='i_%d' % (i + 1)))
+
+    # creating the pricing problem
+    pricing = Model(solver_name=solver)
+
+    # creating pricing variables
+    a = [pricing.add_var(obj=0, var_type=INTEGER, name='a_%d' % (i + 1)) for i in range(m)]
+
+    # creating pricing constraint
+    pricing += xsum(w[i] * a[i] for i in range(m)) <= L, 'bar_length'
+
+    new_vars = True
+    while new_vars:
+        ##########
+        # STEP 1: solving restricted master problem
+        ##########
+        master.optimize()
+
+        ##########
+        # STEP 2: updating pricing objective with dual values from master
+        ##########
+        pricing += 1 - xsum(constraints[i].pi * a[i] for i in range(m))
+
+        # solving pricing problem
+        pricing.optimize()
+
+        ##########
+        # STEP 3: adding the new columns (if any is obtained with negative reduced cost)
+        ##########
+        # checking if columns with negative reduced cost were produced and
+        # adding them into the restricted master problem
+        if pricing.objective_value < - TOL:
+            pattern = [a[i].x for i in range(m)]
+            column = Column(constraints, pattern)
+            lambdas.append(master.add_var(obj=1, column=column,
+                                          name='lambda_%d' % (len(lambdas) + 1)))
+
+        # if no column with negative reduced cost was produced, then linear
+        # relaxation of the restricted master problem is solved
+        else:
+            new_vars = False
+
+    # printing the solution
+    assert len(lambdas) == 8
+    assert round(master.objective_value) == 3
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_cutting_stock(solver: str):
+    n = 10  # maximum number of bars
+    L = 250  # bar length
+    m = 4  # number of requests
+    w = [187, 119, 74, 90]  # size of each item
+    b = [1, 2, 2, 1]  # demand for each item
+
+    # creating the model
+    model = Model(solver_name=solver)
+    x = {(i, j): model.add_var(obj=0, var_type=INTEGER, name="x[%d,%d]" % (i, j))
+         for i in range(m) for j in range(n)}
+    y = {j: model.add_var(obj=1, var_type=BINARY, name="y[%d]" % j)
+         for j in range(n)}
+
+    # constraints
+    for i in range(m):
+        model.add_constr(xsum(x[i, j] for j in range(n)) >= b[i])
+    for j in range(n):
+        model.add_constr(xsum(w[i] * x[i, j] for i in range(m)) <= L * y[j])
+
+    # additional constraints to reduce symmetry
+    for j in range(1, n):
+        model.add_constr(y[j - 1] >= y[j])
+
+    # optimizing the model
+    model.optimize()
+
+    # sanity tests
+    assert model.status == OptimizationStatus.OPTIMAL
+    assert abs(model.objective_value - 3) <= 1e-4
+    assert sum(x.x for x in model.vars) >= 5
+
 
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_knapsack(solver: str):
-
     p = [10, 13, 18, 31, 7, 15]
     w = [11, 15, 20, 35, 10, 33]
     c, I = 47, range(len(w))
@@ -27,22 +124,14 @@ def test_knapsack(solver: str):
 
     m.optimize()
 
-    selected = [i for i in I if x[i].x >= 0.99]
-    print('selected items: {} profit {}'.format(selected, m.objective_value))
-
     assert m.status == OptimizationStatus.OPTIMAL
     assert round(m.objective_value) == 41
 
     m.constr_by_name('cap').rhs = 60
-
     m.optimize()
-
-    selected = [i for i in I if x[i].x >= 0.99]
-    print('selected items: {} profit {}'.format(selected, m.objective_value))
 
     assert m.status == OptimizationStatus.OPTIMAL
     assert round(m.objective_value) == 51
-
 
 
 @pytest.mark.parametrize("solver", SOLVERS)
@@ -90,7 +179,7 @@ def test_queens(solver: str):
             rows_with_queens += 1
 
     assert abs(total_queens - n) <= TOL  # "feasible solution"
-    assert rows_with_queens == n         # "feasible solution"
+    assert rows_with_queens == n  # "feasible solution"
 
 
 @pytest.mark.parametrize("solver", SOLVERS)
@@ -227,7 +316,7 @@ def test_tsp_cuts(solver: str):
     m.optimize()
 
     assert m.status == OptimizationStatus.OPTIMAL  # "mip model status"
-    assert abs(m.objective_value - 262) <= TOL     # "mip model objective"
+    assert abs(m.objective_value - 262) <= TOL  # "mip model objective"
 
 
 @pytest.mark.parametrize("solver", SOLVERS)
