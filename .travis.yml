@@ -5,4 +5,4 @@ cache: pip
 install:
     - pip install cffi pytest networkx
 script:
-    - $(shell export PYTHONPATH=$PYTHONPATH:$(pwd)) ; cd test ; python -m pytest
+    - export PYTHONPATH=$PYTHONPATH:$(pwd) ; cd test ; python -m pytest
