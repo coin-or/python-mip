@@ -359,7 +359,7 @@ class Constr:
 
     @rhs.setter
     def rhs(self, rhs: float):
-        return self.__model.solver.constr_set_rhs(self.idx, rhs)
+        self.__model.solver.constr_set_rhs(self.idx, rhs)
 
     @property
     def slack(self) -> Optional[float]:
