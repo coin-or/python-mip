@@ -51,3 +51,6 @@ A PDF version is also available:
 https://media.readthedocs.org/pdf/python-mip/latest/python-mip.pdf
  
 
+## Build status
+
+[![Build Status](https://api.travis-ci.org/coin-or/python-mip.svg?branch=master)](https://travis-ci.org/coin-or/python-mip)
