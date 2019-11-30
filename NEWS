@@ -1,0 +1,19 @@
+1.6.0
+~~~~~
+
+- selection of which linear programming method (Primal Simplex, Dual Simplex or
+  Barrier) will be used to solve the root node relaxation (lp_method attribute
+  of Model)
+
+- read/write property RHS in Constraint
+
+- pytest for tests - thanks @pmla
+
+- do not throw exception when querying an unavailable solution: just return
+  None instead, to fix problem in some debuggers 
+
+- improved documentation - specially for the examples
+
+
+
+
