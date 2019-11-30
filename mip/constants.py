@@ -3,10 +3,10 @@
 from math import inf
 from enum import Enum
 
-VERSION = '1.5.4'
+VERSION = '1.6.0'
 
 # epsilon number (practical zero)
-EPS = 10e-6
+EPS = 10e-64
 
 # infinity representation
 INF = inf
