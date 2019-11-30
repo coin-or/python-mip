@@ -2,8 +2,8 @@
 from itertools import product
 import pytest
 import networkx as nx
-from mip import Model, xsum, OptimizationStatus, MAXIMIZE, BINARY, INTEGER, \
-    ConstrsGenerator, CutPool, maximize, CBC, GUROBI, Column
+from mip import Model, xsum, OptimizationStatus, MAXIMIZE, BINARY, INTEGER
+from mip import ConstrsGenerator, CutPool, maximize, CBC, GUROBI, Column
 
 TOL = 1E-4
 SOLVERS = [CBC, GUROBI]
