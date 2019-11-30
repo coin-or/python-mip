@@ -3,6 +3,6 @@ python:
     - "3.6"
 cache: pip
 install:
-    - pip install cffi pytest networkx mip
+    - pip install cffi pytest networkx
 script:
-    - cd test ; python -m pytest
+    - $(shell export PYTHONPATH=$PYTHONPATH:$(pwd)) ; cd test ; python -m pytest
