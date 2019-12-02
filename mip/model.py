@@ -4,7 +4,7 @@ from sys import stdout as out
 from typing import List, Tuple, Optional, Union, Dict
 
 from mip.constants import *
-from mip.callbacks import BranchSelector, ConstrsGenerator, ColumnsGenerator, CutPool, IncumbentUpdater
+from mip.callbacks import ConstrsGenerator, ColumnsGenerator, CutPool, IncumbentUpdater
 from mip.log import ProgressLog
 from mip.lists import ConstrList, VarList, VConstrList, VVarList
 from mip.entities import Column, Constr, LinExpr, Var

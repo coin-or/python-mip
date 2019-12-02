@@ -3,7 +3,7 @@
 from math import inf
 from enum import Enum
 
-VERSION = '1.6.0'
+VERSION = '1.6.1'
 
 # epsilon number (practical zero)
 EPS = 10e-64
