@@ -10,7 +10,7 @@ import mip
 from mip import Model, Var, Constr, Column, LinExpr, VConstrList, VVarList, Solver
 from mip.constants import MAXIMIZE, SearchEmphasis, CONTINUOUS, BINARY, \
     INTEGER, MINIMIZE, EQUAL, LESS_OR_EQUAL, GREATER_OR_EQUAL, \
-    OptimizationStatus
+    OptimizationStatus, LP_Method
 
 warningMessages = 0
 
@@ -222,6 +222,16 @@ if has_cbc:
 
     void Cbc_setMIPStartI(Cbc_Model *model, int count, const int colIdxs[],
         const double colValues[]);
+
+    enum LPMethod {
+      LPM_Auto    = 0,  /*! Solver will decide automatically which method to use */
+      LPM_Dual    = 1,  /*! Dual simplex */
+      LPM_Primal  = 2,  /*! Primal simplex */
+      LPM_Barrier = 3   /*! The barrier algorithm. */
+    };
+
+    void
+    Cbc_setLPmethod(Cbc_Model *model, enum LPMethod lpm );
 
     int Cbc_solve(Cbc_Model *model);
 
@@ -646,6 +656,15 @@ class SolverCbc(Solver):
 
         if self.model.opt_tol >= 0.0:
             cbclib.Cbc_setDualTolerance(self._model, self.model.opt_tol)
+
+        if self.model.lp_method == LP_Method.BARRIER:
+            cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_Barrier)
+        elif self.model.lp_method == LP_Method.DUAL:
+            cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_Dual)
+        elif self.model.lp_method == LP_Method.PRIMAL:
+            cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_Primal)
+        else:
+            cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_Auto)
 
         cbclib.Cbc_solve(self._model)
 
