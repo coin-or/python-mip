@@ -978,11 +978,11 @@ class SolverCbc(Solver):
                               max_sol: int = INF):
         if max_time != INF:
             cbc_set_parameter(self, 'timeMode', 'elapsed')
-            cbc_set_parameter(self, 'seconds', '{}'.format(max_time))
+            self.set_max_seconds(max_time)
         if max_nodes != INF:
-            cbc_set_parameter(self, 'maxnodes', '{}'.format(max_nodes))
+            self.set_max_nodes(max_nodes)
         if max_sol != INF:
-            cbc_set_parameter(self, 'max_solutions', '{}'.format(max_sol))
+            self.set_max_solutions(max_sol)
 
     def get_emphasis(self) -> SearchEmphasis:
         return self.emphasis
