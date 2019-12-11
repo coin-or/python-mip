@@ -666,6 +666,9 @@ class SolverCbc(Solver):
         else:
             cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_Auto)
 
+        cbclib.Cbc_setAllowableFractionGap(self._model, self.model.max_mip_gap)
+        cbclib.Cbc_setAllowableGap(self._model, self.model.max_mip_gap_abs)
+
         cbclib.Cbc_solve(self._model)
 
         if cbclib.Cbc_isAbandoned(self._model):
