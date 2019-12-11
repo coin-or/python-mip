@@ -3,54 +3,46 @@
 Quick start
 ===========
 
-This chapter presents the main components needed to build and optimize models using Python-MIP.
-A full description of the methods and their parameters can be found at :ref:`Chapter 4 <chapClasses>`.
+This chapter presents the main components needed to build and optimize models using Python-MIP. A full description of the methods and their parameters can be found at :ref:`Chapter 4 <chapClasses>`.
 
 The first step to enable Python-MIP in your Python code is to add:
 
 .. code-block:: python
 
-   from mip.model import *
+   from mip import *
 
 When loaded, Python-MIP will display its installed version: ::
 
-   Using Python-MIP package version 1.4.2
+   Using Python-MIP package version 1.6.2
 
 Creating Models
 ---------------
 
-The model class represents a the optimization model.
-The code below creates an empty Mixed Integer Linear Programming problem with default settings.
+The model class represents the optimization model.
+The code below creates an empty Mixed-Integer Linear Programming problem with default settings.
 
 .. code-block:: python
 
    m = Model()
 
-By default, the optimization sense is set to *Minimize* and the selected solver is set to CBC.
-In case Gurobi is installed and configured, it will be used instead.
-You can change the model objective sense or force the selection of a specific solve using additional parameters for the constructor:
+By default, the optimization sense is set to *Minimize* and the selected solver is set to CBC. If case Gurobi is installed and configured, it will be used instead. You can change the model objective sense or force the selection of a specific solver engine using additional parameters for the constructor:
 
 .. code-block:: python
 
    m = Model(sense=MAXIMIZE, solver_name=CBC) # use GRB for Gurobi
 
-After creating the model, you should include your decision variables, objective function and constraints.
-These tasks will be discussed in the next sections.
+After creating the model, you should include your decision variables, objective function and constraints. These tasks will be discussed in the next sections.
 
 Variables
 ~~~~~~~~~
 
-Decision variables are added to the model using the :func:`~mip.model.Model.add_var` method.
-Without parameters, a single variable with domain in :math:`\mathbb{R}^+` is created and its reference
-is returned:
+Decision variables are added to the model using the :func:`~mip.model.Model.add_var` method. Without parameters, a single variable with domain in :math:`\mathbb{R}^+` is created and its reference is returned:
 
 .. code-block:: python
 
     x = m.add_var()
 
-By using Python list initialization syntax, you can easily create a vector of variables.
-Let's say that your model will have `n` binary decision variables (n=10 in the example below) indicating if an items is selected or not.
-The code below creates 10 binary variables :code:`y[0]`, ..., :code:`y[n-1]`.
+By using Python list initialization syntax, you can easily create a vector of variables. Let's say that your model will have `n` binary decision variables (n=10 in the example below) indicating if each one of 10 items is selected or not. The code below creates 10 binary variables :code:`y[0]`, ..., :code:`y[n-1]` and stores their references in a list.
 
 .. code-block:: python
 
