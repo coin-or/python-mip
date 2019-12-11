@@ -1,3 +1,8 @@
 - inst logo
 - AVX optional in CBC
+- feasopt
+- cg examples
+- support for rapsberry pi
+- option to strengthen formulation with cuts
+
 
