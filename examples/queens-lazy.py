@@ -34,7 +34,7 @@ class DiagonalCutGenerator(ConstrsGenerator):
 
 
 # number of queens
-n = 60
+n = 50
 
 queens = Model('queens', MAXIMIZE)
 
