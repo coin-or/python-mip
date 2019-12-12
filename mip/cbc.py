@@ -306,6 +306,9 @@ if has_cbc:
     void OsiCuts_addRowCut( void *osiCuts, int nz, const int *idx,
         const double *coef, char sense, double rhs );
 
+    void OsiCuts_addGlobalRowCut( void *osiCuts, int nz, const int *idx,
+        const double *coef, char sense, double rhs );
+
     void Osi_addCol(void *osi, const char *name, double lb, double ub,
        double obj, char isInteger, int nz, int *rows, double *coefs);
 
@@ -1181,8 +1184,8 @@ class SolverOsi(Solver):
             sense = lin_expr.sense.encode("utf-8")
             rhs = -lin_expr.const
 
-            cbclib.OsiCuts_addRowCut(self.osi_cutsp, numnz, cind, cval,
-                                     sense, rhs)
+            cbclib.OsiCuts_addGlobalRowCut(self.osi_cutsp, numnz, cind,
+                                           cval, sense, rhs)
         else:
             global cut_idx
             name = 'cut{}'.format(cut_idx)
@@ -1200,8 +1203,8 @@ class SolverOsi(Solver):
             sense = lin_expr.sense.encode("utf-8")
             rhs = -lin_expr.const
 
-            cbclib.OsiCuts_addRowCut(self.osi_cutsp, numnz, cind, cval,
-                                     sense, rhs)
+            cbclib.OsiCuts_addGlobalRowCut(self.osi_cutsp, numnz, cind,
+                                           cval, sense, rhs)
         else:
             global cut_idx
             name = 'cut{}'.format(cut_idx)
