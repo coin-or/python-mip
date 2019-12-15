@@ -12,8 +12,7 @@ Python MIP - Mixed-Integer Programming Package Documentation
    custom
    bench
    classes
+   bibliography
 
 
-.. bibliography:: references.bib
-    :cited:
 

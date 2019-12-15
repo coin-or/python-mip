@@ -256,12 +256,13 @@ contains the jobs :math:`x_{0}` and :math:`x_{n+1}`. These jobs are dummy jobs a
 represent the beginning of the planning and the end of the planning. The
 processing time for the dummy jobs is zero and does not consume resources.
 
-A binary programming formulation was proposed by Pritsker et al. :cite:`Prit69`.
-In this formulation, decision variables :math:`x_{jt} = 1` if job :math:`j` is assigned a completion
-time at the end of time :math:`t`; otherwise, :math:`x_{jt} = 0`. All jobs must finish
-in a single instant of time without violating the relationships of precedence
-and amount of available resources. The model proposed by Pristker can be stated as
-follows:
+A binary programming formulation was proposed by Pritsker et al.
+:cite:`PWW69`. In this formulation, decision variables :math:`x_{jt} = 1`
+if job :math:`j` is assigned a completion time at the end of time
+:math:`t`; otherwise, :math:`x_{jt} = 0`. All jobs must finish in a single
+instant of time without violating the relationships of precedence and
+amount of available resources. The model proposed by Pristker can be
+stated as follows:
 
 .. math::
 
@@ -411,9 +412,14 @@ the optimal solution found:
 Cutting Stock / One-dimensional Bin Packing Problem
 -----------------------------------
 
-The One-dimensional Cutting Stock Problem (also often referred to as One-dimensional Bin Packing Problem) is an NP-hard problem first studied by Kantorovich in 1939 :cite:`Kantorovich60`. The problem consists of deciding how to cut a set of pieces out of a set of stock materials (paper rolls, metals, etc.) in a way that minimizes the number of stock materials used.
+The One-dimensional Cutting Stock Problem (also often referred to as
+One-dimensional Bin Packing Problem) is an NP-hard problem first studied
+by Kantorovich in 1939 :cite:`Kan60`. The problem consists of deciding how
+to cut a set of pieces out of a set of stock materials (paper rolls,
+metals, etc.) in a way that minimizes the number of stock materials used.
 
-:cite:`Kantorovich60` proposed an integer programming formulation for the problem, given below:
+:cite:`Kan60` proposed an integer programming formulation for the problem,
+given below:
 
 
 .. math::
@@ -431,7 +437,8 @@ This formulation can be improved by including symmetry reducing constraints, suc
         y_{j-1} \geq y_{j}  \;\; \forall j \in \{ 2 \ldots m \} \\
 
 
-The following Python-MIP code creates the formulation proposed by :cite:`Kantorovich60`, optimizes it and prints the optimal solution found.
+The following Python-MIP code creates the formulation proposed by
+:cite:`Kan60`, optimizes it and prints the optimal solution found.
 
 .. literalinclude:: ../examples/cuttingstock_kantorovich.py
     :caption: Formulation for the One-dimensional Cutting Stock Problem (examples/cuttingstock_kantorovich.py)
