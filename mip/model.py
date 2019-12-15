@@ -1,14 +1,14 @@
 from os import environ
 from os.path import isfile
-from sys import stdout as out
+from sys import stdout as out, platform
 from typing import List, Tuple, Optional, Union, Dict
 
 from mip.constants import *
-from mip.callbacks import ConstrsGenerator, ColumnsGenerator, CutPool, IncumbentUpdater
+from mip.callbacks import ConstrsGenerator
 from mip.log import ProgressLog
-from mip.lists import ConstrList, VarList, VConstrList, VVarList
+from mip.lists import ConstrList, VarList
 from mip.entities import Column, Constr, LinExpr, Var
-from mip.exceptions import InvalidLinExpr, InvalidParameter, ParameterNotAvailable
+from mip.exceptions import InvalidLinExpr
 from mip.solver import Solver
 
 
@@ -450,16 +450,22 @@ class Model:
                                  mipstart file {}'.format(path))
 
             self.start = var_list
+            return
 
-        elif path.lower().endswith('.lp') or \
-                path.lower().endswith('.mps'):
-            self.clear()
-            self.solver.read(path)
-        else:
-            raise Exception('Use .lp, .mps, .sol or .mst as file extension \
-                             to indicate the file format.')
-        self.vars.update_vars(self.solver.num_cols())
-        self.constrs.update_constrs(self.solver.num_rows())
+        # reading model
+        model_ext = ['.lp', '.mps']
+
+        fn_low = path.lower()
+        for ext in model_ext:
+            if fn_low.endswith(ext):
+                self.clear()
+                self.solver.read(path)
+                self.vars.update_vars(self.solver.num_cols())
+                self.constrs.update_constrs(self.solver.num_rows())
+                return
+
+        raise Exception('Use .lp, .mps, .sol or .mst as file extension \
+                         to indicate the file format.')
 
     def relax(self):
         """ Relax integrality constraints of variables
