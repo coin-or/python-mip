@@ -2,7 +2,7 @@
 Python-MIP
 """
 from math import inf
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from mip.constants import INF, CONTINUOUS
 from mip.constants import SearchEmphasis, OptimizationStatus
 
@@ -236,7 +236,8 @@ class Solver:
         pass
 
     def var_get_x(self, var: "Var") -> float:
-        pass
+        """Assumes that the solution is available (should be checked
+           before calling it"""
 
     def var_get_xi(self, var: "Var", i: int) -> float:
         pass
