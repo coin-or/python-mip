@@ -368,6 +368,7 @@ Osi_getColSolution = cbclib.Osi_getColSolution
 Osi_getIntegerTolerance = cbclib.Osi_getIntegerTolerance
 Osi_isInteger = cbclib.Osi_isInteger
 Osi_isProvenOptimal = cbclib.Osi_isProvenOptimal
+OsiCuts_addGlobalRowCut = cbclib.OsiCuts_addGlobalRowCut 
 
 
 def cbc_set_parameter(model: Model, param: str, value: str):
@@ -737,14 +738,29 @@ class SolverCbc(Solver):
     def get_objective_bound(self) -> float:
         return cbclib.Cbc_getBestPossibleObjValue(self._model) + self._objconst
 
-    def var_get_x(self, var: Var) -> float:
+    def var_get_x(self, var: Var) -> Optional[float]:
+        # model status is *already checked* in Model
+
         if cbclib.Cbc_getNumIntegers(self._model) > 0:
-            x = cbclib.Cbc_bestSolution(self._model)
-        else:
-            x = cbclib.Cbc_getColSolution(self._model)
-        if x == ffi.NULL:
-            raise Exception('no solution found')
-        return float(x[var.idx])
+            xp = cbclib.Cbc_bestSolution(self._model)
+            if xp == ffi.NULL: # if enter here, probably bug in CBC
+                raise Exception('Calling Cbc_bestSolution without solution'
+                                ' available.')
+            xv = float(xp[var.idx])
+
+            # if variable is integer it is *really* close to an integer
+            # in the solution, lets round it
+            if self.var_get_var_type(var) in [BINARY, INTEGER]:
+                if abs(xv-round(xv)) <= 1e-12:
+                    xv = round(xv)
+            return xv
+
+        # continuous
+        xp = cbclib.Cbc_getColSolution(self._model)
+        if xp == ffi.NULL: # if enter here, probably bug in CBC
+            raise Exception('Calling Cbc_getColSolution without solution'
+                            ' available.')
+        return float(xp[var.idx])
 
     def get_num_solutions(self) -> int:
         return cbclib.Cbc_numberSavedSolutions(self._model)
@@ -1174,6 +1190,9 @@ class SolverOsi(Solver):
 
     def add_cut(self, lin_expr: LinExpr):
         if self.osi_cutsp != ffi.NULL:
+            if lin_expr.violation < 1e-5:
+                return
+
             numnz = len(lin_expr.expr)
 
             cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
@@ -1184,8 +1203,8 @@ class SolverOsi(Solver):
             sense = lin_expr.sense.encode("utf-8")
             rhs = -lin_expr.const
 
-            cbclib.OsiCuts_addGlobalRowCut(self.osi_cutsp, numnz, cind,
-                                           cval, sense, rhs)
+            OsiCuts_addGlobalRowCut(self.osi_cutsp, numnz, cind, cval,
+                                    sense, rhs)
         else:
             global cut_idx
             name = 'cut{}'.format(cut_idx)
@@ -1193,6 +1212,10 @@ class SolverOsi(Solver):
 
     def add_lazy_constr(self, lin_expr: LinExpr):
         if self.osi_cutsp != ffi.NULL:
+            # checking if violated
+            if lin_expr.violation < 1e-5:
+                return
+
             numnz = len(lin_expr.expr)
 
             cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
@@ -1203,8 +1226,8 @@ class SolverOsi(Solver):
             sense = lin_expr.sense.encode("utf-8")
             rhs = -lin_expr.const
 
-            cbclib.OsiCuts_addGlobalRowCut(self.osi_cutsp, numnz, cind,
-                                           cval, sense, rhs)
+            OsiCuts_addGlobalRowCut(self.osi_cutsp, numnz, cind,
+                                    cval, sense, rhs)
         else:
             global cut_idx
             name = 'cut{}'.format(cut_idx)

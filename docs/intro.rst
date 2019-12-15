@@ -6,7 +6,7 @@ Introduction
 The Python-MIP package provides tools for modeling and solving
 `Mixed-Integer Linear Programming Problems
 <https://en.wikipedia.org/wiki/Integer_programming>`_ (MIPs)
-:cite:`Wolse98` in Python. The default installation includes the `COIN-OR
+:cite:`Wols98` in Python. The default installation includes the `COIN-OR
 Linear Programming Solver - CLP <http://github.com/coin-or/Clp>`_, which
 is currently the `fastest <http://plato.asu.edu/ftp/lpsimp.html>`_  open
 source linear programming solver and the `COIN-OR Branch-and-Cut solver
