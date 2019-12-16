@@ -4,7 +4,7 @@
 #
 
 all:
-	pdflatex python-mip-tutorial-podes ; bibtex python-mip-tutorial-podes ; pdflatex python-mip-tutorial-podes ; pdflatex python-mip-tutorial-podes
+	pdflatex -shell-escape python-mip-tutorial-podes  ; bibtex python-mip-tutorial-podes ; pdflatex -shell-escape python-mip-tutorial-podes ; pdflatex -shell-escape python-mip-tutorial-podes
 
 
 # vim:ft=make
