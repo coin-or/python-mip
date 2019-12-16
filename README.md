@@ -46,7 +46,7 @@ Some of the main features of MIP are:
 
 Many Python-MIP examples are documented at https://python-mip.readthedocs.io/en/latest/examples.html 
 
-The code of these examples can be downloaded at https://github.com/coin-or/python-mip/tree/master/examples
+The code of these examples and additional ones (published in tutorials) can be downloaded at https://github.com/coin-or/python-mip/tree/master/examples
 
 ## Documentation
  
