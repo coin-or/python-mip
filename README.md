@@ -41,10 +41,16 @@ Some of the main features of MIP are:
 
 * written in modern statically typed Python 3 (requires Python
   3.5 or newer).
-  
+
+## Examples
+
+Many Python-MIP examples are documented at https://python-mip.readthedocs.io/en/latest/examples.html 
+
+The code of these examples can be downloaded at https://github.com/coin-or/python-mip/tree/master/examples
+
 ## Documentation
  
-The Documentation for Python-MIP is available at:
+The full Python-MIP documentation is available at
 https://python-mip.readthedocs.io/en/latest/
 
 A PDF version is also available:
