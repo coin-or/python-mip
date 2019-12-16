@@ -208,7 +208,7 @@ A formulação \eqref{m1fo}-\eqref{m1bin} foi proposta por \cite{Miller1960}:
     \label{m1bin} & y_i \geq 0 \,\,\, \forall i \in V 
 \end{align}
 
-As equações (\ref{eq:in}) e (\ref{eq:out}), denominadas restrições de grau, garantem que cada vértice é visitado somente uma vez enquanto variáveis auxiliares $y_{i}$ são utilizadas nas restrições (\ref{eq:st1}) para garantir que uma vez que um arco $(i,j)$ seja selecionado, o valor de $y_{j}$ seja maior do que o valor de $y_{i}$ em uma unidade. 
+A função objetivo (\ref{m1fo}) minimiza o custo total da rota. As equações (\ref{eq:in}) e (\ref{eq:out}), denominadas restrições de grau, garantem que cada vértice é visitado somente uma vez enquanto variáveis auxiliares $y_{i}$ são utilizadas nas restrições (\ref{eq:st1}) para garantir que uma vez que um arco $(i,j)$ seja selecionado, o valor de $y_{j}$ seja maior do que o valor de $y_{i}$ em uma unidade. 
 Essa propriedade é garantida para todos os vértices exceto o vértice 0, que é arbitrariamente selecionado como origem de modo a evitar a construção de sub-rotas desconectadas, como no exemplo da Figura \ref{figSub}, onde os valores das variáveis $x_{i,j}$ indicados nos arcos representam uma solução viável se somente as restrições (\ref{eq:in}) e (\ref{eq:out}) fossem consideradas.
 
 \begin{figure}[h!]
@@ -238,13 +238,13 @@ O código a seguir utiliza a formulação compacta dada pelas equações \eqref{
     from sys import stdout as out
     from mip import Model, xsum, minimize, BINARY
 
-    # names of places to visit
+    # lugares de visitação
     places = ['Antwerp', 'Bruges', 'C-Mine', 'Dinant', 'Ghent',
               'Grand-Place de Bruxelles', 'Hasselt', 'Leuven',
               'Mechelen', 'Mons', 'Montagne de Bueren', 'Namur',
               'Remouchamps', 'Waterloo']
 
-    # distances in an upper triangular matrix
+    # distâncias em matriz triangular superior
     dists = [[83, 81, 113, 52, 42, 73, 44, 23, 91, 105, 90, 124, 57],
              [161, 160, 39, 89, 151, 110, 90, 99, 177, 143, 193, 100],
              [90, 125, 82, 13, 57, 71, 123, 38, 72, 59, 82],
@@ -260,10 +260,10 @@ O código a seguir utiliza a formulação compacta dada pelas equações \eqref{
              [97],
              []]
 
-    # number of nodes and list of vertices
+    # número de nós e lista de vértices
     n, V = len(dists), set(range(len(dists)))
 
-    # distances matrix
+    # matriz de distâncias completa
     c = [[0 if i == j
           else dists[i][j-i-1] if j > i
           else dists[j][i-j-1]
@@ -271,33 +271,33 @@ O código a seguir utiliza a formulação compacta dada pelas equações \eqref{
 
     model = Model()
 
-    # binary variables indicating if arc (i,j) is used on the route or not
+    # variáveis binárias indicando se arco (i,j) é usado na rota
     x = [[model.add_var(var_type=BINARY) for j in V] for i in V]
 
-    # continuous variable to prevent subtours: each city will have a
-    # different sequential id in the planned route except the first one
+    # variáveis contínuas para prevenção de sub-rotas: cada cidade terá
+    # um identificador numérico maior na rota, excetuando-se a primeira
     y = [model.add_var() for i in V]
 
-    # objective function: minimize the distance
+    # função objetivo: minimizar custo total
     model.objective = minimize(xsum(c[i][j]*x[i][j] for i in V for j in V))
 
-    # constraint : leave each city only once
+    # restrição : sair de cada cidade somente uma vez
     for i in V:
         model += xsum(x[i][j] for j in V - {i}) == 1
 
-    # constraint : enter each city only once
+    # restrição : entrar em cada cidade somente uma vez
     for i in V:
         model += xsum(x[j][i] for j in V - {i}) == 1
 
-    # subtour elimination
+    # eliminação de sub-rotas
     for (i, j) in product(V - {0}, V - {0}):
         if i != j:
             model += y[i] - (n+1)*x[i][j] >= y[j]-n
 
-    # optimizing
+    # otimização com limite de tempo de 30 segundos
     model.optimize(max_seconds=30)
 
-    # checking if a solution was found
+    # verificando se ao menos uma solução válida foi encontrada
     if model.num_solutions:
         out.write('route with total distance %g found: %s'
                   % (model.objective_value, places[0]))
@@ -326,15 +326,9 @@ Nesse caso, para cada arco multiplicamos sua respectiva variável binária de se
 
 As restrições são criadas nas linhas 48-59. Em todos os casos utilizamos o operador \texttt{+=} sobre o modelo \texttt{m} para adicionar restrições lineares. Note que assim como na função objetivo, o somatório é efetuado com a função \texttt{xsum}. Esta função é similar a função \texttt{sum} disponível na linguagem Python mas otimizada para a situação específica de escrita de restrições lineares no pacote Python-MIP\@. 
 
-A linha 62 dispara a otimização do modelo. Na linha 65 verificamos se uma solução viável foi encontrada e, em caso positivo, a escrevemos nas linhas 65-74.
+A linha 62 dispara a otimização do modelo indicando um limite de tempo para a otimização de 30 segundos. Na linha 65 verificamos se uma solução viável foi encontrada e, em caso positivo, a escrevemos nas linhas 65-74.
 
-Os pacotes de programação linear inteira executam uma busca em árvore onde são utilizados \emph{limites} para a poda de nós. 
-O limite superior é obtido a partir de qualquer solução viável que for encontrada durante a busca e o limite inferior corresponde ao custo obtido com a resolução do problema com as restrições de integralidade das variáveis relaxadas. 
-No nosso caso, considerando domínio das variáveis $x$ como contínuo entre 0 e 1. 
-A formulação aqui utilizada tem uma grave deficiência: o limite inferior por ela produzido é distante do custo ótimo da solução. 
-Desse modo, o desempenho dos resolvedores de programação linear inteira em sua resolução é bastante pobre. 
-Essa deficiência não é visível quando resolvemos problemas pequenos como o de exemplo (apenas 14 cidades), mas faz com que o desempenho do resolvedor degenere muito rapidamente a medida que o tamanho do grafo de entrada aumenta. 
-Na seção seguinte veremos o tratamento de uma formulação mais apropriada. 
+Os pacotes de programação linear inteira executam uma busca em árvore onde são utilizados \emph{limites} para a poda de nós. O limite superior é obtido a partir de qualquer solução viável que for encontrada durante a busca e o limite inferior corresponde ao custo obtido com a resolução do problema com as restrições de integralidade das variáveis relaxadas. No nosso caso considerando domínio das variáveis $x$ como contínuo entre 0 e 1. A formulação aqui utilizada tem uma grave deficiência: o limite inferior por ela produzido é distante do custo ótimo da solução. Desse modo, o desempenho dos pacotes de programação linear inteira em sua resolução é bastante pobre. Essa deficiência não é visível quando resolvemos problemas pequenos como o de exemplo (apenas 14 cidades), mas faz com que o desempenho do pacote degenere muito rapidamente a medida que o tamanho do grafo de entrada aumenta. Na seção seguinte veremos o tratamento de uma formulação mais apropriada.
 
 \subsection{Formulações Fortes com Geração Dinâmica de Restrições}
 
@@ -346,7 +340,7 @@ A formulação do caixeiro viajante utilizada nos métodos de melhor desempenho 
 
 O problema das desigualdades acima é que elas devem ser geradas para \emph{cada subconjunto} $S$ de vértices do grafo, ou seja, para um grafo com $n$ vértices temos $2^n-1$ subconjuntos não vazios. 
 Inseri-las no modelo inicial é inviável, exceto para instâncias pequenas. 
-Uma solução para esse problema é inserir somente as restrições \emph{necessárias} no modelo. 
+Uma solução para esse problema é inserir somente as restrições \emph{necessárias} no modelo, com o método dos Planos de Corte \citep{Dantzig54}. 
 O pacote Python-MIP permite uma comunicação bi-direcional com o resolvedor para que as restrições necessárias sejam inseridas \emph{durante} a busca. 
 Para isso precisamos criar uma classe derivada da classe \texttt{ConstrsGenerator} que implemente o método \texttt{generate\_constrs}. 
 Esse método recebe como parâmetro um modelo, onde a solução corrente pode ser consultada e restrições adicionais podem ser inseridas na medida do necessário, caso a solução corrente não as satisfaça. 
@@ -355,14 +349,12 @@ O pacote Python-MIP permite um controle sobre em que ponto da busca as restriç�
 Duas propriedades do modelo podem ser preenchidas com objeto(s) do tipo \texttt{ConstrsGenerator}:
 
 \begin{description}
-	\item[\texttt{cuts\_generator}]: caso o gerador de restrições seja informado com essa propriedade do modelo, a verificação por restrições faltantes (cortes violados) é realizada sempre que uma \emph{solução fracionária} for gerada durante a resolução de um nó na árvore de busca. Nesse caso, cortes são inseridos para \emph{reforçar} a formulação inserida inicialmente, ou seja, caso somente um \texttt{cuts\_generator} seja informado é necessário que a formulação inicial seja completa; assim, caso a restrição (\ref{consSubTour}) seja inserida dessa forma, as variáveis auxiliares $y$ e as restrições (fracas) de eliminação de sub-ciclos devem ser mantidas na formulação inicial.
+	\item[\texttt{cuts\_generator}]: caso o gerador de restrições seja informado com essa propriedade do modelo, a verificação por restrições faltantes (cortes violados) é realizada sempre que uma \emph{solução fracionária} for gerada durante a resolução de um nó na árvore de busca. Nesse caso, cortes são inseridos para \emph{reforçar} a formulação inserida inicialmente, ou seja, caso somente um \texttt{cuts\_generator} seja informado é necessário que a formulação inicial seja completa; assim, caso a restrição (\ref{consSubTour}) seja inserida dessa forma, as variáveis auxiliares $y$ e as restrições (fracas) de eliminação de sub-ciclos devem ser mantidas na formulação inicial visto que as restrições de grau não são suficientes para definir uma solução factível.
 	
 	\item[\texttt{lazy\_constrs\_generator}]: um gerador de restrições informado com essa propriedade é chamado sempre que uma \emph{solução inteira} for gerada. Nesse modo de uso é possível iniciar a busca com uma formulação incompleta, ou seja, sem as variáveis auxiliares $y$ e as restrições (4). Desse modo, a formulação inicial pode ficar muito mais leve. Uma possível desvantagem dessa abordagem é que como o pacote de otimização deve considerar que a formulação inicial está \emph{incompleta}, algumas fases do pré-processamento do mesmo precisam ser desligadas e o limite inferior inicial pode ser menor.
 \end{description}
 
-Assim, uma vez que tenhamos um gerador de restrições implementado (especialização da classe \texttt{ConstrsGenerator}), podemos decidir em que situação o mesmo será chamado. 
-É possível também especificar geradores de restrições para ambas as situações, ou seja, a formulação inicial é incompleta e portanto toda solução inteira deve ser checada mas soluções fracionárias também são verificadas. 
-A melhor abordagem a ser utilizada deve ser determinada com experimentos para o problema de interesse. 
+Assim, uma vez que tenhamos um gerador de restrições implementado (especialização da classe \texttt{ConstrsGenerator}), podemos decidir em que situação o mesmo será chamado. É possível também especificar geradores de restrições para ambas as situações, ou seja, a formulação inicial é incompleta e portanto toda solução inteira deve ser checada mas soluções fracionárias também são verificadas. A melhor abordagem a ser utilizada deve ser determinada com experimentos para o problema de interesse. 
 Na Seção \ref{secExp} são incluídos experimentos para diferentes configurações do nosso código.
 
 O código a seguir implementa um gerador dinâmico de restrições de eliminação de sub-rotas em soluções inteiras para nossa formulação compacta previamente implementada. 
@@ -372,14 +364,14 @@ O código a seguir implementa um gerador dinâmico de restrições de eliminaç�
     from typing import Set, List
     from collections import defaultdict
 
-    def subtour(N: Set, out: defaultdict, node) -> List:
+    def subtour(N: Set, outa: defaultdict, node) -> List:
         """verifica se 'node' pertence a alguma sub-rota e retorna os 
-        elementos dessa sub-rota"""
+        nós envolvidos"""
         queue = [node]
         visited = set(queue)
         while queue:
             n = queue.pop()
-            for nl in out[n]:
+            for nl in outa[n]:
                 if nl not in visited:
                     queue.append(nl)
                     visited.add(nl)
@@ -390,23 +382,20 @@ O código a seguir implementa um gerador dinâmico de restrições de eliminaç�
             return []
 
     class SubTourLazyGenerator(ConstrsGenerator):
-        """gera restrições de eliminação de sub-rotas em soluções inteiras"""
-        def generate_constrs(self, model: Model):
-            r = [(v, v.x) for v in model.vars
-                 if v.name.startswith('x(') and v.x >= 0.99]
-            U = [int(v.name.split('(')[1].split(',')[0]) for v, f in r]
-            V = [int(v.name.split(')')[0].split(',')[1]) for v, f in r]
-            N, cp = set(U+V), CutPool()
-            out = defaultdict(lambda: list())
-            for i in range(len(U)):
-                out[U[i]].append(V[i])
+        def __init__(self, xv):
+            self._x = xv
 
-            for n in N:
-                S = set(subtour(N, out, n))
+        def generate_constrs(self, model: Model):
+            """restrições de eliminação de sub-rotas em soluções inteiras"""
+            x_, N = model.translate(self._x), range(len(self._x))
+            cp = CutPool()
+            outa = [[j for j in N if x_[i][j].x >= 0.99] for i in N]
+
+            for node in N:
+                S = set(subtour(N, outa, node))
                 if S:
-                    arcsInS = [(v, f) for i, (v, f) in enumerate(r)
-                               if U[i] in S and V[i] in S]
-                    cut = xsum(1.0*v for v, fm in arcsInS) <= len(S)-1
+                    AS = [(i, j) for (i, j) in product(S, S) if i != j]
+                    cut = xsum(x_[i][j] for (i, j) in AS) <= len(S)-1
                     cp.add(cut)
             for cut in cp.cuts:
                 model += cut
