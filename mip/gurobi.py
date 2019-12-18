@@ -8,7 +8,7 @@ from os import environ
 from sys import platform
 from cffi import FFI
 from mip import Model, Column, Var, LinExpr, Constr, Solver, VConstrList, \
-    VVarList
+    VVarList, xsum
 from mip.constants import MAXIMIZE, MINIMIZE, CONTINUOUS, INTEGER, BINARY, \
     OptimizationStatus, EQUAL, LESS_OR_EQUAL, GREATER_OR_EQUAL, \
     SearchEmphasis, LP_Method
@@ -255,6 +255,7 @@ GRBdelconstrs = grblib.GRBdelconstrs
 GRBgetenv = grblib.GRBgetenv
 GRBgetstrattr = grblib.GRBgetstrattr
 GRBsetstrattr = grblib.GRBsetstrattr
+GRBgetdblattrarray = grblib.GRBgetdblattrarray
 
 GRB_CB_MIPSOL = 4
 GRB_CB_MIPNODE = 5
@@ -445,7 +446,18 @@ class SolverGurobi(Solver):
         return self.get_dbl_attr("ObjBound")
 
     def get_objective(self) -> LinExpr:
-        return self.get_dbl_attr("ObjVal")
+        attr = 'Obj'.encode('utf-8')
+        # st = GRBsetdblattrarray(self._model, attr,
+        #                         0, num_vars, zeros)
+        obj = ffi.new("double[]", [0.0 for i in range(self.num_cols())])
+
+        st = GRBgetdblattrarray(self._model, attr, 0, self.num_cols(), obj)
+        if st != 0:
+            raise Exception('Error getting objective function')
+        obj_expr = xsum(obj[i]*self.model.vars[i] for i in
+                        range(self.num_cols()) if abs(obj[i] > 1e-20))
+        obj_expr.sense = self.get_objective_sense
+        return obj_expr
 
     def get_objective_const(self) -> float:
         return self.get_dbl_attr("ObjCon")
