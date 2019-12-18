@@ -401,13 +401,13 @@ O código a seguir implementa um gerador dinâmico de restrições de eliminaç�
                 model += cut
 \end{minted}
 
-Em soluções inteiras como a da Figura 2, a identificação de sub-rotas pode ser facilmente realizada executando-se uma busca em profundidade a partir de cada nó e verificando sua conectividade (função \texttt{subtour}). A existência ou não de um arco depende do valor da respectiva variável $x$ na solução inteira. Dentro do método \texttt{generate\_constrs}, as linhas (25-28) consultam as variáveis do modelo (\texttt{model.vars}) pelo nome, identificando as varáveis \texttt{x} e os respectivos pontos de saída e chegada de cada arco que são então armazenados nos vetores \texttt{U} e \texttt{V}. Nesse ponto pode-se questionar se a matriz \texttt{x} previamente definida não poderia ser usada para a consulta das variáveis relacionadas aos arcos. Essa abordagem é desencorajada dentro do gerador de restrições pois alguns resolvedores criam um novo problema durante a busca, possivelmente removendo algumas variáveis na fase de pré-processamento e as referências originais podem se tornar inválidas. Para cada nó, caso uma sub-rota desconectada seja identificada (linha 36) uma restrição do tipo (\ref{consSubTour}) é gerada para o subconjunto \texttt{S} envolvido. Os cortes são temporariamente armazenados em um objeto do tipo \texttt{CutPool} pois o mesmo descarta cortes repetidos. Finalmente, nas linhas 42-43, os cortes são adicionados ao modelo.
+Em soluções inteiras como a da Figura 2, a identificação de sub-rotas pode ser facilmente realizada executando-se uma busca em profundidade a partir de cada nó e verificando sua conectividade (função \texttt{subtour}). Na função de geração de restrições, as referências para as variáveis x originais do modelo são atualizadas para o modelo corrente com o método \texttt{translate} (linha 28). A existência ou não de um arco depende do valor da respectiva variável $x$ na solução inteira. O arco de saída associado com cada nó é computado na linha 30. Para cada nó, caso uma sub-rota desconectada seja identificada (linha 33) uma restrição do tipo (\ref{consSubTour}) é gerada para o subconjunto \texttt{S} envolvido. Os cortes são temporariamente armazenados em um objeto do tipo \texttt{CutPool} pois o mesmo descarta cortes repetidos. Finalmente, nas linhas 38-39, os cortes são adicionados ao modelo.
 
 
-Para que esse código seja executado durante a busca, antes de chamar a otimização do modelo no código anterior (linha 60), precisamos informar o gerador atribuindo um objeto desse tipo à propriedade \texttt{lazy\_constrs\_generator} com o código: 
+Para que esse código seja executado durante a busca, antes de chamar a otimização do modelo no código anterior (linha 60), precisamos informar o gerador atribuindo um objeto desse tipo à propriedade \texttt{lazy\_constrs\_generator} com o código. Passamos como parâmetro do construtor de nosso gerador de restrições a matriz de variáveis x, que será consultada para verificação de conectividade: 
 
 \begin{minted}[linenos=false]{python}
-    model.lazy_constrs_generator = SubTourLazyGenerator()
+    model.lazy_constrs_generator = SubTourLazyGenerator(x)
 \end{minted}
 
 A versão completa do código que inclui a geração dinâmica de restrições de eliminação de sub-rotas em soluções inteiras pode ser obtida no repositório do Python-MIP\footnote{Exemplo \texttt{tsp-lazy.py}, disponível no repositório Python-MIP em \url{www.python-mip.com}}.
@@ -419,26 +419,22 @@ Para nosso exemplo, utilizaremos a implementação do algoritmo de corte mínimo
     import networkx as nx
 
     class SubTourCutGenerator(ConstrsGenerator):
-        def __init__(self, Fl: List[Tuple[int, int]]):
-            self.F = Fl
+        def __init__(self, Fl: List[Tuple[int, int]], x_, V_):
+            self.F, self.x, self.V = Fl, x_, V_
 
         def generate_constrs(self, model: Model):
-            G = nx.DiGraph()
-            r = [(v, v.x) for v in model.vars if v.name.startswith('x(')]
-            U = [int(v.name.split('(')[1].split(',')[0]) for v, f in r]
-            V = [int(v.name.split(')')[0].split(',')[1]) for v, f in r]
-            cp = CutPool()
-            for i in range(len(U)):
-                G.add_edge(U[i], V[i], capacity=r[i][1])
+            xf, V_, cp = model.translate(self.x), self.V, CutPool()
+            for (u, v) in [(k, l) for (k, l) 
+                           in product(V_, V_) if k != l and xf[k][l]]:
+                G.add_edge(u, v, capacity=xf[u][v].x)
             for (u, v) in F:
-                if u not in U or v not in V:
-                    continue
                 val, (S, NS) = nx.minimum_cut(G, u, v)
                 if val <= 0.99:
-                    arcsInS = [(v, f) for i, (v, f) in enumerate(r)
-                               if U[i] in S and V[i] in S]
-                    if sum(f for v, f in arcsInS) >= (len(S)-1)+1e-4:
-                        cut = xsum(1.0*v for v, fm in arcsInS) <= len(S)-1
+                    aInS = [(xf[i][j], xf[i][j].x)
+                            for (i, j) in product(V_, V_) 
+                            if i != j and xf[i][j] and i in S and j in S]
+                    if sum(f for v, f in aInS) >= (len(S)-1)+1e-4:
+                        cut = xsum(1.0*v for v, fm in aInS) <= len(S)-1
                         cp.add(cut)
                         if len(cp.cuts) > 256:
                             for cut in cp.cuts:
@@ -446,11 +442,10 @@ Para nosso exemplo, utilizaremos a implementação do algoritmo de corte mínimo
                             return
             for cut in cp.cuts:
                 model += cut
-            return
+
 \end{minted}
 
-Na criação de nosso gerador de cortes informamos uma lista \texttt{Fl} de pares $(i,j)$ de vértices cuja conectividade deve ser verificada em toda solução gerada. 
-No método \texttt{generate\_constrs} consultamos as variáveis do modelo (\texttt{model.vars}) e identificamos a qual arco cada variável se refere considerando o nome das variáveis (linhas 9-11), utilizando o seu valor na solução (propriedade \texttt{x}) para construção do grafo onde iremos procurar sub-rotas desconexas para geração das restrições (6). A descoberta de sub-rotas desconexas é feita nas linhas 18-19. Na linha 25 inserimos um critério de parada para a geração dos cortes: caso um número suficientemente grande já tenha sido gerado, inserimos os mesmos no modelo e prosseguimos a otimização sem procurar por cortes adicionais. Nesse ponto convém ressaltar a função dos cortes e sua relação com o restante do modelo. Como a formulação compacta que estamos utilizando define completamente o problema, a adição de cortes é opcional, ou seja, somente feita para melhorar o desempenho do modelo. A inserção de um número muito grande de cortes por iteração pode gerar o efeito indesejado de perda de desempenho na resolução. Para utilizarmos nosso gerador de cortes com a formulação anterior basta atribuir à propriedade \texttt{cuts\_generator} um objeto da nossa classe \texttt{SubTourCutGenerator} antes da otimização do modelo. O exemplo completo está disponível no repositório Python-MIP\footnote{Exemplo \texttt{tsp-cuts.py}, disponível no repositório Python-MIP em \url{www.python-mip.com}}.
+Na criação de nosso gerador de cortes informamos uma lista \texttt{Fl} de pares $(i,j)$ de vértices cuja conectividade deve ser verificada em toda solução gerada. A descoberta de sub-rotas desconexas é feita nas linhas 13-14. Na linha 21 inserimos um critério de parada para a geração dos cortes: caso um número suficientemente grande já tenha sido gerado, inserimos os mesmos no modelo e prosseguimos a otimização sem procurar por cortes adicionais. Nesse ponto convém ressaltar a função dos cortes e sua relação com o restante do modelo. Como a formulação compacta que estamos utilizando define completamente o problema, a adição de cortes é opcional, ou seja, somente feita para melhorar o desempenho do modelo. A inserção de um número muito grande de cortes por iteração pode gerar o efeito indesejado de perda de desempenho na resolução. Para utilizarmos nosso gerador de cortes com a formulação anterior basta atribuir à propriedade \texttt{cuts\_generator} um objeto da nossa classe \texttt{SubTourCutGenerator} antes da otimização do modelo. O exemplo completo está disponível no repositório Python-MIP\footnote{Exemplo \texttt{tsp-cuts.py}, disponível no repositório Python-MIP em \url{www.python-mip.com}}.
 
 \subsection{Integração com heurísticas}
 
