@@ -1,7 +1,8 @@
 from builtins import property
 from typing import List, Optional
 
-from mip.constants import BINARY, CONTINUOUS, INTEGER, OptimizationStatus, EPS
+from mip.constants import BINARY, CONTINUOUS, INTEGER, OptimizationStatus, EPS,\
+     MAXIMIZE, MINIMIZE, EQUAL, LESS_OR_EQUAL, GREATER_OR_EQUAL
 
 
 class Column:
@@ -148,14 +149,25 @@ class LinExpr:
     def __str__(self) -> str:
         result = []
 
+        if hasattr(self, "__sense"):
+            if self.__sense == MINIMIZE:
+                result.append("Minimize ")
+            elif self.__sense == MAXIMIZE:
+                result.append("Minimize ")
+
         if self.__expr:
             for var, coeff in self.__expr.items():
                 result.append("+ " if coeff >= 0 else "- ")
                 result.append(str(abs(coeff)) if abs(coeff) != 1 else "")
                 result.append("{var} ".format(**locals()))
 
-        if self.__sense:
-            result.append(self.__sense + "= ")
+        if hasattr(self, "__sense"):
+            if self.__sense == EQUAL:
+                result.append(" = ")
+            if self.__sense == LESS_OR_EQUAL:
+                result.append(" <= ")
+            if self.__sense == GREATER_OR_EQUAL:
+                result.append(" >= ")
             result.append(str(abs(self.__const)) if self.__const < 0 else
                           "- " + str(abs(self.__const)))
         elif self.__const != 0:
