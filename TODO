@@ -1,3 +1,4 @@
+- stopping criterion: iterations/time without improving feasible solution
 - inst logo
 - AVX optional in CBC
 - feasopt
