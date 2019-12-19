@@ -25,7 +25,7 @@ The code below creates an empty Mixed-Integer Linear Programming problem with de
 
    m = Model()
 
-By default, the optimization sense is set to *Minimize* and the selected solver is set to CBC. If case Gurobi is installed and configured, it will be used instead. You can change the model objective sense or force the selection of a specific solver engine using additional parameters for the constructor:
+By default, the optimization sense is set to *Minimize* and the selected solver is set to CBC. If Gurobi is installed and configured, it will be used instead. You can change the model objective sense or force the selection of a specific solver engine using additional parameters for the constructor:
 
 .. code-block:: python
 
@@ -51,7 +51,7 @@ By using Python list initialization syntax, you can easily create a vector of va
 
 Additional variable types are :code:`CONTINUOUS` (default) and :code:`INTEGER`.
 Some additional properties that can be specified for variables are their lower and upper bounds (:attr:`~mip.model.Var.lb` and :attr:`~mip.model.Var.ub`, respectively), and names (property :attr:`~mip.model.Var.name`).
-Naming a variable is optional but particularly useful if you plan to save you model (see :ref:`save-label`) in .LP or .MPS file formats, for instance.
+Naming a variable is optional and it is particularly useful if you plan to save you model (see :ref:`save-label`) in .LP or .MPS file formats, for instance.
 The following code creates an integer variable named :code:`zCost` which is restricted to be in range :math:`\{-10,\ldots,10\}`.
 Note that the variable's reference is stored in a Python variable named :code:`z`.
 
@@ -71,7 +71,7 @@ The following code retrieves the reference of a variable named :code:`zCost` and
 Constraints
 ~~~~~~~~~~~
 
-Constraints are linear expressions involving variables, a sense of ==, <= or >= for equal, less or equal and greater or equal, respectively, and a constant.
+Constraints are linear expressions involving variables, a sense of :code:`==`, :code:`<=` or :code:`>=` for equal, less or equal and greater or equal, respectively, and a constant.
 The constraint :math:`x+y \leq 10` can be easily included within model :code:`m`:
 
 .. code-block:: python
@@ -184,10 +184,10 @@ The following code executes the branch-&-cut algorithm to solve a model :code:`m
 
 Additional processing limits may be used: :code:`max_nodes` restricts the maximum number of explored nodes in the search tree and :code:`max_solutions` finishes the BC algorithm after a number of feasible solutions are obtained.
 It is also wise to specify how tight the bounds should be to conclude the search.
-The model attribute :code:`max_gap` specifies the allowable percentage deviation of the upper bound from the lower bound for concluding the search.
+The model attribute :attr:`~mip.model.Model.max_mip_gap` specifies the allowable percentage deviation of the upper bound from the lower bound for concluding the search.
 In our example, whenever the distance of the lower and upper bounds is less or equal 5\% (see line 1), the search can be finished.
 
-The :code:`optimize` method returns the status
+The :meth:`~mip.model.Model.optimize` method returns the status
 (:class:`~mip.constants.OptimizationStatus`) of the BC search:
 :code:`OPTIMAL` if the search was concluded and the optimal solution was
 found; :code:`FEASIBLE` if a feasible solution was found but there was no
