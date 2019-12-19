@@ -2,7 +2,7 @@
 Python-MIP
 """
 from math import inf
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 from mip.constants import INF, CONTINUOUS
 from mip.constants import SearchEmphasis, OptimizationStatus
 
