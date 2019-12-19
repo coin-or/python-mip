@@ -887,14 +887,14 @@ class Model:
         if mc.status != OptimizationStatus.OPTIMAL:
             print("Unexpected status while optimizing LP relaxation: {}".format(mc.status))
 
-        print("Model LP relaxation bound is %g", mc.objective_value)
+        print("Model LP relaxation bound is {}".format(mc.objective_value))
 
         for (var, value) in self.start:
             out.write("\tfixing %s to %g ... " % (var.name, value))
             mc += var == value
             mc.optimize()
             if mc.status == OptimizationStatus.OPTIMAL:
-                print("ok, obj now: %g" % mc.objective)
+                print("ok, obj now: {}".format(mc.objective_value))
             else:
                 print("NOT OK, optimization status: {}".format(mc.status))
                 return
