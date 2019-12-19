@@ -9,4 +9,5 @@ install:
     - pip install .
 script:
     - pytest test --verbose --color=yes --doctest-modules
+    - pytest mip --verbose --color=yes --doctest-modules --ignore-glob="*gurobi.py"
     
