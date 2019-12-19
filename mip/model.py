@@ -1,6 +1,6 @@
 from os import environ
 from os.path import isfile
-from sys import stdout as out, platform
+from sys import stdout as out
 from typing import List, Tuple, Optional, Union, Dict
 
 from mip.constants import *
