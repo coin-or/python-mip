@@ -3,10 +3,12 @@ python:
     - "3.5"
     - "3.6"
     - "3.7"
+cache: pip
 install:
-    - pip install cffi pytest networkx
+    - pip install cffi pytest flake8 networkx
     - pip install .
 script:
+    - flake8 mip --select=F401 --exclude=__init__.py # Look for unused imports
     - pytest test --verbose --color=yes --doctest-modules
-    - pytest mip --verbose --color=yes --doctest-modules --ignore-glob="*gurobi.py"
+    - pytest mip --verbose --color=yes --doctest-modules --ignore="mip/gurobi.py"
     
