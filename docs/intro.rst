@@ -13,22 +13,22 @@ source linear programming solver and the `COIN-OR Branch-and-Cut solver
 - CBC <https://github.com/coin-or/Cbc>`_, a highly configurable MIP
 solver. It also works with the state-of-the-art `Gurobi
 <http://www.gurobi.com/>`_ MIP solver. Python-MIP was written in modern,
-statically typed Python and works with the fast just-in-time Python
-compiler `Pypy <https://pypy.org/>`_. 
+`typed Python <https://docs.python.org/3/library/typing.html>`_ and works
+with the fast just-in-time Python compiler `Pypy <https://pypy.org/>`_. 
 
 In the modeling layer, models can be written very concisely, as in high-level
 mathematical programming languages such as `MathProg
 <http://gusek.sourceforge.net/gmpl.pdf>`_. Modeling examples for some
-applications can be viewed in :ref:`Chapter 3 <chapExamples>`.
+applications can be viewed in :ref:`Chapter 4 <chapExamples>`.
 
 Python-MIP eases the development of high-performance MIP based solvers for
 custom applications by providing a tight integration with the
 branch-and-cut algorithms of the supported solvers. Strong formulations
-with an exponential number of constraints can be handled by the inclusion
-of :ref:`Cut Generators <cut-generation-label>`. Heuristics can be
-integrated for :ref:`providing initial feasible solutions
-<mipstart-label>` to the MIP solver. These features can be used in both
-solver engines, CBC and GUROBI, without changing a single line of code.
+with an exponential number of constraints can be handled by the inclusion of
+:ref:`Cut Generators <cut-generation-label>` and :ref:`Lazy Constraints <lazy-constraints-label>`.
+Heuristics can be integrated for :ref:`providing initial feasible solutions
+<mipstart-label>` to the MIP solver. These features can be used in both solver
+engines, CBC and GUROBI, without changing a single line of code.
 
 This document is organized as follows: in the :ref:`next Chapter
 <chapInstall>` installation and configuration instructions for different
