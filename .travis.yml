@@ -4,5 +4,7 @@ python:
 cache: pip
 install:
     - pip install cffi pytest networkx
+    - pip install .
 script:
-    - export PYTHONPATH=$PYTHONPATH:$(pwd) ; cd test ; python -m pytest
+    - pytest test --verbose --color=yes --doctest-modules
+    
