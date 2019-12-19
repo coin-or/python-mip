@@ -1,4 +1,4 @@
-from typing import Tuple
+
 
 class ProgressLog:
     """Class to store the improvement of lower

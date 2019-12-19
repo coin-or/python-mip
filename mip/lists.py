@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from typing import List
-from mip.constants import BINARY, CONTINUOUS, INTEGER, INF
+from mip.constants import BINARY, CONTINUOUS, INF
 from mip.entities import Column, Constr, LinExpr, Var
 
 
