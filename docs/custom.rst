@@ -14,21 +14,13 @@ Cutting Planes
 ~~~~~~~~~~~~~~
 
 In many applications there are `strong formulations <https://www.researchgate.net/publication/227062257_Strong_formulations_for_mixed_integer_programming_A_survey>`_ 
-that include an exponential number of constraints. These formulations cannot be direct
-handled by the MIP Solver: entering all these constraints at once is usually
-not practical. In the `Cutting Planes <https://en.wikipedia.org/wiki/Cutting-plane_method>`_ :cite:`Dantz54`
-method the LP relaxation is solved and only constraints which are *violated* are inserted. The model is re-optimized
-and at each iteration a stronger formulation is obtained until no more violated
-inequalities are found. The problem of discovering which are the missing
-violated constraints is also an optimization problem (finding *the most* violated
-inequality) and it is called the *Separation Problem*.
+that may include an exponential number of constraints. These formulations cannot be direct handled by the MIP Solver: entering all these constraints at once is usually not practical, except for very small instances. In the `Cutting Planes <https://en.wikipedia.org/wiki/Cutting-plane_method>`_ :cite:`Dantz54` method the LP relaxation is solved and only constraints which are *violated* are inserted. The model is re-optimized and at each iteration a stronger formulation is obtained until no more violated inequalities are found. The problem of discovering which are the missing violated constraints is also an optimization problem (finding *the most* violated inequality) and it is called the *Separation Problem*.
 
-As an example, consider the Traveling Salesman Problem. The  compact
-formulation (:numref:`tsp-label`) is a *weak* formulation: dual bounds produced
+As an example, consider the Traveling Salesman Problem. The compact formulation (:numref:`tsp-label`) is a *weak* formulation: dual bounds produced
 at the root node of the search tree are distant from the optimal solution cost
 and improving these bounds requires a potentially intractable number of
 branchings. In this case, the culprit are the sub-tour elimination constraints
-involving variables :math:`x` and :math:`y`. A much stronger TSP formulation
+linking variables :math:`x` and :math:`y`. A much stronger TSP formulation
 can be written as follows: consider a graph :math:`G=(N,A)` where :math:`N` is
 the set of nodes and :math:`A` is the set of directed edges with associated
 traveling costs :math:`c_a \in A`. Selection of arcs is done with binary
@@ -44,8 +36,7 @@ respectively. The complete formulation follows:
   \textrm{Subject to:} &  \\
    & \sum_{a \in A^+_n} x_a = 1 \,\,\, \forall n \in N \\
    & \sum_{a \in A^-_n} x_a = 1 \,\,\, \forall n \in N \\
- & \sum_{(i,j) \in A : i\in S \land j \in S} x_{(i,j)} \leq |S|-1 \,\,\, \forall
- S \subset I \\
+ & \sum_{(i,j) \in A : i\in S \land j \in S} x_{(i,j)} \leq |S|-1 \,\,\, \forall \,\, S \subset I \\
      & x_a \in \{0,1\} \,\,\, \forall a \in A
 
 The third constraints are sub-tour elimination constraints. Since these
@@ -80,61 +71,14 @@ increases to 244 and the following new solution is generated:
 Now there are sub-tours of size 3 and 4. Let's consider the sub-tour defined by
 nodes :math:`S=\{a,b,g\}`. The valid inequality for :math:`S` is: 
 :math:`x_{(a,g)} + x_{(g,a)} + x_{(a,b)} + x_{(b,a)} + x_{(b,g)} + x_{(g,b)} \leq 2`.
-Adding this cut to our model increases the objective value to 261, s significant
-improvement. In our example, the visual identification of the isolated subset is 
-easy, but how to automatically identify these subsets efficiently in the general case ?
-A subset is a *cut* in a Graph. To identify the most isolated subset we just have to 
-solve the `Minimum cut problem in graphs <https://en.wikipedia.org/wiki/Minimum_cut>`_. 
-In python you can use the `networkx min-cut module <https://networkx.github.io/documentation/networkx-1.10/reference/generated/networkx.algorithms.flow.minimum_cut.html>`_. 
-The following code implements a cutting plane algorithm for the asymmetric traveling 
+Adding this cut to our model increases the objective value to 261, a significant improvement. In our example, the visual identification of the isolated subset is easy, but how to automatically identify these subsets efficiently in the general case ? Isolated subsets can be identified when a *cut* is found in the graph defined by arcs active in the unfeasible solution. To identify the most isolated subsets we just have to solve the `Minimum cut problem in graphs <https://en.wikipedia.org/wiki/Minimum_cut>`_. 
+In python you can use the `networkx min-cut module <https://networkx.github.io/documentation/networkx-1.10/reference/generated/networkx.algorithms.flow.minimum_cut.html>`_. The following code implements a cutting plane algorithm for the asymmetric traveling 
 salesman problem:
 
-.. code-block:: python
- :linenos:
-
-    from mip.model import Model, xsum
-    from mip.constants import BINARY
-    from itertools import product
-    from networkx import minimum_cut, DiGraph
-
-    N = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
-    A = {('a', 'd'): 56, ('d', 'a'): 67, ('a', 'b'): 49, ('b', 'a'): 50,
-         ('f', 'c'): 35, ('g', 'b'): 35, ('g', 'b'): 35, ('b', 'g'): 25,
-         ('a', 'c'): 80, ('c', 'a'): 99, ('e', 'f'): 20, ('f', 'e'): 20,
-         ('g', 'e'): 38, ('e', 'g'): 49, ('g', 'f'): 37, ('f', 'g'): 32,
-         ('b', 'e'): 21, ('e', 'b'): 30, ('a', 'g'): 47, ('g', 'a'): 68,
-         ('d', 'c'): 37, ('c', 'd'): 52, ('d', 'e'): 15, ('e', 'd'): 20,
-         ('d', 'b'): 39, ('b', 'd'): 37, ('c', 'f'): 35}
-    Aout = {n: [a for a in A if a[0] == n] for n in N}
-    Ain = {n: [a for a in A if a[1] == n] for n in N}
-
-    m = Model()
-    x = {a: m.add_var(name='x({},{})'.format(a[0], a[1]), var_type=BINARY)
-         for a in A}
-
-    m.objective = xsum(c*x[a] for a, c in A.items())
-
-    for n in N:
-        m += xsum(x[a] for a in Aout[n]) == 1, 'out({})'.format(n)
-        m += xsum(x[a] for a in Ain[n]) == 1, 'in({})'.format(n)
-
-    newConstraints = True
-    m.relax()
-
-    while newConstraints:
-        m.optimize()
-        print('objective value : {}'.format(m.objective_value))
-
-        G = DiGraph()
-        for a in A:
-            G.add_edge(a[0], a[1], capacity=x[a].x)
-
-        newConstraints = False
-        for (n1, n2) in [(i, j) for (i, j) in product(N, N) if i != j]:
-            cut_value, (S, NS) = minimum_cut(G, n1, n2)
-            if (cut_value <= 0.99):
-                m += xsum(x[a] for a in A if (a[0] in S and a[1] in S)) <= len(S)-1
-                newConstraints = True
+.. literalinclude:: ../examples/cutting_planes.py
+    :caption: A pure cutting-planes approach for the Traveling Salesman Problem (examples/cutting_planes.py)
+    :linenos:
+    :lines: 3-45
 
 
 Lines 6-13 are the input data. Nodes are labeled with letters in a list
