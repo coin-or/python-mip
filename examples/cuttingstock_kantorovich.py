@@ -35,7 +35,7 @@ print('Objective value: {model.objective_value:.3}'.format(**locals()))
 print('Solution: ', end='')
 for v in model.vars:
     if v.x > 1e-5:
-        print('{v.name} = {v.x:.3}'.format(**locals()))
+        print('{v.name} = {v.x}'.format(**locals()))
         print('          ', end='')
 
 # sanity tests
