@@ -57,4 +57,4 @@ if m.num_solutions:
 # sanity tests
 from mip import OptimizationStatus
 assert m.status == OptimizationStatus.OPTIMAL
-assert round(m.objective_value) == 21
+assert round(m.objective_value) == 41
