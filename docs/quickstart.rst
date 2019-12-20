@@ -189,18 +189,14 @@ In our example, whenever the distance of the lower and upper bounds is less or e
 
 The :meth:`~mip.model.Model.optimize` method returns the status
 (:class:`~mip.constants.OptimizationStatus`) of the BC search:
-:code:`OPTIMAL` if the search was concluded and the optimal solution was
-found; :code:`FEASIBLE` if a feasible solution was found but there was no
-time to prove whether the current solution was optimal or not;
-:code:`NO_SOLUTION_FOUND` if in the truncated search no solution was found;
-:code:`INFEASIBLE`
-or :code:`INT_INFEASIBLE` if no feasible solution exists for the model;
-:code:`UNBOUNDED` if there are missing constraints or :code:`ERROR` if
+:attr:`~mip.constants.OptimizationStatus.OPTIMAL` if the search was concluded and the optimal solution was found; :attr:`~mip.constants.OptimizationStatus.FEASIBLE` if a feasible solution was found but there was no
+time to prove whether this solution was optimal or not;
+:attr:`~mip.constants.OptimizationStatus.NO_SOLUTION_FOUND` if in the truncated search no solution was found; :attr:`~mip.constants.OptimizationStatus.INFEASIBLE` or :attr:`~mip.constants.OptimizationStatus.INT_INFEASIBLE` if no feasible solution exists for the model;
+:attr:`~mip.constants.OptimizationStatus.UNBOUNDED` if there are missing constraints or :attr:`~mip.constants.OptimizationStatus.ERROR` if
 some error occurred during optimization. In the example above, if a feasible
 solution is available (line 8), variables which have value different from zero
 are printed. Observe also that even when no feasible solution is available
-the lower bound is available (line 8). If a truncated execution was performed,
-i.e., the solver stopped due to the time limit, you can check an estimate of
+the dual bound (lower bound in the case of minimization) is available (line 8): if a truncated execution was performed, i.e., the solver stopped due to the time limit, you can check this dual bound which is an estimate of
 the quality of the solution found checking the :attr:`~mip.model.Model.gap`
 property.
 
