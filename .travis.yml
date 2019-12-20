@@ -14,4 +14,8 @@ script:
     - # Ensure that the examples used in the docs run (TODO: Generalize this)
     - python examples/knapsack.py
     - python examples/tsp-compact.py
+    - python examples/queens.py
+    - python examples/bmcp.py
+    - python examples/rcpsp.py
+    - python examples/jssp.py
     
