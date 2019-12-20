@@ -21,4 +21,6 @@ script:
     - python examples/bmcp.py
     - python examples/rcpsp.py
     - python examples/jssp.py
-    
+jobs:
+  allow_failures:
+    - os: osx
