@@ -5,6 +5,7 @@ from sys import platform, maxsize
 from os.path import dirname, isfile
 import os
 from cffi import FFI
+import multiprocessing as multip
 from mip.model import xsum
 import mip
 from mip import Model, Var, Constr, Column, LinExpr, VConstrList, VVarList, Solver
@@ -177,6 +178,28 @@ if has_cbc:
     void Cbc_setContinuous(Cbc_Model *model, int iColumn);
 
     void Cbc_setInteger(Cbc_Model *model, int iColumn);
+
+    /*! Integer parameters */
+    enum IntParam {
+    INT_PARAM_PERT_VALUE          = 0,  /*! Method of perturbation, -5000 to 102, default 50 */
+    INT_PARAM_IDIOT               = 1,  /*! Parameter of the "idiot" method to try to produce an initial feasible basis. -1 let the solver decide if this should be applied; 0 deactivates it and >0 sets number of passes. */
+    INT_PARAM_STRONG_BRANCHING    = 2,  /*! Number of variables to be evaluated in strong branching. */
+    INT_PARAM_CUT_DEPTH           = 3,  /*! Sets the application of cuts to every depth multiple of this value. -1, the default value, let the solve decide. */
+    INT_PARAM_MAX_NODES           = 4,  /*! Maximum number of nodes to be explored in the search tree */
+    INT_PARAM_NUMBER_BEFORE       = 5,  /*! Number of branche before trusting pseudocodes computed in strong branching. */
+    INT_PARAM_FPUMP_ITS           = 6,  /*! Maximum number of iterations in the feasibility pump method. */
+    INT_PARAM_MAX_SOLS            = 7,  /*! Maximum number of solutions generated during the search. Stops the search when this number of solutions is found. */
+    INT_PARAM_CUT_PASS_IN_TREE    = 8, /*! Maxinum number of cuts passes in the search tree (with the exception of the root node). Default 1. */
+    INT_PARAM_THREADS             = 9, /*! Number of threads that can be used in the branch-and-bound method.*/
+    INT_PARAM_CUT_PASS            = 10, /*! Number of cut passes in the root node. Default -1, solver decides */
+    INT_PARAM_LOG_LEVEL           = 11, /*! Verbosity level, from 0 to 2 */
+    INT_PARAM_MAX_SAVED_SOLS      = 12, /*! Size of the pool to save the best solutions found during the search. */
+    INT_PARAM_MULTIPLE_ROOTS      = 13 /*! Multiple root passes to get additional cuts and solutions. */
+    };
+#define N_INT_PARAMS 14
+ 
+
+    void Cbc_setIntParam(Cbc_Model *model, enum IntParam which, const int val);
 
     void Cbc_setParameter(Cbc_Model *model, const char *name,
         const char *value);
@@ -363,13 +386,29 @@ if has_cbc:
 CHAR_ONE = "{}".format(chr(1)).encode("utf-8")
 CHAR_ZERO = "\0".encode("utf-8")
 
+INT_PARAM_PERT_VALUE          = 0
+INT_PARAM_IDIOT               = 1
+INT_PARAM_STRONG_BRANCHING    = 2
+INT_PARAM_CUT_DEPTH           = 3
+INT_PARAM_MAX_NODES           = 4
+INT_PARAM_NUMBER_BEFORE       = 5
+INT_PARAM_FPUMP_ITS           = 6
+INT_PARAM_MAX_SOLS            = 7
+INT_PARAM_CUT_PASS_IN_TREE    = 8
+INT_PARAM_THREADS             = 9
+INT_PARAM_CUT_PASS            = 10
+INT_PARAM_LOG_LEVEL           = 11
+INT_PARAM_MAX_SAVED_SOLS      = 12
+INT_PARAM_MULTIPLE_ROOTS      = 13
+
+
 Osi_getNumCols = cbclib.Osi_getNumCols
 Osi_getColSolution = cbclib.Osi_getColSolution
 Osi_getIntegerTolerance = cbclib.Osi_getIntegerTolerance
 Osi_isInteger = cbclib.Osi_isInteger
 Osi_isProvenOptimal = cbclib.Osi_isProvenOptimal
-OsiCuts_addGlobalRowCut = cbclib.OsiCuts_addGlobalRowCut 
-
+OsiCuts_addGlobalRowCut = cbclib.OsiCuts_addGlobalRowCut
+Cbc_setIntParam = cbclib.Cbc_setIntParam
 
 def cbc_set_parameter(model: Model, param: str, value: str):
     cbclib.Cbc_setParameter(model._model, param.encode("utf-8"),
@@ -621,15 +660,13 @@ class SolverCbc(Solver):
             cbc_set_parameter(self, 'passC', '-35')
             cbc_set_parameter(self, 'lift', 'ifmove')
 
-        if (self.__threads >= 1):
+        if self.__threads >= 1:
             cbc_set_parameter(self, 'timeM',
                               '{}'.format('elapsed'))
-            cbc_set_parameter(self, 'threads',
-                              '{}'.format(self.__threads))
+            Cbc_setIntParam(self._model, INT_PARAM_THREADS, self.__threads)
         elif self.__threads == -1:
-            import multiprocessing
             cbc_set_parameter(self, 'threads',
-                              '{}'.format(multiprocessing.cpu_count()))
+                              '{}'.format(multip.cpu_count()))
 
         if self.model.preprocess == 0:
             cbc_set_parameter(self, 'preprocess', 'off')
