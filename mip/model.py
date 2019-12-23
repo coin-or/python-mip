@@ -3,7 +3,8 @@ from os.path import isfile
 from sys import stdout as out
 from typing import List, Tuple, Optional, Union, Dict
 
-from mip.constants import *
+from mip.constants import INF, MINIMIZE, MAXIMIZE, GUROBI, CBC, CONTINUOUS,\
+     LP_Method, OptimizationStatus, BINARY, INTEGER, SearchEmphasis, VERSION
 from mip.callbacks import ConstrsGenerator
 from mip.log import ProgressLog
 from mip.lists import ConstrList, VarList
@@ -210,7 +211,8 @@ class Model:
         """
 
         if isinstance(lin_expr, bool):
-            raise InvalidLinExpr("A boolean (true/false) cannot be used as a constraint.")
+            raise InvalidLinExpr("A boolean (true/false) cannot be "
+                                 "used as a constraint.")
         return self.constrs.add(lin_expr, name)
 
     def add_lazy_constr(self, expr: LinExpr):
@@ -251,12 +253,14 @@ class Model:
 
         .. math::
 
-            \min \{ u_{k'} : u_{k'} = | \sum_{j=1\,\ldots \,k'-1} w_j \ldotp x^*_j - \sum_{j=k'\,\ldots ,k} w_j \ldotp x^*_j | \}
+            \min \{ u_{k'} : u_{k'} = | \sum_{j=1\,\ldots \,k'-1}
+            w_j \ldotp x^*_j - \sum_{j=k'\,\ldots ,k} w_j \ldotp x^*_j | \}
 
 
-        Then, branching :math:`\mathcal{S}_1` would be :math:`\displaystyle \sum_{j=1,
-        \ldots, k'-1} x_j = 0` and :math:`\displaystyle \mathcal{S}_2 = \sum_{j=k', \ldots,
-        k} x_j = 0`.
+        Then, branching :math:`\mathcal{S}_1` would be 
+        :math:`\displaystyle \sum_{j=1, \ldots, k'-1} x_j = 0` 
+        and 
+        :math:`\displaystyle \mathcal{S}_2 = \sum_{j=k', \ldots, k} x_j = 0`.
 
         Args:
             sos(List[Tuple[Var, float]]):
@@ -368,9 +372,9 @@ class Model:
         return self.vars[v]
 
     def optimize(self,
-                 max_seconds: float = inf,
-                 max_nodes: int = inf,
-                 max_solutions: int = inf) -> OptimizationStatus:
+                 max_seconds: float = INF,
+                 max_nodes: int = INF,
+                 max_solutions: int = INF) -> OptimizationStatus:
         """ Optimizes current model
 
         Optimizes current model, optionally specifying processing limits.
@@ -749,8 +753,9 @@ class Model:
 
     @property
     def lazy_constrs_generator(self) -> "ConstrsGenerator":
-        """A lazy constraints generator is an :class:`~mip.callbacks.ConstrsGenerator`
-        object that receives an integer solution and checks its feasibility. If
+        """A lazy constraints generator is an
+        :class:`~mip.callbacks.ConstrsGenerator` object that receives
+        an integer solution and checks its feasibility. If
         the solution is not feasible then one or more constraints can be
         generated to remove it. When a lazy constraints generator is informed
         it is assumed that the initial formulation is incomplete. Thus, a
@@ -787,8 +792,9 @@ class Model:
 
     @property
     def preprocess(self) -> int:
-        """Enables/disables pre-processing. Pre-processing tries to improve your
-        MIP formulation. -1 means automatic, 0 means off and 1 means on."""
+        """Enables/disables pre-processing. Pre-processing tries to improve
+        your MIP formulation. -1 means automatic, 0 means off and 1
+        means on."""
         return self.__preprocess
 
     @preprocess.setter
@@ -882,10 +888,12 @@ class Model:
             out.write("Model is infeasible.\n")
             return
         if mc.status == OptimizationStatus.UNBOUNDED:
-            out.write("Model is unbounded. You probably need to insert additional constraints or bounds in variables.\n")
+            out.write("Model is unbounded. You probably need to insert "
+                      "additional constraints or bounds in variables.\n")
             return
         if mc.status != OptimizationStatus.OPTIMAL:
-            print("Unexpected status while optimizing LP relaxation: {}".format(mc.status))
+            print("Unexpected status while optimizing LP relaxation:"
+                  " {}".format(mc.status))
 
         print("Model LP relaxation bound is {}".format(mc.objective_value))
 
@@ -899,7 +907,8 @@ class Model:
                 print("NOT OK, optimization status: {}".format(mc.status))
                 return
 
-        print("Linear Programming relaxation of model with fixations from MIPStart is feasible.")
+        print("Linear Programming relaxation of model with fixations from "
+              "MIPStart is feasible.")
         print("MIP model may still be infeasible.")
 
     @property
@@ -1137,9 +1146,10 @@ def minimize(expr: LinExpr) -> LinExpr:
 
 def xsum(terms) -> LinExpr:
     """
-    Function that should be used to create a linear expression from a summation.
-    While the python function sum() can also be used, this function is optimized
-    version for quickly generating the linear expression.
+    Function that should be used to create a linear expression from a
+    summation. While the python function sum() can also be used, this
+    function is optimized version for quickly generating the linear
+    expression.
 
     Args:
         terms: set (ideally a list) of terms to be summed
