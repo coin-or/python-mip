@@ -1,6 +1,5 @@
 """Python-MIP constants"""
 
-from math import inf
 from enum import Enum
 
 VERSION = '1.6.4'
