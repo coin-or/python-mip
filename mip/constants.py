@@ -9,7 +9,7 @@ VERSION = '1.6.4'
 EPS = 10e-64
 
 # infinity representation
-INF = inf
+INF = float("inf")
 
 # constraint senses
 EQUAL = "="
