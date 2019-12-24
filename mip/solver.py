@@ -1,27 +1,33 @@
 """This module implements the solver intependent communication layer of
 Python-MIP
 """
-from math import inf
-from typing import List, Tuple
+from typing import List, Tuple, TYPE_CHECKING
+from sys import maxsize
 from mip.constants import INF, CONTINUOUS
 from mip.constants import SearchEmphasis, OptimizationStatus
+
+if TYPE_CHECKING:
+    from mip.model import Model
+    from mip.entities import Column, Var, LinExpr, Constr
+    from mip.callbacks import IncumbentUpdater
 
 
 class Solver:
     """The solver is an abstract class with the solver independent
     API to communicate with the solver engine"""
 
-    def __init__(self, model: "Model", name: str = '', sense: str = ''):
+    def __init__(self: "Solver", model: "Model", name: str = '',
+                 sense: str = ''):
         self.model = model
         if name:
             self.name = name
         if sense:
             self.sense = sense
 
-    def __del__(self):
+    def __del__(self: "Solver"):
         pass
 
-    def add_var(self,
+    def add_var(self: "Solver",
                 name: str = "",
                 obj: float = 0,
                 lb: float = 0,
@@ -30,232 +36,226 @@ class Solver:
                 column: "Column" = None):
         pass
 
-    def add_constr(self, lin_expr: "LinExpr", name: str = ""):
+    def add_constr(self: "Solver", lin_expr: "LinExpr", name: str = ""):
         pass
 
-    def add_lazy_constr(self, lin_expr: "LinExpr"):
+    def add_lazy_constr(self: "Solver", lin_expr: "LinExpr"):
         pass
 
-    def add_sos(self, sos: List[Tuple["Var", float]], sos_type: int):
+    def add_sos(self: "Solver", sos: List[Tuple["Var", float]], sos_type: int):
         pass
 
-    def add_cut(self, lin_expr: "LinExpr"):
+    def add_cut(self: "Solver", lin_expr: "LinExpr"):
         pass
 
-    def get_objective_bound(self) -> float:
+    def get_objective_bound(self: "Solver") -> float:
         pass
 
-    def get_objective(self) -> "LinExpr":
+    def get_objective(self: "Solver") -> "LinExpr":
         pass
 
-    def get_objective_const(self) -> float:
+    def get_objective_const(self: "Solver") -> float:
         pass
 
-    def relax(self):
+    def relax(self: "Solver"):
         pass
 
-    def optimize(self) -> OptimizationStatus:
+    def optimize(self: "Solver") -> OptimizationStatus:
         pass
 
-    def get_objective_value(self) -> float:
+    def get_objective_value(self: "Solver") -> float:
         pass
 
-    def get_log(self) -> List[Tuple[float, Tuple[float, float]]]:
+    def get_log(self: "Solver") -> List[Tuple[float, Tuple[float, float]]]:
         return []
 
-    def get_objective_value_i(self, i: int) -> float:
+    def get_objective_value_i(self: "Solver", i: int) -> float:
         pass
 
-    def get_num_solutions(self) -> int:
+    def get_num_solutions(self: "Solver") -> int:
         pass
 
-    def get_objective_sense(self) -> str:
+    def get_objective_sense(self: "Solver") -> str:
         pass
 
-    def set_objective_sense(self, sense: str):
+    def set_objective_sense(self: "Solver", sense: str):
         pass
 
-    def set_start(self, start: List[Tuple["Var", float]]):
+    def set_start(self: "Solver", start: List[Tuple["Var", float]]):
         pass
 
-    def set_objective(self, lin_expr: "LinExpr", sense: str = ""):
+    def set_objective(self: "Solver", lin_expr: "LinExpr", sense: str = ""):
         pass
 
-    def set_objective_const(self, const: float):
+    def set_objective_const(self: "Solver", const: float):
         pass
 
-    def set_callbacks(self,
-                      branch_selector: "BranchSelector" = None,
-                      incumbent_updater: "IncumbentUpdater" = None,
-                      lazy_constrs_generator: "LazyConstrsGenerator" = None):
+    def set_processing_limits(self: "Solver",
+                              max_time: float = INF,
+                              max_nodes: int = maxsize,
+                              max_sol: int = maxsize):
         pass
 
-    def set_processing_limits(self,
-                              max_time: float = inf,
-                              max_nodes: int = inf,
-                              max_sol: int = inf):
+    def get_max_seconds(self: "Solver") -> float:
         pass
 
-    def get_max_seconds(self) -> float:
+    def set_max_seconds(self: "Solver", max_seconds: float):
         pass
 
-    def set_max_seconds(self, max_seconds: float):
+    def get_max_solutions(self: "Solver") -> int:
         pass
 
-    def get_max_solutions(self) -> int:
+    def set_max_solutions(self: "Solver", max_solutions: int):
         pass
 
-    def set_max_solutions(self, max_solutions: int):
+    def get_pump_passes(self: "Solver") -> int:
         pass
 
-    def get_pump_passes(self) -> int:
+    def set_pump_passes(self: "Solver", passes: int):
         pass
 
-    def set_pump_passes(self, passes: int):
+    def get_max_nodes(self: "Solver") -> int:
         pass
 
-    def get_max_nodes(self) -> int:
+    def set_max_nodes(self: "Solver", max_nodes: int):
         pass
 
-    def set_max_nodes(self, max_nodes: int):
+    def set_num_threads(self: "Solver", threads: int):
         pass
 
-    def set_num_threads(self, threads: int):
+    def write(self: "Solver", file_path: str):
         pass
 
-    def write(self, file_path: str):
+    def read(self: "Solver", file_path: str):
         pass
 
-    def read(self, file_path: str):
+    def num_cols(self: "Solver") -> int:
         pass
 
-    def num_cols(self) -> int:
+    def num_rows(self: "Solver") -> int:
         pass
 
-    def num_rows(self) -> int:
+    def num_nz(self: "Solver") -> int:
         pass
 
-    def num_nz(self) -> int:
+    def num_int(self: "Solver") -> int:
         pass
 
-    def num_int(self) -> int:
+    def get_emphasis(self: "Solver") -> SearchEmphasis:
         pass
 
-    def get_emphasis(self) -> SearchEmphasis:
+    def set_emphasis(self: "Solver", emph: SearchEmphasis):
         pass
 
-    def set_emphasis(self, emph: SearchEmphasis):
+    def get_cutoff(self: "Solver") -> float:
         pass
 
-    def get_cutoff(self) -> float:
+    def set_cutoff(self: "Solver", cutoff: float):
         pass
 
-    def set_cutoff(self, cutoff: float):
+    def get_mip_gap_abs(self: "Solver") -> float:
         pass
 
-    def get_mip_gap_abs(self) -> float:
+    def set_mip_gap_abs(self: "Solver", mip_gap_abs: float):
         pass
 
-    def set_mip_gap_abs(self, mip_gap_abs: float):
+    def get_mip_gap(self: "Solver") -> float:
         pass
 
-    def get_mip_gap(self) -> float:
+    def set_mip_gap(self: "Solver", mip_gap: float):
         pass
 
-    def set_mip_gap(self, mip_gap: float):
+    def get_verbose(self: "Solver") -> int:
         pass
 
-    def get_verbose(self) -> int:
-        pass
-
-    def set_verbose(self, verbose: int):
+    def set_verbose(self: "Solver", verbose: int):
         pass
 
     # Constraint-related getters/setters
 
-    def constr_get_expr(self, constr: "Constr") -> "LinExpr":
+    def constr_get_expr(self: "Solver", constr: "Constr") -> "LinExpr":
         pass
 
-    def constr_set_expr(self, constr: "Constr", value: "LinExpr") -> "LinExpr":
+    def constr_set_expr(self: "Solver", constr: "Constr", value: "LinExpr") -> "LinExpr":
         pass
 
-    def constr_get_rhs(self, idx: int) -> float:
+    def constr_get_rhs(self: "Solver", idx: int) -> float:
         pass
 
-    def constr_set_rhs(self, idx: int, rhs: float):
+    def constr_set_rhs(self: "Solver", idx: int, rhs: float):
         pass
 
-    def constr_get_name(self, idx: int) -> str:
+    def constr_get_name(self: "Solver", idx: int) -> str:
         pass
 
-    def constr_get_pi(self, constr: "Constr") -> float:
+    def constr_get_pi(self: "Solver", constr: "Constr") -> float:
         pass
 
-    def constr_get_slack(self, constr: "Constr") -> float:
+    def constr_get_slack(self: "Solver", constr: "Constr") -> float:
         pass
 
-    def remove_constrs(self, constrsList: List[int]):
+    def remove_constrs(self: "Solver", constrsList: List[int]):
         pass
 
-    def constr_get_index(self, name: str) -> int:
+    def constr_get_index(self: "Solver", name: str) -> int:
         pass
 
     # Variable-related getters/setters
 
-    def var_get_lb(self, var: "Var") -> float:
+    def var_get_lb(self: "Solver", var: "Var") -> float:
         pass
 
-    def var_set_lb(self, var: "Var", value: float):
+    def var_set_lb(self: "Solver", var: "Var", value: float):
         pass
 
-    def var_get_ub(self, var: "Var") -> float:
+    def var_get_ub(self: "Solver", var: "Var") -> float:
         pass
 
-    def var_set_ub(self, var: "Var", value: float):
+    def var_set_ub(self: "Solver", var: "Var", value: float):
         pass
 
-    def var_get_obj(self, var: "Var") -> float:
+    def var_get_obj(self: "Solver", var: "Var") -> float:
         pass
 
-    def var_set_obj(self, var: "Var", value: float):
+    def var_set_obj(self: "Solver", var: "Var", value: float):
         pass
 
-    def var_get_var_type(self, var: "Var") -> str:
+    def var_get_var_type(self: "Solver", var: "Var") -> str:
         pass
 
-    def var_set_var_type(self, var: "Var", value: str):
+    def var_set_var_type(self: "Solver", var: "Var", value: str):
         pass
 
-    def var_get_column(self, var: "Var") -> "Column":
+    def var_get_column(self: "Solver", var: "Var") -> "Column":
         pass
 
-    def var_set_column(self, var: "Var", value: "Column"):
+    def var_set_column(self: "Solver", var: "Var", value: "Column"):
         pass
 
-    def var_get_rc(self, var: "Var") -> float:
+    def var_get_rc(self: "Solver", var: "Var") -> float:
         pass
 
-    def var_get_x(self, var: "Var") -> float:
+    def var_get_x(self: "Solver", var: "Var") -> float:
         """Assumes that the solution is available (should be checked
            before calling it"""
 
-    def var_get_xi(self, var: "Var", i: int) -> float:
+    def var_get_xi(self: "Solver", var: "Var", i: int) -> float:
         pass
 
-    def var_get_name(self, idx: int) -> str:
+    def var_get_name(self: "Solver", idx: int) -> str:
         pass
 
-    def remove_vars(self, varsList: List[int]):
+    def remove_vars(self: "Solver", varsList: List[int]):
         pass
 
-    def var_get_index(self, name: str) -> int:
+    def var_get_index(self: "Solver", name: str) -> int:
         pass
 
-    def get_problem_name(self) -> str:
+    def get_problem_name(self: "Solver") -> str:
         pass
 
-    def set_problem_name(self, name: str):
+    def set_problem_name(self: "Solver", name: str):
         pass
 
-    def get_status(self) -> OptimizationStatus:
+    def get_status(self: "Solver") -> OptimizationStatus:
         pass
