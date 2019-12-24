@@ -1,21 +1,23 @@
-"""Example that solves the Traveling Salesman Problem using the simple compact
-formulation presented in Miller, C.E., Tucker, A.W and Zemlin, R.A. "Integer
-Programming Formulation of Traveling Salesman Problems". Journal of the ACM
-7(4). 1960."""
+"""Example of a Branch-and-Cut implementation for the Traveling Salesman
+Problem. Initially a weak formulation is included but cutting planes
+are added at each node of the search tree to improve the LP relaxation"""
 
-from typing import Tuple
+from mip import OptimizationStatus
+from typing import Tuple, List
 from math import floor, cos, acos
 from itertools import product
 from sys import stdout as out
-from mip import Model, xsum, minimize, BINARY
+import networkx as nx
+from mip import Model, xsum, minimize, BINARY, ConstrsGenerator, CutPool
+
 
 # constants as stated in TSPlib doc
 # https://www.iwr.uni-heidelberg.de/groups/comopt/software/TSPLIB95/tsp95.pdf
-PI = 3.141592
-RRR = 6378.388
+PI, RRR = 3.141592, 6378.388
+
 
 def rad(val: float) -> float:
-    """conver to radians"""
+    """converts to radians"""
     mult = 1.0
     if val < 0.0:
         mult = -1.0
@@ -24,6 +26,7 @@ def rad(val: float) -> float:
     deg = float(floor(val))
     minute = val - deg
     return (PI * (deg + 5*minute/3)/180)*mult
+
 
 def dist(p1: Tuple[float, float], p2: Tuple[float, float]) -> float:
     """computes geographical distance"""
@@ -44,14 +47,41 @@ coord = [(38.24, 20.42), (39.57, 26.15), (40.56, 25.32), (36.26, 23.12),
 # latitude and longitude
 coord = [(rad(x), rad(y)) for (x, y) in coord]
 
-# distances in an upper triangular matrix
-
-# number of nodes and list of vertices
+# number of nodes and list of arcs
 n, V = len(coord), set(range(len(coord)))
+Arcs = [(i, j) for (i, j) in product(V, V) if i != j]
 
 # distances matrix
 c = [[0 if i == j
       else dist(coord[i], coord[j]) for j in V] for i in V]
+
+
+class SubTourCutGenerator(ConstrsGenerator):
+    """Class to generate cutting planes for the TSP"""
+
+    def __init__(self, Fl: List[Tuple[int, int]], x_):
+        self.F, self.x = Fl, x_
+
+    def generate_constrs(self, m_: Model):
+        xf, cp, Gl = m_.translate(self.x), CutPool(), nx.DiGraph()
+        Ar = [(i, j) for (i, j) in Arcs if xf[i][j] and xf[i][j].x >= 1e-4]
+        for (u, v) in Ar:
+            Gl.add_edge(u, v, capacity=xf[u][v].x)
+        for (u, v) in F:
+            val, (S, NS) = nx.minimum_cut(Gl, u, v)
+            if val <= 0.99:
+                aInS = [(xf[i][j], xf[i][j].x)
+                        for (i, j) in Ar if i in S and j in S]
+                if sum(f for v, f in aInS) >= (len(S)-1)+1e-4:
+                    cut = xsum(1.0*v for v, fm in aInS) <= len(S)-1
+                    cp.add(cut)
+                    if len(cp.cuts) > 32:
+                        for cut in cp.cuts:
+                            m_ += cut
+                        return
+        for cut in cp.cuts:
+            m_ += cut
+
 
 model = Model()
 
@@ -63,7 +93,7 @@ x = [[model.add_var(var_type=BINARY) for j in V] for i in V]
 y = [model.add_var() for i in V]
 
 # objective function: minimize the distance
-model.objective = minimize(xsum(c[i][j]*x[i][j] for i in V for j in V))
+model.objective = minimize(xsum(c[i][j]*x[i][j] for (i, j) in Arcs))
 
 # constraint : leave each city only once
 for i in V:
@@ -73,14 +103,31 @@ for i in V:
 for i in V:
     model += xsum(x[j][i] for j in V - {i}) == 1
 
-# subtour elimination
+# (weak) subtour elimination constraints
 for (i, j) in product(V - {0}, V - {0}):
     if i != j:
         model += y[i] - (n+1)*x[i][j] >= y[j]-n
 
+# degree 2 subtour elimination constraints
+for (i, j) in Arcs:
+    model += x[i][j] + x[j][i] <= 1
+
+
+# list of distant nodes to check for disconected subtours
+F, G = [], nx.DiGraph()
+for (i, j) in Arcs:
+    G.add_edge(i, j, weight=c[i][j])
+for i in V:
+    P, D = nx.dijkstra_predecessor_and_distance(G, source=i)
+    DS = list(D.items())
+    DS.sort(key=lambda x: x[1])
+    F.append((i, DS[-1][0]))
+
+model.cuts_generator = SubTourCutGenerator(F, x)
+
 # optimizing
 model.threads = 4
-model.optimize(max_seconds=100)
+model.optimize(max_seconds=500)
 
 # checking if a solution was found
 if model.num_solutions:
@@ -95,7 +142,6 @@ if model.num_solutions:
     out.write('\n')
 
 # sanity tests
-from mip import OptimizationStatus
 if model.status == OptimizationStatus.OPTIMAL:
     assert round(model.objective_value) == 7013
 elif model.status == OptimizationStatus.FEASIBLE:

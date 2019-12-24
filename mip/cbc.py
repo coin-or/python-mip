@@ -5,6 +5,7 @@ from sys import platform, maxsize
 from os.path import dirname, isfile
 import os
 from cffi import FFI
+from sys import maxsize
 import multiprocessing as multip
 from mip.model import xsum
 import mip
@@ -16,7 +17,6 @@ from mip.constants import MAXIMIZE, SearchEmphasis, CONTINUOUS, BINARY, \
 warningMessages = 0
 
 ffi = FFI()
-CData = ffi.CData
 has_cbc = False
 os_is_64_bit = maxsize > 2 ** 32
 INF = float('inf')
@@ -443,7 +443,7 @@ class SolverCbc(Solver):
         self.__name_space = ffi.new("char[{}]".format(MAX_NAME_SIZE))
         # in cut generation
         self.__name_spacec = ffi.new("char[{}]".format(MAX_NAME_SIZE))
-        self.__log = []
+        self.__log = []  # type: List[Tuple[float, Tuple[float, float]]]
         self.set_problem_name(name)
         self.__pumpp = DEF_PUMPP
 
@@ -452,14 +452,14 @@ class SolverCbc(Solver):
                 lb: float = 0,
                 ub: float = float("inf"),
                 coltype: str = "C",
-                column: "Column" = None,
+                column: Optional[Column] = None,
                 name: str = ""):
-        # collecting column data
-        numnz = 0 if column is None else len(column.constrs)
-        if not numnz:
+        if column is None:
             vind = ffi.NULL
             vval = ffi.NULL
+            numnz = 0
         else:
+            numnz = len(column.constrs)
             vind = ffi.new("int[]", [c.idx for c in column.constrs])
             vval = ffi.new("double[]", [coef for coef in column.coeffs])
 
@@ -546,10 +546,8 @@ class SolverCbc(Solver):
         cbclib.Cbc_setObjCoeff(self._model, var.idx, value)
 
     def optimize(self) -> OptimizationStatus:
-        self.__evtimes = {}
-
         # get name indexes from an osi problem
-        def cbc_get_osi_name_indexes(osi_solver: CData) -> Dict[str, int]:
+        def cbc_get_osi_name_indexes(osi_solver) -> Dict[str, int]:
             nameIdx = {}
             n = cbclib.Osi_getNumCols(osi_solver)
             for i in range(n):
@@ -565,27 +563,27 @@ class SolverCbc(Solver):
             int (void *, int, int, const char *, double, double, double,
             int, int *, void *)
         """)
-        def cbc_progress_callback(model: CData, phase: int, step: int,
-                                  phaseName: CData, seconds: float,
-                                  lb: float, ub: float, nint: int, vint: CData,
-                                  cbData: CData) -> int:
+        def cbc_progress_callback(model, phase: int, step: int,
+                                  phaseName, seconds: float,
+                                  lb: float, ub: float, nint: int, vint,
+                                  cbData) -> int:
             self.__log.append((seconds, (lb, ub)))
             return -1
 
         # incumbent callback
-        def cbc_inc_callback(cbc_model: CData,
+        def cbc_inc_callback(cbc_model,
                              obj: float, nz: int,
-                             colNames: CData,
-                             colValues: CData,
-                             appData: CData):
+                             colNames,
+                             colValues,
+                             appData):
             return
 
         # cut callback
         @ffi.callback("""
             void (void *osi_solver, void *osi_cuts, void *app_data)
         """)
-        def cbc_cut_callback(osi_solver: CData, osi_cuts: CData,
-                             app_data: CData):
+        def cbc_cut_callback(osi_solver, osi_cuts,
+                             app_data):
             if osi_solver == ffi.NULL or osi_cuts == ffi.NULL or \
                     (self.model.cuts_generator is None
                      and self.model.lazy_constrs_generator is None):
@@ -911,7 +909,7 @@ class SolverCbc(Solver):
         mp = self._model
         cbclib.Cbc_addRow(mp, namestr, numnz, self.iidx, self.dvec, sense, rhs)
 
-    def add_lazy_constr(self, lin_expr: LinExpr):
+    def add_lazy_constr(self: "Solver", lin_expr: LinExpr):
         # collecting linear expression data
         numnz = len(lin_expr.expr)
 
@@ -1033,8 +1031,8 @@ class SolverCbc(Solver):
 
     def set_processing_limits(self,
                               max_time: float = INF,
-                              max_nodes: int = INF,
-                              max_sol: int = INF):
+                              max_nodes: int = maxsize,
+                              max_sol: int = maxsize):
         if max_time != INF:
             cbc_set_parameter(self, 'timeMode', 'elapsed')
             self.set_max_seconds(max_time)
@@ -1109,7 +1107,7 @@ class SolverCbc(Solver):
 
 
 class ModelOsi(Model):
-    def __init__(self, osi_ptr: CData):
+    def __init__(self, osi_ptr):
         # initializing variables with default values
         self.solver_name = 'osi'
         existing_solver = (osi_ptr != ffi.NULL)
@@ -1157,7 +1155,7 @@ class SolverOsi(Solver):
     SolverCbc) and it is used mainly in callbacks where only the pre-processed
     model is available"""
 
-    def __init__(self, model: Model, osi_ptr: CData =
+    def __init__(self, model: Model, osi_ptr =
     ffi.NULL):
         super().__init__(model)
 
@@ -1194,13 +1192,14 @@ class SolverOsi(Solver):
                 var_type: str = CONTINUOUS,
                 column: "Column" = None):
         # collecting column data
-        numnz = 0 if column is None else len(column.constrs)
-        if not numnz:
+        if column is None:
             vind = ffi.NULL
             vval = ffi.NULL
+            numnz = 0
         else:
             vind = ffi.new("int[]", [c.idx for c in column.constrs])
             vval = ffi.new("double[]", [coef for coef in column.coeffs])
+            numnz = len(column.constrs)
 
         isInt = \
             CHAR_ONE if var_type.upper() == "B" or var_type.upper() == "I" \
@@ -1360,16 +1359,10 @@ class SolverOsi(Solver):
     def set_objective_const(self, const: float):
         raise Exception('Still not implemented in OsiSolver')
 
-    def set_callbacks(self,
-                      branch_selector: "BranchSelector" = None,
-                      incumbent_updater: "IncumbentUpdater" = None,
-                      lazy_constrs_generator: "LazyConstrsGenerator" = None):
-        raise Exception('Callbacks not available in OsiSolver')
-
     def set_processing_limits(self,
                               max_time: float = INF,
-                              max_nodes: int = INF,
-                              max_sol: int = INF):
+                              max_nodes: int = maxsize,
+                              max_sol: int = maxsize):
         raise Exception('Not available in OsiSolver')
 
     def get_max_seconds(self) -> float:
