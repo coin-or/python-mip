@@ -120,8 +120,7 @@ linear program may not be worth the resulting bound improvement.
 When using cut callbacks be sure that cuts are used only to *improve* the LP
 relaxation but not to *define* feasible solutions, which need to be defined by
 the initial formulation. In other words, the initial model without cuts may be
-*weak* but needs to be *complete* [#f1]_. In the case of TSP, we can include the weak
-sub-tour elimination constraints presented in :numref:`tsp-label` in
+*weak* but needs to be *complete* [#f1]_. In the case of TSP, we can include the weak sub-tour elimination constraints presented in :numref:`tsp-label` in
 the initial model and then add the stronger sub-tour elimination constraints
 presented in the previous section as cuts. 
 

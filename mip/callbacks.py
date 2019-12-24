@@ -1,8 +1,11 @@
 """Classes used in solver callbacks, for a bi-directional communication
 with the solver engine"""
 from collections import defaultdict
-from typing import List, Tuple
+from typing import List, Tuple, TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from mip.model import Model
+    from mip.entities import LinExpr, Var
 
 class BranchSelector:
     def __init__(self, model: "Model"):

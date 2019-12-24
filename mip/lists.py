@@ -1,7 +1,10 @@
 from collections.abc import Sequence
-from typing import List
+from typing import List, TYPE_CHECKING
 from mip.constants import BINARY, CONTINUOUS, INF
 from mip.entities import Column, Constr, LinExpr, Var
+
+if TYPE_CHECKING:
+    from mip.model import Model
 
 
 class VarList(Sequence):
@@ -23,9 +26,9 @@ class VarList(Sequence):
             print(m.vars['z'].lb)
     """
 
-    def __init__(self, model: "Model"):
+    def __init__(self: "VarList", model: "Model"):
         self.__model = model
-        self.__vars = []
+        self.__vars = []  # type: List[Var]
 
     def add(self,
             name: str = "",
@@ -44,7 +47,7 @@ class VarList(Sequence):
         self.__vars.append(new_var)
         return new_var
 
-    def __getitem__(self, key):
+    def __getitem__(self: "VarList", key):
         if (isinstance(key, str)):
             return self.__model.var_by_name(key)
         return self.__vars[key]
@@ -52,10 +55,10 @@ class VarList(Sequence):
     def __len__(self) -> int:
         return len(self.__vars)
 
-    def update_vars(self, n_vars: int):
+    def update_vars(self: "VarList", n_vars: int):
         self.__vars = [Var(self.__model, i) for i in range(n_vars)]
 
-    def remove(self, vars: List[Var]):
+    def remove(self: "VarList", vars: List[Var]):
         iv = [1 for i in range(len(self.__vars))]
         vlist = [v.idx for v in vars]
         vlist.sort()
@@ -79,7 +82,7 @@ class VarList(Sequence):
 # callbacks
 class VVarList(Sequence):
 
-    def __init__(self, model: "Model", start: int = -1, end: int = -1):
+    def __init__(self: "VVarList", model: "Model", start: int = -1, end: int = -1):
         self.__model = model
         if start == -1:
             self.__start = 0
@@ -88,7 +91,7 @@ class VVarList(Sequence):
             self.__start = start
             self.__end = end
 
-    def add(self, name: str = "",
+    def add(self: "VVarList", name: str = "",
             lb: float = 0.0,
             ub: float = INF,
             obj: float = 0.0,
@@ -104,7 +107,7 @@ class VVarList(Sequence):
         solver.add_var(obj, lb, ub, var_type, column, name)
         return new_var
 
-    def __getitem__(self, key):
+    def __getitem__(self: "VVarList", key):
         if (isinstance(key, str)):
             return self.__model.var_by_name(key)
         if (isinstance(key, slice)):
@@ -119,18 +122,18 @@ class VVarList(Sequence):
 
         raise Exception('Unknow type')
 
-    def __len__(self) -> int:
+    def __len__(self: "VVarList") -> int:
         return self.__model.solver.num_cols()
 
 
 class ConstrList(Sequence):
     """ List of problem constraints"""
 
-    def __init__(self, model: "Model"):
+    def __init__(self: "ConstrList", model: "Model"):
         self.__model = model
-        self.__constrs = []
+        self.__constrs = []  # type: List[Constr]
 
-    def __getitem__(self, key):
+    def __getitem__(self: "ConstrList", key):
         if (isinstance(key, str)):
             return self.__model.constr_by_name(key)
         return self.__constrs[key]
@@ -148,7 +151,7 @@ class ConstrList(Sequence):
     def __len__(self) -> int:
         return len(self.__constrs)
 
-    def remove(self, constrs: List[Constr]):
+    def remove(self: "ConstrList", constrs: List[Constr]):
         iv = [1 for i in range(len(self.__constrs))]
         clist = [c.idx for c in constrs]
         clist.sort()
@@ -166,7 +169,7 @@ class ConstrList(Sequence):
                           self.__constrs
                           if c.idx != -1]
 
-    def update_constrs(self, n_constrs: int):
+    def update_constrs(self: "ConstrList", n_constrs: int):
         self.__constrs = [Constr(self.__model, i) for i in range(n_constrs)]
 
 
@@ -175,10 +178,10 @@ class ConstrList(Sequence):
 # used in callbacks
 class VConstrList(Sequence):
 
-    def __init__(self, model: "Model"):
+    def __init__(self: "VConstrList", model: "Model"):
         self.__model = model
 
-    def __getitem__(self, key):
+    def __getitem__(self: "VConstrList", key):
         if (isinstance(key, str)):
             return self.__model.constr_by_name(key)
         elif (isinstance(key, int)):

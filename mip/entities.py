@@ -1,8 +1,11 @@
 from builtins import property
-from typing import List, Optional
+from typing import List, Optional, Dict, Union, TYPE_CHECKING
 
 from mip.constants import BINARY, CONTINUOUS, INTEGER, OptimizationStatus, EPS,\
      MAXIMIZE, MINIMIZE, EQUAL, LESS_OR_EQUAL, GREATER_OR_EQUAL
+
+if TYPE_CHECKING:
+    from mip.model import Model
 
 
 class Column:
@@ -11,8 +14,8 @@ class Column:
     :meth:`~mip.model.Model.add_var`."""
 
     def __init__(self,
-                 constrs: List["Constr"] = None,
-                 coeffs: List[float] = None):
+                 constrs: List["Constr"] = [],
+                 coeffs: List[float] = []):
         self.constrs = constrs
         self.coeffs = coeffs
 
@@ -51,12 +54,12 @@ class LinExpr:
     """
 
     def __init__(self,
-                 variables: List["Var"] = None,
-                 coeffs: List[float] = None,
+                 variables: List["Var"] = [],
+                 coeffs: List[float] = [],
                  const: float = 0.0,
                  sense: str = ""):
         self.__const = const
-        self.__expr = {}
+        self.__expr = {}  # type: Dict[Var, float]
         self.__sense = sense
 
         if variables:
@@ -66,7 +69,8 @@ class LinExpr:
                     continue
                 self.add_var(variables[i], coeffs[i])
 
-    def __add__(self, other) -> "LinExpr":
+    def __add__(self: "LinExpr", other: Union["Var", "LinExpr",
+                                              int, float]) -> "LinExpr":
         result = self.copy()
         if isinstance(other, Var):
             result.add_var(other, 1)
@@ -76,10 +80,12 @@ class LinExpr:
             result.add_const(other)
         return result
 
-    def __radd__(self, other) -> "LinExpr":
+    def __radd__(self: "LinExpr", other: Union["Var", "LinExpr",
+                                               int, float]) -> "LinExpr":
         return self.__add__(other)
 
-    def __iadd__(self, other) -> "LinExpr":
+    def __iadd__(self: "LinExpr", other: Union["Var", "LinExpr",
+                                               int, float]) -> "LinExpr":
         if isinstance(other, Var):
             self.add_var(other, 1)
         elif isinstance(other, LinExpr):
@@ -88,7 +94,8 @@ class LinExpr:
             self.add_const(other)
         return self
 
-    def __sub__(self, other) -> "LinExpr":
+    def __sub__(self: "LinExpr", other: Union["Var", "LinExpr",
+                                              int, float]) -> "LinExpr":
         result = self.copy()
         if isinstance(other, Var):
             result.add_var(other, -1)
@@ -98,10 +105,12 @@ class LinExpr:
             result.add_const(-other)
         return result
 
-    def __rsub__(self, other) -> "LinExpr":
+    def __rsub__(self: "LinExpr", other: Union["Var", "LinExpr",
+                                               int, float]) -> "LinExpr":
         return (-self).__add__(other)
 
-    def __isub__(self, other) -> "LinExpr":
+    def __isub__(self: "LinExpr", other: Union["Var", "LinExpr",
+                                               int, float]) -> "LinExpr":
         if isinstance(other, Var):
             self.add_var(other, -1)
         elif isinstance(other, LinExpr):
@@ -110,7 +119,7 @@ class LinExpr:
             self.add_const(-other)
         return self
 
-    def __mul__(self, other) -> "LinExpr":
+    def __mul__(self: "LinExpr", other: Union[int, float]) -> "LinExpr":
         assert isinstance(other, (int, float))
         result = self.copy()
         result.__const *= other
@@ -118,17 +127,17 @@ class LinExpr:
             result.__expr[var] *= other
         return result
 
-    def __rmul__(self, other) -> "LinExpr":
+    def __rmul__(self: "LinExpr", other: Union[int, float]) -> "LinExpr":
         return self.__mul__(other)
 
-    def __imul__(self, other) -> "LinExpr":
+    def __imul__(self: "LinExpr", other: Union[int, float]) -> "LinExpr":
         assert isinstance(other, (int, float))
         self.__const *= other
         for var in self.__expr.keys():
             self.__expr[var] *= other
         return self
 
-    def __truediv__(self, other) -> "LinExpr":
+    def __truediv__(self: "LinExpr", other: Union[int, float]) -> "LinExpr":
         assert isinstance(other, (int, float))
         result = self.copy()
         result.__const /= other
@@ -136,17 +145,17 @@ class LinExpr:
             result.__expr[var] /= other
         return result
 
-    def __itruediv__(self, other) -> "LinExpr":
+    def __itruediv__(self: "LinExpr", other: Union[int, float]) -> "LinExpr":
         assert isinstance(other, (int, float))
         self.__const /= other
         for var in self.__expr.keys():
             self.__expr[var] /= other
         return self
 
-    def __neg__(self) -> "LinExpr":
+    def __neg__(self: "LinExpr") -> "LinExpr":
         return self.__mul__(-1)
 
-    def __str__(self) -> str:
+    def __str__(self: "LinExpr") -> str:
         result = []
 
         if hasattr(self, "__sense"):
@@ -177,33 +186,33 @@ class LinExpr:
 
         return "".join(result)
 
-    def __eq__(self, other) -> "LinExpr":
+    def __eq__(self: "LinExpr", other) -> "LinExpr":
         result = self - other
         result.__sense = "="
         return result
 
-    def __le__(self, other) -> "LinExpr":
+    def __le__(self: "LinExpr", other: Union["Var", "LinExpr", int, float]) -> "LinExpr":
         result = self - other
         result.__sense = "<"
         return result
 
-    def __ge__(self, other) -> "LinExpr":
+    def __ge__(self: "LinExpr", other: Union["Var", "LinExpr", int, float]) -> "LinExpr":
         result = self - other
         result.__sense = ">"
         return result
 
-    def add_const(self, __const: float):
+    def add_const(self: "LinExpr", __const: float):
         """adds a constant value to the linear expression, in the case of
         a constraint this correspond to the right-hand-side"""
         self.__const += __const
 
-    def add_expr(self, __expr: "LinExpr", coeff: float = 1):
+    def add_expr(self: "LinExpr", __expr: "LinExpr", coeff: float = 1):
         """extends a linear expression with the contents of another"""
         self.__const += __expr.__const * coeff
         for var, coeff_var in __expr.__expr.items():
             self.add_var(var, coeff_var * coeff)
 
-    def add_term(self, __expr, coeff: float = 1):
+    def add_term(self: "LinExpr", __expr: Union["Var", "LinExpr", int, float], coeff: float = 1):
         """extends a linear expression with another multiplied by a constant
         value coefficient"""
         if isinstance(__expr, Var):
@@ -213,7 +222,7 @@ class LinExpr:
         elif isinstance(__expr, (int, float)):
             self.add_const(__expr)
 
-    def add_var(self, var: "Var", coeff: float = 1):
+    def add_var(self: "LinExpr", var: "Var", coeff: float = 1):
         """adds a variable with a coefficient to the constraint"""
         if var in self.__expr:
             if -EPS <= self.__expr[var] + coeff <= EPS:
@@ -223,7 +232,7 @@ class LinExpr:
         else:
             self.__expr[var] = coeff
 
-    def copy(self) -> "LinExpr":
+    def copy(self: "LinExpr") -> "LinExpr":
         copy = LinExpr()
         copy.__const = self.__const
         copy.__expr = self.__expr.copy()
@@ -248,7 +257,7 @@ class LinExpr:
                 return False
         return True
 
-    def __hash__(self):
+    def __hash__(self: "LinExpr"):
         hash_el = [v.idx for v in self.__expr.keys()]
         for c in self.__expr.values():
             hash_el.append(c)
@@ -257,12 +266,12 @@ class LinExpr:
         return hash(tuple(hash_el))
 
     @property
-    def const(self) -> float:
+    def const(self: "LinExpr") -> float:
         """constant part of the linear expression"""
         return self.__const
 
     @property
-    def expr(self) -> dict:
+    def expr(self: "LinExpr") -> Dict["Var", float]:
         """the non-constant part of the linear expression
 
         Dictionary with pairs: (variable, coefficient) where coefficient
@@ -271,7 +280,7 @@ class LinExpr:
         return self.__expr
 
     @property
-    def sense(self) -> str:
+    def sense(self: "LinExpr") -> str:
         """sense of the linear expression
 
         sense can be EQUAL("="), LESS_OR_EQUAL("<"), GREATER_OR_EQUAL(">") or
@@ -281,7 +290,7 @@ class LinExpr:
         return self.__sense
 
     @sense.setter
-    def sense(self, value):
+    def sense(self: "LinExpr", value):
         """sense of the linear expression
 
         sense can be EQUAL("="), LESS_OR_EQUAL("<"), GREATER_OR_EQUAL(">") or
@@ -291,7 +300,7 @@ class LinExpr:
         self.__sense = value
 
     @property
-    def violation(self):
+    def violation(self: "LinExpr"):
         """Amount that current solution violates this constraint
 
         If a solution is available, than this property indicates how much
@@ -415,7 +424,7 @@ class Var:
     def __hash__(self) -> int:
         return self.idx
 
-    def __add__(self, other) -> LinExpr:
+    def __add__(self, other: Union["Var", LinExpr, int, float]) -> LinExpr:
         if isinstance(other, Var):
             return LinExpr([self, other], [1, 1])
         elif isinstance(other, LinExpr):
@@ -423,10 +432,10 @@ class Var:
         elif isinstance(other, (int, float)):
             return LinExpr([self], [1], other)
 
-    def __radd__(self, other) -> LinExpr:
+    def __radd__(self, other: Union["Var", LinExpr, int, float]) -> LinExpr:
         return self.__add__(other)
 
-    def __sub__(self, other) -> LinExpr:
+    def __sub__(self, other: Union["Var", LinExpr, int, float]) -> LinExpr:
         if isinstance(other, Var):
             return LinExpr([self, other], [1, -1])
         elif isinstance(other, LinExpr):
@@ -434,7 +443,7 @@ class Var:
         elif isinstance(other, (int, float)):
             return LinExpr([self], [1], -other)
 
-    def __rsub__(self, other) -> LinExpr:
+    def __rsub__(self, other: Union["Var", LinExpr, int, float]) -> LinExpr:
         if isinstance(other, Var):
             return LinExpr([self, other], [-1, 1])
         elif isinstance(other, LinExpr):
@@ -442,14 +451,14 @@ class Var:
         elif isinstance(other, (int, float)):
             return LinExpr([self], [-1], other)
 
-    def __mul__(self, other) -> LinExpr:
+    def __mul__(self, other: Union[int, float]) -> LinExpr:
         assert isinstance(other, (int, float))
         return LinExpr([self], [other])
 
-    def __rmul__(self, other) -> LinExpr:
+    def __rmul__(self, other: Union[int, float]) -> LinExpr:
         return self.__mul__(other)
 
-    def __truediv__(self, other) -> LinExpr:
+    def __truediv__(self, other: Union[int, float]) -> LinExpr:
         assert isinstance(other, (int, float))
         return self.__mul__(1.0 / other)
 
@@ -466,7 +475,7 @@ class Var:
                 return LinExpr([self], [1], -1 * other, sense="=")
             return LinExpr([self], [1], sense="=")
 
-    def __le__(self, other) -> LinExpr:
+    def __le__(self, other: Union["Var", LinExpr, int, float]) -> LinExpr:
         if isinstance(other, Var):
             return LinExpr([self, other], [1, -1], sense="<")
         elif isinstance(other, LinExpr):
@@ -476,7 +485,7 @@ class Var:
                 return LinExpr([self], [1], -1 * other, sense="<")
             return LinExpr([self], [1], sense="<")
 
-    def __ge__(self, other) -> LinExpr:
+    def __ge__(self, other: Union["Var", LinExpr, int, float]) -> LinExpr:
         if isinstance(other, Var):
             return LinExpr([self, other], [1, -1], sense=">")
         elif isinstance(other, LinExpr):

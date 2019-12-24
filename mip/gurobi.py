@@ -425,7 +425,7 @@ class SolverGurobi(Solver):
                 name))
         self.__n_rows_buffer += 1
 
-    def add_lazy_constr(self, lin_expr: "LinExpr"):
+    def add_lazy_constr(self: "Solver", lin_expr: "LinExpr"):
         self.flush_rows()
         self.set_int_param("LazyConstraints", 1)
         self._nlazy += 1
