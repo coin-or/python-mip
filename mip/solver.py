@@ -9,7 +9,6 @@ from mip.constants import SearchEmphasis, OptimizationStatus
 if TYPE_CHECKING:
     from mip.model import Model
     from mip.entities import Column, Var, LinExpr, Constr
-    from mip.callbacks import IncumbentUpdater
 
 
 class Solver:

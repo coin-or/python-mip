@@ -5,7 +5,7 @@ from typing import List, Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from mip.model import Model
-    from mip.entities import LinExpr, Var
+    from mip.entities import LinExpr
 
 class BranchSelector:
     def __init__(self, model: "Model"):
