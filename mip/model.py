@@ -3,7 +3,7 @@ from os.path import isfile
 from sys import stdout as out
 from typing import List, Tuple, Optional, Union, Dict, Any
 from mip.constants import INF, MINIMIZE, MAXIMIZE, GUROBI, CBC, CONTINUOUS,\
-     LP_Method, OptimizationStatus, BINARY, INTEGER, SearchEmphasis, VERSION
+     LP_Method, OptimizationStatus, SearchEmphasis, VERSION
 from mip.callbacks import ConstrsGenerator
 from mip.log import ProgressLog
 from mip.lists import ConstrList, VarList
