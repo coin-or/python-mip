@@ -7,12 +7,14 @@ if TYPE_CHECKING:
     from mip.model import Model
     from mip.entities import LinExpr
 
+
 class BranchSelector:
     def __init__(self, model: "Model"):
         self.model = model
 
-    def select_branch(self, rsol: List[Tuple["Var", float]]) \
-            -> Tuple["Var", int]:
+    def select_branch(
+        self, rsol: List[Tuple["Var", float]]
+    ) -> Tuple["Var", int]:
         raise NotImplementedError()
 
 
@@ -49,7 +51,8 @@ class ColumnsGenerator:
 class ConstrsGenerator:
     """Abstract class for implementing cuts and lazy constraints generators."""
 
-    def __init__(self): pass
+    def __init__(self):
+        pass
 
     def generate_constrs(self, model: "Model"):
         """Method called by the solver engine to generate *cuts* or *lazy constraints*.
@@ -128,9 +131,12 @@ class IncumbentUpdater:
     def __init__(self, model: "Model"):
         self.model = model
 
-    def update_incumbent(self, objective_value: float, best_bound: float,
-                         solution: List[Tuple["Var", float]]) \
-            -> List[Tuple["Var", float]]:
+    def update_incumbent(
+        self,
+        objective_value: float,
+        best_bound: float,
+        solution: List[Tuple["Var", float]],
+    ) -> List[Tuple["Var", float]]:
         """method that is called when a new integer feasible solution is found
 
         Args:

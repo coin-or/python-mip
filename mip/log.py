@@ -1,5 +1,3 @@
-
-
 class ProgressLog:
     """Class to store the improvement of lower
     and upper bounds over time during the search.
@@ -24,44 +22,45 @@ class ProgressLog:
     def __init__(self):
         self.log = []
 
-        self.instance = ''
+        self.instance = ""
 
-        self.settings = ''
+        self.settings = ""
 
-    def write(self, file_name: str = ''):
+    def write(self, file_name: str = ""):
         """Saves the progress log. If no extension is informed,
         the :code:`.plog` extension will be used. If only a directory is
         informed then the name will be built considering the
         :attr:`~mip.model.ProgressLog.instance` and
         :attr:`~mip.model.ProgressLog.settings` attributes"""
         if not self.instance:
-            raise Exception('Enter model name (instance name) to save \
-                             experimental data.')
+            raise Exception(
+                "Enter model name (instance name) to save \
+                             experimental data."
+            )
         if not file_name:
-            file_name = '{}-{}.plog'.format(self.instance, self.settings)
+            file_name = "{}-{}.plog".format(self.instance, self.settings)
         else:
-            if file_name.endswith('/') or file_name.endswith('\\'):
-                file_name += '{}-{}.plog'.format(self.instance, self.settings)
+            if file_name.endswith("/") or file_name.endswith("\\"):
+                file_name += "{}-{}.plog".format(self.instance, self.settings)
 
-        if not file_name.endswith('.plog'):
-            file_name += '.plog'
+        if not file_name.endswith(".plog"):
+            file_name += ".plog"
 
-        f = open(file_name, 'w')
-        f.write('instance: {}'.format(self.instance))
-        f.write('settings: {}'.format(self.settings))
+        f = open(file_name, "w")
+        f.write("instance: {}".format(self.instance))
+        f.write("settings: {}".format(self.settings))
         for (s, (l, b)) in self.log:
-            f.write('{},{},{}'.format(s, l, b))
+            f.write("{},{},{}".format(s, l, b))
         f.close()
 
     def read(self, file_name: str):
         """Reads a progress log stored in a file"""
-        f = open(file_name, 'r')
+        f = open(file_name, "r")
         lin = f.next()
-        self.instance = lin.split(':')[1].lstrip()
-        self.settings = lin.split(':')[1].lstrip()
+        self.instance = lin.split(":")[1].lstrip()
+        self.settings = lin.split(":")[1].lstrip()
         for lin in f:
-            cols = lin.split(',')
+            cols = lin.split(",")
             (s, (l, b)) = (float(cols[0]), (float(cols[1]), float(cols[2])))
             self.log.append((s, (l, b)))
         f.close()
-
