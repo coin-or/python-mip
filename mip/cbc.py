@@ -9,10 +9,9 @@ from sys import maxsize
 import multiprocessing as multip
 from mip.model import xsum
 import mip
-from mip import Model, Var, Constr, Column, LinExpr, VConstrList, VVarList, Solver
-from mip.constants import MAXIMIZE, SearchEmphasis, CONTINUOUS, BINARY, \
-    INTEGER, MINIMIZE, EQUAL, LESS_OR_EQUAL, GREATER_OR_EQUAL, \
-    OptimizationStatus, LP_Method
+from mip import Model, Var, Constr, Column, LinExpr, VConstrList, VVarList,\
+  Solver, MAXIMIZE, SearchEmphasis, CONTINUOUS, BINARY, INTEGER, MINIMIZE,\
+  EQUAL, LESS_OR_EQUAL, GREATER_OR_EQUAL, OptimizationStatus, LP_Method
 
 warningMessages = 0
 
@@ -39,7 +38,8 @@ try:
             libfile = os.path.join(pathlib, 'cbc-c-windows-x86-64.dll')
         else:
             libfile = os.path.join(pathlib, 'cbc-c-windows-x86-32.dll')
-    elif platform.lower().startswith('darwin') or platform.lower().startswith('macos'):
+    elif (platform.lower().startswith('darwin') or
+          platform.lower().startswith('macos')):
         if os_is_64_bit:
             libfile = os.path.join(pathlib, 'cbc-c-darwin-x86-64.dylib')
     if not libfile:
@@ -197,8 +197,6 @@ if has_cbc:
     INT_PARAM_MULTIPLE_ROOTS      = 13 /*! Multiple root passes to get additional cuts and solutions. */
     };
 #define N_INT_PARAMS 14
- 
-
     void Cbc_setIntParam(Cbc_Model *model, enum IntParam which, const int val);
 
     void Cbc_setParameter(Cbc_Model *model, const char *name,
@@ -386,20 +384,20 @@ if has_cbc:
 CHAR_ONE = "{}".format(chr(1)).encode("utf-8")
 CHAR_ZERO = "\0".encode("utf-8")
 
-INT_PARAM_PERT_VALUE          = 0
-INT_PARAM_IDIOT               = 1
-INT_PARAM_STRONG_BRANCHING    = 2
-INT_PARAM_CUT_DEPTH           = 3
-INT_PARAM_MAX_NODES           = 4
-INT_PARAM_NUMBER_BEFORE       = 5
-INT_PARAM_FPUMP_ITS           = 6
-INT_PARAM_MAX_SOLS            = 7
-INT_PARAM_CUT_PASS_IN_TREE    = 8
-INT_PARAM_THREADS             = 9
-INT_PARAM_CUT_PASS            = 10
-INT_PARAM_LOG_LEVEL           = 11
-INT_PARAM_MAX_SAVED_SOLS      = 12
-INT_PARAM_MULTIPLE_ROOTS      = 13
+INT_PARAM_PERT_VALUE = 0
+INT_PARAM_IDIOT = 1
+INT_PARAM_STRONG_BRANCHING = 2
+INT_PARAM_CUT_DEPTH = 3
+INT_PARAM_MAX_NODES = 4
+INT_PARAM_NUMBER_BEFORE = 5
+INT_PARAM_FPUMP_ITS = 6
+INT_PARAM_MAX_SOLS = 7
+INT_PARAM_CUT_PASS_IN_TREE = 8
+INT_PARAM_THREADS = 9
+INT_PARAM_CUT_PASS = 10
+INT_PARAM_LOG_LEVEL = 11
+INT_PARAM_MAX_SAVED_SOLS = 12
+INT_PARAM_MULTIPLE_ROOTS = 13
 
 
 Osi_getNumCols = cbclib.Osi_getNumCols
@@ -409,6 +407,7 @@ Osi_isInteger = cbclib.Osi_isInteger
 Osi_isProvenOptimal = cbclib.Osi_isProvenOptimal
 OsiCuts_addGlobalRowCut = cbclib.OsiCuts_addGlobalRowCut
 Cbc_setIntParam = cbclib.Cbc_setIntParam
+
 
 def cbc_set_parameter(model: Model, param: str, value: str):
     cbclib.Cbc_setParameter(model._model, param.encode("utf-8"),
@@ -465,7 +464,7 @@ class SolverCbc(Solver):
 
         isInt = \
             CHAR_ONE if coltype.upper() == "B" or coltype.upper() == "I" \
-                else CHAR_ZERO
+            else CHAR_ZERO
         cbclib.Cbc_addCol(
             self._model, name.encode("utf-8"),
             lb, ub, obj,
@@ -778,7 +777,7 @@ class SolverCbc(Solver):
 
         if cbclib.Cbc_getNumIntegers(self._model) > 0:
             xp = cbclib.Cbc_bestSolution(self._model)
-            if xp == ffi.NULL: # if enter here, probably bug in CBC
+            if xp == ffi.NULL:  # if enter here, probably bug in CBC
                 raise Exception('Calling Cbc_bestSolution without solution'
                                 ' available.')
             xv = float(xp[var.idx])
@@ -792,7 +791,7 @@ class SolverCbc(Solver):
 
         # continuous
         xp = cbclib.Cbc_getColSolution(self._model)
-        if xp == ffi.NULL: # if enter here, probably bug in CBC
+        if xp == ffi.NULL:  # if enter here, probably bug in CBC
             raise Exception('Calling Cbc_getColSolution without solution'
                             ' available.')
         return float(xp[var.idx])
@@ -1155,8 +1154,8 @@ class SolverOsi(Solver):
     SolverCbc) and it is used mainly in callbacks where only the pre-processed
     model is available"""
 
-    def __init__(self, model: Model, osi_ptr =
-    ffi.NULL):
+    def __init__(self, model: Model,
+                 osi_ptr=ffi.NULL):
         super().__init__(model)
 
         self._objconst = 0.0
@@ -1203,7 +1202,7 @@ class SolverOsi(Solver):
 
         isInt = \
             CHAR_ONE if var_type.upper() == "B" or var_type.upper() == "I" \
-                else CHAR_ZERO
+            else CHAR_ZERO
         cbclib.Osi_addCol(
             self.osi, name.encode("utf-8"),
             lb, ub, obj,
