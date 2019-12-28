@@ -8,8 +8,7 @@ from os import environ
 from sys import platform
 from cffi import FFI
 from mip import Model, Column, Var, LinExpr, Constr, Solver, VConstrList, \
-    VVarList, xsum
-from mip.constants import MAXIMIZE, MINIMIZE, CONTINUOUS, INTEGER, BINARY, \
+    VVarList, xsum, MAXIMIZE, MINIMIZE, CONTINUOUS, INTEGER, BINARY, \
     OptimizationStatus, EQUAL, LESS_OR_EQUAL, GREATER_OR_EQUAL, \
     SearchEmphasis, LP_Method
 
@@ -399,8 +398,7 @@ class SolverGurobi(Solver):
             self.__n_int_buffer += 1
 
     def add_cut(self, lin_expr: LinExpr):
-        # int GRBcbcut(void *cbdata, int cutlen, const int *cutind, const double *cutval, char cutsense, double cutrhs);
-        # int GRBcbcut(void *cbdata, int cutlen, const int *cutind, const double *cutval, char cutsense, double cutrhs);
+        # added in SolverGurobiCB
 
         return
 
@@ -1079,8 +1077,6 @@ class SolverGurobi(Solver):
                 "Error modifying int attribute {} for element {} to value {}".
                 format(name, index, value))
 
-
-
     def set_int_attr(self, name: str, value: int):
         error = GRBsetintattr(self._model, name.encode('utf-8'), value)
         if error != 0:
@@ -1230,8 +1226,8 @@ class SolverGurobiCB(SolverGurobi):
             ires = ffi.new('int *')
             st = GRBgetintattr(grb_model, 'NumVars'.encode('utf-8'), ires)
             if st != 0:
-                raise Exception('Could not query number of variables in Gurobi \
-                                callback')
+                raise Exception('Could not query number of variables in '
+                                'Gurobi callback')
             ncols = ires[0]
 
             self._cb_sol = \
@@ -1289,7 +1285,8 @@ class SolverGurobiCB(SolverGurobi):
             # collecting linear expression data
             nz = len(lin_expr.expr)
             cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
-            cval = ffi.new("double[]", [coef for coef in lin_expr.expr.values()])
+            cval = ffi.new("double[]", [coef for coef in
+                                        lin_expr.expr.values()])
 
             # constraint sense and rhs
             sense = lin_expr.sense.encode('utf-8')
@@ -1302,7 +1299,8 @@ class SolverGurobiCB(SolverGurobi):
             # collecting linear expression data
             nz = len(lin_expr.expr)
             cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
-            cval = ffi.new("double[]", [coef for coef in lin_expr.expr.values()])
+            cval = ffi.new("double[]", [coef for coef
+                                        in lin_expr.expr.values()])
 
             # constraint sense and rhs
             sense = lin_expr.sense.encode('utf-8')
