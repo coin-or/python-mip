@@ -1,11 +1,16 @@
 environment:
-  matrix:
-  - TOXENV: py35
-  - TOXENV: py36
-  - TOXENV: py37
+matrix:
+- PYTHON: "C:\\Python35-x64"
+  PYTHON_VERSION: "3.5.0"
+  PYTHON_ARCH: "64"
 
+- PYTHON: "C:\\Python36-x64"
+  PYTHON_VERSION: "3.6.x" # currently 3.6.5
+  PYTHON_ARCH: "64"
 
-build: off
+- PYTHON: "C:\\Python37-x64"
+  PYTHON_VERSION: "3.7.x" # currently 3.6.5
+  PYTHON_ARCH: "64"
 
 install:
 - pip install cffi pytest flake8 networkx
