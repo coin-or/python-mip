@@ -30,15 +30,17 @@ class VarList(Sequence):
         self.__model = model
         self.__vars = []  # type: List[Var]
 
-    def add(self,
-            name: str = "",
-            lb: float = 0.0,
-            ub: float = INF,
-            obj: float = 0.0,
-            var_type: str = CONTINUOUS,
-            column: Column = None) -> Var:
+    def add(
+        self,
+        name: str = "",
+        lb: float = 0.0,
+        ub: float = INF,
+        obj: float = 0.0,
+        var_type: str = CONTINUOUS,
+        column: Column = None,
+    ) -> Var:
         if not name:
-            name = 'var({})'.format(len(self.__vars))
+            name = "var({})".format(len(self.__vars))
         if var_type == BINARY:
             lb = 0.0
             ub = 1.0
@@ -48,7 +50,7 @@ class VarList(Sequence):
         return new_var
 
     def __getitem__(self: "VarList", key):
-        if (isinstance(key, str)):
+        if isinstance(key, str):
             return self.__model.var_by_name(key)
         return self.__vars[key]
 
@@ -72,17 +74,16 @@ class VarList(Sequence):
             else:
                 v.idx = i
                 i += 1
-        self.__vars = [v for v in
-                       self.__vars
-                       if v.idx != -1]
+        self.__vars = [v for v in self.__vars if v.idx != -1]
 
 
 # same as VarList but does not stores
 # references for variables, used in
 # callbacks
 class VVarList(Sequence):
-
-    def __init__(self: "VVarList", model: "Model", start: int = -1, end: int = -1):
+    def __init__(
+        self: "VVarList", model: "Model", start: int = -1, end: int = -1
+    ):
         self.__model = model
         if start == -1:
             self.__start = 0
@@ -91,15 +92,18 @@ class VVarList(Sequence):
             self.__start = start
             self.__end = end
 
-    def add(self: "VVarList", name: str = "",
-            lb: float = 0.0,
-            ub: float = INF,
-            obj: float = 0.0,
-            var_type: str = CONTINUOUS,
-            column: Column = None) -> Var:
+    def add(
+        self: "VVarList",
+        name: str = "",
+        lb: float = 0.0,
+        ub: float = INF,
+        obj: float = 0.0,
+        var_type: str = CONTINUOUS,
+        column: Column = None,
+    ) -> Var:
         solver = self.__model.solver
         if not name:
-            name = 'var({})'.format(len(self))
+            name = "var({})".format(len(self))
         if var_type == BINARY:
             lb = 0.0
             ub = 1.0
@@ -108,11 +112,11 @@ class VVarList(Sequence):
         return new_var
 
     def __getitem__(self: "VVarList", key):
-        if (isinstance(key, str)):
+        if isinstance(key, str):
             return self.__model.var_by_name(key)
-        if (isinstance(key, slice)):
+        if isinstance(key, slice):
             return VVarList(self.__model, key.start, key.end)
-        if (isinstance(key, int)):
+        if isinstance(key, int):
             if key < 0:
                 key = self.__end - key
             if key >= self.__end:
@@ -120,7 +124,7 @@ class VVarList(Sequence):
 
             return Var(self.__model, key + self.__start)
 
-        raise Exception('Unknow type')
+        raise Exception("Unknow type")
 
     def __len__(self: "VVarList") -> int:
         return self.__model.solver.num_cols()
@@ -134,15 +138,13 @@ class ConstrList(Sequence):
         self.__constrs = []  # type: List[Constr]
 
     def __getitem__(self: "ConstrList", key):
-        if (isinstance(key, str)):
+        if isinstance(key, str):
             return self.__model.constr_by_name(key)
         return self.__constrs[key]
 
-    def add(self,
-            lin_expr: LinExpr,
-            name: str = '') -> Constr:
+    def add(self, lin_expr: LinExpr, name: str = "") -> Constr:
         if not name:
-            name = 'constr({})'.format(len(self.__constrs))
+            name = "constr({})".format(len(self.__constrs))
         new_constr = Constr(self.__model, len(self.__constrs))
         self.__model.solver.add_constr(lin_expr, name)
         self.__constrs.append(new_constr)
@@ -165,9 +167,7 @@ class ConstrList(Sequence):
             else:
                 c.idx = i
                 i += 1
-        self.__constrs = [c for c in
-                          self.__constrs
-                          if c.idx != -1]
+        self.__constrs = [c for c in self.__constrs if c.idx != -1]
 
     def update_constrs(self: "ConstrList", n_constrs: int):
         self.__constrs = [Constr(self.__model, i) for i in range(n_constrs)]
@@ -177,19 +177,18 @@ class ConstrList(Sequence):
 # anything and does not allows modification,
 # used in callbacks
 class VConstrList(Sequence):
-
     def __init__(self: "VConstrList", model: "Model"):
         self.__model = model
 
     def __getitem__(self: "VConstrList", key):
-        if (isinstance(key, str)):
+        if isinstance(key, str):
             return self.__model.constr_by_name(key)
-        elif (isinstance(key, int)):
+        elif isinstance(key, int):
             return Constr(self.__model, key)
-        elif (isinstance(key, slice)):
+        elif isinstance(key, slice):
             return self[key]
 
-        raise Exception('Use int or string as key')
+        raise Exception("Use int or string as key")
 
     def __len__(self) -> int:
         return self.__model.solver.num_rows()
