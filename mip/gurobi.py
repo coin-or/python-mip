@@ -1328,7 +1328,7 @@ class SolverGurobiCB(SolverGurobi):
             st = GRBgetintattr(grb_model, "NumVars".encode("utf-8"), ires)
             if st != 0:
                 raise Exception(
-                    "Could not query number of variables in " "Gurobi callback"
+                    "Could not query number of variables in Gurobi callback"
                 )
             ncols = ires[0]
 
