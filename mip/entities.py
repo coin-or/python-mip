@@ -1,8 +1,18 @@
 from builtins import property
 from typing import List, Optional, Dict, Union, TYPE_CHECKING
 
-from mip.constants import BINARY, CONTINUOUS, INTEGER, OptimizationStatus, EPS,\
-     MAXIMIZE, MINIMIZE, EQUAL, LESS_OR_EQUAL, GREATER_OR_EQUAL
+from mip.constants import (
+    BINARY,
+    CONTINUOUS,
+    INTEGER,
+    OptimizationStatus,
+    EPS,
+    MAXIMIZE,
+    MINIMIZE,
+    EQUAL,
+    LESS_OR_EQUAL,
+    GREATER_OR_EQUAL,
+)
 
 if TYPE_CHECKING:
     from mip.model import Model
@@ -13,9 +23,7 @@ class Column:
     constraint matrix. To create a variable see
     :meth:`~mip.model.Model.add_var`."""
 
-    def __init__(self,
-                 constrs: List["Constr"] = [],
-                 coeffs: List[float] = []):
+    def __init__(self, constrs: List["Constr"] = [], coeffs: List[float] = []):
         self.constrs = constrs
         self.coeffs = coeffs
 
@@ -53,11 +61,13 @@ class LinExpr:
      m += x1 + x2 + x3 == 1
     """
 
-    def __init__(self,
-                 variables: List["Var"] = [],
-                 coeffs: List[float] = [],
-                 const: float = 0.0,
-                 sense: str = ""):
+    def __init__(
+        self,
+        variables: List["Var"] = [],
+        coeffs: List[float] = [],
+        const: float = 0.0,
+        sense: str = "",
+    ):
         self.__const = const
         self.__expr = {}  # type: Dict[Var, float]
         self.__sense = sense
@@ -69,8 +79,9 @@ class LinExpr:
                     continue
                 self.add_var(variables[i], coeffs[i])
 
-    def __add__(self: "LinExpr", other: Union["Var", "LinExpr",
-                                              int, float]) -> "LinExpr":
+    def __add__(
+        self: "LinExpr", other: Union["Var", "LinExpr", int, float]
+    ) -> "LinExpr":
         result = self.copy()
         if isinstance(other, Var):
             result.add_var(other, 1)
@@ -80,12 +91,14 @@ class LinExpr:
             result.add_const(other)
         return result
 
-    def __radd__(self: "LinExpr", other: Union["Var", "LinExpr",
-                                               int, float]) -> "LinExpr":
+    def __radd__(
+        self: "LinExpr", other: Union["Var", "LinExpr", int, float]
+    ) -> "LinExpr":
         return self.__add__(other)
 
-    def __iadd__(self: "LinExpr", other: Union["Var", "LinExpr",
-                                               int, float]) -> "LinExpr":
+    def __iadd__(
+        self: "LinExpr", other: Union["Var", "LinExpr", int, float]
+    ) -> "LinExpr":
         if isinstance(other, Var):
             self.add_var(other, 1)
         elif isinstance(other, LinExpr):
@@ -94,8 +107,9 @@ class LinExpr:
             self.add_const(other)
         return self
 
-    def __sub__(self: "LinExpr", other: Union["Var", "LinExpr",
-                                              int, float]) -> "LinExpr":
+    def __sub__(
+        self: "LinExpr", other: Union["Var", "LinExpr", int, float]
+    ) -> "LinExpr":
         result = self.copy()
         if isinstance(other, Var):
             result.add_var(other, -1)
@@ -105,12 +119,14 @@ class LinExpr:
             result.add_const(-other)
         return result
 
-    def __rsub__(self: "LinExpr", other: Union["Var", "LinExpr",
-                                               int, float]) -> "LinExpr":
+    def __rsub__(
+        self: "LinExpr", other: Union["Var", "LinExpr", int, float]
+    ) -> "LinExpr":
         return (-self).__add__(other)
 
-    def __isub__(self: "LinExpr", other: Union["Var", "LinExpr",
-                                               int, float]) -> "LinExpr":
+    def __isub__(
+        self: "LinExpr", other: Union["Var", "LinExpr", int, float]
+    ) -> "LinExpr":
         if isinstance(other, Var):
             self.add_var(other, -1)
         elif isinstance(other, LinExpr):
@@ -177,12 +193,17 @@ class LinExpr:
                 result.append(" <= ")
             if self.__sense == GREATER_OR_EQUAL:
                 result.append(" >= ")
-            result.append(str(abs(self.__const)) if self.__const < 0 else
-                          "- " + str(abs(self.__const)))
+            result.append(
+                str(abs(self.__const))
+                if self.__const < 0
+                else "- " + str(abs(self.__const))
+            )
         elif self.__const != 0:
             result.append(
-                "+ " + str(abs(self.__const)) if self.__const > 0
-                else "- " + str(abs(self.__const)))
+                "+ " + str(abs(self.__const))
+                if self.__const > 0
+                else "- " + str(abs(self.__const))
+            )
 
         return "".join(result)
 
@@ -191,12 +212,16 @@ class LinExpr:
         result.__sense = "="
         return result
 
-    def __le__(self: "LinExpr", other: Union["Var", "LinExpr", int, float]) -> "LinExpr":
+    def __le__(
+        self: "LinExpr", other: Union["Var", "LinExpr", int, float]
+    ) -> "LinExpr":
         result = self - other
         result.__sense = "<"
         return result
 
-    def __ge__(self: "LinExpr", other: Union["Var", "LinExpr", int, float]) -> "LinExpr":
+    def __ge__(
+        self: "LinExpr", other: Union["Var", "LinExpr", int, float]
+    ) -> "LinExpr":
         result = self - other
         result.__sense = ">"
         return result
@@ -212,7 +237,11 @@ class LinExpr:
         for var, coeff_var in __expr.__expr.items():
             self.add_var(var, coeff_var * coeff)
 
-    def add_term(self: "LinExpr", __expr: Union["Var", "LinExpr", int, float], coeff: float = 1):
+    def add_term(
+        self: "LinExpr",
+        __expr: Union["Var", "LinExpr", int, float],
+        coeff: float = 1,
+    ):
         """extends a linear expression with another multiplied by a constant
         value coefficient"""
         if isinstance(__expr, Var):
@@ -309,11 +338,11 @@ class LinExpr:
         lhs = sum(coef * var.x for (var, coef) in self.__expr.items())
         rhs = -self.const
         viol = 0.0
-        if self.sense == '=':
+        if self.sense == "=":
             viol = abs(lhs - rhs)
-        elif self.sense == '<':
+        elif self.sense == "<":
             viol = max(lhs - rhs, 0.0)
-        elif self.sense == '>':
+        elif self.sense == ">":
             viol = max(rhs - lhs, 0.0)
 
         return viol
@@ -349,27 +378,27 @@ class Constr:
 
     def __str__(self) -> str:
         if self.name:
-            res = self.name + ':'
+            res = self.name + ":"
         else:
-            res = 'constr({}): '.format(self.idx + 1)
-        line = ''
+            res = "constr({}): ".format(self.idx + 1)
+        line = ""
         len_line = 0
         for (var, val) in self.expr.expr.items():
-            astr = ' {:+} {}'.format(val, var.name)
+            astr = " {:+} {}".format(val, var.name)
             len_line += len(astr)
             line += astr
 
             if len_line > 75:
-                line += '\n\t'
+                line += "\n\t"
                 len_line = 0
         res += line
         rhs = self.expr.const * -1.0
-        if self.expr.sense == '=':
-            res += ' = {}'.format(rhs)
-        elif self.expr.sense == '<':
-            res += ' <= {}'.format(rhs)
-        elif self.expr.sense == '>':
-            res += ' >= {}'.format(rhs)
+        if self.expr.sense == "=":
+            res += " = {}".format(rhs)
+        elif self.expr.sense == "<":
+            res += " <= {}".format(rhs)
+        elif self.expr.sense == ">":
+            res += " >= {}".format(rhs)
 
         return res
 
@@ -562,15 +591,19 @@ class Var:
     def x(self) -> Optional[float]:
         """Value of this variable in the solution. Note that None is returned
         if no solution is not available."""
-        if self.__model.status in [OptimizationStatus.OPTIMAL,
-                                   OptimizationStatus.FEASIBLE]:
+        if self.__model.status in [
+            OptimizationStatus.OPTIMAL,
+            OptimizationStatus.FEASIBLE,
+        ]:
             return self.__model.solver.var_get_x(self)
         return None
 
     def xi(self, i: int) -> Optional[float]:
         """Value for this variable in the :math:`i`-th solution from the solution
         pool. Note that None is returned if the solution is not available."""
-        if self.__model.status in [OptimizationStatus.OPTIMAL,
-                                   OptimizationStatus.FEASIBLE]:
+        if self.__model.status in [
+            OptimizationStatus.OPTIMAL,
+            OptimizationStatus.FEASIBLE,
+        ]:
             return self.__model.solver.var_get_xi(self, i)
         return None

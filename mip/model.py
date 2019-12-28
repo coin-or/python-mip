@@ -2,8 +2,20 @@ from os import environ
 from os.path import isfile
 from sys import stdout as out
 from typing import List, Tuple, Optional, Union, Dict, Any
-from mip.constants import INF, MINIMIZE, MAXIMIZE, GUROBI, CBC, CONTINUOUS,\
-     LP_Method, OptimizationStatus, BINARY, INTEGER, SearchEmphasis, VERSION
+from mip.constants import (
+    INF,
+    MINIMIZE,
+    MAXIMIZE,
+    GUROBI,
+    CBC,
+    CONTINUOUS,
+    LP_Method,
+    OptimizationStatus,
+    BINARY,
+    INTEGER,
+    SearchEmphasis,
+    VERSION,
+)
 from mip.callbacks import ConstrsGenerator
 from mip.log import ProgressLog
 from mip.lists import ConstrList, VarList
@@ -38,11 +50,13 @@ class Model:
         True
     """
 
-    def __init__(self: "Model",
-                 name: str = "",
-                 sense: str = MINIMIZE,
-                 solver_name: str = "",
-                 solver: Optional[Solver] = None):
+    def __init__(
+        self: "Model",
+        name: str = "",
+        sense: str = MINIMIZE,
+        solver_name: str = "",
+        solver: Optional[Solver] = None,
+    ):
         """Model constructor
 
         Creates a Mixed-Integer Linear Programming Model. The default model
@@ -76,24 +90,29 @@ class Model:
             # creating a solver instance
             if self.solver_name.upper() in ["GUROBI", "GRB"]:
                 from mip.gurobi import SolverGurobi
+
                 self.solver = SolverGurobi(self, name, sense)
             elif self.solver_name.upper() == "CBC":
                 from mip.cbc import SolverCbc
+
                 self.solver = SolverCbc(self, name, sense)
             else:
                 # checking which solvers are available
                 try:
                     from mip.gurobi import SolverGurobi
+
                     has_gurobi = True
                 except ImportError:
                     has_gurobi = False
 
                 if has_gurobi:
                     from mip.gurobi import SolverGurobi
+
                     self.solver = SolverGurobi(self, name, sense)
                     self.solver_name = GUROBI
                 else:
                     from mip.cbc import SolverCbc
+
                     self.solver = SolverCbc(self, name, sense)
                     self.solver_name = CBC
 
@@ -144,12 +163,15 @@ class Model:
 
         return self
 
-    def add_var(self: "Model", name: str = "",
-                lb: float = 0.0,
-                ub: float = INF,
-                obj: float = 0.0,
-                var_type: str = CONTINUOUS,
-                column: Column = None) -> Var:
+    def add_var(
+        self: "Model",
+        name: str = "",
+        lb: float = 0.0,
+        ub: float = INF,
+        obj: float = 0.0,
+        var_type: str = CONTINUOUS,
+        column: Column = None,
+    ) -> Var:
         """ Creates a new variable in the model, returning its reference
 
         Args:
@@ -211,8 +233,9 @@ class Model:
         """
 
         if isinstance(lin_expr, bool):
-            raise InvalidLinExpr("A boolean (true/false) cannot be "
-                                 "used as a constraint.")
+            raise InvalidLinExpr(
+                "A boolean (true/false) cannot be " "used as a constraint."
+            )
         return self.constrs.add(lin_expr, name)
 
     def add_lazy_constr(self: "Model", expr: LinExpr):
@@ -287,19 +310,24 @@ class Model:
 
         if self.solver_name.upper() == GUROBI:
             from mip.gurobi import SolverGurobi
+
             self.solver = SolverGurobi(self, self.name, sense)
         elif self.solver_name.upper() == CBC:
             from mip.cbc import SolverCbc
+
             self.solver = SolverCbc(self, self.name, sense)
         else:
             # checking which solvers are available
             from mip import gurobi
+
             if gurobi.found:
                 from mip.gurobi import SolverGurobi
+
                 self.solver = SolverGurobi(self, self.name, sense)
                 self.solver_name = GUROBI
             else:
                 from mip.cbc import SolverCbc
+
                 self.solver = SolverCbc(self, self.name, sense)
                 self.solver_name = CBC
 
@@ -330,8 +358,9 @@ class Model:
 
         # adding variables
         for v in self.vars:
-            copy.add_var(name=v.name, lb=v.lb, ub=v.ub, obj=v.obj,
-                         var_type=v.var_type)
+            copy.add_var(
+                name=v.name, lb=v.lb, ub=v.ub, obj=v.obj, var_type=v.var_type
+            )
 
         # adding constraints
         for c in self.constrs:
@@ -371,10 +400,12 @@ class Model:
             return None
         return self.vars[v]
 
-    def optimize(self: Solver,
-                 max_seconds: float = INF,
-                 max_nodes: int = INF,
-                 max_solutions: int = INF) -> OptimizationStatus:
+    def optimize(
+        self: Solver,
+        max_seconds: float = INF,
+        max_nodes: int = INF,
+        max_solutions: int = INF,
+    ) -> OptimizationStatus:
         """ Optimizes current model
 
         Optimizes current model, optionally specifying processing limits.
@@ -404,8 +435,9 @@ class Model:
             self.solver.set_num_threads(self.__threads)
         # self.solver.set_callbacks(branch_selector,
         # incumbent_updater, lazy_constrs_generator)
-        self.solver.set_processing_limits(max_seconds,
-                                          max_nodes, max_solutions)
+        self.solver.set_processing_limits(
+            max_seconds, max_nodes, max_solutions
+        )
 
         self._status = self.solver.optimize()
         # has a solution and is a MIP
@@ -447,28 +479,35 @@ class Model:
             path(str): file name
         """
         if not isfile(path):
-            raise OSError(2, 'File {} does not exists'.format(path))
+            raise OSError(2, "File {} does not exists".format(path))
 
-        if path.lower().endswith('.sol') or \
-                path.lower().endswith('.mst'):
+        if path.lower().endswith(".sol") or path.lower().endswith(".mst"):
             mip_start = load_mipstart(path)
             if not mip_start:
-                raise Exception('File {} does not contains a valid feasible \
-                                 solution.'.format(path))
+                raise Exception(
+                    "File {} does not contains a valid feasible \
+                                 solution.".format(
+                        path
+                    )
+                )
             var_list = []
             for name, value in mip_start:
                 var = self.var_by_name(name)
                 if var is not None:
                     var_list.append((var, value))
             if not var_list:
-                raise Exception('Invalid variable(s) name(s) in \
-                                 mipstart file {}'.format(path))
+                raise Exception(
+                    "Invalid variable(s) name(s) in \
+                                 mipstart file {}".format(
+                        path
+                    )
+                )
 
             self.start = var_list
             return
 
         # reading model
-        model_ext = ['.lp', '.mps']
+        model_ext = [".lp", ".mps"]
 
         fn_low = path.lower()
         for ext in model_ext:
@@ -479,8 +518,10 @@ class Model:
                 self.constrs.update_constrs(self.solver.num_rows())
                 return
 
-        raise Exception('Use .lp, .mps, .sol or .mst as file extension \
-                         to indicate the file format.')
+        raise Exception(
+            "Use .lp, .mps, .sol or .mst as file extension \
+                         to indicate the file format."
+        )
 
     def relax(self: Solver):
         """ Relax integrality constraints of variables
@@ -513,20 +554,25 @@ class Model:
         Args:
             file_path(str): file name
         """
-        if file_path.lower().endswith('.sol') or \
-                file_path.lower().endswith('.mst'):
+        if file_path.lower().endswith(".sol") or file_path.lower().endswith(
+            ".mst"
+        ):
             if self.start:
                 save_mipstart(self.start, file_path)
             else:
-                mip_start = [(var, var.x) for var in self.vars
-                             if abs(var.x) >= 1e-8]
+                mip_start = [
+                    (var, var.x) for var in self.vars if abs(var.x) >= 1e-8
+                ]
                 save_mipstart(mip_start, file_path)
-        elif file_path.lower().endswith('.lp') or \
-                file_path.lower().endswith('.mps'):
+        elif file_path.lower().endswith(".lp") or file_path.lower().endswith(
+            ".mps"
+        ):
             self.solver.write(file_path)
         else:
-            raise Exception('Use .lp, .mps, .sol or .mst as file extension \
-                             to indicate the file format.')
+            raise Exception(
+                "Use .lp, .mps, .sol or .mst as file extension \
+                             to indicate the file format."
+            )
 
     @property
     def objective_bound(self: Solver) -> float:
@@ -733,8 +779,10 @@ class Model:
             as an array from 0 (the best solution) to
             :attr:`~mip.model.Model.num_solutions`-1.
         """
-        return [float(self.solver.get_objective_value_i(i))
-                for i in range(self.num_solutions)]
+        return [
+            float(self.solver.get_objective_value_i(i))
+            for i in range(self.num_solutions)
+        ]
 
     @property
     def cuts_generator(self: Solver) -> "ConstrsGenerator":
@@ -769,8 +817,9 @@ class Model:
         return self.__lazy_constrs_generator
 
     @lazy_constrs_generator.setter
-    def lazy_constrs_generator(self: Solver, lazy_constrs_generator:
-                               ConstrsGenerator):
+    def lazy_constrs_generator(
+        self: Solver, lazy_constrs_generator: ConstrsGenerator
+    ):
         self.__lazy_constrs_generator = lazy_constrs_generator
 
     @property
@@ -889,12 +938,16 @@ class Model:
             out.write("Model is infeasible.\n")
             return
         if mc.status == OptimizationStatus.UNBOUNDED:
-            out.write("Model is unbounded. You probably need to insert "
-                      "additional constraints or bounds in variables.\n")
+            out.write(
+                "Model is unbounded. You probably need to insert "
+                "additional constraints or bounds in variables.\n"
+            )
             return
         if mc.status != OptimizationStatus.OPTIMAL:
-            print("Unexpected status while optimizing LP relaxation:"
-                  " {}".format(mc.status))
+            print(
+                "Unexpected status while optimizing LP relaxation:"
+                " {}".format(mc.status)
+            )
 
         print("Model LP relaxation bound is {}".format(mc.objective_value))
 
@@ -908,8 +961,10 @@ class Model:
                 print("NOT OK, optimization status: {}".format(mc.status))
                 return
 
-        print("Linear Programming relaxation of model with fixations from "
-              "MIPStart is feasible.")
+        print(
+            "Linear Programming relaxation of model with fixations from "
+            "MIPStart is feasible."
+        )
         print("MIP model may still be infeasible.")
 
     @property
@@ -1086,15 +1141,21 @@ class Model:
                 elif isinstance(o, Constr):
                     clist.append(o)
                 else:
-                    raise Exception("Cannot handle removal of object of type "
-                                    + type(o) + " from model.")
+                    raise Exception(
+                        "Cannot handle removal of object of type "
+                        + type(o)
+                        + " from model."
+                    )
             if vlist:
                 self.vars.remove(vlist)
             if clist:
                 self.constrs.remove(clist)
         else:
-            raise Exception("Cannot handle removal of object of type "
-                            + type(objects) + " from model.")
+            raise Exception(
+                "Cannot handle removal of object of type "
+                + type(objects)
+                + " from model."
+            )
 
     def translate(self: Solver, ref) -> Union[List[Any], Dict[Any, Any], Var]:
         """Translates references of variables/containers of variables
@@ -1165,22 +1226,21 @@ quicksum = xsum
 
 
 def save_mipstart(sol: List[Tuple[Var, float]], file_name: str, obj=0.0):
-    f = open(file_name, 'w')
-    f.write('Feasible solution - objective {}\n'.format(obj))
+    f = open(file_name, "w")
+    f.write("Feasible solution - objective {}\n".format(obj))
     for i, (var, val) in enumerate(sol):
-        f.write('{} {} {} {}\n'.format(i, var.name, val, var.obj))
+        f.write("{} {} {} {}\n".format(i, var.name, val, var.obj))
     f.close()
 
 
-def load_mipstart(file_name: str) -> \
-        List[Tuple[str, float]]:
-    f = open(file_name, 'w')
+def load_mipstart(file_name: str) -> List[Tuple[str, float]]:
+    f = open(file_name, "w")
     result = []
     line = f.next()
     for line in f:
         line = line.rstrip().lstrip().lower()
-        line = ' '.join(line.split())
-        lc = line.split(' ')
+        line = " ".join(line.split())
+        lc = line.split(" ")
         result.append((lc[1], float(lc[2])))
     return result
 
@@ -1188,8 +1248,10 @@ def load_mipstart(file_name: str) -> \
 def read_custom_settings():
     global customCbcLib
     from pathlib import Path
+
     home = str(Path.home())
     import os
+
     config_path = os.path.join(home, ".config")
     if os.path.isdir(config_path):
         config_file = os.path.join(config_path, "python-mip")
@@ -1199,8 +1261,9 @@ def read_custom_settings():
                 if "=" in line:
                     cols = line.split("=")
                     if cols[0].strip().lower() == "cbc-library":
-                        customCbcLib = cols[1]. \
-                            lstrip().rstrip().replace('"', "")
+                        customCbcLib = (
+                            cols[1].lstrip().rstrip().replace('"', "")
+                        )
 
 
 print("Using Python-MIP package version {}".format(VERSION))
