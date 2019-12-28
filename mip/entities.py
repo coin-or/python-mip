@@ -425,6 +425,11 @@ class Constr:
         available if a pure linear programming problem was solved (only
         continuous variables).
         """
+        if (
+            self.__model.status != OptimizationStatus.OPTIMAL
+            or self.__model.num_int > 0
+        ):
+            return None
         return self.__model.solver.constr_get_pi(self)
 
     @property
@@ -583,8 +588,12 @@ class Var:
         """Reduced cost, only available after a linear programming model (only
         continuous variables) is optimized. Note that None is returned if no
         optimum solution is available"""
-        if self.__model.status != OptimizationStatus.OPTIMAL:
+        if (
+            self.__model.status != OptimizationStatus.OPTIMAL
+            or self.__model.num_int > 0
+        ):
             return None
+
         return self.__model.solver.var_get_rc(self)
 
     @property

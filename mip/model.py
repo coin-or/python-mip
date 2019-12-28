@@ -11,8 +11,6 @@ from mip.constants import (
     CONTINUOUS,
     LP_Method,
     OptimizationStatus,
-    BINARY,
-    INTEGER,
     SearchEmphasis,
     VERSION,
 )
@@ -530,9 +528,6 @@ class Model:
         continuous. Bounds are preserved.
         """
         self.solver.relax()
-        for v in self.vars:
-            if v.var_type == BINARY or v.var_type == INTEGER:
-                v.var_type = CONTINUOUS
 
     def write(self: Solver, file_path: str):
         """Saves a MIP model or an initial feasible solution.

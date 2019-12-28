@@ -17,8 +17,6 @@ from mip import (
     VConstrList,
     VVarList,
     xsum,
-)
-from mip.constants import (
     MAXIMIZE,
     MINIMIZE,
     CONTINUOUS,
@@ -447,8 +445,7 @@ class SolverGurobi(Solver):
             self.__n_int_buffer += 1
 
     def add_cut(self, lin_expr: LinExpr):
-        # int GRBcbcut(void *cbdata, int cutlen, const int *cutind, const double *cutval, char cutsense, double cutrhs);
-        # int GRBcbcut(void *cbdata, int cutlen, const int *cutind, const double *cutval, char cutsense, double cutrhs);
+        # added in SolverGurobiCB
 
         return
 
@@ -531,6 +528,7 @@ class SolverGurobi(Solver):
         attr = "VType".encode("utf-8")
         GRBsetcharattrlist(self._model, attr, n, idxs, ccont)
         self.__updated = False
+        self.update()
 
     def get_max_seconds(self) -> float:
         return self.get_dbl_param("TimeLimit")
@@ -1330,8 +1328,7 @@ class SolverGurobiCB(SolverGurobi):
             st = GRBgetintattr(grb_model, "NumVars".encode("utf-8"), ires)
             if st != 0:
                 raise Exception(
-                    "Could not query number of variables in Gurobi \
-                                callback"
+                    "Could not query number of variables in Gurobi callback"
                 )
             ncols = ires[0]
 

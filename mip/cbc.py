@@ -5,7 +5,6 @@ from sys import platform, maxsize
 from os.path import dirname, isfile
 import os
 from cffi import FFI
-from sys import maxsize
 import multiprocessing as multip
 from mip.model import xsum
 import mip
@@ -18,8 +17,6 @@ from mip import (
     VConstrList,
     VVarList,
     Solver,
-)
-from mip.constants import (
     MAXIMIZE,
     SearchEmphasis,
     CONTINUOUS,
@@ -218,8 +215,6 @@ if has_cbc:
     INT_PARAM_MULTIPLE_ROOTS      = 13 /*! Multiple root passes to get additional cuts and solutions. */
     };
 #define N_INT_PARAMS 14
- 
-
     void Cbc_setIntParam(Cbc_Model *model, enum IntParam which, const int val);
 
     void Cbc_setParameter(Cbc_Model *model, const char *name,
