@@ -15,8 +15,9 @@ class Solver:
     """The solver is an abstract class with the solver independent
     API to communicate with the solver engine"""
 
-    def __init__(self: "Solver", model: "Model", name: str = '',
-                 sense: str = ''):
+    def __init__(
+        self: "Solver", model: "Model", name: str = "", sense: str = ""
+    ):
         self.model = model
         if name:
             self.name = name
@@ -26,13 +27,15 @@ class Solver:
     def __del__(self: "Solver"):
         pass
 
-    def add_var(self: "Solver",
-                name: str = "",
-                obj: float = 0,
-                lb: float = 0,
-                ub: float = INF,
-                var_type: str = CONTINUOUS,
-                column: "Column" = None):
+    def add_var(
+        self: "Solver",
+        name: str = "",
+        obj: float = 0,
+        lb: float = 0,
+        ub: float = INF,
+        var_type: str = CONTINUOUS,
+        column: "Column" = None,
+    ):
         pass
 
     def add_constr(self: "Solver", lin_expr: "LinExpr", name: str = ""):
@@ -89,10 +92,12 @@ class Solver:
     def set_objective_const(self: "Solver", const: float):
         pass
 
-    def set_processing_limits(self: "Solver",
-                              max_time: float = INF,
-                              max_nodes: int = maxsize,
-                              max_sol: int = maxsize):
+    def set_processing_limits(
+        self: "Solver",
+        max_time: float = INF,
+        max_nodes: int = maxsize,
+        max_sol: int = maxsize,
+    ):
         pass
 
     def get_max_seconds(self: "Solver") -> float:
@@ -175,7 +180,9 @@ class Solver:
     def constr_get_expr(self: "Solver", constr: "Constr") -> "LinExpr":
         pass
 
-    def constr_set_expr(self: "Solver", constr: "Constr", value: "LinExpr") -> "LinExpr":
+    def constr_set_expr(
+        self: "Solver", constr: "Constr", value: "LinExpr"
+    ) -> "LinExpr":
         pass
 
     def constr_get_rhs(self: "Solver", idx: int) -> float:
