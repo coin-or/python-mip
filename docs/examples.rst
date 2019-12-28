@@ -44,10 +44,10 @@ The Traveling Salesman Problem
 ------------------------------
 
 The traveling salesman problem (TSP) is one of the most studied combinatorial
-optimization problems, with the first computational studies dating back to the
-50s :cite:`Dantz54,Appleg06`.  To to illustrate this problem, consider that you
-will spend some time in Belgium and wish to visit some of its main tourist
-attractions, depicted in the map bellow:
+optimization problems, with the first computational studies dating back to
+the 50s [Dantz54]_, [Appleg06]_.  To to illustrate this problem, consider
+that you will spend some time in Belgium and wish to visit some of its
+main tourist attractions, depicted in the map bellow:
 
 .. image:: images/belgium-tourism-14.png
     :width: 60%
@@ -142,7 +142,7 @@ of channels for each cell, avoiding interference between calls in the same cell
 and in neighboring cells.  Also, for economical reasons, the total bandwidth in
 use must be minimized, i.e., the total number of different channels used. One
 of the first real cases discussed in literature are the Philadelphia
-:cite:`Ande73` instances, with the structure depicted bellow:
+[Ande73]_ instances, with the structure depicted bellow:
 
 
 .. image:: ./images/bmcpsmall.*
@@ -256,13 +256,13 @@ contains the jobs :math:`x_{0}` and :math:`x_{n+1}`. These jobs are dummy jobs a
 represent the beginning of the planning and the end of the planning. The
 processing time for the dummy jobs is zero and does not consume resources.
 
-A binary programming formulation was proposed by Pritsker et al.
-:cite:`PWW69`. In this formulation, decision variables :math:`x_{jt} = 1`
-if job :math:`j` is assigned a completion time at the end of time
-:math:`t`; otherwise, :math:`x_{jt} = 0`. All jobs must finish in a single
-instant of time without violating the relationships of precedence and
-amount of available resources. The model proposed by Pristker can be
-stated as follows:
+A binary programming formulation was proposed by Pritsker et al. [PWW69]_.
+In this formulation, decision variables :math:`x_{jt} = 1` if job
+:math:`j` is assigned a completion time at the end of time :math:`t`;
+otherwise, :math:`x_{jt} = 0`. All jobs must finish in a single instant of
+time without violating the relationships of precedence and amount of
+available resources. The model proposed by Pristker can be stated as
+follows:
 
 .. math::
 
@@ -376,16 +376,17 @@ The decision variables are defined by:
     variable for the makespan
 
 
-Follows a MIP formulation :cite:`Mann60` for the JSSP. The objective function
-is computed in the auxiliary variable :math:`C`. The first set of constraints
-are the precedence constraints, that ensure that a job on a machine only starts
-after the processing of the previous machine concluded. The second and third
-set of disjunctive constraints ensure that only one job is processing at a
-given time in a given machine. The :math:`M` constant must be large enough to
-ensure the correctness of these constraints. A valid (but weak) estimate for
-this value can be the summation of all processing times. The fourth set of
-constrains ensure that the makespan value is computed correctly and the last
-constraints indicate variable domains.
+Follows a MIP formulation [Mann60]_ for the JSSP. The objective function
+is computed in the auxiliary variable :math:`C`. The first set of
+constraints are the precedence constraints, that ensure that a job on
+a machine only starts after the processing of the previous machine
+concluded. The second and third set of disjunctive constraints ensure that
+only one job is processing at a given time in a given machine. The
+:math:`M` constant must be large enough to ensure the correctness of these
+constraints. A valid (but weak) estimate for this value can be the
+summation of all processing times. The fourth set of constrains ensure
+that the makespan value is computed correctly and the last constraints
+indicate variable domains.
 
 .. math::
 
@@ -414,11 +415,11 @@ Cutting Stock / One-dimensional Bin Packing Problem
 
 The One-dimensional Cutting Stock Problem (also often referred to as
 One-dimensional Bin Packing Problem) is an NP-hard problem first studied
-by Kantorovich in 1939 :cite:`Kan60`. The problem consists of deciding how
-to cut a set of pieces out of a set of stock materials (paper rolls,
-metals, etc.) in a way that minimizes the number of stock materials used.
+by Kantorovich in 1939 [Kan60]_. The problem consists of deciding how to
+cut a set of pieces out of a set of stock materials (paper rolls, metals,
+etc.) in a way that minimizes the number of stock materials used.
 
-:cite:`Kan60` proposed an integer programming formulation for the problem,
+[Kan60]_ proposed an integer programming formulation for the problem,
 given below:
 
 
@@ -438,7 +439,7 @@ This formulation can be improved by including symmetry reducing constraints, suc
 
 
 The following Python-MIP code creates the formulation proposed by
-:cite:`Kan60`, optimizes it and prints the optimal solution found.
+[Kan60]_, optimizes it and prints the optimal solution found.
 
 .. literalinclude:: ../examples/cuttingstock_kantorovich.py
     :caption: Formulation for the One-dimensional Cutting Stock Problem (examples/cuttingstock_kantorovich.py)
