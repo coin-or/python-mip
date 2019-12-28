@@ -1,19 +1,19 @@
 environment:
-matrix:
-- PYTHON: "C:\\Python35-x64"
-  PYTHON_VERSION: "3.5.0"
-  PYTHON_ARCH: "64"
+  matrix:
+    - PYTHON: "C:\\Python35-x64"
+      PYTHON_VERSION: "3.5.0"
+      PYTHON_ARCH: "64"
 
-- PYTHON: "C:\\Python36-x64"
-  PYTHON_VERSION: "3.6.x" # currently 3.6.5
-  PYTHON_ARCH: "64"
+    - PYTHON: "C:\\Python36-x64"
+      PYTHON_VERSION: "3.6.x" # currently 3.6.5
+      PYTHON_ARCH: "64"
 
-- PYTHON: "C:\\Python37-x64"
-  PYTHON_VERSION: "3.7.x" # currently 3.6.5
-  PYTHON_ARCH: "64"
+    - PYTHON: "C:\\Python37-x64"
+      PYTHON_VERSION: "3.7.x" # currently 3.6.5
+      PYTHON_ARCH: "64"
 
 install:
-- pip install cffi pytest flake8 networkx
+- pip install cffi pytest networkx
 - pip install .
 
 test_script:
