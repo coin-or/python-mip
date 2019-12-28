@@ -476,6 +476,7 @@ class SolverGurobi(Solver):
         attr = 'VType'.encode('utf-8')
         GRBsetcharattrlist(self._model, attr, n, idxs, ccont)
         self.__updated = False
+        self.update()
 
     def get_max_seconds(self) -> float:
         return self.get_dbl_param("TimeLimit")
