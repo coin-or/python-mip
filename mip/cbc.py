@@ -5,7 +5,6 @@ from sys import platform, maxsize
 from os.path import dirname, isfile
 import os
 from cffi import FFI
-from sys import maxsize
 import multiprocessing as multip
 from mip.model import xsum
 import mip
