@@ -12,6 +12,8 @@ environment:
       PYTHON_VERSION: "3.7.x" # currently 3.6.5
       PYTHON_ARCH: "64"
 
+build: off
+
 install:
   - "%PYTHON%\\python.exe -m pip install cffi pytest networkx"
   - "%PYTHON%\\python.exe -m pip install ."
