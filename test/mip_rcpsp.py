@@ -45,7 +45,9 @@ def create_mip(solver, J, dur, S, c, r, EST, relax=False, sense=MINIMIZE):
                 xsum(
                     r[ir][j] * x[j][tl]
                     for j in J[1:-1]
-                    for tl in TJ[j].intersection(set(range(t - dur[j] + 1, t + 1)))
+                    for tl in TJ[j].intersection(
+                        set(range(t - dur[j] + 1, t + 1))
+                    )
                 )
                 <= c[ir],
                 "resUsage(%d,%d)" % (ir, t),
