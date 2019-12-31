@@ -570,13 +570,19 @@ class Model:
             )
 
     @property
-    def objective_bound(self: Solver) -> float:
+    def objective_bound(self: Solver) -> Optional[float]:
         """
             A valid estimate computed for the optimal solution cost,
             lower bound in the case of minimization, equals to
             :attr:`~mip.model.Model.objective_value` if the
             optimal solution was found.
         """
+        if self.status not in [
+            OptimizationStatus.OPTIMAL,
+            OptimizationStatus.FEASIBLE,
+        ]:
+            return None
+
         return self.solver.get_objective_bound()
 
     @property
@@ -689,9 +695,15 @@ class Model:
         self.solver.set_objective_const(objective_const)
 
     @property
-    def objective_value(self: Solver) -> float:
-        """Objective function value of the solution found
+    def objective_value(self: Solver) -> Optional[float]:
+        """Objective function value of the solution found or None
+        if model was not optimized
         """
+        if self.status not in [
+            OptimizationStatus.OPTIMAL,
+            OptimizationStatus.FEASIBLE,
+        ]:
+            return None
         return self.solver.get_objective_value()
 
     @property
