@@ -121,5 +121,5 @@ for nj in range(5, 25):
                 best_z_lb = z_lb
                 best_z_ub = z_ub
         inst = best_inst
-        with open("rcpsp-%d-%d.json" % (nj, ii + 1), "w") as outfile:
+        with open("./data/rcpsp-%d-%d.json" % (nj, ii + 1), "w") as outfile:
             json.dump(inst, outfile, indent=4)
