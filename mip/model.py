@@ -577,10 +577,9 @@ class Model:
             :attr:`~mip.model.Model.objective_value` if the
             optimal solution was found.
         """
-        if self.status not in [
-            OptimizationStatus.OPTIMAL,
-            OptimizationStatus.FEASIBLE,
-        ]:
+        if self.status not in [OptimizationStatus.OPTIMAL,
+                               OptimizationStatus.FEASIBLE,
+                               OptimizationStatus.NO_SOLUTION_FOUND]:
             return None
 
         return self.solver.get_objective_bound()
