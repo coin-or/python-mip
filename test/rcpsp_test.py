@@ -8,7 +8,7 @@ import pytest
 from mip import CBC, GUROBI, OptimizationStatus
 from mip_rcpsp import create_mip
 
-INSTS = glob("./data/rcpsp*.json")
+INSTS = glob("./data/rcpsp*.json") + glob("./test/data/rcpsp*.json")
 
 TOL = 1e-4
 
