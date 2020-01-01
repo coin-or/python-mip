@@ -23,7 +23,7 @@ install:
 
 test_script:
 - pytest test --verbose --color=yes --doctest-modules
-- pytest mip --verbose --color=yes --doctest-modules --ignore="mip/gurobi.py"
+- pytest mip --verbose --color=yes --doctest-modules --ignore="mip\gurobi.py"
 - # Ensure that the examples used in the docs run (TODO: Generalize this)
 - python examples/knapsack.py
 - python examples/tsp-compact.py
