@@ -60,7 +60,7 @@ def test_rcpsp_relax_mip(solver: str, instance: str):
 
 @pytest.mark.parametrize("solver, instance", product(SOLVERS, INSTS))
 def test_rcpsp_mip(solver: str, instance: str):
-    """tests the solution of the LP relaxation of different rcpsp instances"""
+    """tests the solution of different RCPSP MIPs"""
     with open(instance, "r") as finst:
         data = json.load(finst)
         J = data["J"]
@@ -70,7 +70,6 @@ def test_rcpsp_mip(solver: str, instance: str):
         r = data["r"]
         EST = data["EST"]
         z_relax = data["z_relax"]
-        z_lb = data["z_lb"]
         z_ub = data["z_ub"]
     # print("test %s %s" % (solver, instance))
     mip = create_mip(solver, J, d, S, c, r, EST, False)
@@ -97,3 +96,28 @@ def test_rcpsp_mip(solver: str, instance: str):
         assert mip.vars["x(%d,%d)" % (J[-1], tl)].x >= 0.99
         xOn = [v for v in mip.vars if v.x >= 0.99 and v.name.startswith("x(")]
         assert len(xOn) == len(J)
+
+@pytest.mark.parametrize("solver, instance", product(SOLVERS, INSTS))
+def test_rcpsp_mipstart(solver: str, instance: str):
+    """tests the solution of different rcpsps MIPs with uwing MIPStarts"""
+    with open(instance, "r") as finst:
+        data = json.load(finst)
+        J = data["J"]
+        d = data["d"]
+        S = data["S"]
+        c = data["c"]
+        r = data["r"]
+        EST = data["EST"]
+        z_ub = data["z_ub"]
+        mipstart = data["mipstart"]
+    # print("test %s %s" % (solver, instance))
+    mip = create_mip(solver, J, d, S, c, r, EST, False)
+    mip.verbose = 0
+    mip.pump_passes = 0
+    mip.cuts = 0
+    mip.cut_passes = 0
+    mip.start = [(mip.var_by_name(n), v) for (n, v) in mipstart]
+    mip.optimize(max_nodes=3)
+    assert mip.status in [OptimizationStatus.FEASIBLE, 
+                          OptimizationStatus.OPTIMAL]
+    assert abs(mip.objective_value - z_ub) <= TOL
