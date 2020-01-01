@@ -22,8 +22,8 @@ install:
   - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
 
 test_script:
-- cd test ; pytest . --verbose --color=yes --doctest-modules ; cd ..
-- cd mip ; pytest . --verbose --color=yes --doctest-modules --ignore="gurobi.py" ; cd ..
+- pytest test --verbose --color=yes --doctest-modules
+- pytest mip --verbose --color=yes --doctest-modules --ignore="mip/gurobi.py" --ignore="gurobi.py"
 - # Ensure that the examples used in the docs run (TODO: Generalize this)
 - python examples/knapsack.py
 - python examples/tsp-compact.py
