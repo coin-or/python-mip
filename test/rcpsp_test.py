@@ -85,14 +85,14 @@ def test_rcpsp_mip(solver: str, instance: str):
         OptimizationStatus.LOADED,
         OptimizationStatus.OTHER,
     ]
+    assert z_relax - TOL <= mip.objective_bound <= z_ub + TOL
     if mip.status in [OptimizationStatus.OPTIMAL]:
         assert abs(mip.objective_value - mip.objective_bound) <= TOL
     if mip.status in [
         OptimizationStatus.OPTIMAL,
         OptimizationStatus.FEASIBLE,
     ]:
-        assert mip.objective_bound >= z_relax - TOL
-        assert mip.objective_value >= z_lb - TOL
+        assert z_relax - TOL <= mip.objective_value
         tl = int(round(mip.objective_value))
         assert mip.vars["x(%d,%d)" % (J[-1], tl)].x >= 0.99
         xOn = [v for v in mip.vars if v.x >= 0.99 and v.name.startswith("x(")]
