@@ -45,4 +45,4 @@ print('Makespan = {}'.format(model.objective_value))
 # sanity tests
 from mip import OptimizationStatus
 assert model.status == OptimizationStatus.OPTIMAL
-assert round(model.objective_value) == 21
+assert abs(model.objective_value-21) <= 1e-4
