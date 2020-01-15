@@ -1,4 +1,5 @@
 from ctypes.util import find_library
+import logging
 from sys import maxsize
 from typing import List, Tuple
 from os.path import isfile
@@ -30,6 +31,8 @@ from mip import (
     LP_Method,
 )
 
+
+logger = logging.getLogger(__name__)
 
 try:
     found = False
@@ -86,7 +89,7 @@ try:
     ffi = FFI()
 
     grblib = ffi.dlopen(lib_path)
-    print("gurobi version {}.{} found".format(major_ver, minor_ver))
+    logger.info("gurobi version {}.{} found".format(major_ver, minor_ver))
 except Exception:
     raise ImportError
 
@@ -584,7 +587,7 @@ class SolverGurobi(Solver):
                                     difl = abs(obj_bound - log[-1][1][0])
                                     difu = abs(obj_best - log[-1][1][1])
                                     if difl >= 1e-6 or difu >= 1e-6:
-                                        print(
+                                        logger.info(
                                             ">>>>>>> {} {}".format(
                                                 obj_bound, obj_best
                                             )

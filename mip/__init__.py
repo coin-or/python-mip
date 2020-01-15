@@ -1,3 +1,4 @@
+import logging
 from mip.constants import *
 from mip.entities import Column, Constr, LinExpr, Var
 from mip.model import *
@@ -12,3 +13,4 @@ from mip.exceptions import (
 from mip.solver import Solver
 
 name = "mip"
+logging.getLogger(__name__).addHandler(logging.NullHandler())

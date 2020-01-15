@@ -1,5 +1,6 @@
 """Python-MIP interface to the COIN-OR Branch-and-Cut solver CBC"""
 
+import logging
 from typing import Dict, List, Tuple, Optional
 from sys import platform, maxsize
 from os.path import dirname, isfile
@@ -30,6 +31,8 @@ from mip import (
     LP_Method,
 )
 
+
+logger = logging.getLogger(__name__)
 warningMessages = 0
 
 ffi = FFI()
@@ -66,7 +69,7 @@ try:
     has_cbc = True
 except Exception:
     has_cbc = False
-    print("cbc not found")
+    logger.warning("cbc not found")
 
 if has_cbc:
     ffi.cdef(

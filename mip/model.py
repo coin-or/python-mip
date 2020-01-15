@@ -1,3 +1,4 @@
+import logging
 from os import environ
 from os.path import isfile
 from sys import stdout as out
@@ -20,6 +21,9 @@ from mip.lists import ConstrList, VarList
 from mip.entities import Column, Constr, LinExpr, Var
 from mip.exceptions import InvalidLinExpr
 from mip.solver import Solver
+
+
+logger = logging.getLogger(__name__)
 
 
 class Model:
@@ -952,28 +956,28 @@ class Model:
             )
             return
         if mc.status != OptimizationStatus.OPTIMAL:
-            print(
+            logger.warning(
                 "Unexpected status while optimizing LP relaxation:"
                 " {}".format(mc.status)
             )
 
-        print("Model LP relaxation bound is {}".format(mc.objective_value))
+        logger.info("Model LP relaxation bound is {}".format(mc.objective_value))
 
         for (var, value) in self.start:
             out.write("\tfixing %s to %g ... " % (var.name, value))
             mc += var == value
             mc.optimize()
             if mc.status == OptimizationStatus.OPTIMAL:
-                print("ok, obj now: {}".format(mc.objective_value))
+                logger.info("ok, obj now: {}".format(mc.objective_value))
             else:
-                print("NOT OK, optimization status: {}".format(mc.status))
+                logger.warning("NOT OK, optimization status: {}".format(mc.status))
                 return
 
-        print(
+        logger.info(
             "Linear Programming relaxation of model with fixations from "
             "MIPStart is feasible."
         )
-        print("MIP model may still be infeasible.")
+        logger.info("MIP model may still be infeasible.")
 
     @property
     def num_cols(self: Solver) -> int:
@@ -1274,7 +1278,6 @@ def read_custom_settings():
                         )
 
 
-print("Using Python-MIP package version {}".format(VERSION))
 customCbcLib = ""
 read_custom_settings()
 
