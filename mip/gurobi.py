@@ -1125,7 +1125,7 @@ class SolverGurobi(Solver):
         )
         if error != 0:
             raise Exception(
-                "Error setting gurobi char attr element {} index {} to value".format(
+                "Error setting gurobi char attr element {} index {} to value {}".format(
                     name, index, value
                 )
             )
