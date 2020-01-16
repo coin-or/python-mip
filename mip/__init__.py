@@ -11,4 +11,5 @@ from mip.exceptions import (
 )
 from mip.solver import Solver
 
+__version__ = VERSION
 name = "mip"
