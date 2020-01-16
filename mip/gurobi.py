@@ -1286,7 +1286,7 @@ class SolverGurobiCB(SolverGurobi):
         assert grb_model != ffi.NULL
         assert cb_data != ffi.NULL
 
-        super().__init__(model, "", "")
+        super().__init__(model, "", "", modelp=grb_model)
 
         self._cb_data = cb_data
         self._objconst = 0.0
