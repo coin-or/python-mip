@@ -42,7 +42,7 @@ try:
                     os.environ["GUROBI_HOME"], "bin\\gurobi[0-9][0-9].dll"
                 )
             )
-    else:
+        else:
             libfile = glob(
                 os.path.join(
                     os.environ["GUROBI_HOME"], "lib/libgurobi[0-9][0-9].*"
