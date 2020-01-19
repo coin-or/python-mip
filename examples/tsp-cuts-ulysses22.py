@@ -148,3 +148,4 @@ elif model.status == OptimizationStatus.FEASIBLE:
     assert round(model.objective_value) >= 7013
 else:
     assert model.objective_bound <= 7013 + 1e-7
+model.check_optimization_results()

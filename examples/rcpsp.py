@@ -48,8 +48,7 @@ S = [
 model = Model()
 
 x = [
-    [model.add_var(name="x({},{})".format(j, t), var_type=BINARY) for t in T]
-    for j in J
+    [model.add_var(name="x({},{})".format(j, t), var_type=BINARY) for t in T] for j in J
 ]
 
 model.objective = xsum(x[len(J) - 1][t] * t for t in T)
@@ -59,11 +58,7 @@ for j in J:
 
 for (r, t) in product(R, T):
     model += (
-        xsum(
-            u[j][r] * x[j][t2]
-            for j in J
-            for t2 in range(max(0, t - p[j] + 1), t + 1)
-        )
+        xsum(u[j][r] * x[j][t2] for j in J for t2 in range(max(0, t - p[j] + 1), t + 1))
         <= c[r]
     )
 
@@ -85,3 +80,4 @@ from mip import OptimizationStatus
 
 assert model.status == OptimizationStatus.OPTIMAL
 assert abs(model.objective_value - 21) <= 1e-4
+model.check_optimization_results()
