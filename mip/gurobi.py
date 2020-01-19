@@ -51,7 +51,8 @@ try:
             if not libfile:
                 libfile = glob(
                     os.path.join(
-                        os.environ["GUROBI_HOME"], "lib/libgurobi.so.[0-9].[0-9].*"
+                        os.environ["GUROBI_HOME"],
+                        "lib/libgurobi.so.[0-9].[0-9].*",
                     )
                 )
 
@@ -59,7 +60,7 @@ try:
             lib_path = libfile[0]
 
         # checking gurobi version
-        s1 = lib_path.split("\"")[-1].split("/")[-1]
+        s1 = lib_path.split('"')[-1].split("/")[-1]
         vs = [c for c in s1 if c.isdigit()]
         major_ver = vs[0]
         minor_ver = vs[1]
