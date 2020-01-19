@@ -1182,11 +1182,18 @@ class Model:
         """Checks the consistency of the optimization results, i.e., if the
         solution(s) produced by the MIP solver respect all constraints and
         variable values are within acceptable bounds and are integral when
-        necessary"""
+        requested"""
+        if self.status in [OptimizationStatus.FEASIBLE, OptimizationStatus.OPTIMAL]:
+            assert self.num_solutions >= 1
         if self.num_solutions or self.status in [
             OptimizationStatus.FEASIBLE,
             OptimizationStatus.OPTIMAL,
         ]:
+            if self.sense == MINIMIZE:
+                assert self.objective_bound <= self.objective_value + 1e-10
+            else:
+                assert self.objective_bound + 1e-10 >= self.objective_value
+
             for c in self.constrs:
                 if c.expr.violation >= self.infeas_tol + self.infeas_tol * 0.1:
                     raise InfeasibleSolution(
@@ -1206,7 +1213,7 @@ class Model:
                 if v.var_type in [BINARY, INTEGER]:
                     if (round(v.x) - v.x) >= self.integer_tol + self.integer_tol * 0.1:
                         raise InfeasibleSolution(
-                            "Variable {}={} should be " "integral.".format(v.name, v.x)
+                            "Variable {}={} should be integral.".format(v.name, v.x)
                         )
 
 
