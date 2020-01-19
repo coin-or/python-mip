@@ -17,3 +17,10 @@ class ParameterNotAvailable(Exception):
     available for the current solver"""
 
     pass
+
+
+class InfeasibleSolution(Exception):
+    """Exception that is raised the produced solution
+    is unfeasible"""
+
+    pass

@@ -127,3 +127,4 @@ if model.num_solutions:
         if nc == 0:
             break
     out.write('\n')
+model.check_optimization_results()

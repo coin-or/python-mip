@@ -13,12 +13,14 @@ from mip.constants import (
     OptimizationStatus,
     SearchEmphasis,
     VERSION,
+    BINARY,
+    INTEGER,
 )
 from mip.callbacks import ConstrsGenerator
 from mip.log import ProgressLog
 from mip.lists import ConstrList, VarList
 from mip.entities import Column, Constr, LinExpr, Var
-from mip.exceptions import InvalidLinExpr
+from mip.exceptions import InvalidLinExpr, InfeasibleSolution
 from mip.solver import Solver
 
 
@@ -356,9 +358,7 @@ class Model:
 
         # adding variables
         for v in self.vars:
-            copy.add_var(
-                name=v.name, lb=v.lb, ub=v.ub, obj=v.obj, var_type=v.var_type
-            )
+            copy.add_var(name=v.name, lb=v.lb, ub=v.ub, obj=v.obj, var_type=v.var_type)
 
         # adding constraints
         for c in self.constrs:
@@ -433,9 +433,7 @@ class Model:
             self.solver.set_num_threads(self.__threads)
         # self.solver.set_callbacks(branch_selector,
         # incumbent_updater, lazy_constrs_generator)
-        self.solver.set_processing_limits(
-            max_seconds, max_nodes, max_solutions
-        )
+        self.solver.set_processing_limits(max_seconds, max_nodes, max_solutions)
 
         self._status = self.solver.optimize()
         # has a solution and is a MIP
@@ -549,19 +547,13 @@ class Model:
         Args:
             file_path(str): file name
         """
-        if file_path.lower().endswith(".sol") or file_path.lower().endswith(
-            ".mst"
-        ):
+        if file_path.lower().endswith(".sol") or file_path.lower().endswith(".mst"):
             if self.start:
                 save_mipstart(self.start, file_path)
             else:
-                mip_start = [
-                    (var, var.x) for var in self.vars if abs(var.x) >= 1e-8
-                ]
+                mip_start = [(var, var.x) for var in self.vars if abs(var.x) >= 1e-8]
                 save_mipstart(mip_start, file_path)
-        elif file_path.lower().endswith(".lp") or file_path.lower().endswith(
-            ".mps"
-        ):
+        elif file_path.lower().endswith(".lp") or file_path.lower().endswith(".mps"):
             self.solver.write(file_path)
         else:
             raise Exception(
@@ -825,9 +817,7 @@ class Model:
         return self.__lazy_constrs_generator
 
     @lazy_constrs_generator.setter
-    def lazy_constrs_generator(
-        self: Solver, lazy_constrs_generator: ConstrsGenerator
-    ):
+    def lazy_constrs_generator(self: Solver, lazy_constrs_generator: ConstrsGenerator):
         self.__lazy_constrs_generator = lazy_constrs_generator
 
     @property
@@ -1188,6 +1178,37 @@ class Model:
 
         return ref
 
+    def check_optimization_results(self):
+        """Checks the consistency of the optimization results, i.e., if the
+        solution(s) produced by the MIP solver respect all constraints and
+        variable values are within acceptable bounds and are integral when
+        necessary"""
+        if self.num_solutions or self.status in [
+            OptimizationStatus.FEASIBLE,
+            OptimizationStatus.OPTIMAL,
+        ]:
+            for c in self.constrs:
+                if c.expr.violation >= self.infeas_tol + self.infeas_tol * 0.1:
+                    raise InfeasibleSolution(
+                        "Constraint {}:\n{}\n is violated."
+                        "Computed violation is {}."
+                        "Tolerance for infeasibility is {}".format(
+                            c.name, str(c), c.expr.violation, self.infeas_tol
+                        )
+                    )
+            for v in self.vars:
+                if v.x <= v.lb - 1e-10 or v.x >= v.ub + 1e-10:
+                    raise InfeasibleSolution(
+                        "Invalid solution value for "
+                        "variable {}={} variable bounds"
+                        " are [{}, {}].".format(v.name, v.x, v.lb, v.ub)
+                    )
+                if v.var_type in [BINARY, INTEGER]:
+                    if (round(v.x) - v.x) >= self.integer_tol + self.integer_tol * 0.1:
+                        raise InfeasibleSolution(
+                            "Variable {}={} should be " "integral.".format(v.name, v.x)
+                        )
+
 
 def maximize(expr: LinExpr) -> LinExpr:
     """
@@ -1269,9 +1290,7 @@ def read_custom_settings():
                 if "=" in line:
                     cols = line.split("=")
                     if cols[0].strip().lower() == "cbc-library":
-                        customCbcLib = (
-                            cols[1].lstrip().rstrip().replace('"', "")
-                        )
+                        customCbcLib = cols[1].lstrip().rstrip().replace('"', "")
 
 
 print("Using Python-MIP package version {}".format(VERSION))
