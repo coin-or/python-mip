@@ -48,21 +48,21 @@ try:
                     os.environ["GUROBI_HOME"], "lib/libgurobi[0-9][0-9].*"
                 )
             )
+            if not libfile:
+                libfile = glob(
+                    os.path.join(
+                        os.environ["GUROBI_HOME"], "lib/libgurobi.so.[0-9].[0-9].*"
+                    )
+                )
 
         if libfile:
             lib_path = libfile[0]
 
         # checking gurobi version
-        s1 = lib_path.split(".")[0]
-        vs = ""
-        for c in reversed(s1):
-            if c.isdigit():
-                vs += c
-            else:
-                break
-        vs = vs[::-1]
-        minor_ver = vs[-1]
-        major_ver = vs[0:-1]
+        s1 = lib_path.split("\"")[-1].split("/")[-1]
+        vs = [c for c in s1 if c.isdigit()]
+        major_ver = vs[0]
+        minor_ver = vs[1]
 
     if lib_path is None:
         for major_ver in reversed(range(6, 10)):
