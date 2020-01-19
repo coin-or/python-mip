@@ -62,4 +62,4 @@ if m.status == OptimizationStatus.OPTIMAL:
     assert round(m.objective_value) == 41
 elif m.status == OptimizationStatus.FEASIBLE:
     assert m.objective_value >= 41 - 1e-10
-model.check_optimization_results()
+m.check_optimization_results()
