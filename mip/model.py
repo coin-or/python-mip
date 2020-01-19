@@ -358,7 +358,9 @@ class Model:
 
         # adding variables
         for v in self.vars:
-            copy.add_var(name=v.name, lb=v.lb, ub=v.ub, obj=v.obj, var_type=v.var_type)
+            copy.add_var(
+                name=v.name, lb=v.lb, ub=v.ub, obj=v.obj, var_type=v.var_type
+            )
 
         # adding constraints
         for c in self.constrs:
@@ -433,7 +435,9 @@ class Model:
             self.solver.set_num_threads(self.__threads)
         # self.solver.set_callbacks(branch_selector,
         # incumbent_updater, lazy_constrs_generator)
-        self.solver.set_processing_limits(max_seconds, max_nodes, max_solutions)
+        self.solver.set_processing_limits(
+            max_seconds, max_nodes, max_solutions
+        )
 
         self._status = self.solver.optimize()
         # has a solution and is a MIP
@@ -547,13 +551,19 @@ class Model:
         Args:
             file_path(str): file name
         """
-        if file_path.lower().endswith(".sol") or file_path.lower().endswith(".mst"):
+        if file_path.lower().endswith(".sol") or file_path.lower().endswith(
+            ".mst"
+        ):
             if self.start:
                 save_mipstart(self.start, file_path)
             else:
-                mip_start = [(var, var.x) for var in self.vars if abs(var.x) >= 1e-8]
+                mip_start = [
+                    (var, var.x) for var in self.vars if abs(var.x) >= 1e-8
+                ]
                 save_mipstart(mip_start, file_path)
-        elif file_path.lower().endswith(".lp") or file_path.lower().endswith(".mps"):
+        elif file_path.lower().endswith(".lp") or file_path.lower().endswith(
+            ".mps"
+        ):
             self.solver.write(file_path)
         else:
             raise Exception(
@@ -817,7 +827,9 @@ class Model:
         return self.__lazy_constrs_generator
 
     @lazy_constrs_generator.setter
-    def lazy_constrs_generator(self: Solver, lazy_constrs_generator: ConstrsGenerator):
+    def lazy_constrs_generator(
+        self: Solver, lazy_constrs_generator: ConstrsGenerator
+    ):
         self.__lazy_constrs_generator = lazy_constrs_generator
 
     @property
@@ -1183,7 +1195,10 @@ class Model:
         solution(s) produced by the MIP solver respect all constraints and
         variable values are within acceptable bounds and are integral when
         requested"""
-        if self.status in [OptimizationStatus.FEASIBLE, OptimizationStatus.OPTIMAL]:
+        if self.status in [
+            OptimizationStatus.FEASIBLE,
+            OptimizationStatus.OPTIMAL,
+        ]:
             assert self.num_solutions >= 1
         if self.num_solutions or self.status in [
             OptimizationStatus.FEASIBLE,
@@ -1216,9 +1231,13 @@ class Model:
                         " are [{}, {}].".format(v.name, v.x, v.lb, v.ub)
                     )
                 if v.var_type in [BINARY, INTEGER]:
-                    if (round(v.x) - v.x) >= self.integer_tol + self.integer_tol * 0.1:
+                    if (
+                        round(v.x) - v.x
+                    ) >= self.integer_tol + self.integer_tol * 0.1:
                         raise InfeasibleSolution(
-                            "Variable {}={} should be integral.".format(v.name, v.x)
+                            "Variable {}={} should be integral.".format(
+                                v.name, v.x
+                            )
                         )
 
 
@@ -1302,7 +1321,9 @@ def read_custom_settings():
                 if "=" in line:
                     cols = line.split("=")
                     if cols[0].strip().lower() == "cbc-library":
-                        customCbcLib = cols[1].lstrip().rstrip().replace('"', "")
+                        customCbcLib = (
+                            cols[1].lstrip().rstrip().replace('"', "")
+                        )
 
 
 print("Using Python-MIP package version {}".format(VERSION))
