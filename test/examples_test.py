@@ -8,7 +8,7 @@ import imp
 import pytest
 
 
-EXAMPLES = glob(join("..", "examples", "*.py"))
+EXAMPLES = glob(join("..", "examples", "*.py")) + glob(join(".", "examples", "*.py"))
 
 SOLVERS = ["cbc"]
 if "GUROBI_HOME" in environ:
