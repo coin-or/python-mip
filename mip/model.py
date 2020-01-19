@@ -851,7 +851,7 @@ class Model:
 
     @property
     def pump_passes(self: Solver) -> int:
-        """Number of passes of the Feasibility Pump :cite:`FGL05` heuristic.
+        """Number of passes of the Feasibility Pump [FGL05]_ heuristic.
            You may increase this value if you are not getting feasible
            solutions."""
         return self.solver.get_pump_passes()
@@ -1199,8 +1199,13 @@ class Model:
                     raise InfeasibleSolution(
                         "Constraint {}:\n{}\n is violated."
                         "Computed violation is {}."
-                        "Tolerance for infeasibility is {}".format(
-                            c.name, str(c), c.expr.violation, self.infeas_tol
+                        "Tolerance for infeasibility is {}."
+                        "Solution status is {}.".format(
+                            c.name,
+                            str(c),
+                            c.expr.violation,
+                            self.infeas_tol,
+                            self.status,
                         )
                     )
             for v in self.vars:
