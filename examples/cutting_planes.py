@@ -47,3 +47,4 @@ while newConstraints:
 # sanity checks
 assert m.status == OptimizationStatus.OPTIMAL
 assert abs(m.objective_value-261) <= 1e-5
+m.check_optimization_results()
