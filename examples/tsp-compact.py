@@ -82,3 +82,4 @@ if model.num_solutions:
 from mip import OptimizationStatus
 assert model.status == OptimizationStatus.OPTIMAL
 assert round(model.objective_value) == 547
+model.check_optimization_results()
