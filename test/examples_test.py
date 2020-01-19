@@ -4,7 +4,8 @@ from glob import glob
 from os.path import join
 from os import environ
 from itertools import product
-import imp
+import types
+import importlib.machinery
 import pytest
 
 
@@ -17,5 +18,8 @@ if "GUROBI_HOME" in environ:
 
 @pytest.mark.parametrize("solver, example", product(SOLVERS, EXAMPLES))
 def test_examples(solver, example):
+    """Executes a given example with using solver 'solver'"""
     environ["SOLVER_NAME"] = solver
-    m = imp.load_source("a", example)
+    loader = importlib.machinery.SourceFileLoader("example", example)
+    mod = types.ModuleType(loader.name)
+    loader.exec_module(mod)
