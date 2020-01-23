@@ -493,6 +493,7 @@ class SolverGurobi(Solver):
         return self.get_dbl_attr("ObjBound")
 
     def get_objective(self) -> LinExpr:
+        self.flush_cols()
         attr = "Obj".encode("utf-8")
         # st = GRBsetdblattrarray(self._model, attr,
         #                         0, num_vars, zeros)
