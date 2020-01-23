@@ -54,6 +54,11 @@ https://python-mip.readthedocs.io/en/latest/
 
 A PDF version is also available:
 https://media.readthedocs.org/pdf/python-mip/latest/python-mip.pdf
+
+## Mailing list
+
+Questions, suggestions and development news can be posted at the [Python-MIP
+google group](https://groups.google.com/forum/#!forum/python-mip).
  
 
 ## Build status
