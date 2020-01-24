@@ -1,0 +1,99 @@
+div.highlight {
+    background-color: #eee;
+}
+
+dt:target, .highlight {
+    background: #eee;
+}
+
+table.docutils {
+    border: 0;
+    margin: 10px 0;
+    width: 100%;
+}
+
+table.docutils td, table.docutils th {
+    border: 1px solid #bbb;
+    padding: 0.25em 0.7em;
+}
+
+table.docutils td p {
+    margin: 0;
+}
+
+body code, body .code {
+    width: 100%;
+}
+
+body pre {
+    padding: 10px;
+    width: 100%;
+}
+
+body h1 {
+    font-size: 30px;
+    font-weight: bold;
+    margin-top: 30px;
+}
+
+body h2 {
+    font-size: 25px;
+    font-weight: bold;
+    margin-top: 28px;
+}
+
+body h3 {
+    font-size: 22px;
+    font-weight: bold;
+    color: #777;
+    margin-top: 25px;
+}
+
+body .headerlink {
+    display: none;
+}
+
+body .linenos pre {
+    color: #999;
+}
+
+body .docutils {
+    padding: 0;
+    margin: 0;
+    margin-top: 20px;
+}
+
+body img {
+    padding: 0;
+    margin: 20px 0 20px 0;
+}
+
+body .code-block-caption {
+    text-align: right;
+    color: #999;
+    font-weight: bold;
+}
+
+body p {
+    padding: 0;
+    margin: 15px 0 15px 0;
+}
+
+.caption {
+    padding-top: 15px;
+    text-decoration: underline;
+    font-weight: bold;
+    color: 004B4A;
+}
+
+dl {
+    margin: 0;
+    padding: 0;
+    margin-left: 30px;
+}
+
+dt {
+    display: block;
+    float: left;    
+    margin-right: 10px;
+}
