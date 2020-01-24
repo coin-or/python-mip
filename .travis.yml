@@ -9,19 +9,13 @@ python:
 cache: pip
 install:
     - pip install cffi pytest flake8 networkx
+    - if [[ $TRAVIS_PYTHON_VERSION != 3.5 ]]; then pip install black; fi
     - pip install .
 script:
+    - if [[ $TRAVIS_PYTHON_VERSION != 3.5 ]]; then black mip --line-length=79 --check; fi
     - flake8 mip --select=F401 --exclude=__init__.py # Look for unused imports
     - pytest test --verbose --color=yes --doctest-modules
     - pytest mip --verbose --color=yes --doctest-modules --ignore="mip/gurobi.py"
-    - # Ensure that the examples used in the docs run (TODO: Generalize this)
-    - python examples/knapsack.py
-    - python examples/tsp-compact.py
-    - python examples/queens.py
-    - python examples/bmcp.py
-    - python examples/rcpsp.py
-    - python examples/jssp.py
-    - python examples/cutting_planes.py
 jobs:
   allow_failures:
     - os: osx

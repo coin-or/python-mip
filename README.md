@@ -4,8 +4,8 @@ Python MIP is a collection of Python tools for the modeling and solution
 of Mixed-Integer Linear programs (MIPs). MIP syntax was inspired by
 [Pulp](https://github.com/coin-or/pulp). Just like
 [CyLP](https://github.com/coin-or/CyLP) it also provides access to
-advanced solver features like cut generation, MIPstarts and solution
-Pools. Porting Pulp and Gurobi models should be quite easy.
+advanced solver features like cut generation, lazy constraints, MIPstarts
+and solution Pools. Porting Pulp and Gurobi models should be quite easy.
 
 Some of the main features of MIP are:
 
@@ -39,8 +39,7 @@ Some of the main features of MIP are:
   different solvers are handled by Python-MIP and you write only one
   solver independent code;
 
-* written in modern statically typed Python 3 (requires Python
-  3.5 or newer).
+* written in modern [typed](https://docs.python.org/3/library/typing.html) Python 3 (requires Python 3.5 or newer).
 
 ## Examples
 
@@ -55,6 +54,11 @@ https://python-mip.readthedocs.io/en/latest/
 
 A PDF version is also available:
 https://media.readthedocs.org/pdf/python-mip/latest/python-mip.pdf
+
+## Mailing list
+
+Questions, suggestions and development news can be posted at the [Python-MIP
+google group](https://groups.google.com/forum/#!forum/python-mip).
  
 
 ## Build status

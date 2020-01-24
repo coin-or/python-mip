@@ -6,11 +6,12 @@ from mip import Model, xsum, OptimizationStatus, MAXIMIZE, BINARY, INTEGER
 from mip import ConstrsGenerator, CutPool, maximize, CBC, GUROBI, Column
 from os import environ
 
-TOL = 1E-4
+TOL = 1e-4
 
 SOLVERS = [CBC]
-if 'GUROBI_HOME' in environ:
+if "GUROBI_HOME" in environ:
     SOLVERS += [GUROBI]
+
 
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_column_generation(solver: str):
@@ -24,22 +25,28 @@ def test_column_generation(solver: str):
 
     # creating an initial set of patterns which cut one item per bar
     # to provide the restricted master problem with a feasible solution
-    lambdas = [master.add_var(obj=1, name='lambda_%d' % (j + 1))
-               for j in range(m)]
+    lambdas = [
+        master.add_var(obj=1, name="lambda_%d" % (j + 1)) for j in range(m)
+    ]
 
     # creating constraints
     constraints = []
     for i in range(m):
-        constraints.append(master.add_constr(lambdas[i] >= b[i], name='i_%d' % (i + 1)))
+        constraints.append(
+            master.add_constr(lambdas[i] >= b[i], name="i_%d" % (i + 1))
+        )
 
     # creating the pricing problem
     pricing = Model(solver_name=solver)
 
     # creating pricing variables
-    a = [pricing.add_var(obj=0, var_type=INTEGER, name='a_%d' % (i + 1)) for i in range(m)]
+    a = [
+        pricing.add_var(obj=0, var_type=INTEGER, name="a_%d" % (i + 1))
+        for i in range(m)
+    ]
 
     # creating pricing constraint
-    pricing += xsum(w[i] * a[i] for i in range(m)) <= L, 'bar_length'
+    pricing += xsum(w[i] * a[i] for i in range(m)) <= L, "bar_length"
 
     new_vars = True
     while new_vars:
@@ -61,11 +68,14 @@ def test_column_generation(solver: str):
         ##########
         # checking if columns with negative reduced cost were produced and
         # adding them into the restricted master problem
-        if pricing.objective_value < - TOL:
+        if pricing.objective_value < -TOL:
             pattern = [a[i].x for i in range(m)]
             column = Column(constraints, pattern)
-            lambdas.append(master.add_var(obj=1, column=column,
-                                          name='lambda_%d' % (len(lambdas) + 1)))
+            lambdas.append(
+                master.add_var(
+                    obj=1, column=column, name="lambda_%d" % (len(lambdas) + 1)
+                )
+            )
 
         # if no column with negative reduced cost was produced, then linear
         # relaxation of the restricted master problem is solved
@@ -87,10 +97,17 @@ def test_cutting_stock(solver: str):
 
     # creating the model
     model = Model(solver_name=solver)
-    x = {(i, j): model.add_var(obj=0, var_type=INTEGER, name="x[%d,%d]" % (i, j))
-         for i in range(m) for j in range(n)}
-    y = {j: model.add_var(obj=1, var_type=BINARY, name="y[%d]" % j)
-         for j in range(n)}
+    x = {
+        (i, j): model.add_var(
+            obj=0, var_type=INTEGER, name="x[%d,%d]" % (i, j)
+        )
+        for i in range(m)
+        for j in range(n)
+    }
+    y = {
+        j: model.add_var(obj=1, var_type=BINARY, name="y[%d]" % j)
+        for j in range(n)
+    }
 
     # constraints
     for i in range(m):
@@ -117,53 +134,69 @@ def test_knapsack(solver: str):
     w = [11, 15, 20, 35, 10, 33]
     c, I = 47, range(len(w))
 
-    m = Model('knapsack', solver_name=solver)
+    m = Model("knapsack", solver_name=solver)
 
     x = [m.add_var(var_type=BINARY) for i in I]
 
     m.objective = maximize(xsum(p[i] * x[i] for i in I))
 
-    m += xsum(w[i] * x[i] for i in I) <= c, 'cap'
+    m += xsum(w[i] * x[i] for i in I) <= c, "cap"
 
     m.optimize()
 
     assert m.status == OptimizationStatus.OPTIMAL
     assert round(m.objective_value) == 41
 
-    m.constr_by_name('cap').rhs = 60
+    m.constr_by_name("cap").rhs = 60
     m.optimize()
 
     assert m.status == OptimizationStatus.OPTIMAL
     assert round(m.objective_value) == 51
+
+    # modifying objective function
+    m.objective += 10 * x[0] + 15 * x[1]
+    assert abs(m.objective.expr[x[0]] - 20) <= 1e-10
+    assert abs(m.objective.expr[x[1]] - 28) <= 1e-10
 
 
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_queens(solver: str):
     """MIP model n-queens"""
     n = 50
-    queens = Model('queens', MAXIMIZE, solver_name=solver)
+    queens = Model("queens", MAXIMIZE, solver_name=solver)
     queens.verbose = 0
 
-    x = [[queens.add_var('x({},{})'.format(i, j), var_type=BINARY)
-          for j in range(n)] for i in range(n)]
+    x = [
+        [
+            queens.add_var("x({},{})".format(i, j), var_type=BINARY)
+            for j in range(n)
+        ]
+        for i in range(n)
+    ]
 
     # one per row
     for i in range(n):
-        queens += xsum(x[i][j] for j in range(n)) == 1, 'row({})'.format(i)
+        queens += xsum(x[i][j] for j in range(n)) == 1, "row({})".format(i)
 
     # one per column
     for j in range(n):
-        queens += xsum(x[i][j] for i in range(n)) == 1, 'col({})'.format(j)
+        queens += xsum(x[i][j] for i in range(n)) == 1, "col({})".format(j)
 
     # diagonal \
     for p, k in enumerate(range(2 - n, n - 2 + 1)):
-        queens += xsum(x[i][j] for i in range(n) for j in range(n)
-                       if i - j == k) <= 1, 'diag1({})'.format(p)
+        queens += (
+            xsum(x[i][j] for i in range(n) for j in range(n) if i - j == k)
+            <= 1,
+            "diag1({})".format(p),
+        )
 
     # diagonal /
     for p, k in enumerate(range(3, n + n)):
-        queens += xsum(x[i][j] for i in range(n) for j in range(n)
-                       if i + j == k) <= 1, 'diag2({})'.format(p)
+        queens += (
+            xsum(x[i][j] for i in range(n) for j in range(n) if i + j == k)
+            <= 1,
+            "diag2({})".format(p),
+        )
 
     queens.optimize()
     assert queens.status == OptimizationStatus.OPTIMAL  # "model status"
@@ -188,17 +221,38 @@ def test_queens(solver: str):
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_tsp(solver: str):
     """tsp related tests"""
-    N = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+    N = ["a", "b", "c", "d", "e", "f", "g"]
     n = len(N)
     i0 = N[0]
 
-    A = {('a', 'd'): 56, ('d', 'a'): 67, ('a', 'b'): 49, ('b', 'a'): 50,
-         ('d', 'b'): 39, ('b', 'd'): 37, ('c', 'f'): 35, ('f', 'c'): 35,
-         ('g', 'b'): 35, ('b', 'g'): 25,
-         ('a', 'c'): 80, ('c', 'a'): 99, ('e', 'f'): 20, ('f', 'e'): 20,
-         ('g', 'e'): 38, ('e', 'g'): 49, ('g', 'f'): 37, ('f', 'g'): 32,
-         ('b', 'e'): 21, ('e', 'b'): 30, ('a', 'g'): 47, ('g', 'a'): 68,
-         ('d', 'c'): 37, ('c', 'd'): 52, ('d', 'e'): 15, ('e', 'd'): 20}
+    A = {
+        ("a", "d"): 56,
+        ("d", "a"): 67,
+        ("a", "b"): 49,
+        ("b", "a"): 50,
+        ("d", "b"): 39,
+        ("b", "d"): 37,
+        ("c", "f"): 35,
+        ("f", "c"): 35,
+        ("g", "b"): 35,
+        ("b", "g"): 25,
+        ("a", "c"): 80,
+        ("c", "a"): 99,
+        ("e", "f"): 20,
+        ("f", "e"): 20,
+        ("g", "e"): 38,
+        ("e", "g"): 49,
+        ("g", "f"): 37,
+        ("f", "g"): 32,
+        ("b", "e"): 21,
+        ("e", "b"): 30,
+        ("a", "g"): 47,
+        ("g", "a"): 68,
+        ("d", "c"): 37,
+        ("c", "d"): 52,
+        ("d", "e"): 15,
+        ("e", "d"): 20,
+    }
 
     # input and output arcs per node
     Aout = {n: [a for a in A if a[0] == n] for n in N}
@@ -206,24 +260,25 @@ def test_tsp(solver: str):
     m = Model(solver_name=solver)
     m.verbose = 1
 
-    x = {a: m.add_var(name='x({},{})'.format(a[0], a[1]),
-                      var_type=BINARY) for a in A}
+    x = {
+        a: m.add_var(name="x({},{})".format(a[0], a[1]), var_type=BINARY)
+        for a in A
+    }
 
     m.objective = xsum(c * x[a] for a, c in A.items())
 
     for i in N:
-        m += xsum(x[a] for a in Aout[i]) == 1, 'out({})'.format(i)
-        m += xsum(x[a] for a in Ain[i]) == 1, 'in({})'.format(i)
+        m += xsum(x[a] for a in Aout[i]) == 1, "out({})".format(i)
+        m += xsum(x[a] for a in Ain[i]) == 1, "in({})".format(i)
 
     # continuous variable to prevent subtours: each
     # city will have a different "identifier" in the planned route
-    y = {i: m.add_var(name='y({})'.format(i), lb=0.0) for i in N}
+    y = {i: m.add_var(name="y({})".format(i), lb=0.0) for i in N}
 
     # subtour elimination
     for (i, j) in A:
         if i0 not in [i, j]:
-            m.add_constr(
-                y[i] - (n + 1) * x[(i, j)] >= y[j] - n)
+            m.add_constr(y[i] - (n + 1) * x[(i, j)] >= y[j] - n)
 
     m.relax()
     m.optimize()
@@ -245,9 +300,9 @@ class SubTourCutGenerator(ConstrsGenerator):
 
     def generate_constrs(self, model: Model):
         G = nx.DiGraph()
-        r = [(v, v.x) for v in model.vars if v.name.startswith('x(')]
-        U = [v.name.split('(')[1].split(',')[0] for v, f in r]
-        V = [v.name.split(')')[0].split(',')[1] for v, f in r]
+        r = [(v, v.x) for v in model.vars if v.name.startswith("x(")]
+        U = [v.name.split("(")[1].split(",")[0] for v, f in r]
+        V = [v.name.split(")")[0].split(",")[1] for v, f in r]
         N = list(set(U + V))
         cp = CutPool()
         for i in range(len(U)):
@@ -257,8 +312,11 @@ class SubTourCutGenerator(ConstrsGenerator):
                 continue
             val, (S, NS) = nx.minimum_cut(G, u, v)
             if val <= 0.99:
-                arcsInS = [(v, f) for i, (v, f) in enumerate(r)
-                           if U[i] in S and V[i] in S]
+                arcsInS = [
+                    (v, f)
+                    for i, (v, f) in enumerate(r)
+                    if U[i] in S and V[i] in S
+                ]
                 if sum(f for v, f in arcsInS) >= (len(S) - 1) + 1e-4:
                     cut = xsum(1.0 * v for v, fm in arcsInS) <= len(S) - 1
                     cp.add(cut)
@@ -273,17 +331,38 @@ class SubTourCutGenerator(ConstrsGenerator):
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_tsp_cuts(solver: str):
     """tsp related tests"""
-    N = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+    N = ["a", "b", "c", "d", "e", "f", "g"]
     n = len(N)
     i0 = N[0]
 
-    A = {('a', 'd'): 56, ('d', 'a'): 67, ('a', 'b'): 49, ('b', 'a'): 50,
-         ('d', 'b'): 39, ('b', 'd'): 37, ('c', 'f'): 35, ('f', 'c'): 35,
-         ('g', 'b'): 35, ('b', 'g'): 25,
-         ('a', 'c'): 80, ('c', 'a'): 99, ('e', 'f'): 20, ('f', 'e'): 20,
-         ('g', 'e'): 38, ('e', 'g'): 49, ('g', 'f'): 37, ('f', 'g'): 32,
-         ('b', 'e'): 21, ('e', 'b'): 30, ('a', 'g'): 47, ('g', 'a'): 68,
-         ('d', 'c'): 37, ('c', 'd'): 52, ('d', 'e'): 15, ('e', 'd'): 20}
+    A = {
+        ("a", "d"): 56,
+        ("d", "a"): 67,
+        ("a", "b"): 49,
+        ("b", "a"): 50,
+        ("d", "b"): 39,
+        ("b", "d"): 37,
+        ("c", "f"): 35,
+        ("f", "c"): 35,
+        ("g", "b"): 35,
+        ("b", "g"): 25,
+        ("a", "c"): 80,
+        ("c", "a"): 99,
+        ("e", "f"): 20,
+        ("f", "e"): 20,
+        ("g", "e"): 38,
+        ("e", "g"): 49,
+        ("g", "f"): 37,
+        ("f", "g"): 32,
+        ("b", "e"): 21,
+        ("e", "b"): 30,
+        ("a", "g"): 47,
+        ("g", "a"): 68,
+        ("d", "c"): 37,
+        ("c", "d"): 52,
+        ("d", "e"): 15,
+        ("e", "d"): 20,
+    }
 
     # input and output arcs per node
     Aout = {n: [a for a in A if a[0] == n] for n in N}
@@ -291,24 +370,25 @@ def test_tsp_cuts(solver: str):
     m = Model(solver_name=solver)
     m.verbose = 0
 
-    x = {a: m.add_var(name='x({},{})'.format(a[0], a[1]),
-                      var_type=BINARY) for a in A}
+    x = {
+        a: m.add_var(name="x({},{})".format(a[0], a[1]), var_type=BINARY)
+        for a in A
+    }
 
     m.objective = xsum(c * x[a] for a, c in A.items())
 
     for i in N:
-        m += xsum(x[a] for a in Aout[i]) == 1, 'out({})'.format(i)
-        m += xsum(x[a] for a in Ain[i]) == 1, 'in({})'.format(i)
+        m += xsum(x[a] for a in Aout[i]) == 1, "out({})".format(i)
+        m += xsum(x[a] for a in Ain[i]) == 1, "in({})".format(i)
 
     # continuous variable to prevent subtours: each
     # city will have a different "identifier" in the planned route
-    y = {i: m.add_var(name='y({})'.format(i), lb=0.0) for i in N}
+    y = {i: m.add_var(name="y({})".format(i), lb=0.0) for i in N}
 
     # subtour elimination
     for (i, j) in A:
         if i0 not in [i, j]:
-            m.add_constr(
-                y[i] - (n + 1) * x[(i, j)] >= y[j] - n)
+            m.add_constr(y[i] - (n + 1) * x[(i, j)] >= y[j] - n)
 
     m.cuts_generator = SubTourCutGenerator()
 
@@ -325,17 +405,38 @@ def test_tsp_cuts(solver: str):
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_tsp_mipstart(solver: str):
     """tsp related tests"""
-    N = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+    N = ["a", "b", "c", "d", "e", "f", "g"]
     n = len(N)
     i0 = N[0]
 
-    A = {('a', 'd'): 56, ('d', 'a'): 67, ('a', 'b'): 49, ('b', 'a'): 50,
-         ('d', 'b'): 39, ('b', 'd'): 37, ('c', 'f'): 35, ('f', 'c'): 35,
-         ('g', 'b'): 35, ('b', 'g'): 25,
-         ('a', 'c'): 80, ('c', 'a'): 99, ('e', 'f'): 20, ('f', 'e'): 20,
-         ('g', 'e'): 38, ('e', 'g'): 49, ('g', 'f'): 37, ('f', 'g'): 32,
-         ('b', 'e'): 21, ('e', 'b'): 30, ('a', 'g'): 47, ('g', 'a'): 68,
-         ('d', 'c'): 37, ('c', 'd'): 52, ('d', 'e'): 15, ('e', 'd'): 20}
+    A = {
+        ("a", "d"): 56,
+        ("d", "a"): 67,
+        ("a", "b"): 49,
+        ("b", "a"): 50,
+        ("d", "b"): 39,
+        ("b", "d"): 37,
+        ("c", "f"): 35,
+        ("f", "c"): 35,
+        ("g", "b"): 35,
+        ("b", "g"): 25,
+        ("a", "c"): 80,
+        ("c", "a"): 99,
+        ("e", "f"): 20,
+        ("f", "e"): 20,
+        ("g", "e"): 38,
+        ("e", "g"): 49,
+        ("g", "f"): 37,
+        ("f", "g"): 32,
+        ("b", "e"): 21,
+        ("e", "b"): 30,
+        ("a", "g"): 47,
+        ("g", "a"): 68,
+        ("d", "c"): 37,
+        ("c", "d"): 52,
+        ("d", "e"): 15,
+        ("e", "d"): 20,
+    }
 
     # input and output arcs per node
     Aout = {n: [a for a in A if a[0] == n] for n in N}
@@ -343,26 +444,27 @@ def test_tsp_mipstart(solver: str):
     m = Model(solver_name=solver)
     m.verbose = 0
 
-    x = {a: m.add_var(name='x({},{})'.format(a[0], a[1]),
-                      var_type=BINARY) for a in A}
+    x = {
+        a: m.add_var(name="x({},{})".format(a[0], a[1]), var_type=BINARY)
+        for a in A
+    }
 
     m.objective = xsum(c * x[a] for a, c in A.items())
 
     for i in N:
-        m += xsum(x[a] for a in Aout[i]) == 1, 'out({})'.format(i)
-        m += xsum(x[a] for a in Ain[i]) == 1, 'in({})'.format(i)
+        m += xsum(x[a] for a in Aout[i]) == 1, "out({})".format(i)
+        m += xsum(x[a] for a in Ain[i]) == 1, "in({})".format(i)
 
     # continuous variable to prevent subtours: each
     # city will have a different "identifier" in the planned route
-    y = {i: m.add_var(name='y({})'.format(i), lb=0.0) for i in N}
+    y = {i: m.add_var(name="y({})".format(i), lb=0.0) for i in N}
 
     # subtour elimination
     for (i, j) in A:
         if i0 not in [i, j]:
-            m.add_constr(
-                y[i] - (n + 1) * x[(i, j)] >= y[j] - n)
+            m.add_constr(y[i] - (n + 1) * x[(i, j)] >= y[j] - n)
 
-    route = ['a', 'g', 'f', 'c', 'd', 'e', 'b', 'a']
+    route = ["a", "g", "f", "c", "d", "e", "b", "a"]
     m.start = [(x[route[i - 1], route[i]], 1.0) for i in range(1, len(route))]
     m.optimize()
 
@@ -371,33 +473,43 @@ def test_tsp_mipstart(solver: str):
 
 
 class TestAPI(object):
-
     def build_model(self, solver):
         """MIP model n-queens"""
         n = 50
-        queens = Model('queens', MAXIMIZE, solver_name=solver)
+        queens = Model("queens", MAXIMIZE, solver_name=solver)
         queens.verbose = 0
 
-        x = [[queens.add_var('x({},{})'.format(i, j), var_type=BINARY)
-              for j in range(n)] for i in range(n)]
+        x = [
+            [
+                queens.add_var("x({},{})".format(i, j), var_type=BINARY)
+                for j in range(n)
+            ]
+            for i in range(n)
+        ]
 
         # one per row
         for i in range(n):
-            queens += xsum(x[i][j] for j in range(n)) == 1, 'row{}'.format(i)
+            queens += xsum(x[i][j] for j in range(n)) == 1, "row{}".format(i)
 
         # one per column
         for j in range(n):
-            queens += xsum(x[i][j] for i in range(n)) == 1, 'col{}'.format(j)
+            queens += xsum(x[i][j] for i in range(n)) == 1, "col{}".format(j)
 
         # diagonal \
         for p, k in enumerate(range(2 - n, n - 2 + 1)):
-            queens += xsum(x[i][j] for i in range(n) for j in range(n)
-                           if i - j == k) <= 1, 'diag1({})'.format(p)
+            queens += (
+                xsum(x[i][j] for i in range(n) for j in range(n) if i - j == k)
+                <= 1,
+                "diag1({})".format(p),
+            )
 
         # diagonal /
         for p, k in enumerate(range(3, n + n)):
-            queens += xsum(x[i][j] for i in range(n) for j in range(n)
-                           if i + j == k) <= 1, 'diag2({})'.format(p)
+            queens += (
+                xsum(x[i][j] for i in range(n) for j in range(n) if i + j == k)
+                <= 1,
+                "diag2({})".format(p),
+            )
 
         return n, queens
 
@@ -405,20 +517,20 @@ class TestAPI(object):
     def test_constr_get_index(self, solver):
         _, model = self.build_model(solver)
 
-        idx = model.solver.constr_get_index('row0')
+        idx = model.solver.constr_get_index("row0")
         assert idx >= 0
 
-        idx = model.solver.constr_get_index('col0')
+        idx = model.solver.constr_get_index("col0")
         assert idx >= 0
 
     @pytest.mark.parametrize("solver", SOLVERS)
     def test_remove_constrs(self, solver):
         _, model = self.build_model(solver)
 
-        idx1 = model.solver.constr_get_index('row0')
+        idx1 = model.solver.constr_get_index("row0")
         assert idx1 >= 0
 
-        idx2 = model.solver.constr_get_index('col0')
+        idx2 = model.solver.constr_get_index("col0")
         assert idx2 >= 0
 
         model.solver.remove_constrs([idx1, idx2])
@@ -429,13 +541,13 @@ class TestAPI(object):
 
         # test RHS of rows
         for i in range(n):
-            idx1 = model.solver.constr_get_index('row{}'.format(i))
+            idx1 = model.solver.constr_get_index("row{}".format(i))
             assert idx1 >= 0
             assert model.solver.constr_get_rhs(idx1) == 1
 
         # test RHS of columns
         for i in range(n):
-            idx1 = model.solver.constr_get_index('col{}'.format(i))
+            idx1 = model.solver.constr_get_index("col{}".format(i))
             assert idx1 >= 0
             assert model.solver.constr_get_rhs(idx1) == 1
 
@@ -443,7 +555,7 @@ class TestAPI(object):
     def test_constr_set_rhs(self, solver):
         n, model = self.build_model(solver)
 
-        idx1 = model.solver.constr_get_index('row0')
+        idx1 = model.solver.constr_get_index("row0")
         assert idx1 >= 0
 
         val = 10
@@ -455,5 +567,5 @@ class TestAPI(object):
         n, model = self.build_model(solver)
 
         val = 10
-        model.constr_by_name('row0').rhs = val
-        assert model.constr_by_name('row0').rhs == val
+        model.constr_by_name("row0").rhs = val
+        assert model.constr_by_name("row0").rhs == val

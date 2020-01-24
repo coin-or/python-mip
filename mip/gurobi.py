@@ -7,71 +7,98 @@ from glob import glob
 from os import environ
 from sys import platform
 from cffi import FFI
-from mip import Model, Column, Var, LinExpr, Constr, Solver, VConstrList, \
-    VVarList, xsum
-from mip.constants import MAXIMIZE, MINIMIZE, CONTINUOUS, INTEGER, BINARY, \
-    OptimizationStatus, EQUAL, LESS_OR_EQUAL, GREATER_OR_EQUAL, \
-    SearchEmphasis, LP_Method
+from mip import (
+    Model,
+    Column,
+    Var,
+    LinExpr,
+    Constr,
+    Solver,
+    VConstrList,
+    VVarList,
+    xsum,
+    MAXIMIZE,
+    MINIMIZE,
+    CONTINUOUS,
+    INTEGER,
+    BINARY,
+    OptimizationStatus,
+    EQUAL,
+    LESS_OR_EQUAL,
+    GREATER_OR_EQUAL,
+    SearchEmphasis,
+    LP_Method,
+)
 
 
 try:
     found = False
     lib_path = None
 
-    if 'GUROBI_HOME' in environ:
-        if platform.lower().startswith('win'):
-            libfile = glob(os.path.join(os.environ['GUROBI_HOME'],
-                                        'bin\\gurobi[0-9][0-9].dll'))
+    if "GUROBI_HOME" in environ:
+        if platform.lower().startswith("win"):
+            libfile = glob(
+                os.path.join(
+                    os.environ["GUROBI_HOME"], "bin\\gurobi[0-9][0-9].dll"
+                )
+            )
         else:
-            libfile = glob(os.path.join(os.environ['GUROBI_HOME'],
-                                        'lib/libgurobi[0-9][0-9].*'))
+            libfile = glob(
+                os.path.join(
+                    os.environ["GUROBI_HOME"], "lib/libgurobi[0-9][0-9].*"
+                )
+            )
+            if not libfile:
+                libfile = glob(
+                    os.path.join(
+                        os.environ["GUROBI_HOME"],
+                        "lib/libgurobi.so.[0-9].[0-9].*",
+                    )
+                )
 
         if libfile:
             lib_path = libfile[0]
 
         # checking gurobi version
-        s1 = lib_path.split('.')[0]
-        vs = ''
-        for c in reversed(s1):
-            if c.isdigit():
-                vs += c
-            else:
-                break
-        vs = vs[::-1]
-        minor_ver = vs[-1]
-        major_ver = vs[0:-1]
+        s1 = lib_path.split('"')[-1].split("/")[-1]
+        vs = [c for c in s1 if c.isdigit()]
+        major_ver = vs[0]
+        minor_ver = vs[1]
 
     if lib_path is None:
         for major_ver in reversed(range(6, 10)):
             for minor_ver in reversed(range(0, 11)):
-                lib_path = find_library('gurobi{}{}'.format(major_ver,
-                                                            minor_ver))
+                lib_path = find_library(
+                    "gurobi{}{}".format(major_ver, minor_ver)
+                )
                 if lib_path is not None:
                     break
             if lib_path is not None:
                 break
 
     if lib_path is None:
-        raise Exception("""Gurobi not found. Plase check if the
+        raise Exception(
+            """Gurobi not found. Plase check if the
         Gurobi dynamic loadable library is reachable or define
         the environment variable GUROBI_HOME indicating the gurobi
         installation path.
-        """)
+        """
+        )
     ffi = FFI()
 
     grblib = ffi.dlopen(lib_path)
-    print('gurobi version {}.{} found'.format(major_ver,
-                                              minor_ver))
+    print("gurobi version {}.{} found".format(major_ver, minor_ver))
 except Exception:
     raise ImportError
 
 
 CData = ffi.CData
-os_is_64_bit = maxsize > 2**32
-INF = float('inf')
+os_is_64_bit = maxsize > 2 ** 32
+INF = float("inf")
 MAX_NAME_SIZE = 512  # for variables and constraints
 
-ffi.cdef("""
+ffi.cdef(
+    """
     typedef struct _GRBmodel GRBmodel;
     typedef struct _GRBenv GRBenv;
 
@@ -210,7 +237,8 @@ ffi.cdef("""
         const double *lazyval, char lazysense, double lazyrhs);
 
     int GRBdelconstrs (GRBmodel *model, int numdel, int *ind);
-""")
+"""
+)
 
 GRBloadenv = grblib.GRBloadenv
 GRBnewmodel = grblib.GRBnewmodel
@@ -300,9 +328,9 @@ GRB_OPTIMAL = 2
 
 
 class SolverGurobi(Solver):
-
-    def __init__(self, model: Model, name: str, sense: str, modelp: CData =
-                 ffi.NULL):
+    def __init__(
+        self, model: Model, name: str, sense: str, modelp: CData = ffi.NULL
+    ):
         """modelp should be informed if a model should not be created,
         but only allow access to an existing one"""
         super().__init__(model, name, sense)
@@ -320,19 +348,29 @@ class SolverGurobi(Solver):
             self._env = ffi.new("GRBenv **")
 
             # creating Gurobi environment
-            st = GRBloadenv(self._env, ''.encode('utf-8'))
+            st = GRBloadenv(self._env, "".encode("utf-8"))
             if st != 0:
-                raise Exception('Gurobi environment could not be loaded,\
-    check your license.')
+                raise Exception(
+                    "Gurobi environment could not be loaded,\
+    check your license."
+                )
             self._env = self._env[0]
 
             # creating Gurobi model
             self._model = ffi.new("GRBmodel **")
-            st = GRBnewmodel(self._env, self._model,
-                             name.encode('utf-8'), 0,
-                             ffi.NULL, ffi.NULL, ffi.NULL, ffi.NULL, ffi.NULL)
+            st = GRBnewmodel(
+                self._env,
+                self._model,
+                name.encode("utf-8"),
+                0,
+                ffi.NULL,
+                ffi.NULL,
+                ffi.NULL,
+                ffi.NULL,
+                ffi.NULL,
+            )
             if st != 0:
-                raise Exception('Could not create Gurobi model')
+                raise Exception("Could not create Gurobi model")
             self._model = self._model[0]
 
             # setting objective sense
@@ -356,7 +394,7 @@ class SolverGurobi(Solver):
         self.__n_modified_cols = 0
         self.__n_modified_rows = 0
         self.__updated = True
-        self.__name_space = ffi.new('char[{}]'.format(MAX_NAME_SIZE))
+        self.__name_space = ffi.new("char[{}]".format(MAX_NAME_SIZE))
         self.__log = []
 
     def __del__(self):
@@ -367,40 +405,48 @@ class SolverGurobi(Solver):
             if self._env:
                 GRBfreeenv(self._env)
 
-    def add_var(self,
-                obj: float = 0,
-                lb: float = 0,
-                ub: float = INF,
-                var_type: str = CONTINUOUS,
-                column: Column = None,
-                name: str = ""):
+    def add_var(
+        self,
+        obj: float = 0,
+        lb: float = 0,
+        ub: float = INF,
+        var_type: str = CONTINUOUS,
+        column: Column = None,
+        name: str = "",
+    ):
         # collecting column data
         nz = 0 if column is None else len(column.constrs)
         if nz:
             self.flush_rows()
             vind = ffi.new("int[]", [c.idx for c in column.constrs])
-            vval = ffi.new("double[]",
-                           [column.coeffs[i] for i in range(nz)])
+            vval = ffi.new("double[]", [column.coeffs[i] for i in range(nz)])
         else:
             vind = ffi.NULL
             vval = ffi.NULL
 
         # variable type
-        vtype = var_type.encode('utf-8')
+        vtype = var_type.encode("utf-8")
 
-        st = GRBaddvar(self._model, nz,
-                       vind, vval, obj, lb, ub,
-                       vtype, name.encode('utf-8'))
+        st = GRBaddvar(
+            self._model,
+            nz,
+            vind,
+            vval,
+            obj,
+            lb,
+            ub,
+            vtype,
+            name.encode("utf-8"),
+        )
         if st != 0:
-            raise Exception('Error adding variable {} to model.'.format(name))
+            raise Exception("Error adding variable {} to model.".format(name))
 
         self.__n_cols_buffer += 1
         if vtype == BINARY or vtype == INTEGER:
             self.__n_int_buffer += 1
 
     def add_cut(self, lin_expr: LinExpr):
-        # int GRBcbcut(void *cbdata, int cutlen, const int *cutind, const double *cutval, char cutsense, double cutrhs);
-        # int GRBcbcut(void *cbdata, int cutlen, const int *cutind, const double *cutval, char cutsense, double cutrhs);
+        # added in SolverGurobiCB
 
         return
 
@@ -411,18 +457,19 @@ class SolverGurobi(Solver):
         cval = ffi.new("double[]", [coef for coef in lin_expr.expr.values()])
 
         # constraint sense and rhs
-        sense = lin_expr.sense.encode('utf-8')
+        sense = lin_expr.sense.encode("utf-8")
         rhs = -lin_expr.const
 
         if not name:
-            name = 'r({})'.format(self.num_rows())
+            name = "r({})".format(self.num_rows())
 
-        st = GRBaddconstr(self._model, nz,
-                          cind, cval,
-                          sense, rhs, name.encode('utf-8'))
+        st = GRBaddconstr(
+            self._model, nz, cind, cval, sense, rhs, name.encode("utf-8")
+        )
         if st != 0:
-            raise Exception('Error adding constraint {} to the model'.format(
-                name))
+            raise Exception(
+                "Error adding constraint {} to the model".format(name)
+            )
         self.__n_rows_buffer += 1
 
     def add_lazy_constr(self: "Solver", lin_expr: "LinExpr"):
@@ -430,7 +477,7 @@ class SolverGurobi(Solver):
         self.set_int_param("LazyConstraints", 1)
         self._nlazy += 1
         self.add_constr(lin_expr, "lz({})".format(self._nlazy))
-        self.set_int_attr_element("Lazy", self.num_rows()-1, 3)
+        self.set_int_attr_element("Lazy", self.num_rows() - 1, 3)
 
     def add_sos(self, sos: List[Tuple["Var", float]], sos_type: int):
         self.flush_cols()
@@ -440,22 +487,26 @@ class SolverGurobi(Solver):
         w = ffi.new("double[]", [f for (v, f) in sos])
         st = GRBaddsos(self._model, 1, len(sos), types, beg, idx, w)
         if st != 0:
-            raise Exception('Error adding SOS to the model')
+            raise Exception("Error adding SOS to the model")
 
     def get_objective_bound(self) -> float:
         return self.get_dbl_attr("ObjBound")
 
     def get_objective(self) -> LinExpr:
-        attr = 'Obj'.encode('utf-8')
+        self.flush_cols()
+        attr = "Obj".encode("utf-8")
         # st = GRBsetdblattrarray(self._model, attr,
         #                         0, num_vars, zeros)
         obj = ffi.new("double[]", [0.0 for i in range(self.num_cols())])
 
         st = GRBgetdblattrarray(self._model, attr, 0, self.num_cols(), obj)
         if st != 0:
-            raise Exception('Error getting objective function')
-        obj_expr = xsum(obj[i]*self.model.vars[i] for i in
-                        range(self.num_cols()) if abs(obj[i] > 1e-20))
+            raise Exception("Error getting objective function")
+        obj_expr = xsum(
+            obj[i] * self.model.vars[i]
+            for i in range(self.num_cols())
+            if abs(obj[i] > 1e-20)
+        )
         obj_expr.sense = self.get_objective_sense
         return obj_expr
 
@@ -464,8 +515,11 @@ class SolverGurobi(Solver):
 
     def relax(self):
         self.flush_cols()
-        idxv = [var.idx for var in self.model.vars
-                if var.var_type in [BINARY, INTEGER]]
+        idxv = [
+            var.idx
+            for var in self.model.vars
+            if var.var_type in [BINARY, INTEGER]
+        ]
 
         n = len(idxv)
         idxs = ffi.new("int[]", idxv)
@@ -473,9 +527,10 @@ class SolverGurobi(Solver):
         cont_char = CONTINUOUS.encode("utf-8")
         ccont = ffi.new("char[]", [cont_char for i in range(n)])
 
-        attr = 'VType'.encode('utf-8')
+        attr = "VType".encode("utf-8")
         GRBsetcharattrlist(self._model, attr, n, idxs, ccont)
         self.__updated = False
+        self.update()
 
     def get_max_seconds(self) -> float:
         return self.get_dbl_param("TimeLimit")
@@ -503,17 +558,18 @@ class SolverGurobi(Solver):
     def optimize(self) -> OptimizationStatus:
 
         # todo add branch_selector and incumbent_updater callbacks
-        @ffi.callback("""
+        @ffi.callback(
+            """
            int (GRBmodel *, void *, int, void *)
-        """)
-        def callback(p_model: CData,
-                     p_cbdata: CData,
-                     where: int,
-                     p_usrdata: CData) -> int:
+        """
+        )
+        def callback(
+            p_model: CData, p_cbdata: CData, where: int, p_usrdata: CData
+        ) -> int:
 
             if self.model.store_search_progress_log:
                 if where == 3:
-                    res = ffi.new('double *')
+                    res = ffi.new("double *")
                     st = GRBcbget(p_cbdata, where, GRB_CB_MIP_OBJBND, res)
                     if st == 0:
                         obj_bound = res[0]
@@ -530,8 +586,11 @@ class SolverGurobi(Solver):
                                     difl = abs(obj_bound - log[-1][1][0])
                                     difu = abs(obj_best - log[-1][1][1])
                                     if difl >= 1e-6 or difu >= 1e-6:
-                                        print('>>>>>>> {} {}'.format(
-                                            obj_bound, obj_best))
+                                        print(
+                                            ">>>>>>> {} {}".format(
+                                                obj_bound, obj_best
+                                            )
+                                        )
                                     log.append((sec, (obj_bound, obj_best)))
 
             # adding cuts or lazy constraints
@@ -539,8 +598,7 @@ class SolverGurobi(Solver):
                 st = ffi.new("int *")
                 st[0] = 0
 
-                error = GRBcbget(p_cbdata, where,
-                                 GRB_CB_MIPNODE_STATUS, st)
+                error = GRBcbget(p_cbdata, where, GRB_CB_MIPNODE_STATUS, st)
                 if error:
                     raise Exception("Could not get gurobi status")
                 if st[0] != GRB_OPTIMAL:
@@ -558,9 +616,11 @@ class SolverGurobi(Solver):
             return 0
 
         self.update()
-        if self.model.cuts_generator is not None or \
-           self.model.lazy_constrs_generator is not None or \
-           self.model.store_search_progress_log:
+        if (
+            self.model.cuts_generator is not None
+            or self.model.lazy_constrs_generator is not None
+            or self.model.store_search_progress_log
+        ):
             GRBsetcallbackfunc(self._model, callback, ffi.NULL)
             if self.model.lazy_constrs_generator:
                 self.set_int_param("LazyConstraints", 1)
@@ -600,19 +660,25 @@ class SolverGurobi(Solver):
         status = GRBoptimize(self._model)
         if status != 0:
             if status == 10009:
-                raise Exception('gurobi found but license not accepted,\
-     please check it')
+                raise Exception(
+                    "gurobi found but license not accepted,\
+     please check it"
+                )
             if status == 10001:
-                raise MemoryError('out of memory error')
+                raise MemoryError("out of memory error")
 
-            raise Exception('Gurobi error {} while\
-                             optimizing.'.format(status))
+            raise Exception(
+                "Gurobi error {} while\
+                             optimizing.".format(
+                    status
+                )
+            )
 
         status = self.get_int_attr("Status")
         # checking status for MIP optimization which
         # finished before the search to be
         # concluded (time, iteration limit...)
-        if (self.num_int()):
+        if self.num_int():
             if status in [8, 9, 10, 11, 13]:
                 nsols = self.get_int_attr("SolCount")
                 if nsols >= 1:
@@ -662,7 +728,7 @@ class SolverGurobi(Solver):
         elif isense == -1:
             return MAXIMIZE
         else:
-            raise Exception('Unknown sense')
+            raise Exception("Unknown sense")
 
     def set_objective_sense(self, sense: str):
         if sense.strip().upper() == MAXIMIZE.strip().upper():
@@ -670,8 +736,11 @@ class SolverGurobi(Solver):
         elif sense.strip().upper() == MINIMIZE.strip().upper():
             self.set_int_attr("ModelSense", 1)
         else:
-            raise Exception("Unknown sense: {}, use {} or {}".format(sense,
-                            MAXIMIZE, MINIMIZE))
+            raise Exception(
+                "Unknown sense: {}, use {} or {}".format(
+                    sense, MAXIMIZE, MINIMIZE
+                )
+            )
         self.__updated = False
 
     def get_num_solutions(self) -> int:
@@ -683,7 +752,7 @@ class SolverGurobi(Solver):
 
     def var_get_index(self, name: str) -> int:
         idx = ffi.new("int *")
-        st = GRBgetvarbyname(self._model, name.encode('utf-8'), idx)
+        st = GRBgetvarbyname(self._model, name.encode("utf-8"), idx)
         if st:
             raise Exception("Error calling GRBgetvarbyname")
         return idx[0]
@@ -693,15 +762,14 @@ class SolverGurobi(Solver):
         return self.get_dbl_attr("PoolObjVal")
 
     def get_objective_value(self) -> float:
-        return self.get_dbl_attr('ObjVal')
+        return self.get_dbl_attr("ObjVal")
 
     def get_log(self) -> List[Tuple[float, Tuple[float, float]]]:
         return self.__log
 
-    def set_processing_limits(self,
-                              max_time: float = INF,
-                              max_nodes: float = INF,
-                              max_sol: int = INF):
+    def set_processing_limits(
+        self, max_time: float = INF, max_nodes: float = INF, max_sol: int = INF
+    ):
         # todo: Set limits even when they are 'inf'
         if max_time != INF:
             self.set_dbl_param("TimeLimit", max_time)
@@ -724,12 +792,11 @@ class SolverGurobi(Solver):
         num_vars = self.num_cols()
         zeros = ffi.new("double[]", [0.0 for i in range(num_vars)])
 
-        attr = 'Obj'.encode('utf-8')
-        st = GRBsetdblattrarray(self._model, attr,
-                                0, num_vars, zeros)
+        attr = "Obj".encode("utf-8")
+        st = GRBsetdblattrarray(self._model, attr, 0, num_vars, zeros)
 
         if st != 0:
-            raise Exception('Could not set gurobi double attribute array Obj')
+            raise Exception("Could not set gurobi double attribute array Obj")
 
         # setting objective sense
         if sense == MAXIMIZE:
@@ -739,8 +806,7 @@ class SolverGurobi(Solver):
 
         # setting objective function
         self.set_dbl_attr("ObjCon", const)
-        error = GRBsetdblattrlist(self._model, attr, nz,
-                                  cind, cval)
+        error = GRBsetdblattrlist(self._model, attr, nz, cind, cval)
         if error != 0:
             raise Exception("Error modifying attribute Obj")
         self.__n_modified_cols += 1
@@ -755,8 +821,9 @@ class SolverGurobi(Solver):
         cind = ffi.new("int[]", [el[0].idx for el in start])
         cval = ffi.new("double[]", [el[1] for el in start])
 
-        st = GRBsetdblattrlist(self._model, 'Start'.encode('utf-8'), nz,
-                               cind, cval)
+        st = GRBsetdblattrlist(
+            self._model, "Start".encode("utf-8"), nz, cind, cval
+        )
         if st != 0:
             raise Exception("Error modifying attribute Start")
         self.__updated = False
@@ -776,20 +843,20 @@ class SolverGurobi(Solver):
     def write(self, file_path: str) -> None:
         # writing formulation to output file
         self.update()
-        st = GRBwrite(self._model, file_path.encode('utf-8'))
+        st = GRBwrite(self._model, file_path.encode("utf-8"))
         if st != 0:
-            raise Exception('Could not write gurobi model.')
+            raise Exception("Could not write gurobi model.")
 
     def read(self, file_path: str) -> None:
         if not isfile(file_path):
-            raise Exception('File {} does not exists'.format(file_path))
+            raise Exception("File {} does not exists".format(file_path))
         GRBfreemodel(self._model)
         self._model = ffi.new("GRBmodel **")
-        st = GRBreadmodel(self._env, file_path.encode('utf-8'),
-                          self._model)
+        st = GRBreadmodel(self._env, file_path.encode("utf-8"), self._model)
         if st != 0:
-            raise Exception('Could not read model {}, check contents'.format(
-                            file_path))
+            raise Exception(
+                "Could not read model {}, check contents".format(file_path)
+            )
         self._model = self._model[0]
 
     def num_cols(self) -> int:
@@ -834,11 +901,13 @@ class SolverGurobi(Solver):
 
         nnz = ffi.new("int *")
         # obtaining number of non-zeros
-        st = GRBgetconstrs(self._model, nnz, ffi.NULL, ffi.NULL, ffi.NULL,
-                           constr.idx, 1)
+        st = GRBgetconstrs(
+            self._model, nnz, ffi.NULL, ffi.NULL, ffi.NULL, constr.idx, 1
+        )
         if st != 0:
-            raise Exception('Could not get info for constraint {}'.format(
-                            constr.idx))
+            raise Exception(
+                "Could not get info for constraint {}".format(constr.idx)
+            )
         nz = nnz[0]
 
         # creating arrays to hold indices and coefficients
@@ -847,26 +916,29 @@ class SolverGurobi(Solver):
         cval = ffi.new("double[{}]".format(nz))
 
         # obtaining variables and coefficients
-        st = GRBgetconstrs(self._model, nnz, cbeg, cind, cval,
-                           constr.idx, 1)
+        st = GRBgetconstrs(self._model, nnz, cbeg, cind, cval, constr.idx, 1)
         if st != 0:
-            raise Exception('Could not query constraint contents')
+            raise Exception("Could not query constraint contents")
 
         # obtaining sense and rhs
-        c_sense = ffi.new('char *')
-        rhs = ffi.new('double *')
-        st = GRBgetcharattrelement(self._model, 'Sense'.encode('utf-8'),
-                                   constr.idx, c_sense)
+        c_sense = ffi.new("char *")
+        rhs = ffi.new("double *")
+        st = GRBgetcharattrelement(
+            self._model, "Sense".encode("utf-8"), constr.idx, c_sense
+        )
         if st != 0:
-            raise Exception('Could not query sense for constraint {}'.format(
-                            constr.idx))
-        st = GRBgetdblattrelement(self._model, 'RHS'.encode('utf-8'),
-                                  constr.idx, rhs)
+            raise Exception(
+                "Could not query sense for constraint {}".format(constr.idx)
+            )
+        st = GRBgetdblattrelement(
+            self._model, "RHS".encode("utf-8"), constr.idx, rhs
+        )
         if st != 0:
-            raise Exception('Could not query RHS for constraint {}'.format(
-                            constr.idx))
+            raise Exception(
+                "Could not query RHS for constraint {}".format(constr.idx)
+            )
 
-        ssense = c_sense[0].decode('utf-8')
+        ssense = c_sense[0].decode("utf-8")
         # translating sense
         sense = ""
         if ssense == "<":
@@ -891,7 +963,7 @@ class SolverGurobi(Solver):
 
     def constr_get_name(self, idx: int) -> str:
         self.flush_rows()
-        return self.get_str_attr_element('ConstrName', idx)
+        return self.get_str_attr_element("ConstrName", idx)
 
     def constr_set_expr(self, constr: Constr, value: LinExpr) -> LinExpr:
         raise NotImplementedError("Gurobi functionality currently unavailable")
@@ -904,14 +976,14 @@ class SolverGurobi(Solver):
 
     def constr_get_index(self, name: str) -> int:
         GRBupdatemodel(self._model)
-        idx = ffi.new('int *')
-        st = GRBgetconstrbyname(self._model, name.encode('utf-8'), idx)
+        idx = ffi.new("int *")
+        st = GRBgetconstrbyname(self._model, name.encode("utf-8"), idx)
         if st != 0:
             raise Exception("Error calling GRBgetconstrbyname")
         return idx[0]
 
     def remove_constrs(self, constrsList: List[int]):
-        idx = ffi.new('int[]', constrsList)
+        idx = ffi.new("int[]", constrsList)
         st = GRBdelconstrs(self._model, len(constrsList), idx)
         if st != 0:
             raise Exception("Error calling GRBdelconstrs")
@@ -943,15 +1015,16 @@ class SolverGurobi(Solver):
 
     def var_get_var_type(self, var: Var) -> str:
         self.flush_cols()
-        res = ffi.new('char *')
-        st = GRBgetcharattrelement(self._model, 'VType'.encode('utf-8'),
-                                   var.idx, res)
+        res = ffi.new("char *")
+        st = GRBgetcharattrelement(
+            self._model, "VType".encode("utf-8"), var.idx, res
+        )
         if st != 0:
-            raise Exception('Error querying variable type in gurobi')
+            raise Exception("Error querying variable type in gurobi")
 
-        vt = res[0].decode('utf-8')
+        vt = res[0].decode("utf-8")
 
-        if vt == 'B':
+        if vt == "B":
             return BINARY
         elif vt == "C":
             return CONTINUOUS
@@ -967,26 +1040,26 @@ class SolverGurobi(Solver):
     def var_get_column(self, var: Var) -> Column:
         self.update()
 
-        nnz = ffi.new('int*')
+        nnz = ffi.new("int*")
 
         # obtaining number of non-zeros
-        error = GRBgetvars(self._model, nnz, ffi.NULL, ffi.NULL, ffi.NULL,
-                           var.idx, 1)
+        error = GRBgetvars(
+            self._model, nnz, ffi.NULL, ffi.NULL, ffi.NULL, var.idx, 1
+        )
         if error != 0:
-            raise Exception('Error querying gurobi model information')
+            raise Exception("Error querying gurobi model information")
 
         nz = nnz[0]
 
         # creating arrays to hold indices and coefficients
-        cbeg = ffi.new('int[2]')
-        cind = ffi.new('int[{}]'.format(nz))
-        cval = ffi.new('double[{}]'.format(nz))
+        cbeg = ffi.new("int[2]")
+        cind = ffi.new("int[{}]".format(nz))
+        cval = ffi.new("double[{}]".format(nz))
 
         # obtaining variables and coefficients
-        error = GRBgetvars(self._model, nnz, cbeg, cind, cval,
-                           var.idx, 1)
+        error = GRBgetvars(self._model, nnz, cbeg, cind, cval, var.idx, 1)
         if error != 0:
-            raise Exception('Error querying gurobi model information')
+            raise Exception("Error querying gurobi model information")
 
         constr = [self.model.constrs[cind[i]] for i in range(nz)]
         coefs = [float(cval[i]) for i in range(nz)]
@@ -1004,13 +1077,13 @@ class SolverGurobi(Solver):
 
     def var_get_name(self, idx: int) -> str:
         self.flush_cols()
-        return self.get_str_attr_element('VarName', idx)
+        return self.get_str_attr_element("VarName", idx)
 
     def remove_vars(self, varsList: List[int]):
-        idx = ffi.new('int[]', varsList)
+        idx = ffi.new("int[]", varsList)
         st = GRBdelvars(self._model, len(varsList), idx)
         if st != 0:
-            raise Exception('Error calling GRBdelvars')
+            raise Exception("Error calling GRBdelvars")
         self.__n_modified_cols += len(varsList)
 
     def get_emphasis(self) -> SearchEmphasis:
@@ -1031,10 +1104,13 @@ class SolverGurobi(Solver):
             self.set_int_param("MIPFocus", 0)
 
     def update(self):
-        if ((self.__n_cols_buffer + self.__n_int_buffer +
-             self.__n_rows_buffer +
-             self.__n_modified_cols + self.__n_modified_rows) == 0
-                and self.__updated):
+        if (
+            self.__n_cols_buffer
+            + self.__n_int_buffer
+            + self.__n_rows_buffer
+            + self.__n_modified_cols
+            + self.__n_modified_rows
+        ) == 0 and self.__updated:
             return
         GRBupdatemodel(self._model)
         self.__n_cols_buffer = 0
@@ -1046,136 +1122,155 @@ class SolverGurobi(Solver):
 
     def set_char_attr_element(self, name: str, index: int, value: str):
         assert len(value) == 1
-        error = GRBsetcharattrelement(self._model, name.encode('utf-8'),
-                                      index, value.encode('utf-8'))
+        error = GRBsetcharattrelement(
+            self._model, name.encode("utf-8"), index, value.encode("utf-8")
+        )
         if error != 0:
             raise Exception(
-                'Error setting gurobi char attr element {} index {} to value'.
-                format(name, index, value))
+                "Error setting gurobi char attr element {} index {} to value {}".format(
+                    name, index, value
+                )
+            )
 
     def get_dbl_attr_element(self, name: str, index: int) -> float:
-        res = ffi.new('double *')
-        error = GRBgetdblattrelement(self._model, name.encode('utf-8'),
-                                     index, res)
+        res = ffi.new("double *")
+        error = GRBgetdblattrelement(
+            self._model, name.encode("utf-8"), index, res
+        )
         if error != 0:
-            raise Exception('Error get grb double attr element {} index {}'.
-                            format(name, index))
+            raise Exception(
+                "Error get grb double attr element {} index {}".format(
+                    name, index
+                )
+            )
         return res[0]
 
     def set_dbl_attr_element(self, name: str, index: int, value: float):
-        error = GRBsetdblattrelement(self._model, name.encode('utf-8'),
-                                     index, value)
+        error = GRBsetdblattrelement(
+            self._model, name.encode("utf-8"), index, value
+        )
         if error != 0:
             raise Exception(
-                "Error modifying dbl attribute {} for element {} to value {}".
-                format(name, index, value))
+                "Error modifying dbl attribute {} for element {} to value {}".format(
+                    name, index, value
+                )
+            )
 
     def set_int_attr_element(self, name: str, index: int, value: int):
-        error = GRBsetintattrelement(self._model, name.encode('utf-8'),
-                                     index, value)
+        error = GRBsetintattrelement(
+            self._model, name.encode("utf-8"), index, value
+        )
         if error != 0:
             raise Exception(
-                "Error modifying int attribute {} for element {} to value {}".
-                format(name, index, value))
-
-
+                "Error modifying int attribute {} for element {} to value {}".format(
+                    name, index, value
+                )
+            )
 
     def set_int_attr(self, name: str, value: int):
-        error = GRBsetintattr(self._model, name.encode('utf-8'), value)
+        error = GRBsetintattr(self._model, name.encode("utf-8"), value)
         if error != 0:
-            raise Exception("Error modifying int attribute {} to {}".
-                            format(name, value))
+            raise Exception(
+                "Error modifying int attribute {} to {}".format(name, value)
+            )
         GRBupdatemodel(self._model)
 
     def set_dbl_attr(self, name: str, value: float):
-        error = GRBsetdblattr(self._model, name.encode('utf-8'), value)
+        error = GRBsetdblattr(self._model, name.encode("utf-8"), value)
         if error != 0:
-            raise Exception("Error modifying double attribute {} to {}".
-                            format(name, value))
+            raise Exception(
+                "Error modifying double attribute {} to {}".format(name, value)
+            )
 
     def get_int_attr(self, name: str) -> int:
-        res = ffi.new('int *')
-        error = GRBgetintattr(self._model, name.encode('utf-8'), res)
+        res = ffi.new("int *")
+        error = GRBgetintattr(self._model, name.encode("utf-8"), res)
         if error != 0:
-            raise Exception('Error getting int attribute {}'.format(name))
+            raise Exception("Error getting int attribute {}".format(name))
         return res[0]
 
     def get_int_param(self, name: str) -> int:
-        res = ffi.new('int *')
+        res = ffi.new("int *")
         env = GRBgetenv(self._model)
-        error = GRBgetintparam(env, name.encode('utf-8'), res)
+        error = GRBgetintparam(env, name.encode("utf-8"), res)
         if error != 0:
-            raise Exception("Error getting gurobi integer parameter {}".
-                            format(name))
+            raise Exception(
+                "Error getting gurobi integer parameter {}".format(name)
+            )
         return res[0]
 
     def set_int_param(self, name: str, value: int):
         env = GRBgetenv(self._model)
-        error = GRBsetintparam(env,
-                               name.encode('utf-8'), value)
+        error = GRBsetintparam(env, name.encode("utf-8"), value)
         if error != 0:
-            raise Exception("Error mofifying int parameter {} to value {}".
-                            format(name, value))
+            raise Exception(
+                "Error mofifying int parameter {} to value {}".format(
+                    name, value
+                )
+            )
         GRBupdatemodel(self._model)
 
     def get_dbl_attr(self, attr: str) -> float:
-        res = ffi.new('double *')
-        error = GRBgetdblattr(self._model, attr.encode('utf-8'), res)
+        res = ffi.new("double *")
+        error = GRBgetdblattr(self._model, attr.encode("utf-8"), res)
         if error != 0:
-            raise Exception('Error getting gurobi double attribute {}'.
-                            format(attr))
+            raise Exception(
+                "Error getting gurobi double attribute {}".format(attr)
+            )
         return res[0]
 
     def set_dbl_param(self, param: str, value: float):
         env = GRBgetenv(self._model)
-        error = GRBsetdblparam(env, param.encode('utf-8'),
-                               float(value))
+        error = GRBsetdblparam(env, param.encode("utf-8"), float(value))
         if error != 0:
-            raise Exception("Error setting gurobi double param " +
-                            param + " to {}".format(value))
+            raise Exception(
+                "Error setting gurobi double param "
+                + param
+                + " to {}".format(value)
+            )
 
     def get_dbl_param(self, param: str) -> float:
-        res = ffi.new('double *')
+        res = ffi.new("double *")
         env = GRBgetenv(self._model)
-        error = GRBgetdblparam(env, param.encode('utf-8'),
-                               res)
+        error = GRBgetdblparam(env, param.encode("utf-8"), res)
         if error != 0:
-            raise Exception("Error getting gurobi double parameter {}".
-                            format(param))
+            raise Exception(
+                "Error getting gurobi double parameter {}".format(param)
+            )
         return res[0]
 
     def get_str_attr_element(self, attr: str, index: int) -> str:
-        vName = ffi.new('char **')
-        error = GRBgetstrattrelement(self._model, attr.encode('utf-8'), index,
-                                     vName)
+        vName = ffi.new("char **")
+        error = GRBgetstrattrelement(
+            self._model, attr.encode("utf-8"), index, vName
+        )
         if error != 0:
-            raise Exception('Error getting str attribute {} index {}'.
-                            format(attr, index))
-        return ffi.string(vName[0]).decode('utf-8')
+            raise Exception(
+                "Error getting str attribute {} index {}".format(attr, index)
+            )
+        return ffi.string(vName[0]).decode("utf-8")
 
     def get_problem_name(self) -> str:
-        vName = ffi.new('char **')
-        error = GRBgetstrattr(self._model,
-                              'ModelName'.encode('utf-8'),
-                              vName)
+        vName = ffi.new("char **")
+        error = GRBgetstrattr(self._model, "ModelName".encode("utf-8"), vName)
         if error != 0:
-            raise Exception('Error getting problem name from gurobi')
-        return ffi.string(vName[0]).decode('utf-8')
+            raise Exception("Error getting problem name from gurobi")
+        return ffi.string(vName[0]).decode("utf-8")
 
     def set_problem_name(self, name: str):
-        error = GRBsetstrattr(self._model,
-                              'ModelName'.encode('utf-8'),
-                              name.encode('utf-8'))
+        error = GRBsetstrattr(
+            self._model, "ModelName".encode("utf-8"), name.encode("utf-8")
+        )
 
         if error != 0:
-            raise Exception('Error setting problem name in Gurobi')
+            raise Exception("Error setting problem name in Gurobi")
         GRBupdatemodel(self._model)
 
     def get_pump_passes(self) -> int:
-        return self.get_int_param('PumpPasses')
+        return self.get_int_param("PumpPasses")
 
     def set_pump_passes(self, passes: int):
-        self.set_int_param('PumpPasses', passes)
+        self.set_int_param("PumpPasses", passes)
 
 
 class SolverGurobiCB(SolverGurobi):
@@ -1183,12 +1278,17 @@ class SolverGurobiCB(SolverGurobi):
        running in the callback, so some methods
        should be different (e.g. to get the frac sol)"""
 
-    def __init__(self, model: Model, grb_model: CData = ffi.NULL,
-                 cb_data: CData = ffi.NULL, where: int = -1):
+    def __init__(
+        self,
+        model: Model,
+        grb_model: CData = ffi.NULL,
+        cb_data: CData = ffi.NULL,
+        where: int = -1,
+    ):
         assert grb_model != ffi.NULL
         assert cb_data != ffi.NULL
 
-        super().__init__(model, '', '')
+        super().__init__(model, "", "", modelp=grb_model)
 
         self._cb_data = cb_data
         self._objconst = 0.0
@@ -1204,45 +1304,47 @@ class SolverGurobiCB(SolverGurobi):
             return
 
         self.__relaxed = False
-        gstatus = ffi.new('int *')
+        gstatus = ffi.new("int *")
         if where == GRB_CB_MIPNODE:
             res = GRBcbget(cb_data, where, GRB_CB_MIPNODE_STATUS, gstatus)
             if res != 0:
-                raise Exception('Error getting status')
+                raise Exception("Error getting status")
             if gstatus[0] == GRB_OPTIMAL:
                 self._status = OptimizationStatus.OPTIMAL
-                ires = ffi.new('int *')
-                st = GRBgetintattr(grb_model, 'NumVars'.encode('utf-8'), ires)
+                ires = ffi.new("int *")
+                st = GRBgetintattr(grb_model, "NumVars".encode("utf-8"), ires)
                 if st != 0:
-                    raise Exception('Could not query number of variables')
+                    raise Exception("Could not query number of variables")
                 ncols = ires[0]
-                self._cb_sol = \
-                    ffi.new('double[{}]'.format(ncols))
-                res = GRBcbget(cb_data, where, GRB_CB_MIPNODE_REL,
-                               self._cb_sol)
+                self._cb_sol = ffi.new("double[{}]".format(ncols))
+                res = GRBcbget(
+                    cb_data, where, GRB_CB_MIPNODE_REL, self._cb_sol
+                )
                 if res != 0:
-                    raise Exception('Error getting fractional solution')
+                    raise Exception("Error getting fractional solution")
             else:
                 self._cb_sol = ffi.NULL
         elif where == GRB_CB_MIPSOL:
             self._status = OptimizationStatus.FEASIBLE
-            ires = ffi.new('int *')
-            st = GRBgetintattr(grb_model, 'NumVars'.encode('utf-8'), ires)
+            ires = ffi.new("int *")
+            st = GRBgetintattr(grb_model, "NumVars".encode("utf-8"), ires)
             if st != 0:
-                raise Exception('Could not query number of variables in Gurobi \
-                                callback')
+                raise Exception(
+                    "Could not query number of variables in Gurobi callback"
+                )
             ncols = ires[0]
 
-            self._cb_sol = \
-                ffi.new('double[{}]'.format(ncols))
+            self._cb_sol = ffi.new("double[{}]".format(ncols))
             res = GRBcbget(cb_data, where, GRB_CB_MIPSOL_SOL, self._cb_sol)
             if res != 0:
-                raise Exception('Error getting integer solution in gurobi \
-                                callback')
+                raise Exception(
+                    "Error getting integer solution in gurobi \
+                                callback"
+                )
             objp = ffi.new("double *")
             res = GRBcbget(cb_data, where, GRB_CB_MIPSOL_OBJ, objp)
             if res != 0:
-                raise Exception('Error getting solution obj in Gurobi')
+                raise Exception("Error getting solution obj in Gurobi")
             self._obj_value = objp[0]
 
         else:
@@ -1252,8 +1354,7 @@ class SolverGurobiCB(SolverGurobi):
         numnz = len(lin_expr.expr)
 
         cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
-        cval = ffi.new("double[]", [coef for coef in
-                                    lin_expr.expr.values()])
+        cval = ffi.new("double[]", [coef for coef in lin_expr.expr.values()])
 
         # constraint sense and rhs
         sense = lin_expr.sense.encode("utf-8")
@@ -1271,7 +1372,7 @@ class SolverGurobiCB(SolverGurobi):
         cval = ffi.new("double[]", [coef for coef in lin_expr.expr.values()])
 
         # constraint sense and rhs
-        sense = lin_expr.sense.encode('utf-8')
+        sense = lin_expr.sense.encode("utf-8")
         rhs = -lin_expr.const
 
         if self._where == GRB_CB_MIPSOL:
@@ -1288,10 +1389,12 @@ class SolverGurobiCB(SolverGurobi):
             # collecting linear expression data
             nz = len(lin_expr.expr)
             cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
-            cval = ffi.new("double[]", [coef for coef in lin_expr.expr.values()])
+            cval = ffi.new(
+                "double[]", [coef for coef in lin_expr.expr.values()]
+            )
 
             # constraint sense and rhs
-            sense = lin_expr.sense.encode('utf-8')
+            sense = lin_expr.sense.encode("utf-8")
             rhs = -lin_expr.const
 
             res = GRBcblazy(self._cb_data, nz, cind, cval, sense, rhs)
@@ -1301,25 +1404,29 @@ class SolverGurobiCB(SolverGurobi):
             # collecting linear expression data
             nz = len(lin_expr.expr)
             cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
-            cval = ffi.new("double[]", [coef for coef in lin_expr.expr.values()])
+            cval = ffi.new(
+                "double[]", [coef for coef in lin_expr.expr.values()]
+            )
 
             # constraint sense and rhs
-            sense = lin_expr.sense.encode('utf-8')
+            sense = lin_expr.sense.encode("utf-8")
             rhs = -lin_expr.const
 
             res = GRBcbcut(self._cb_data, nz, cind, cval, sense, rhs)
             if res != 0:
                 raise Exception("Error adding cutting plane in Gurobi.")
         else:
-            raise Exception("Calling add_lazy_constr in unknow callback \
-                            location")
+            raise Exception(
+                "Calling add_lazy_constr in unknow callback \
+                            location"
+            )
 
     def get_status(self):
         return self._status
 
     def var_get_x(self, var: Var):
         if self._cb_sol == ffi.NULL:
-            raise Exception('Solution not available')
+            raise Exception("Solution not available")
 
         return self._cb_sol[var.idx]
 
@@ -1328,11 +1435,14 @@ class SolverGurobiCB(SolverGurobi):
 
 
 class ModelGurobiCB(Model):
-
-    def __init__(self, grb_model: CData = ffi.NULL, cb_data: CData = ffi.NULL,
-                 where: int = -1):
+    def __init__(
+        self,
+        grb_model: CData = ffi.NULL,
+        cb_data: CData = ffi.NULL,
+        where: int = -1,
+    ):
         # initializing variables with default values
-        self.solver_name = 'gurobicb'
+        self.solver_name = "gurobicb"
 
         self.solver = SolverGurobiCB(self, grb_model, cb_data, where)
 

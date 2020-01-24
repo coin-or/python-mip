@@ -47,7 +47,7 @@ for i, c1, c2 in product(N, U, U):
 for i, c in product(N, U):
     m += z >= (c+1)*x[i][c]
 
-m.optimize(max_seconds=100)
+m.optimize(max_nodes=30)
 
 if m.num_solutions:
     for i in N:
@@ -56,5 +56,10 @@ if m.num_solutions:
 
 # sanity tests
 from mip import OptimizationStatus
-assert m.status == OptimizationStatus.OPTIMAL
-assert round(m.objective_value) == 41
+
+assert m.objective_bound <= 41 + 1e-10
+if m.status == OptimizationStatus.OPTIMAL:
+    assert round(m.objective_value) == 41
+elif m.status == OptimizationStatus.FEASIBLE:
+    assert m.objective_value >= 41 - 1e-10
+m.check_optimization_results()
