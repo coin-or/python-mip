@@ -7,7 +7,7 @@ This section presents computational experiments on the creation of Integer
 Programming models using different mathematical modelling packages. Gurobi is
 the default Gurobi :sup:`®` Python interface, which currently only supports the
 Python interpreter CPython. Pulp supports both CPython and also the
-just-in-time compiler Pypy. MIP also suports both. JuMP :cite:`DHL17` is the
+just-in-time compiler Pypy. MIP also suports both. JuMP [DHL17I]_ is the
 Mathematical Programming package of the Julia programming language. Both
 Jump and Pulp use intermediate data structures to store the mathematical
 programming model before flushing it to the solver, so that the selected
