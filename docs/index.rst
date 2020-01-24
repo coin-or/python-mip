@@ -1,4 +1,4 @@
-Python MIP - Mixed-Integer Programming Package Documentation
+Python MIP Documentation
 ============================================================
 
 .. toctree::
