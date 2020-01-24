@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath('../'))
 # -- Project information -----------------------------------------------------
 
 project = 'Python-MIP'
-copyright = '2018-2019, Santos, H.G. and Toffolo, T.A.M.'
+copyright = '2018-2020, Santos, H.G. and Toffolo, T.A.M.'
 author = 'Santos, H.G. <haroldo@ufop.edu.br> and Toffolo, T.A.M. <tulio@toffolo.com.br>'
 
 # The short X.Y version
@@ -77,7 +77,7 @@ pygments_style = None
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = 'python-mip-theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -88,7 +88,7 @@ html_theme = 'alabaster'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['static']
+html_static_path = ['python-mip-theme/static']
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
