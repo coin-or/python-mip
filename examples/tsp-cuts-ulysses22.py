@@ -25,7 +25,7 @@ def rad(val: float) -> float:
 
     deg = float(floor(val))
     minute = val - deg
-    return (PI * (deg + 5*minute/3)/180)*mult
+    return (PI * (deg + 5 * minute / 3) / 180) * mult
 
 
 def dist(p1: Tuple[float, float], p2: Tuple[float, float]) -> float:
@@ -33,16 +33,34 @@ def dist(p1: Tuple[float, float], p2: Tuple[float, float]) -> float:
     q1 = cos(p1[1] - p2[1])
     q2 = cos(p1[0] - p2[0])
     q3 = cos(p1[0] + p2[0])
-    return int(floor(RRR*acos(0.5*((1.0+q1)*q2-(1.0-q1)*q3))+1.0))
+    return int(floor(RRR * acos(0.5 * ((1.0 + q1) * q2 - (1.0 - q1) * q3)) + 1.0))
 
 
 # coordinates of ulysses22 tsplib instance
-coord = [(38.24, 20.42), (39.57, 26.15), (40.56, 25.32), (36.26, 23.12),
-         (33.48, 10.54), (37.56, 12.19), (38.42, 13.11), (37.52, 20.44),
-         (41.23, 09.10), (41.17, 13.05), (36.08, -5.21), (38.47, 15.13),
-         (38.15, 15.35), (37.51, 15.17), (35.49, 14.32), (39.36, 19.56),
-         (38.09, 24.36), (36.09, 23.00), (40.44, 13.57), (40.33, 14.15),
-         (40.37, 14.23), (37.57, 22.56)]
+coord = [
+    (38.24, 20.42),
+    (39.57, 26.15),
+    (40.56, 25.32),
+    (36.26, 23.12),
+    (33.48, 10.54),
+    (37.56, 12.19),
+    (38.42, 13.11),
+    (37.52, 20.44),
+    (41.23, 09.10),
+    (41.17, 13.05),
+    (36.08, -5.21),
+    (38.47, 15.13),
+    (38.15, 15.35),
+    (37.51, 15.17),
+    (35.49, 14.32),
+    (39.36, 19.56),
+    (38.09, 24.36),
+    (36.09, 23.00),
+    (40.44, 13.57),
+    (40.33, 14.15),
+    (40.37, 14.23),
+    (37.57, 22.56),
+]
 
 # latitude and longitude
 coord = [(rad(x), rad(y)) for (x, y) in coord]
@@ -52,8 +70,7 @@ n, V = len(coord), set(range(len(coord)))
 Arcs = [(i, j) for (i, j) in product(V, V) if i != j]
 
 # distances matrix
-c = [[0 if i == j
-      else dist(coord[i], coord[j]) for j in V] for i in V]
+c = [[0 if i == j else dist(coord[i], coord[j]) for j in V] for i in V]
 
 
 class SubTourCutGenerator(ConstrsGenerator):
@@ -70,10 +87,9 @@ class SubTourCutGenerator(ConstrsGenerator):
         for (u, v) in F:
             val, (S, NS) = nx.minimum_cut(Gl, u, v)
             if val <= 0.99:
-                aInS = [(xf[i][j], xf[i][j].x)
-                        for (i, j) in Ar if i in S and j in S]
-                if sum(f for v, f in aInS) >= (len(S)-1)+1e-4:
-                    cut = xsum(1.0*v for v, fm in aInS) <= len(S)-1
+                aInS = [(xf[i][j], xf[i][j].x) for (i, j) in Ar if i in S and j in S]
+                if sum(f for v, f in aInS) >= (len(S) - 1) + 1e-4:
+                    cut = xsum(1.0 * v for v, fm in aInS) <= len(S) - 1
                     cp.add(cut)
                     if len(cp.cuts) > 32:
                         for cut in cp.cuts:
@@ -93,7 +109,7 @@ x = [[model.add_var(var_type=BINARY) for j in V] for i in V]
 y = [model.add_var() for i in V]
 
 # objective function: minimize the distance
-model.objective = minimize(xsum(c[i][j]*x[i][j] for (i, j) in Arcs))
+model.objective = minimize(xsum(c[i][j] * x[i][j] for (i, j) in Arcs))
 
 # constraint : leave each city only once
 for i in V:
@@ -106,7 +122,7 @@ for i in V:
 # (weak) subtour elimination constraints
 for (i, j) in product(V - {0}, V - {0}):
     if i != j:
-        model += y[i] - (n+1)*x[i][j] >= y[j]-n
+        model += y[i] - (n + 1) * x[i][j] >= y[j] - n
 
 # degree 2 subtour elimination constraints
 for (i, j) in Arcs:
@@ -126,20 +142,18 @@ for i in V:
 model.cuts_generator = SubTourCutGenerator(F, x)
 
 # optimizing
-model.threads = 4
-model.optimize(max_seconds=500)
+model.optimize(max_nodes=500)
 
 # checking if a solution was found
 if model.num_solutions:
-    out.write('route with total distance %g found: %s'
-              % (model.objective_value, 0))
+    out.write("route with total distance %g found: %s" % (model.objective_value, 0))
     nc = 0
     while True:
         nc = [i for i in V if x[nc][i].x >= 0.99][0]
-        out.write(' -> %s' % nc)
+        out.write(" -> %s" % nc)
         if nc == 0:
             break
-    out.write('\n')
+    out.write("\n")
 
 # sanity tests
 if model.status == OptimizationStatus.OPTIMAL:
@@ -148,3 +162,4 @@ elif model.status == OptimizationStatus.FEASIBLE:
     assert round(model.objective_value) >= 7013
 else:
     assert model.objective_bound <= 7013 + 1e-7
+model.check_optimization_results()
