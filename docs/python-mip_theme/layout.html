@@ -1,0 +1,116 @@
+{% extends "basic/layout.html" %}
+
+{% block extrahead %}
+<!-- Favicons -->
+<link href="_static/img/favicon.png" rel="icon">
+<link href="_static/img/apple-touch-icon.png" rel="apple-touch-icon">
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,700,700i|Montserrat:300,400,500,700"
+  rel="stylesheet">
+
+<!-- Bootstrap CSS File -->
+<link href="_static/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- Libraries CSS Files -->
+<link href="_static/lib/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+<link href="_static/lib/animate/animate.min.css" rel="stylesheet">
+<link href="_static/lib/ionicons/css/ionicons.min.css" rel="stylesheet">
+<link href="_static/lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet">
+<link href="_static/lib/lightbox/css/lightbox.min.css" rel="stylesheet">
+
+<!-- Main Stylesheet File -->
+<link href="_static/css/style.css" rel="stylesheet">
+{% endblock %}
+
+{% block relbar1 %}{% endblock %}
+{% block relbar2 %}{% endblock %}
+
+{% block content %}
+<header id="header" class="fixed-top">
+  <div class="container">
+    <div class="logo float-left">
+      <h1 class="text-light"><a href="#intro"><span>Python-MIP</span></a></h1>
+    </div>
+
+    <nav class="main-nav float-right d-none d-lg-block">
+      <ul>
+        <li class="active"><a href="#intro">Home</a></li>
+        <li><a href="#the-package">The package</a></li>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#goals">Goals</a></li>
+        <li><a href="#downloads">Download it!</a></li>
+        <li><a href="#team">Contact Us</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<section id="inner-headline" class="clearfix">
+  <div class="container">
+    <div class="inner-heading">
+      <ul class="breadcrumb">
+        <li><a href="index.html">Home</a></li>
+        <li><i class="fa fa-angle-right"></i><a href="index.html">Docs</a></li>
+        {% if prev %}<li class="active"><i class="fa fa-angle-right"></i>{{ title }}</li>{% endif %}
+      </ul>
+      <h2>{% if prev %}{{ title }}{% else %}Documentation{% endif %}</h2>
+    </div>
+  </div>
+</section>
+
+<section id="documentation">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-3">
+        {% block sidebar1 %}{{ toctree(includehidden=False, collapse=True) }}{% endblock %}
+      </div>
+
+      <div class="col-lg-9">
+        <div class="body" role="main">
+          {% block body %}{% endblock %}
+        </div>
+      </div>
+    </div>
+</section>
+{%- endblock %}
+
+{% block footer %}
+<footer id="footer">
+  <div class="footer-top">
+    <div class="container">
+      <div class="row">
+
+        <div class="col-lg-8 col-md-8 footer-info">
+          <address>
+            <strong>Departament of Computing&nbsp;|&nbsp; ICEB &nbsp;|&nbsp; Federal University of Ouro
+              Preto</strong><br>
+            Campus Universitário Morro do Cruzeiro &nbsp;|&nbsp;
+            CEP 35400-000 &nbsp;|&nbsp;Ouro Preto - MG, Brazil
+          </address>
+        </div>
+
+        <div class="col-lg-4 col-md-4 footer-info text-right">
+          <h3>Python-MIP</h3>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</footer>
+
+<a href="#" class="back-to-top"><i class="fa fa-chevron-up"></i></a>
+<!-- <div id="preloader"></div> -->
+
+<!-- JavaScript Libraries -->
+<script src="_static/lib/jquery/jquery.min.js"></script>
+<script src="_static/lib/jquery/jquery-migrate.min.js"></script>
+<script src="_static/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="_static/lib/easing/easing.min.js"></script>
+<script src="_static/lib/mobile-nav/mobile-nav.js"></script>
+<script src="_static/lib/wow/wow.min.js"></script>
+
+<!-- Template Main Javascript File -->
+<script src="_static/js/main.js"></script>
+{% endblock %}
