@@ -89,3 +89,6 @@ for v in lambdas:
     if v.x > 1e-6:
         print('{v.name} = {v.x:.3}  {v.column}'.format(**locals()))
         print('          ', end='')
+
+# sanity checks
+master.check_optimization_results()

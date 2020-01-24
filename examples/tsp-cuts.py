@@ -92,3 +92,6 @@ model.cuts_generator = SubTourCutGenerator(F, x, V)
 model.optimize()
 
 print('status: %s route length %g' % (model.status, model.objective_value))
+
+# sanity check
+model.check_optimization_results()
