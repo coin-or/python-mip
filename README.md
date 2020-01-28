@@ -1,5 +1,7 @@
 # Python MIP (Mixed-Integer Linear Programming) Tools
 
+Package website: **http://python-mip.com**
+
 Python MIP is a collection of Python tools for the modeling and solution
 of Mixed-Integer Linear programs (MIPs). MIP syntax was inspired by
 [Pulp](https://github.com/coin-or/pulp). Just like
@@ -43,24 +45,23 @@ Some of the main features of MIP are:
 
 ## Examples
 
-Many Python-MIP examples are documented at https://python-mip.readthedocs.io/en/latest/examples.html 
+Many Python-MIP examples are documented at https://docs.python-mip.com/en/latest/examples.html 
 
 The code of these examples and additional ones (published in tutorials) can be downloaded at https://github.com/coin-or/python-mip/tree/master/examples
 
 ## Documentation
  
 The full Python-MIP documentation is available at
-https://python-mip.readthedocs.io/en/latest/
+https://docs.python-mip.com/en/latest/
 
 A PDF version is also available:
-https://media.readthedocs.org/pdf/python-mip/latest/python-mip.pdf
+https://python-mip.readthedocs.io/_/downloads/en/latest/pdf/
 
 ## Mailing list
 
 Questions, suggestions and development news can be posted at the [Python-MIP
 google group](https://groups.google.com/forum/#!forum/python-mip).
  
-
 ## Build status
 
 [![Build Status](https://api.travis-ci.org/coin-or/python-mip.svg?branch=master)](https://travis-ci.org/coin-or/python-mip)
