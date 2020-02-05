@@ -17,5 +17,10 @@ script:
     - pytest test --verbose --color=yes --doctest-modules
     - pytest mip --verbose --color=yes --doctest-modules --ignore="mip/gurobi.py"
 jobs:
+  include:
+    - name: "Python 3.7.4 on macOS"
+      os: osx
+      osx_image: xcode11.2  # Python 3.7.4 running on macOS 10.14.4
+      language: shell       # 'language: python' is an error on Travis CI macOS
   allow_failures:
     - os: osx
