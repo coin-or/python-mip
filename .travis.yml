@@ -27,10 +27,3 @@ jobs:
       os: osx
       osx_image: xcode11.2  # Python 3.7.4 running on macOS 10.14.4
       language: shell       # 'language: python' is an error on Travis CI macOS
-    - name: "Python 3.8.0 on Windows"
-      os: windows
-      language: shell       # 'language: python' is an error on Travis CI macOS
-      before_install:
-        - choco install python --version 3.8.0
-        - python3 -m pip install --upgrade pip
-      env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
