@@ -1,20 +1,59 @@
-if [ ! -d "Cbc" ];
-then
-	echo "call this script in the CBC source directory"
-	exit
-fi
-if [ ! -f "configure" ];
-then
-	echo "call this script in the CBC source directory"
-	exit
-fi
-
 export CFLAGS="-Ofast -fPIC -flto -DNDEBUG -fprefetch-loop-arrays -I/opt/gcc/include/"
 export FFLAGS="-Ofast -fPIC -flto -DNDEBUG -I/opt/gcc/include/"
 export CXXFLAGS="-Ofast -fPIC -flto -DNDEBUG -I/opt/gcc/include/"
-export LDFLAGS="-Ofast -fPIC -L/opt/gcc/lib -flto -static-libgcc -static-libstdc++ -static-libgfortran"
-./configure --prefix=~/prog/ --enable-cbc-parallel --enable-static --disable-shared 
-make clean 
-make -j 2
+export LDFLAGS="-Ofast -fPIC -L/opt/gcc/lib -flto -static-libgcc -static-libstdc++ -static-libgfortran -all-static"
 
-g++ -shared -Ofast -fPIC -o cbc-c-linux-x86-64.so -I~/prog/include/ -I./CoinUtils/src/ -I./Osi/src/ -I./Clp/src/ -I./Clp/src/ -I./Cgl/src/ -I./Cbc/src/ -I./Osi/src/Osi/ -I./Clp/src/OsiClp/ -DCBC_THREAD ./Cbc/src/Cbc_C_Interface.cpp -L/opt/gcc/lib64/ -L./Cbc/src/.libs/ -L./Cgl/src/.libs/ -L./Cgl/src/.libs/ -L./Osi/src/Osi/.libs/ -L./Clp/src/OsiClp/.libs/ -L./Clp/src/.libs/ -L./CoinUtils/src/.libs/ -L./Cgl/src/.libs/ -L./Clp/src/OsiClp/.libs/ -L./Clp/src/.libs/ -L./ThirdParty/Lapack/.libs/ -L./ThirdParty/Blas/.libs/ -L./ThirdParty/Glpk/.libs/  -lCbcSolver -lCbc -lpthread -lrt -lCgl -lOsiClp -lClpSolver -lClp -lOsi -lCoinUtils  -lcoinlapack -lcoinblas -lgfortran -lquadmath -lm -static-libgcc -static-libstdc++ -static-libgfortran -lcoinglpk
+dir=`pwd`
+mkdir -p ~/prog
+cd ~/prog
+IDIR=`pwd`
+export PKG_CONFIG_PATH=${IDIR}/lib/pkgconfig/:${PKG_CONFIG_PATH}
+
+cd $dir/ThirdParty-Glpk
+./configure --prefix=$IDIR --enable-cbc-parallel --enable-static --disable-shared --enable-gnu-packages
+make -j 6
+make -j 6 install
+
+
+cd $dir/ThirdParty-Lapack
+./configure --prefix=$IDIR --enable-cbc-parallel --enable-static --disable-shared --enable-gnu-packages
+make -j 6
+make -j 6 install
+
+cd $dir/ThirdParty-Blas
+./configure --prefix=$IDIR --enable-cbc-parallel --enable-static --disable-shared --enable-gnu-packages
+make -j 6
+make -j 6 install
+
+cd $dir/CoinUtils
+./configure --prefix=$IDIR --enable-cbc-parallel --enable-static --disable-shared --enable-gnu-packages
+make -j 6
+make -j 6 install
+
+cd $dir/Osi
+./configure --prefix=$IDIR --enable-cbc-parallel --enable-static --disable-shared --enable-gnu-packages
+make -j 6
+make -j 6 install
+
+cd $dir/Clp
+./configure --prefix=$IDIR --enable-cbc-parallel --enable-static --disable-shared --enable-gnu-packages
+make -j 6
+make -j 6 install
+
+cd $dir/Cgl
+./configure --prefix=$IDIR --enable-cbc-parallel --enable-static --disable-shared --enable-gnu-packages
+make -j 6
+make -j 6 install
+
+
+cd $dir/Cbc
+./configure --prefix=$IDIR --enable-cbc-parallel --enable-static --disable-shared --enable-gnu-packages
+make -j 6
+make -j 6 install
+
+g++ -shared -Ofast -fPIC -o cbc-c-linux-x86-64.so \
+-I${IDIR}/include/coin-or/ \
+ -DCBC_THREAD \
+./Cbc/src/Cbc_C_Interface.cpp -L/opt/gcc/lib64/ -L${IDIR}/lib/ \
+ -lCbcSolver -lCbc -lpthread -lrt -lCgl -lOsiClp -lClpSolver -lClp -lOsi -lCoinUtils \
+ -lcoinlapack -lcoinblas -lgfortran -lquadmath -lm -static-libgcc -static-libstdc++ -static-libgfortran -lcoinglpk
