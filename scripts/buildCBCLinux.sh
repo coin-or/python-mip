@@ -1,7 +1,7 @@
 export CFLAGS="-Ofast -fPIC -flto -DNDEBUG -fprefetch-loop-arrays -I/opt/gcc/include/"
 export FFLAGS="-Ofast -fPIC -flto -DNDEBUG -I/opt/gcc/include/"
 export CXXFLAGS="-Ofast -fPIC -flto -DNDEBUG -I/opt/gcc/include/"
-export LDFLAGS="-Ofast -fPIC -L/opt/gcc/lib -flto -static-libgcc -static-libstdc++ -static-libgfortran -all-static"
+export LDFLAGS="-Ofast -fPIC -L/opt/gcc/lib -flto -static-libgcc -static-libstdc++ -static-libgfortran"
 
 dir=`pwd`
 mkdir -p ~/prog
@@ -51,9 +51,12 @@ cd $dir/Cbc
 make -j 6
 make -j 6 install
 
+cd $dir
+
 g++ -shared -Ofast -fPIC -o cbc-c-linux-x86-64.so \
 -I${IDIR}/include/coin-or/ \
  -DCBC_THREAD \
-./Cbc/src/Cbc_C_Interface.cpp -L/opt/gcc/lib64/ -L${IDIR}/lib/ \
+ ./Cbc/src/Cbc_C_Interface.cpp \
+ -L/opt/gcc/lib64/ -L${IDIR}/lib/ \
  -lCbcSolver -lCbc -lpthread -lrt -lCgl -lOsiClp -lClpSolver -lClp -lOsi -lCoinUtils \
  -lcoinlapack -lcoinblas -lgfortran -lquadmath -lm -static-libgcc -static-libstdc++ -static-libgfortran -lcoinglpk
