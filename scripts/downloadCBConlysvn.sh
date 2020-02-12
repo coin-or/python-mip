@@ -2,17 +2,17 @@ echo "Checking CoinUtils"
 if [[ -d CoinUtils ]]
 then
     cd CoinUtils
-    git pull
+    svn up
     cd ..
 else
-    svn co https://projects.coin-or.org/svn/Cbc/trunk/ Cbc
+    svn co https://projects.coin-or.org/svn/CoinUtils/trunk/ CoinUtils
 fi
 
 echo "Checking Osi"
 if [[ -d Osi ]]
 then
     cd Osi
-    git pull
+    svn up
     cd ..
 else
     svn co https://projects.coin-or.org/svn/Osi/trunk/ Osi
@@ -22,7 +22,7 @@ echo "Checking Clp"
 if [[ -d Clp ]]
 then
     cd Clp
-    git pull
+    svn up
     cd ..
 else
     svn co https://projects.coin-or.org/svn/Clp/trunk/ Clp
@@ -32,7 +32,7 @@ echo "Checking Cgl"
 if [[ -d Cgl ]]
 then
     cd Cgl
-    git pull
+    svn up
     cd ..
 else
     svn co https://projects.coin-or.org/svn/Cgl/trunk/ Cgl
@@ -42,7 +42,7 @@ echo "Checking Cbc"
 if [[ -d Cbc ]]
 then
     cd Cbc
-    git pull
+    svn up
     cd ..
 else
     svn co https://projects.coin-or.org/svn/Cbc/trunk/ Cbc
