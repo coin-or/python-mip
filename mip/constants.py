@@ -34,6 +34,28 @@ BINARY = "B"
 CONTINUOUS = "C"
 INTEGER = "I"
 
+# cutting planes types
+class CutType(Enum):
+    """ Types of cuts that can be generated"""
+
+    GOMORY = 0
+    """Gomory Mixed Integer cuts"""
+
+    MIR = 1
+    """Mixed-Integer Rounding cuts"""
+
+    ZERO_HALF = 2
+    """Zero/Half cuts"""
+
+    CLIQUE = 3
+    """Clique cuts"""
+
+    KNAPSACK_COVER = 4
+    """Knapsack cover cuts"""
+
+    LIFT_AND_PROJECT = 5
+    """Lift-and-project cuts"""
+
 
 # optimization status
 class OptimizationStatus(Enum):
