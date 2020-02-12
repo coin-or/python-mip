@@ -28,6 +28,8 @@ from mip import (
     GREATER_OR_EQUAL,
     OptimizationStatus,
     LP_Method,
+    CutType,
+    CutPool,
 )
 
 warningMessages = 0
@@ -274,6 +276,19 @@ if has_cbc:
 
     int Cbc_solve(Cbc_Model *model);
 
+    enum CutType {
+      CT_Gomory         = 0,  /*! Gomory cuts obtained from the tableau */
+      CT_MIR            = 1,  /*! Mixed integer rounding cuts */
+      CT_ZeroHalf       = 2,  /*! Zero-half cuts */
+      CT_Clique         = 3,  /*! Clique cuts */
+      CT_KnapsackCover  = 4,  /*! Knapsack cover cuts */
+      CT_LiftAndProject = 5   /*! Lift and project cuts */
+    };
+
+    void Cgl_generateCuts( void *osiClpSolver, enum CutType ct, void *osiCuts, int strength );
+
+    void *Cbc_getSolverPtr(Cbc_Model *model);
+
     void *Cbc_deleteModel(Cbc_Model *model);
 
     int Osi_getNumIntegers( void *osi );
@@ -342,11 +357,27 @@ if has_cbc:
 
     const double *Osi_getColSolution(void *osi);
 
+    void *OsiCuts_new();
+
     void OsiCuts_addRowCut( void *osiCuts, int nz, const int *idx,
         const double *coef, char sense, double rhs );
 
     void OsiCuts_addGlobalRowCut( void *osiCuts, int nz, const int *idx,
         const double *coef, char sense, double rhs );
+
+    int OsiCuts_sizeRowCuts( void *osiCuts );
+
+    int OsiCuts_nzRowCut( void *osiCuts, int iRowCut );
+
+    const int * OsiCuts_idxRowCut( void *osiCuts, int iRowCut );
+
+    const double *OsiCuts_coefRowCut( void *osiCuts, int iRowCut );
+
+    double OsiCuts_rhsRowCut( void *osiCuts, int iRowCut );
+
+    char OsiCuts_senseRowCut( void *osiCuts, int iRowCut );
+
+    void OsiCuts_delete( void *osiCuts );
 
     void Osi_addCol(void *osi, const char *name, double lb, double ub,
        double obj, char isInteger, int nz, int *rows, double *coefs);
@@ -424,8 +455,21 @@ Osi_getColSolution = cbclib.Osi_getColSolution
 Osi_getIntegerTolerance = cbclib.Osi_getIntegerTolerance
 Osi_isInteger = cbclib.Osi_isInteger
 Osi_isProvenOptimal = cbclib.Osi_isProvenOptimal
-OsiCuts_addGlobalRowCut = cbclib.OsiCuts_addGlobalRowCut
 Cbc_setIntParam = cbclib.Cbc_setIntParam
+Cbc_getSolverPtr = cbclib.Cbc_getSolverPtr
+
+Cgl_generateCuts = cbclib.Cgl_generateCuts
+
+OsiCuts_new = cbclib.OsiCuts_new
+OsiCuts_addRowCut = cbclib.OsiCuts_addRowCut
+OsiCuts_addGlobalRowCut = cbclib.OsiCuts_addGlobalRowCut
+OsiCuts_sizeRowCuts = cbclib.OsiCuts_sizeRowCuts
+OsiCuts_nzRowCut = cbclib.OsiCuts_nzRowCut
+OsiCuts_idxRowCut = cbclib.OsiCuts_idxRowCut
+OsiCuts_coefRowCut = cbclib.OsiCuts_coefRowCut
+OsiCuts_rhsRowCut = cbclib.OsiCuts_rhsRowCut
+OsiCuts_senseRowCut = cbclib.OsiCuts_senseRowCut
+OsiCuts_delete = cbclib.OsiCuts_delete
 
 
 def cbc_set_parameter(model: Model, param: str, value: str):
@@ -580,6 +624,47 @@ class SolverCbc(Solver):
 
     def var_set_obj(self, var: "Var", value: float):
         cbclib.Cbc_setObjCoeff(self._model, var.idx, value)
+
+    def generate_cuts(
+        self,
+        cut_types: Optional[List[CutType]] = None,
+        max_cuts: int = maxsize,
+    ) -> CutPool:
+        cp = CutPool()
+        cbc_model = self._model
+        osi_solver = Cbc_getSolverPtr(cbc_model)
+        osi_cuts = OsiCuts_new()
+
+        if not cut_types:
+            cut_types = [e.value for e in CutType]
+        for cut_type in cut_types:
+            print(f"generating cuts of type: {cut_type}")
+            Cgl_generateCuts(osi_solver, int(cut_type), osi_cuts, int(1))
+            if OsiCuts_sizeRowCuts(osi_cuts) >= max_cuts:
+                break
+
+        for i in range(OsiCuts_sizeRowCuts(osi_cuts)):
+            rhs = OsiCuts_rhsRowCut(osi_cuts, i)
+            rsense = OsiCuts_senseRowCut(osi_cuts, i)
+            sense = ""
+            if rsense == "E":
+                sense = EQUAL
+            elif rsense == "L":
+                sense = LESS_OR_EQUAL
+            elif rsense == "G":
+                sense = GREATER_OR_EQUAL
+            else:
+                raise Exception("Unknow sense: {}".format(rsense))
+            idx = OsiCuts_idxRowCut(osi_cuts, i)
+            coef = OsiCuts_coefRowCut(osi_cuts, i)
+            nz = OsiCuts_nzRowCut(osi_cuts, i)
+            model = self.model
+            levars = [model.vars[idx[j]] for j in range(nz)]
+            lecoefs = [float(coef[j]) for j in range(nz)]
+            cp.add(LinExpr(levars, lecoefs, -rhs, sense))
+
+        OsiCuts_delete(osi_cuts)
+        return cp
 
     def optimize(self) -> OptimizationStatus:
         # get name indexes from an osi problem

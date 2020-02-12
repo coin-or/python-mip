@@ -1,6 +1,6 @@
 from os import environ
 from os.path import isfile
-from sys import stdout as out
+from sys import stdout as out, maxsize
 from typing import List, Tuple, Optional, Union, Dict, Any
 from mip.constants import (
     INF,
@@ -15,8 +15,9 @@ from mip.constants import (
     VERSION,
     BINARY,
     INTEGER,
+    CutType,
 )
-from mip.callbacks import ConstrsGenerator
+from mip.callbacks import ConstrsGenerator, CutPool
 from mip.log import ProgressLog
 from mip.lists import ConstrList, VarList
 from mip.entities import Column, Constr, LinExpr, Var
@@ -399,6 +400,23 @@ class Model:
         if v < 0 or v > len(self.vars):
             return None
         return self.vars[v]
+
+    def generate_cuts(
+        self,
+        cut_types: Optional[List[CutType]] = None,
+        max_cuts: int = maxsize,
+    ) -> CutPool:
+        """Tries to generate cutting planes for the current fractional
+        solution
+
+        Args:
+            cut_types (List[CUT_TYPE]): types of cuts that can be generated, if
+                an empty list is specified then all available cut generators
+                will be called.
+
+
+        """
+        return self.solver.generate_cuts(cut_types, max_cuts)
 
     def optimize(
         self: Solver,
