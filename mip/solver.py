@@ -67,10 +67,11 @@ class Solver:
         self,
         cut_types: Optional[List[CutType]] = None,
         max_cuts: int = maxsize,
+        min_viol: float = 1e-4,
     ) -> CutPool:
         pass
 
-    def optimize(self: "Solver") -> OptimizationStatus:
+    def optimize(self: "Solver", relax: bool = False,) -> OptimizationStatus:
         pass
 
     def get_objective_value(self: "Solver") -> float:
