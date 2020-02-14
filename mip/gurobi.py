@@ -555,7 +555,7 @@ class SolverGurobi(Solver):
     def set_num_threads(self, threads: int):
         self.__threads = threads
 
-    def optimize(self) -> OptimizationStatus:
+    def optimize(self, relax: bool = False) -> OptimizationStatus:
 
         # todo add branch_selector and incumbent_updater callbacks
         @ffi.callback(
