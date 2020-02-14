@@ -21,7 +21,11 @@ from mip.callbacks import ConstrsGenerator, CutPool
 from mip.log import ProgressLog
 from mip.lists import ConstrList, VarList
 from mip.entities import Column, Constr, LinExpr, Var
-from mip.exceptions import InvalidLinExpr, InfeasibleSolution
+from mip.exceptions import (
+    InvalidLinExpr,
+    InfeasibleSolution,
+    SolutionNotAvailable,
+)
 from mip.solver import Solver
 
 
@@ -405,6 +409,7 @@ class Model:
         self,
         cut_types: Optional[List[CutType]] = None,
         max_cuts: int = maxsize,
+        min_viol: float = 1e-4,
     ) -> CutPool:
         """Tries to generate cutting planes for the current fractional
         solution
@@ -413,9 +418,16 @@ class Model:
             cut_types (List[CUT_TYPE]): types of cuts that can be generated, if
                 an empty list is specified then all available cut generators
                 will be called.
+            max_cuts(int): cut separation will stop when at least max_cuts
+                violated cuts were found.
+            min_viol(float): cuts which are not violated by at least min_viol
+                will be discarded.
 
 
         """
+        if self.status != OptimizationStatus.OPTIMAL:
+            raise SolutionNotAvailable()
+
         return self.solver.generate_cuts(cut_types, max_cuts)
 
     def optimize(
@@ -423,6 +435,7 @@ class Model:
         max_seconds: float = INF,
         max_nodes: int = INF,
         max_solutions: int = INF,
+        relax: bool = False,
     ) -> OptimizationStatus:
         """ Optimizes current model
 
@@ -437,6 +450,9 @@ class Model:
             max_seconds (float): Maximum runtime in seconds (default: inf)
             max_nodes (float): Maximum number of nodes (default: inf)
             max_solutions (float): Maximum number of solutions (default: inf)
+            relax (bool): if true only the linear programming relaxation will
+                be solved, i.e. integrality constraints will be temporarily
+                discarded.
 
         Returns:
             optimization status, which can be OPTIMAL(0), ERROR(-1),
@@ -457,7 +473,7 @@ class Model:
             max_seconds, max_nodes, max_solutions
         )
 
-        self._status = self.solver.optimize()
+        self._status = self.solver.optimize(relax)
         # has a solution and is a MIP
         if self.num_solutions and self.num_int > 0:
             best = self.objective_value

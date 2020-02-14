@@ -276,6 +276,8 @@ if has_cbc:
 
     int Cbc_solve(Cbc_Model *model);
 
+    int Cbc_solveLinearProgram(Cbc_Model *model);
+
     enum CutType {
       CT_Gomory         = 0,  /*! Gomory cuts obtained from the tableau */
       CT_MIR            = 1,  /*! Mixed integer rounding cuts */
@@ -459,6 +461,7 @@ Cbc_setIntParam = cbclib.Cbc_setIntParam
 Cbc_getSolverPtr = cbclib.Cbc_getSolverPtr
 
 Cgl_generateCuts = cbclib.Cgl_generateCuts
+Cbc_solveLinearProgram = cbclib.Cbc_solveLinearProgram
 
 OsiCuts_new = cbclib.OsiCuts_new
 OsiCuts_addRowCut = cbclib.OsiCuts_addRowCut
@@ -629,6 +632,7 @@ class SolverCbc(Solver):
         self,
         cut_types: Optional[List[CutType]] = None,
         max_cuts: int = maxsize,
+        min_viol: float = 1e-4,
     ) -> CutPool:
         cp = CutPool()
         cbc_model = self._model
@@ -645,7 +649,8 @@ class SolverCbc(Solver):
 
         for i in range(OsiCuts_sizeRowCuts(osi_cuts)):
             rhs = OsiCuts_rhsRowCut(osi_cuts, i)
-            rsense = OsiCuts_senseRowCut(osi_cuts, i)
+            rsense = OsiCuts_senseRowCut(osi_cuts, i).decode("utf-8").upper()
+
             sense = ""
             if rsense == "E":
                 sense = EQUAL
@@ -661,12 +666,15 @@ class SolverCbc(Solver):
             model = self.model
             levars = [model.vars[idx[j]] for j in range(nz)]
             lecoefs = [float(coef[j]) for j in range(nz)]
-            cp.add(LinExpr(levars, lecoefs, -rhs, sense))
+            cut = LinExpr(levars, lecoefs, -rhs, sense)
+            if cut.violation < min_viol:
+                continue
+            cp.add(cut)
 
         OsiCuts_delete(osi_cuts)
         return cp
 
-    def optimize(self) -> OptimizationStatus:
+    def optimize(self, relax: bool = False) -> OptimizationStatus:
         # get name indexes from an osi problem
         def cbc_get_osi_name_indexes(osi_solver) -> Dict[str, int]:
             nameIdx = {}
@@ -747,6 +755,21 @@ class SolverCbc(Solver):
             if (not fractional) and self.model.lazy_constrs_generator:
                 self.model.lazy_constrs_generator.generate_constrs(osi_model)
 
+        if self.__verbose == 0:
+            cbclib.Cbc_setLogLevel(self._model, 0)
+        else:
+            cbclib.Cbc_setLogLevel(self._model, 1)
+
+        if relax:
+            res = Cbc_solveLinearProgram(self._model)
+            if res == 0:
+                return OptimizationStatus.OPTIMAL
+            if res == 2:
+                return OptimizationStatus.UNBOUNDED
+            if res == 3:
+                return OptimizationStatus.INFEASIBLE
+            return OptimizationStatus.ERROR
+
         # adding cut generators
         m = self.model
         if m.cuts_generator is not None:
@@ -771,11 +794,6 @@ class SolverCbc(Solver):
                 1,
                 atSol,
             )
-
-        if self.__verbose == 0:
-            cbclib.Cbc_setLogLevel(self._model, 0)
-        else:
-            cbclib.Cbc_setLogLevel(self._model, 1)
 
         if self.emphasis == SearchEmphasis.FEASIBILITY:
             cbc_set_parameter(self, "passf", "50")
