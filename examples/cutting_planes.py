@@ -47,7 +47,9 @@ while newConstraints:
             )
             newConstraints = True
     if not newConstraints and m.solver_name.lower() == 'cbc':
-        cp = m.generate_cuts()
+        cp = m.generate_cuts([CutType.GOMORY, CutType.MIR, 
+                              CutType.ZERO_HALF, 
+                              CutType.KNAPSACK_COVER])
         if cp.cuts:
             m += cp
             newConstraints = True
