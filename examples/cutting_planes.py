@@ -3,7 +3,7 @@ Salesman Problem."""
 
 from itertools import product
 from networkx import minimum_cut, DiGraph
-from mip import Model, xsum, BINARY, OptimizationStatus, CBC
+from mip import Model, xsum, BINARY, OptimizationStatus, CBC, CutType
 
 N = ["a", "b", "c", "d", "e", "f", "g"]
 A = {("a", "d"): 56, ("d", "a"): 67, ("a", "b"): 49, ("b", "a"): 50, ("f", "c"): 35,
