@@ -54,6 +54,11 @@ IncumbentUpdater
 .. autoclass:: mip.callbacks.IncumbentUpdater
     :members:
 
+CutType
+--------
+.. autoclass:: mip.constants.CutType
+    :members:
+
 CutPool
 -------
 .. autoclass:: mip.callbacks.CutPool
