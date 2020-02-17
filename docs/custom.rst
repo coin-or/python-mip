@@ -78,7 +78,7 @@ salesman problem:
 .. literalinclude:: ../examples/cutting_planes.py
     :caption: A pure cutting-planes approach for the Traveling Salesman Problem (examples/cutting_planes.py)
     :linenos:
-    :lines: 3-53
+    :lines: 3-55
 
 
 Lines 6-13 are the input data. Nodes are labeled with letters in a list
