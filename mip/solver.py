@@ -1,10 +1,11 @@
 """This module implements the solver intependent communication layer of
 Python-MIP
 """
-from typing import List, Tuple, TYPE_CHECKING
+from typing import List, Tuple, TYPE_CHECKING, Optional
 from sys import maxsize
 from mip.constants import INF, CONTINUOUS
-from mip.constants import SearchEmphasis, OptimizationStatus
+from mip.constants import SearchEmphasis, OptimizationStatus, CutType
+from mip.callbacks import CutPool
 
 if TYPE_CHECKING:
     from mip.model import Model
@@ -62,7 +63,15 @@ class Solver:
     def relax(self: "Solver"):
         pass
 
-    def optimize(self: "Solver") -> OptimizationStatus:
+    def generate_cuts(
+        self,
+        cut_types: Optional[List[CutType]] = None,
+        max_cuts: int = maxsize,
+        min_viol: float = 1e-4,
+    ) -> CutPool:
+        pass
+
+    def optimize(self: "Solver", relax: bool = False,) -> OptimizationStatus:
         pass
 
     def get_objective_value(self: "Solver") -> float:

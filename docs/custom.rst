@@ -78,22 +78,22 @@ salesman problem:
 .. literalinclude:: ../examples/cutting_planes.py
     :caption: A pure cutting-planes approach for the Traveling Salesman Problem (examples/cutting_planes.py)
     :linenos:
-    :lines: 3-45
+    :lines: 3-55
 
 
 Lines 6-13 are the input data. Nodes are labeled with letters in a list
-:code:`N` and a dictionary :code:`A` is used to store the weighted
-directed graph. Lines 14 and 15 store output and input arcs per node. The
-mapping of binary variables :math:`x_a` to arcs is made also using
-a dictionary in line 18. Line 21 sets the objective function and the
-following tree lines include constraints enforcing one entering and one
-leaving arc to be selected for each node. On line 28 we relax the
-integrality constraints of variables so that the optimization performed in
-line 31 will only solve the LP relaxation and the separation routine can
-be executed. Our separation routine is executed for each pair or nodes at
-line 40 and whenever a disconnected subset is found the violated inequality
-is generated and included at line 42. The process repeats while new
-violated inequalities are generated.
+:code:`N` and a dictionary :code:`A` is used to store the weighted directed
+graph. Lines 14 and 15 store output and input arcs per node. The mapping of
+binary variables :math:`x_a` to arcs is made also using a dictionary in line
+18. Line 21 sets the objective function and the following tree lines include
+constraints enforcing one entering and one leaving arc to be selected for each
+node. Line 31 will only solve the LP relaxation and the separation routine can
+be executed. Our separation routine is executed for each pair or nodes at line
+40 and whenever a disconnected subset is found the violated inequality is
+generated and included at line 42. The process repeats while new violated
+inequalities are generated. 
+
+Python-MIP also supports the automatic generation of cutting planes, i.e., cutting planes that can be generated for any model just considering integrality constraints. Line 48 triggers the generation of these cutting planes with the method :meth:`~mip.model.Model.generate_cuts` when our sub-tour elimination procedure does not finds violated sub-tour elimination inequalities anymore.
 
 .. _cut-generation-label:
 
