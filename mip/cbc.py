@@ -1,7 +1,7 @@
 """Python-MIP interface to the COIN-OR Branch-and-Cut solver CBC"""
 
 from typing import Dict, List, Tuple, Optional
-from sys import platform, maxsize
+from sys import platform, maxsize, stdout as out
 from os.path import dirname, isfile
 import os
 from cffi import FFI
@@ -640,10 +640,17 @@ class SolverCbc(Solver):
         osi_cuts = OsiCuts_new()
 
         if not cut_types:
-            cut_types = [e.value for e in CutType]
+            cut_types = [e for e in CutType]
         for cut_type in cut_types:
-            print(f"generating cuts of type: {cut_type}")
-            Cgl_generateCuts(osi_solver, int(cut_type), osi_cuts, int(1))
+            if self.__verbose >= 1:
+                out.write(
+                    "searching for violated {} cuts ... ".format(cut_type.name)
+                )
+            nc1 = OsiCuts_sizeRowCuts(osi_cuts)
+            Cgl_generateCuts(osi_solver, int(cut_type.value), osi_cuts, int(1))
+            nc2 = OsiCuts_sizeRowCuts(osi_cuts)
+            if self.__verbose >= 1:
+                out.write("{} found.\n".format(nc2 - nc1))
             if OsiCuts_sizeRowCuts(osi_cuts) >= max_cuts:
                 break
 
