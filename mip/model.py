@@ -1,6 +1,6 @@
 from os import environ
 from os.path import isfile
-from sys import stdout as out, maxsize
+from sys import stdout as out
 from typing import List, Tuple, Optional, Union, Dict, Any
 from mip.constants import (
     INF,
@@ -165,6 +165,9 @@ class Model:
                     self.objective = other[0]
                 else:
                     self.add_constr(other[0], other[1])
+        elif isinstance(other, CutPool):
+            for cut in other.cuts:
+                self.add_constr(cut)
 
         return self
 
@@ -408,14 +411,19 @@ class Model:
     def generate_cuts(
         self,
         cut_types: Optional[List[CutType]] = None,
-        max_cuts: int = maxsize,
+        max_cuts: int = 8192,
         min_viol: float = 1e-4,
     ) -> CutPool:
         """Tries to generate cutting planes for the current fractional
-        solution
+        solution. To optimize only the linear programming relaxation and not
+        discard integrality information from variables you must call first
+        :code:`model.optimize(relax=True)`.
+
+        This method only works with the CBC mip solver, as Gurobi does not
+        supports calling only cut generators.
 
         Args:
-            cut_types (List[CUT_TYPE]): types of cuts that can be generated, if
+            cut_types (List[CutType]): types of cuts that can be generated, if
                 an empty list is specified then all available cut generators
                 will be called.
             max_cuts(int): cut separation will stop when at least max_cuts
