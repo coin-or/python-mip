@@ -39,22 +39,22 @@ class CutType(Enum):
     """ Types of cuts that can be generated"""
 
     GOMORY = 0
-    """Gomory Mixed Integer cuts"""
+    """Gomory Mixed Integer cuts [Gomo69]_ ."""
 
     MIR = 1
-    """Mixed-Integer Rounding cuts"""
+    """Mixed-Integer Rounding cuts [Marc01]_."""
 
     ZERO_HALF = 2
-    """Zero/Half cuts"""
+    """Zero/Half cuts [Capr96]_."""
 
     CLIQUE = 3
-    """Clique cuts"""
+    """Clique cuts [Padb73]_."""
 
     KNAPSACK_COVER = 4
-    """Knapsack cover cuts"""
+    """Knapsack cover cuts [Bala75]_."""
 
     LIFT_AND_PROJECT = 5
-    """Lift-and-project cuts"""
+    """Lift-and-project cuts [BCC93]_."""
 
 
 # optimization status
