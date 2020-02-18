@@ -799,9 +799,9 @@ class SolverGurobi(Solver):
             raise Exception("Could not set gurobi double attribute array Obj")
 
         # setting objective sense
-        if sense == MAXIMIZE:
+        if MAXIMIZE in (lin_expr.sense, sense):
             self.set_int_attr("ModelSense", -1)
-        elif sense == MINIMIZE:
+        elif MINIMIZE in (lin_expr.sense, sense):
             self.set_int_attr("ModelSense", 1)
 
         # setting objective function
