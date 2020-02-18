@@ -574,9 +574,9 @@ class SolverCbc(Solver):
         self._objconst = lin_expr.const
 
         # setting objective sense
-        if sense == MAXIMIZE:
+        if MAXIMIZE in (lin_expr.sense, sense):
             cbclib.Cbc_setObjSense(self._model, -1.0)
-        elif sense == MINIMIZE:
+        elif MINIMIZE in (lin_expr.sense, sense):
             cbclib.Cbc_setObjSense(self._model, 1.0)
 
     def relax(self):
