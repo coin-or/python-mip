@@ -667,7 +667,6 @@ class Model:
         """
         return self.solver.get_objective()
 
-    # TODO how to handle objective += ?
     @objective.setter
     def objective(self: Solver, objective):
         if isinstance(objective, (int, float)):
@@ -675,10 +674,6 @@ class Model:
         elif isinstance(objective, Var):
             self.solver.set_objective(LinExpr([objective], [1]))
         elif isinstance(objective, LinExpr):
-            if objective.sense == MAXIMIZE:
-                self.solver.set_objective_sense(MAXIMIZE)
-            elif objective.sense == MINIMIZE:
-                self.solver.set_objective_sense(MINIMIZE)
             self.solver.set_objective(objective)
 
     @property
