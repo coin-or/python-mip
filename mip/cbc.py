@@ -475,7 +475,7 @@ OsiCuts_senseRowCut = cbclib.OsiCuts_senseRowCut
 OsiCuts_delete = cbclib.OsiCuts_delete
 
 
-def cbc_set_parameter(model: Model, param: str, value: str):
+def cbc_set_parameter(model: Solver, param: str, value: str):
     cbclib.Cbc_setParameter(
         model._model, param.encode("utf-8"), value.encode("utf-8")
     )
@@ -877,6 +877,12 @@ class SolverCbc(Solver):
 
         cbclib.Cbc_setAllowableFractionGap(self._model, self.model.max_mip_gap)
         cbclib.Cbc_setAllowableGap(self._model, self.model.max_mip_gap_abs)
+
+        cbc_set_parameter(self, "merge", "after")
+        if self.model.clique == -1 or self.model.clique >= 1:
+            cbc_set_parameter(self, "clique", "off")
+            cbc_set_parameter(self, "bkclique", "ifmove")
+            cbc_set_parameter(self, "oddholewc", "ifmove")
 
         cbclib.Cbc_solve(self._model)
 
