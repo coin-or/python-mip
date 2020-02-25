@@ -569,3 +569,10 @@ class TestAPI(object):
         val = 10
         model.constr_by_name("row0").rhs = val
         assert model.constr_by_name("row0").rhs == val
+
+    @pytest.mark.parametrize("solver", SOLVERS)
+    def test_var_by_name_rhs(self, solver):
+        n, model = self.build_model(solver)
+
+        v = model.var_by_name("x({},{})".format(0, 0))
+        assert v is not None
