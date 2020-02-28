@@ -476,9 +476,6 @@ class Model:
         if not self.solver.num_cols():
             print("Model has no variables. Nothing to optimize.")
             return OptimizationStatus.OTHER
-        if not self.solver.num_rows():
-            print("Model has no constraints.")
-            return OptimizationStatus.UNBOUNDED
 
         if self.__threads != 0:
             self.solver.set_num_threads(self.__threads)
@@ -1285,28 +1282,32 @@ class Model:
                         )
 
 
-def maximize(expr: LinExpr) -> LinExpr:
+def maximize(objective: Union[LinExpr, Var]) -> LinExpr:
     """
     Function that should be used to set the objective function to MAXIMIZE
     a given linear expression (passed as argument).
 
     Args:
-        expr(LinExpr): linear expression
+        objective(Union[LinExpr, Var]): linear expression
     """
-    expr.sense = MAXIMIZE
-    return expr
+    if isinstance(objective, Var):
+        objective = LinExpr([objective], [1.0])
+    objective.sense = MAXIMIZE
+    return objective
 
 
-def minimize(expr: LinExpr) -> LinExpr:
+def minimize(objective: Union[LinExpr, Var]) -> LinExpr:
     """
     Function that should be used to set the objective function to MINIMIZE
     a given linear expression (passed as argument).
 
     Args:
-        expr(LinExpr): linear expression
+        objective(Union[LinExpr, Var]): linear expression
     """
-    expr.sense = MINIMIZE
-    return expr
+    if isinstance(objective, Var):
+        objective = LinExpr([objective], [1.0])
+    objective.sense = MINIMIZE
+    return objective
 
 
 def xsum(terms) -> LinExpr:
