@@ -208,7 +208,7 @@ class Model:
         return self.vars.add(name, lb, ub, obj, var_type, column)
 
     def add_constr(self: "Model", lin_expr: LinExpr, name: str = "") -> Constr:
-        """Creates a new constraint (row).
+        r"""Creates a new constraint (row).
 
         Adds a new constraint to the model, returning its reference.
 
@@ -266,7 +266,7 @@ class Model:
         self.solver.add_lazy_constr(expr)
 
     def add_sos(self: "Model", sos: List[Tuple[Var, float]], sos_type: int):
-        """Adds an Special Ordered Set (SOS) to the model
+        r"""Adds an Special Ordered Set (SOS) to the model
 
         In models with binary variables it is often the case that from a list
         of variables only one can receive value 1 in a feasible solution. When
@@ -703,7 +703,7 @@ class Model:
 
     @property
     def threads(self: "Model") -> int:
-        """number of threads to be used when solving the problem.
+        r"""number of threads to be used when solving the problem.
         0 uses solver default configuration, -1 uses the number of available
         processing cores and :math:`\geq 1` uses the specified number of
         threads. An increased number of threads may improve the solution
@@ -752,7 +752,7 @@ class Model:
 
     @property
     def gap(self: "Model") -> float:
-        """
+        r"""
            The optimality gap considering the cost of the best solution found
            (:attr:`~mip.model.Model.objective_value`)
            :math:`b` and the best objective bound :math:`l`
