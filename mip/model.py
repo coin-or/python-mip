@@ -672,7 +672,7 @@ class Model:
         return self.solver.get_objective()
 
     @objective.setter
-    def objective(self: "Model", objective):
+    def objective(self: "Model", objective: Union[int, float, Var, LinExpr]):
         if isinstance(objective, (int, float)):
             self.solver.set_objective(LinExpr([], [], objective))
         elif isinstance(objective, Var):
