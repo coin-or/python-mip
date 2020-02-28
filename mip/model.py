@@ -1285,26 +1285,30 @@ class Model:
                         )
 
 
-def maximize(expr: LinExpr) -> LinExpr:
+def maximize(expr: Union[LinExpr, Var]) -> LinExpr:
     """
     Function that should be used to set the objective function to MAXIMIZE
     a given linear expression (passed as argument).
 
     Args:
-        expr(LinExpr): linear expression
+        expr(Union[LinExpr, Var]): linear expression or variable
     """
+    if isinstance(expr, Var):
+        return LinExpr([expr], [1], sense=MAXIMIZE)
     expr.sense = MAXIMIZE
     return expr
 
 
-def minimize(expr: LinExpr) -> LinExpr:
+def minimize(expr: Union[LinExpr, Var]) -> LinExpr:
     """
     Function that should be used to set the objective function to MINIMIZE
     a given linear expression (passed as argument).
 
     Args:
-        expr(LinExpr): linear expression
+        expr(Union[LinExpr, Var]): linear expression or variable
     """
+    if isinstance(expr, Var):
+        return LinExpr([expr], [1], sense=MINIMIZE)
     expr.sense = MINIMIZE
     return expr
 
