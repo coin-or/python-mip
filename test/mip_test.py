@@ -576,3 +576,16 @@ class TestAPI(object):
 
         v = model.var_by_name("x({},{})".format(0, 0))
         assert v is not None
+
+
+@pytest.mark.parametrize("ub", range(1, 4))
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_upper_bounds(solver: str, ub):
+    m = Model("bounds", solver_name=solver)
+
+    x = m.add_var(var_type=INTEGER, ub=ub)
+    m.objective = maximize(x)
+    m.solver.update()
+    m.optimize()
+    assert m.status == OptimizationStatus.OPTIMAL
+    assert round(m.objective_value) == ub
