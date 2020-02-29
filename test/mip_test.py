@@ -578,14 +578,16 @@ class TestAPI(object):
         assert v is not None
 
 
-@pytest.mark.parametrize("ub", range(1, 4))
+@pytest.mark.parametrize("val", range(1, 4))
 @pytest.mark.parametrize("solver", SOLVERS)
-def test_upper_bounds(solver: str, ub):
+def test_variable_bounds(solver: str, val: int):
     m = Model("bounds", solver_name=solver)
 
-    x = m.add_var(var_type=INTEGER, ub=ub)
-    m.objective = maximize(x)
-    m.solver.update()
+    x = m.add_var(var_type=INTEGER, lb=0, ub=2 * val)
+    y = m.add_var(var_type=INTEGER, lb=val, ub=2 * val)
+    m.objective = maximize(x - y)
     m.optimize()
     assert m.status == OptimizationStatus.OPTIMAL
-    assert round(m.objective_value) == ub
+    assert round(m.objective_value) == val
+    assert round(x.x) == 2 * val
+    assert round(y.x) == val
