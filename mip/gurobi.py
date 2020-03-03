@@ -751,6 +751,7 @@ class SolverGurobi(Solver):
         return self.get_dbl_attr_element("Xn", var.idx)
 
     def var_get_index(self, name: str) -> int:
+        self.update()
         idx = ffi.new("int *")
         st = GRBgetvarbyname(self._model, name.encode("utf-8"), idx)
         if st:
