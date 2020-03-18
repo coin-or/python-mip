@@ -567,8 +567,12 @@ class SolverCbc(Solver):
     def set_objective(self, lin_expr: "LinExpr", sense: str = "") -> None:
         # collecting variable coefficients
 
+        c = ffi.new("double[]", [0.0 for i in range(self.num_cols())])
         for var, coeff in lin_expr.expr.items():
-            cbclib.Cbc_setObjCoeff(self._model, var.idx, coeff)
+            c[var.idx] = coeff
+
+        for i in range(self.num_cols()):
+            cbclib.Cbc_setObjCoeff(self._model, i, c[i])
 
         # objective function constant
         self._objconst = lin_expr.const
