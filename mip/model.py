@@ -316,7 +316,7 @@ class Model:
         # creating a new solver instance
         sense = self.sense
 
-        if self.solver_name.upper() == GUROBI:
+        if self.solver_name in [GUROBI, "gurobi"]:
             from mip.gurobi import SolverGurobi
 
             self.solver = SolverGurobi(self, self.name, sense)
@@ -553,7 +553,7 @@ class Model:
             return
 
         # reading model
-        model_ext = [".lp", ".mps"]
+        model_ext = [".lp", ".mps", ".mps.gz"]
 
         fn_low = path.lower()
         for ext in model_ext:
