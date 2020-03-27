@@ -9,6 +9,11 @@ cd ~/prog
 IDIR=`pwd`
 export PKG_CONFIG_PATH=${IDIR}/lib/pkgconfig/:${PKG_CONFIG_PATH}
 
+cd $dir/ThirdParty-Metis
+./configure --prefix=$IDIR --enable-cbc-parallel --enable-static --disable-shared --enable-gnu-packages
+make -j 6
+make -j 6 install
+
 cd $dir/ThirdParty-Mumps
 ./configure --prefix=$IDIR --enable-cbc-parallel --enable-static --disable-shared --enable-gnu-packages
 make -j 6
