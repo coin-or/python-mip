@@ -89,3 +89,20 @@ else
     ./get.Blas
     cd ../
 fi
+
+echo "Checking Mumps"
+if [[ -d ThirdParty-Mumps ]]
+then
+    cd ThirdParty-Mumps
+    git pull
+    ./get.Mumps
+    cd ..
+else
+    git clone https://github.com/coin-or-tools/ThirdParty-Mumps.git
+    cd ThirdParty-Mumps
+    ./get.Mumps
+    cd ../
+fi
+
+
+
