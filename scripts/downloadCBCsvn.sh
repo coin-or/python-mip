@@ -104,5 +104,19 @@ else
     cd ../
 fi
 
+echo "Checking Metis"
+if [[ -d ThirdParty-Metis ]]
+then
+    cd ThirdParty-Metis
+    git pull
+    ./get.Metis
+    cd ..
+else
+    git clone https://github.com/coin-or-tools/ThirdParty-Metis.git
+    cd ThirdParty-Metis
+    ./get.Metis
+    cd ../
+fi
+
 
 
