@@ -14,12 +14,12 @@ cd $dir/ThirdParty-Metis
 make -j 6
 make -j 6 install
 
-cd $dir/ThirdParty-Lapack
+cd $dir/ThirdParty-Blas
 ./configure --prefix=$IDIR --enable-cbc-parallel --enable-static --disable-shared --enable-gnu-packages
 make -j 6
 make -j 6 install
 
-cd $dir/ThirdParty-Blas
+cd $dir/ThirdParty-Lapack
 ./configure --prefix=$IDIR --enable-cbc-parallel --enable-static --disable-shared --enable-gnu-packages
 make -j 6
 make -j 6 install
