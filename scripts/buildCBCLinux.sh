@@ -14,6 +14,16 @@ cd $dir/ThirdParty-Metis
 make -j 6
 make -j 6 install
 
+cd $dir/ThirdParty-Lapack
+./configure --prefix=$IDIR --enable-cbc-parallel --enable-static --disable-shared --enable-gnu-packages
+make -j 6
+make -j 6 install
+
+cd $dir/ThirdParty-Blas
+./configure --prefix=$IDIR --enable-cbc-parallel --enable-static --disable-shared --enable-gnu-packages
+make -j 6
+make -j 6 install
+
 cd $dir/ThirdParty-Mumps
 ./configure --prefix=$IDIR --enable-cbc-parallel --enable-static --disable-shared --enable-gnu-packages
 make -j 6
@@ -24,16 +34,6 @@ cd $dir/ThirdParty-Glpk
 make -j 6
 make -j 6 install
 
-
-cd $dir/ThirdParty-Lapack
-./configure --prefix=$IDIR --enable-cbc-parallel --enable-static --disable-shared --enable-gnu-packages
-make -j 6
-make -j 6 install
-
-cd $dir/ThirdParty-Blas
-./configure --prefix=$IDIR --enable-cbc-parallel --enable-static --disable-shared --enable-gnu-packages
-make -j 6
-make -j 6 install
 
 cd $dir/CoinUtils
 ./configure --prefix=$IDIR --enable-cbc-parallel --enable-static --disable-shared --enable-gnu-packages
