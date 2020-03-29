@@ -52,28 +52,28 @@ try:
     # if user wants to force the loading of an specific CBC library
     # (for debugging purposes, for example)
     if "PMIP_CBC_LIBRARY" in os.environ:
-        libfile = os.environ['PMIP_CBC_LIBRARY']        
-        
+        libfile = os.environ["PMIP_CBC_LIBRARY"]
+
         if platform.lower().startswith("win"):
             pathlib = dirname(libfile)
-            if pathlib not in os.environ['PATH']:
-                os.environ['PATH'] += ';' + pathlib            
+            if pathlib not in os.environ["PATH"]:
+                os.environ["PATH"] += ";" + pathlib
     else:
         if "linux" in platform.lower():
             if os_is_64_bit:
                 libfile = os.path.join(pathlib, "cbc-c-linux-x86-64.so")
         elif platform.lower().startswith("win"):
             if os_is_64_bit:
-                pathlib = os.path.join(pathlib, 'win64')
-                if pathlib not in os.environ['PATH']:
-                    os.environ['PATH'] += ';' + pathlib            
+                pathlib = os.path.join(pathlib, "win64")
+                if pathlib not in os.environ["PATH"]:
+                    os.environ["PATH"] += ";" + pathlib
                 libfile = os.path.join(pathlib, "CbcSolver-0.dll")
-                print(f'LIBFILE: {libfile}')
+                print(f"LIBFILE: {libfile}")
             else:
                 raise Exception("Win32 platform not supported.")
-        elif platform.lower().startswith("darwin") or platform.lower().startswith(
-            "macos"
-        ):
+        elif platform.lower().startswith(
+            "darwin"
+        ) or platform.lower().startswith("macos"):
             if os_is_64_bit:
                 libfile = os.path.join(pathlib, "cbc-c-darwin-x86-64.dylib")
         if not libfile:
