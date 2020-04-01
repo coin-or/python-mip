@@ -20,9 +20,9 @@ install:
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
   - "python --version"
   - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
-  - ".\\mip\\libraries\\win64\\cbc.exe -quit"
 
 test_script:
-- pytest test --verbose --color=yes --doctest-modules
-- pytest mip --verbose --color=yes --doctest-modules --ignore="mip/gurobi.py" --ignore="gurobi.py"
+#- pytest test --verbose --color=yes --doctest-modules
+#- pytest mip --verbose --color=yes --doctest-modules --ignore="mip/gurobi.py" --ignore="gurobi.py"
+  - ".\\mip\\libraries\\win64\\cbc.exe -quit"
 
