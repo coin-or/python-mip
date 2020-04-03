@@ -22,6 +22,7 @@ install:
   - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
 
 test_script:
+  - dir c:\python35-x64\lib\site-packages\mip\libraries\win64\libCbcSolver-0.dll
   - pytest test --verbose --color=yes --doctest-modules
   - pytest mip --verbose --color=yes --doctest-modules --ignore="mip/gurobi.py" --ignore="gurobi.py"
 
