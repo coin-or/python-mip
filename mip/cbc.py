@@ -1,7 +1,7 @@
 """Python-MIP interface to the COIN-OR Branch-and-Cut solver CBC"""
 
 from typing import Dict, List, Tuple, Optional
-from sys import platform, maxsize, stdout as out
+from sys import platform, maxsize, stdout as out, stderr as err
 from os.path import dirname, isfile
 import os
 from cffi import FFI
@@ -66,9 +66,8 @@ try:
             if os_is_64_bit:
                 pathlib = os.path.join(pathlib, "win64")
                 if pathlib not in os.environ["PATH"]:
-                    os.environ["PATH"] += ";" + pathlib
-                libfile = os.path.join(pathlib, "CbcSolver-0.dll")
-                print(f"LIBFILE: {libfile}")
+                    os.environ["PATH"] = pathlib + ";" + os.environ["PATH"]
+                libfile = os.path.join(pathlib, "libCbcSolver-0.dll")
             else:
                 raise Exception("Win32 platform not supported.")
         elif platform.lower().startswith(
@@ -80,9 +79,10 @@ try:
             raise Exception("You operating system/platform is not supported")
     cbclib = ffi.dlopen(libfile)
     has_cbc = True
-except Exception:
+except Exception as e:
+    err.write("\nAn error occurred while loading the CBC library:\n")
+    err.write("\t" + str(e) + "\n")
     has_cbc = False
-    print("cbc not found")
 
 if has_cbc:
     ffi.cdef(
