@@ -27,7 +27,16 @@ setuptools.setup(
     ],
     url="https://github.com/coin-or/python-mip",
     packages=["mip", "mip.libraries"],
-    package_data={"mip.libraries": ["*", "*.*", "win64/*", "win64/*.*"]},
+    package_data={
+        "mip.libraries": [
+            "*",
+            "*.*",
+            "win64/*",
+            "win64/*.*",
+            "lin64/*",
+            "lin64/*.*",
+        ]
+    },
     install_requires=["cffi"],
     classifiers=[
         "Programming Language :: Python :: 3",
