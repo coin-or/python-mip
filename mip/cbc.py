@@ -61,7 +61,16 @@ try:
     else:
         if "linux" in platform.lower():
             if os_is_64_bit:
-                libfile = os.path.join(pathlib, "cbc-c-linux-x86-64.so")
+                pathlib = os.path.join(pathlib, "lin64")
+                if "LD_LIBRARY_PATH" not in os.environ:
+                    os.environ["LD_LIBRARY_PATH"] = pathlib
+                elif pathlib not in os.environ["LD_LIBRARY_PATH"]:
+                    os.environ["LD_LIBRARY_PATH"] = (
+                        pathlib + ":" + os.environ["LD_LIBRARY_PATH"]
+                    )
+                libfile = os.path.join(pathlib, "libCbcSolver.so")
+            else:
+                raise Exception("Linux 32 bits platform not supported.")
         elif platform.lower().startswith("win"):
             if os_is_64_bit:
                 pathlib = os.path.join(pathlib, "win64")
@@ -77,7 +86,10 @@ try:
                 libfile = os.path.join(pathlib, "cbc-c-darwin-x86-64.dylib")
         if not libfile:
             raise Exception("You operating system/platform is not supported")
+    old_dir = os.getcwd()
+    os.chdir(pathlib)
     cbclib = ffi.dlopen(libfile)
+    os.chdir(old_dir)
     has_cbc = True
 except Exception as e:
     err.write("\nAn error occurred while loading the CBC library:\n")
