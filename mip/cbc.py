@@ -915,6 +915,12 @@ class SolverCbc(Solver):
             self._model, INT_PARAM_RANDOM_SEED, self.model.seed
         )
 
+        cbclib.Cbc_setIntParam(
+            self._model,
+            INT_PARAM_ROUND_INT_VARS,
+            int(self.model.round_int_vars),
+        )
+
         cbclib.Cbc_solve(self._model)
 
         if cbclib.Cbc_isAbandoned(self._model):
@@ -984,28 +990,10 @@ class SolverCbc(Solver):
 
     def var_get_x(self, var: Var) -> Optional[float]:
         # model status is *already checked* in Model
-
-        if cbclib.Cbc_getNumIntegers(self._model) > 0:
-            xp = cbclib.Cbc_bestSolution(self._model)
-            if xp == ffi.NULL:  # if enter here, probably bug in CBC
-                raise Exception(
-                    "Calling Cbc_bestSolution without solution" " available."
-                )
-            xv = float(xp[var.idx])
-
-            # if variable is integer it is *really* close to an integer
-            # in the solution, lets round it
-            if self.var_get_var_type(var) in [BINARY, INTEGER]:
-                if abs(xv - round(xv)) <= 1e-12:
-                    xv = round(xv)
-            return xv
-
-        # continuous
         xp = cbclib.Cbc_getColSolution(self._model)
-        if xp == ffi.NULL:  # if enter here, probably bug in CBC
-            raise Exception(
-                "Calling Cbc_getColSolution without solution" " available."
-            )
+        if xp == ffi.NULL:
+            raise Exception("No solution available.")
+
         return float(xp[var.idx])
 
     def get_num_solutions(self) -> int:
