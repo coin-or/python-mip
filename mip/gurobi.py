@@ -656,6 +656,8 @@ class SolverGurobi(Solver):
         else:
             self.set_int_param("Method", 3)
 
+        self.set_int_param("Seed", self.model.seed)
+
         # executing Gurobi to solve the formulation
         status = GRBoptimize(self._model)
         if status != 0:

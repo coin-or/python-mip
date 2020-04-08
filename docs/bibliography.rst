@@ -16,6 +16,8 @@
 
 .. [FGL05] M. Fischetti, F. Glover, and A. Lodi. The feasibility pump. *Mathematical Programming*, 104(1):91–104, 2005.
 
+.. [Fisch14] M. Fischetti, M. Monaci. Exploiting erraticism in search. *Operations Research*, 62:114--122, 2014.
+
 .. [Gomo69] R.E. Gomory. Some polyhedra related to combinatorial problems. *Linear Algebra and its Applications*, 2(4):451-558, 1969.
 
 .. [Junge09] M. Jünger, T.M. Liebling, D. Naddef, G. Nemhauser, W.R. Pulleyblank, G. Reinelt, G. Rinaldi and Wolsey, L.A. *50 Years of integer programming 1958-2008: From the early years to the state-of-the-art*. Springer Science & Business Media. 2009.
