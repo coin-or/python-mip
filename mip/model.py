@@ -148,6 +148,7 @@ class Model:
         self.__max_mip_gap = 1e-4
         self.__max_mip_gap_abs = 1e-10
         self.__seed = 0
+        self.__round_int_vars = True
 
     def __del__(self: "Model"):
         del self.solver
@@ -1159,6 +1160,24 @@ class Model:
     @seed.setter
     def seed(self: "Model", seed: int):
         self.__seed = seed
+
+    @property
+    def round_int_vars(self: "Model") -> bool:
+        """MIP solvers perform computations using *limited precision* arithmetic.
+        Thus a variable with value 0 may appear in the solution as
+        0.000000000001. Thus, comparing this var to zero would return false.
+        The safest approach would be to use something like abs(v.x) < 1e-7.
+        To simplify code the solution value of integer variables can be
+        automatically rounded to the nearest integer and then, comparisons like
+        v.x == 0 would work. Rounding is not always a good idea specially in
+        models with numerical instability, since it can increase the
+        infeasibilities."""
+
+        return self.__round_int_vars
+
+    @round_int_vars.setter
+    def round_int_vars(self: "Model", round_iv: bool):
+        self.__round_int_vars = round_iv
 
     @property
     def status(self: "Model") -> OptimizationStatus:

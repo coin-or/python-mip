@@ -12,3 +12,8 @@ do
     echo patching "$lib"
     patchelf --set-rpath ./ ../mip/libraries/lin64/$lib
 done
+
+if [ -f ../mip/libraries/lin64/cbc.bin ];
+then
+    patchelf --set-rpath ./ ../mip/libraries/lin64/cbc.bin
+fi
