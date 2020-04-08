@@ -147,6 +147,7 @@ class Model:
         self.__opt_tol = 1e-6
         self.__max_mip_gap = 1e-4
         self.__max_mip_gap_abs = 1e-10
+        self.__seed = 0
 
     def __del__(self: "Model"):
         del self.solver
@@ -1145,6 +1146,19 @@ class Model:
     @max_solutions.setter
     def max_solutions(self: "Model", max_solutions: int):
         self.solver.set_max_solutions(max_solutions)
+
+    @property
+    def seed(self: "Model") -> int:
+        """Random seed. Small changes in the first decisions while solving the LP
+        relaxation and the MIP can have a large impact in the performance,
+        as discussed in [Fisch14]_. This behaviour can be exploited with multiple
+        independent runs with different random seeds."""
+
+        return self.__seed
+
+    @seed.setter
+    def seed(self: "Model", seed: int):
+        self.__seed = seed
 
     @property
     def status(self: "Model") -> OptimizationStatus:
