@@ -657,6 +657,7 @@ class SolverGurobi(Solver):
             self.set_int_param("Method", 3)
 
         self.set_int_param("Seed", self.model.seed)
+        self.set_int_param("PoolSolutions", self.model.sol_pool_size)
 
         # executing Gurobi to solve the formulation
         status = GRBoptimize(self._model)
