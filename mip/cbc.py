@@ -989,12 +989,9 @@ class SolverCbc(Solver):
         return cbclib.Cbc_getBestPossibleObjValue(self._model) + self._objconst
 
     def var_get_x(self, var: Var) -> Optional[float]:
-        # model status is *already checked* in Model
-        xp = cbclib.Cbc_getColSolution(self._model)
-        if xp == ffi.NULL:
-            raise Exception("No solution available.")
-
-        return float(xp[var.idx])
+        # model status is *already checked* Var x property
+        # (returns None if no solution available)
+        return float(cbclib.Cbc_getColSolution(self._model)[var.idx])
 
     def get_num_solutions(self) -> int:
         return cbclib.Cbc_numberSavedSolutions(self._model)
@@ -1003,16 +1000,14 @@ class SolverCbc(Solver):
         return cbclib.Cbc_savedSolutionObj(self._model, i) + self._objconst
 
     def var_get_xi(self, var: "Var", i: int) -> float:
-        x = cbclib.Cbc_savedSolution(self._model, i)
-        if x == ffi.NULL:
-            raise Exception("no solution available")
-        return float(x[var.idx])
+        # model status is *already checked* Var xi property
+        # (returns None if no solution available)
+        return float(cbclib.Cbc_savedSolution(self._model, i)[var.idx])
 
     def var_get_rc(self, var: Var) -> float:
-        rc = cbclib.Cbc_getReducedCost(self._model)
-        if rc == ffi.NULL:
-            raise Exception("reduced cost not available")
-        return float(rc[var.idx])
+        # model status is *already checked* Var rc property
+        # (returns None if no solution available)
+        return float(cbclib.Cbc_getReducedCost(self._model)[var.idx])
 
     def var_get_lb(self, var: "Var") -> float:
         lb = cbclib.Cbc_getColLower(self._model)
