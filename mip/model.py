@@ -149,6 +149,7 @@ class Model:
         self.__max_mip_gap_abs = 1e-10
         self.__seed = 0
         self.__round_int_vars = True
+        self.__sol_pool_size = 10
 
     def __del__(self: "Model"):
         del self.solver
@@ -1178,6 +1179,19 @@ class Model:
     @round_int_vars.setter
     def round_int_vars(self: "Model", round_iv: bool):
         self.__round_int_vars = round_iv
+
+    @property
+    def sol_pool_size(self: "Model") -> int:
+        """Size of the solution pool, i.e.: maximum number of solutions
+        that will be stored during the search. To check how many solutions were
+        found during the search use :meth:`~mip.model.Model.num_solutions`.
+        """
+        return self.__sol_pool_size
+
+    @sol_pool_size.setter
+    def sol_pool_size(self: "Model", sol_pool_size: int):
+        assert sol_pool_size >= 1
+        self.__sol_pool_size = sol_pool_size
 
     @property
     def status(self: "Model") -> OptimizationStatus:

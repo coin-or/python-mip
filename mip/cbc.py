@@ -247,6 +247,23 @@ if has_cbc:
 #define N_INT_PARAMS 14
     void Cbc_setIntParam(Cbc_Model *model, enum IntParam which, const int val);
 
+enum DblParam {
+  DBL_PARAM_PRIMAL_TOL    = 0,  /*! Tollerance to consider a solution feasible in the linear programming solver. */
+  DBL_PARAM_DUAL_TOL      = 1,  /*! Tollerance for a solution to be considered optimal in the linear programming solver. */
+  DBL_PARAM_ZERO_TOL      = 2,  /*! Coefficients less that this value will be ignored when reading instances */
+  DBL_PARAM_INT_TOL       = 3,  /*! Maximum allowed distance from integer value for a variable to be considered integral */
+  DBL_PARAM_PRESOLVE_TOL  = 4,  /*! Tollerance used in the presolver, should be increased if the pre-solver is declaring infeasible a feasible problem */
+  DBL_PARAM_TIME_LIMIT    = 5,  /*! Time limit in seconds */
+  DBL_PARAM_PSI           = 6,  /*! Two dimensional princing factor in the Positive Edge pivot strategy. */
+  DBL_PARAM_CUTOFF        = 7,  /*! Only search for solutions with cost less-or-equal to this value. */
+  DBL_PARAM_ALLOWABLE_GAP = 8,  /*! Allowable gap between the lower and upper bound to conclude the search */
+  DBL_PARAM_GAP_RATIO     = 9   /*! Stops the search when the difference between the upper and lower bound is less than this fraction of the larger value */
+};
+#define N_DBL_PARAMS 10
+
+    void Cbc_setDblParam(Cbc_Model *model, enum DblParam which, const double val);
+
+
     void Cbc_setParameter(Cbc_Model *model, const char *name,
         const char *value);
 
@@ -463,6 +480,17 @@ if has_cbc:
 
 CHAR_ONE = "{}".format(chr(1)).encode("utf-8")
 CHAR_ZERO = "\0".encode("utf-8")
+
+DBL_PARAM_PRIMAL_TOL = 0
+DBL_PARAM_DUAL_TOL = 1
+DBL_PARAM_ZERO_TOL = 2
+DBL_PARAM_INT_TOL = 3
+DBL_PARAM_PRESOLVE_TOL = 4
+DBL_PARAM_TIME_LIMIT = 5
+DBL_PARAM_PSI = 6
+DBL_PARAM_CUTOFF = 7
+DBL_PARAM_ALLOWABLE_GAP = 8
+DBL_PARAM_GAP_RATIO = 9
 
 INT_PARAM_PERT_VALUE = 0
 INT_PARAM_IDIOT = 1
@@ -890,8 +918,8 @@ class SolverCbc(Solver):
             )
 
         if self.model.integer_tol >= 0.0:
-            cbc_set_parameter(
-                self, "integerT", "{}".format(self.model.integer_tol)
+            cbclib.Cbc_setDblParam(
+                self._model, DBL_PARAM_INT_TOL, self.model.integer_tol
             )
 
         if self.model.infeas_tol >= 0.0:
@@ -919,6 +947,10 @@ class SolverCbc(Solver):
             self._model,
             INT_PARAM_ROUND_INT_VARS,
             int(self.model.round_int_vars),
+        )
+
+        cbclib.Cbc_setIntParam(
+            self._model, INT_PARAM_MAX_SAVED_SOLS, self.model.sol_pool_size
         )
 
         cbclib.Cbc_solve(self._model)
