@@ -445,3 +445,56 @@ The following Python-MIP code creates the formulation proposed by
     :caption: Formulation for the One-dimensional Cutting Stock Problem (examples/cuttingstock_kantorovich.py)
     :linenos:
     :lines: 4-39
+
+
+Two-Dimensional Level Packing
+-----------------------------
+
+In some industries, raw material must be cut in several pieces of specified size. Here we consider the case where these pieces are *rectangular* [LMM02]_. Also, due to machine operation constraints, pieces should be grouped horizontally such that firstly, horizontal layers are cut with the height of the largest item in the group and secondly, these horizontal layers are then cut according to items widths. Raw material is provided in rolls with large height. To minimize waste, a given batch of items must be cut using the minimum possible total height to minimize waste.
+
+Formally, the following input data defines an instance of the Two Dimensional Level Packing Problem (TDLPP):
+
+:math:`W`
+  raw material width
+
+:math:`n`
+  number of items
+
+:math:`I`
+  set of items = :math:`\{0, \ldots, n-1\}`
+
+:math:`w_i`
+  width of item :math:`i`
+
+:math:`h_i`
+  height of item :math:`i`
+
+The following image illustrate a sample instance of the two dimensional level packing problem.
+
+.. image:: ./images/tdlpp-instance.*
+    :width: 80%
+    :align: center
+
+This problem can be formulated using binary variables :math:`x_{i,j} \in \{0, 1\}`, that  indicate if item :math:`j` should be grouped with item :math:`i` (:math:`x_{i,j}=1`) or not (:math:`x_{i,j}=0`). Inside the same group, all elements should be linked to the largest element of the group, the *representative* of the group. If element :math:`i` is the representative of the group, then :math:`x_{i,i}=1`.
+
+Before presenting the complete formulation, we introduce two sets to simplify the notation. :math:`S_i` is the set of items with width equal or smaller to item :math:`i`, i.e., items for which item :math:`i` can be the representative item. Conversely, :math:`G_i` is the set of items with width greater or equal to the width of :math:`i`, i.e., items which can be the representative of item :math:`i` in a solution. More formally, :math:`S_i = \{j \in I : h_j \leq h_i\}` and :math:`G_i = \{j \in I : h_j \geq h_i\}`. Note that both sets include the item itself.
+
+.. math::
+    \textrm{min:}
+        & \sum_{i \in I} x_{i,i}  \\
+    \textrm{s.t.:}
+        & \sum_{j \in G_i} x_{i,j} = 1   \;\; \forall i \in I \\
+        & \sum_{j \in S_i : j \neq i} x_{i,j} \leq (W-w_i)\cdot x_{i,i} \;\; \forall i \in I \\
+        & x_{i,j} \in \{0,1\}                        \;\; \forall (i,j) \in I^2 
+
+
+The first contraints enforce that each item needs to be packed as the largest item of the set or to be included in the set of another item with width at least as large. The second set of constraints indicates that if an item is chosen as representative of a set, then the total width of the items packed within this same set should not exceed the width of the roll.
+
+The following Python-MIP code creates and optimizes a model to solve the two-dimensional level packing problem illustrated in the previous figure.
+
+.. literalinclude:: ../examples/two-dim-pack.py
+    :caption: Formulation for two-dimensional level packing packing (examples/two-dim-pack.py)
+    :linenos:
+    :lines: 4-39
+
+
