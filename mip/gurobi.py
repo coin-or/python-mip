@@ -397,6 +397,8 @@ class SolverGurobi(Solver):
         self.__name_space = ffi.new("char[{}]".format(MAX_NAME_SIZE))
         self.__log = []
 
+        self.__x = None
+
     def __del__(self):
         # freeing Gurobi model and environment
         if self._ownsModel:
@@ -660,6 +662,7 @@ class SolverGurobi(Solver):
         self.set_int_param("PoolSolutions", self.model.sol_pool_size)
 
         # executing Gurobi to solve the formulation
+        self.__x = None
         status = GRBoptimize(self._model)
         if status != 0:
             if status == 10009:
@@ -685,6 +688,14 @@ class SolverGurobi(Solver):
             if status in [8, 9, 10, 11, 13]:
                 nsols = self.get_int_attr("SolCount")
                 if nsols >= 1:
+                    self.__x = ffi.new("double[{}]".format(self.num_cols()))
+                    attr = "X".encode("utf-8")
+                    st = GRBgetdblattrarray(
+                        self._model, attr, 0, self.num_cols(), self.__x
+                    )
+                    if st:
+                        raise Exception("Error quering Gurobi solution")
+
                     return OptimizationStatus.FEASIBLE
                 else:
                     return OptimizationStatus.NO_SOLUTION_FOUND
@@ -692,7 +703,16 @@ class SolverGurobi(Solver):
         # todo: read solution status (code below is incomplete)
         if status == 1:  # LOADED
             return OptimizationStatus.LOADED
-        elif status == 2:  # OPTIMAL
+        if status == 2:  # OPTIMAL
+            if self.__x is None:
+                self.__x = ffi.new("double[{}]".format(self.num_cols()))
+                attr = "X".encode("utf-8")
+                st = GRBgetdblattrarray(
+                    self._model, attr, 0, self.num_cols(), self.__x
+                )
+                if st:
+                    raise Exception("Error quering Gurobi solution")
+
             return OptimizationStatus.OPTIMAL
         elif status == 3:  # INFEASIBLE
             return OptimizationStatus.INFEASIBLE
@@ -1077,7 +1097,7 @@ class SolverGurobi(Solver):
         return self.get_dbl_attr_element("RC", var.idx)
 
     def var_get_x(self, var: Var) -> float:
-        return self.get_dbl_attr_element("X", var.idx)
+        return self.__x[var.idx]
 
     def var_get_name(self, idx: int) -> str:
         self.flush_cols()

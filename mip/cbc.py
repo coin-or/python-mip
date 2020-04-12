@@ -242,9 +242,10 @@ if has_cbc:
     INT_PARAM_MAX_SAVED_SOLS      = 12, /*! Size of the pool to save the best solutions found during the search. */
     INT_PARAM_MULTIPLE_ROOTS      = 13, /*! Multiple root passes to get additional cuts and solutions. */
     INT_PARAM_ROUND_INT_VARS      = 14, /*! If integer variables should be round to remove small infeasibilities. This can increase the overall amount of infeasibilities in problems with both continuous and integer variables */
-    INT_PARAM_RANDOM_SEED         = 15  /*! When solving LP and MIP, randomization is used to break ties in some decisions. This changes the random seed so that multiple executions can produce different results */
+    INT_PARAM_RANDOM_SEED         = 15, /*! When solving LP and MIP, randomization is used to break ties in some decisions. This changes the random seed so that multiple executions can produce different results */
+    INT_PARAM_ELAPSED_TIME        = 16  /*! When =1 use elapsed (wallclock) time, otherwise use CPU time */
     };
-#define N_INT_PARAMS 14
+#define N_INT_PARAMS 17
     void Cbc_setIntParam(Cbc_Model *model, enum IntParam which, const int val);
 
 enum DblParam {
@@ -571,6 +572,9 @@ class SolverCbc(Solver):
         self.set_problem_name(name)
         self.__pumpp = DEF_PUMPP
 
+        # where solution will be stored
+        self.__x = None
+
     def add_var(
         self,
         obj: float = 0,
@@ -830,8 +834,10 @@ class SolverCbc(Solver):
             cbclib.Cbc_setLogLevel(self._model, 1)
 
         if relax:
+            self.__x = None
             res = Cbc_solveLinearProgram(self._model)
             if res == 0:
+                self.__x = cbclib.Cbc_getColSolution(self._model)
                 return OptimizationStatus.OPTIMAL
             if res == 2:
                 return OptimizationStatus.UNBOUNDED
@@ -953,12 +959,14 @@ class SolverCbc(Solver):
             self._model, INT_PARAM_MAX_SAVED_SOLS, self.model.sol_pool_size
         )
 
+        self.__x = None
         cbclib.Cbc_solve(self._model)
 
         if cbclib.Cbc_isAbandoned(self._model):
             return OptimizationStatus.ERROR
 
         if cbclib.Cbc_isProvenOptimal(self._model):
+            self.__x = cbclib.Cbc_getColSolution(self._model)
             return OptimizationStatus.OPTIMAL
 
         if cbclib.Cbc_isProvenInfeasible(self._model):
@@ -969,6 +977,7 @@ class SolverCbc(Solver):
 
         if cbclib.Cbc_getNumIntegers(self._model):
             if cbclib.Cbc_bestSolution(self._model):
+                self.__x = cbclib.Cbc_getColSolution(self._model)
                 return OptimizationStatus.FEASIBLE
 
         return OptimizationStatus.NO_SOLUTION_FOUND
@@ -1023,7 +1032,7 @@ class SolverCbc(Solver):
     def var_get_x(self, var: Var) -> Optional[float]:
         # model status is *already checked* Var x property
         # (returns None if no solution available)
-        return float(cbclib.Cbc_getColSolution(self._model)[var.idx])
+        return self.__x[var.idx]
 
     def get_num_solutions(self) -> int:
         return cbclib.Cbc_numberSavedSolutions(self._model)
