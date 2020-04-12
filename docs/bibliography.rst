@@ -24,6 +24,8 @@
 
 .. [Kan60] L. V. Kantorovich. Mathematical methods of organizing and planning production. *Management science*, 6(4):366–422, 1960.
 
+.. [LMM02] A. Lodi, S. Martello and M. Monaci. Two-dimensional packing problems: A survey. *European Journal of Operational Research*, 141(2):241-252, 2002.
+
 .. [Mann60] A.S. Manne. On the job-shop scheduling problem. *Operations Research*, 8(2):219–223, 1960.
 
 .. [Marc01] H. Marchand and L. Wolsey. Aggregation and Mixed Integer Rounding to Solve MIPs. *Operations Research*, 49(3), 325-468. 2001.
