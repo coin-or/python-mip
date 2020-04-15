@@ -8,6 +8,7 @@ from cffi import FFI
 import multiprocessing as multip
 from mip.model import xsum
 import mip
+from mip.lists import EmptyVarSol
 from mip import (
     Model,
     Var,
@@ -62,12 +63,6 @@ try:
         if "linux" in platform.lower():
             if os_is_64_bit:
                 pathlib = os.path.join(pathlib, "lin64")
-                if "LD_LIBRARY_PATH" not in os.environ:
-                    os.environ["LD_LIBRARY_PATH"] = pathlib
-                elif pathlib not in os.environ["LD_LIBRARY_PATH"]:
-                    os.environ["LD_LIBRARY_PATH"] = (
-                        pathlib + ":" + os.environ["LD_LIBRARY_PATH"]
-                    )
                 libfile = os.path.join(pathlib, "libCbcSolver.so")
             else:
                 raise Exception("Linux 32 bits platform not supported.")
@@ -573,7 +568,8 @@ class SolverCbc(Solver):
         self.__pumpp = DEF_PUMPP
 
         # where solution will be stored
-        self.__x = None
+        self.__x = EmptyVarSol(model)
+        self.__rc = EmptyVarSol(model)
 
     def add_var(
         self,
@@ -834,10 +830,12 @@ class SolverCbc(Solver):
             cbclib.Cbc_setLogLevel(self._model, 1)
 
         if relax:
-            self.__x = None
+            self.__x = EmptyVarSol(self.model)
+            self.__rc = EmptyVarSol(self.model)
             res = Cbc_solveLinearProgram(self._model)
             if res == 0:
                 self.__x = cbclib.Cbc_getColSolution(self._model)
+                self.__rc = cbclib.Cbc_getReducedCost(self._model)
                 return OptimizationStatus.OPTIMAL
             if res == 2:
                 return OptimizationStatus.UNBOUNDED
@@ -959,7 +957,8 @@ class SolverCbc(Solver):
             self._model, INT_PARAM_MAX_SAVED_SOLS, self.model.sol_pool_size
         )
 
-        self.__x = None
+        self.__x = EmptyVarSol(self.model)
+        self.__rc = EmptyVarSol(self.model)
         cbclib.Cbc_solve(self._model)
 
         if cbclib.Cbc_isAbandoned(self._model):
@@ -967,6 +966,8 @@ class SolverCbc(Solver):
 
         if cbclib.Cbc_isProvenOptimal(self._model):
             self.__x = cbclib.Cbc_getColSolution(self._model)
+            if self.model.num_int == 0:
+                self.__rc = cbclib.Cbc_getReducedCost(self._model)
             return OptimizationStatus.OPTIMAL
 
         if cbclib.Cbc_isProvenInfeasible(self._model):
@@ -1048,7 +1049,7 @@ class SolverCbc(Solver):
     def var_get_rc(self, var: Var) -> float:
         # model status is *already checked* Var rc property
         # (returns None if no solution available)
-        return float(cbclib.Cbc_getReducedCost(self._model)[var.idx])
+        return self.__rc[var.idx]
 
     def var_get_lb(self, var: "Var") -> float:
         lb = cbclib.Cbc_getColLower(self._model)
