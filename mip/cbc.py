@@ -571,11 +571,13 @@ class SolverCbc(Solver):
         self.__x = EmptyVarSol(model)
         self.__rc = EmptyVarSol(model)
         self.__pi = EmptyRowSol(model)
+        self.__obj_val = None
 
     def __clear_sol(self: "SolverCbc"):
         self.__x = EmptyVarSol(self.model)
         self.__rc = EmptyVarSol(self.model)
         self.__pi = EmptyRowSol(self.model)
+        self.__obj_val = None
 
     def add_var(
         self,
@@ -842,6 +844,9 @@ class SolverCbc(Solver):
                 self.__x = cbclib.Cbc_getColSolution(self._model)
                 self.__rc = cbclib.Cbc_getReducedCost(self._model)
                 self.__pi = cbclib.Cbc_getRowPrice(self._model)
+                self.__obj_val = (
+                    cbclib.Cbc_getObjValue(self._model) + self._objconst
+                )
                 return OptimizationStatus.OPTIMAL
             if res == 2:
                 return OptimizationStatus.UNBOUNDED
@@ -971,6 +976,9 @@ class SolverCbc(Solver):
 
         if cbclib.Cbc_isProvenOptimal(self._model):
             self.__x = cbclib.Cbc_getColSolution(self._model)
+            self.__obj_val = (
+                cbclib.Cbc_getObjValue(self._model) + self._objconst
+            )
             if self.model.num_int == 0:
                 self.__rc = cbclib.Cbc_getReducedCost(self._model)
                 self.__pi = cbclib.Cbc_getRowPrice(self._model)
@@ -985,6 +993,9 @@ class SolverCbc(Solver):
         if cbclib.Cbc_getNumIntegers(self._model):
             if cbclib.Cbc_bestSolution(self._model):
                 self.__x = cbclib.Cbc_getColSolution(self._model)
+                self.__obj_val = (
+                    cbclib.Cbc_getObjValue(self._model) + self._objconst
+                )
                 return OptimizationStatus.FEASIBLE
 
         return OptimizationStatus.NO_SOLUTION_FOUND
@@ -1009,7 +1020,8 @@ class SolverCbc(Solver):
             )
 
     def get_objective_value(self) -> float:
-        return cbclib.Cbc_getObjValue(self._model) + self._objconst
+        # return
+        return self.__obj_val
 
     def get_status(self) -> OptimizationStatus:
         if cbclib.Cbc_isAbandoned(self._model):
