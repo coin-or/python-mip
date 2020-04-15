@@ -425,11 +425,6 @@ class Constr:
         available if a pure linear programming problem was solved (only
         continuous variables).
         """
-        if (
-            self.__model.status != OptimizationStatus.OPTIMAL
-            or self.__model.num_int > 0
-        ):
-            return None
         return self.__model.solver.constr_get_pi(self)
 
     @property
