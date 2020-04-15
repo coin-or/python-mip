@@ -588,11 +588,6 @@ class Var:
         """Reduced cost, only available after a linear programming model (only
         continuous variables) is optimized. Note that None is returned if no
         optimum solution is available"""
-        if (
-            self.__model.status != OptimizationStatus.OPTIMAL
-            or self.__model.num_int > 0
-        ):
-            return None
 
         return self.__model.solver.var_get_rc(self)
 
@@ -600,12 +595,7 @@ class Var:
     def x(self) -> Optional[float]:
         """Value of this variable in the solution. Note that None is returned
         if no solution is not available."""
-        if self.__model.status in [
-            OptimizationStatus.OPTIMAL,
-            OptimizationStatus.FEASIBLE,
-        ]:
-            return self.__model.solver.var_get_x(self)
-        return None
+        return self.__model.solver.var_get_x(self)
 
     def xi(self, i: int) -> Optional[float]:
         """Value for this variable in the :math:`i`-th solution from the solution
