@@ -206,3 +206,17 @@ class EmptyVarSol(Sequence):
 
     def __getitem__(self: "EmptyVarSol", key):
         return None
+
+
+class EmptyRowSol(Sequence):
+    """A list that always returns None when acessed, just to be used
+    when no solution is available."""
+
+    def __init__(self: "EmptyRowSol", model: "Model"):
+        self.__model = model
+
+    def __len__(self) -> int:
+        return self.__model.solver.num_rows()
+
+    def __getitem__(self: "EmptyRowSol", key):
+        return None
