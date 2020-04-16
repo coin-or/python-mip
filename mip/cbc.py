@@ -1218,9 +1218,12 @@ class SolverCbc(Solver):
     def set_start(self, start: List[Tuple[Var, float]]) -> None:
         n = len(start)
         dv = ffi.new("double[]", [start[i][1] for i in range(n)])
-        iv = ffi.new("int[]", [start[i][0].idx for i in range(n)])
+        keep_alive_str = [
+            ffi.new("char[]", str.encode(start[i][0].name)) for i in range(n)
+        ]
+        var_names = ffi.new("char *[]", keep_alive_str)
         mdl = self._model
-        cbclib.Cbc_setMIPStartI(mdl, n, iv, dv)
+        cbclib.Cbc_setMIPStart(mdl, n, var_names, dv)
 
     def num_cols(self) -> int:
         return cbclib.Cbc_getNumCols(self._model)
