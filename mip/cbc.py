@@ -1,7 +1,8 @@
 """Python-MIP interface to the COIN-OR Branch-and-Cut solver CBC"""
 
+import logging
 from typing import Dict, List, Tuple, Optional
-from sys import platform, maxsize, stdout as out, stderr as err
+from sys import platform, maxsize
 from os.path import dirname, isfile
 import os
 import multiprocessing as multip
@@ -33,6 +34,7 @@ from mip import (
     CutPool,
 )
 
+logger = logging.getLogger(__name__)
 warningMessages = 0
 
 ffi = FFI()
@@ -87,8 +89,9 @@ try:
     os.chdir(old_dir)
     has_cbc = True
 except Exception as e:
-    err.write("\nAn error occurred while loading the CBC library:\n")
-    err.write("\t" + str(e) + "\n")
+    logger.error(
+        "An error occurred while loading the CBC library:\t " "{}\n".format(e)
+    )
     has_cbc = False
 
 if has_cbc:
@@ -713,14 +716,15 @@ class SolverCbc(Solver):
             cut_types = [e for e in CutType]
         for cut_type in cut_types:
             if self.__verbose >= 1:
-                out.write(
-                    "searching for violated {} cuts ... ".format(cut_type.name)
+                logger.info(
+                    "searching for violated "
+                    "{} cuts ... ".format(cut_type.name)
                 )
             nc1 = OsiCuts_sizeRowCuts(osi_cuts)
             Cgl_generateCuts(osi_solver, int(cut_type.value), osi_cuts, int(1))
             nc2 = OsiCuts_sizeRowCuts(osi_cuts)
             if self.__verbose >= 1:
-                out.write("{} found.\n".format(nc2 - nc1))
+                logger.info("{} found.\n".format(nc2 - nc1))
             if OsiCuts_sizeRowCuts(osi_cuts) >= max_cuts:
                 break
 
