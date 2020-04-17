@@ -1,6 +1,6 @@
+import logging
 from os import environ
 from os.path import isfile
-from sys import stdout as out
 from typing import List, Tuple, Optional, Union, Dict, Any
 from mip.constants import (
     INF,
@@ -27,6 +27,9 @@ from mip.exceptions import (
     SolutionNotAvailable,
 )
 from mip.solver import Solver
+
+
+logger = logging.getLogger(__name__)
 
 
 class Model:
@@ -477,7 +480,7 @@ class Model:
 
         """
         if not self.solver.num_cols():
-            print("Model has no variables. Nothing to optimize.")
+            logger.warning("Model has no variables. Nothing to optimize.")
             return OptimizationStatus.OTHER
 
         if self.__threads != 0:
@@ -978,43 +981,47 @@ class Model:
         fixed per iteration, indicating if the model still feasible or not.
         """
 
-        out.write("Checking feasibility of MIPStart\n")
+        logger.info("Checking feasibility of MIPStart")
         mc = self.copy()
         mc.verbose = 0
         mc.relax()
         mc.optimize()
         if mc.status == OptimizationStatus.INFEASIBLE:
-            out.write("Model is infeasible.\n")
+            logger.info("Model is infeasible.\n")
             return
         if mc.status == OptimizationStatus.UNBOUNDED:
-            out.write(
+            logger.info(
                 "Model is unbounded. You probably need to insert "
-                "additional constraints or bounds in variables.\n"
+                "additional constraints or bounds in variables."
             )
             return
         if mc.status != OptimizationStatus.OPTIMAL:
-            print(
+            logger.warning(
                 "Unexpected status while optimizing LP relaxation:"
                 " {}".format(mc.status)
             )
 
-        print("Model LP relaxation bound is {}".format(mc.objective_value))
+        logger.info(
+            "Model LP relaxation bound is {}".format(mc.objective_value)
+        )
 
         for (var, value) in self.start:
-            out.write("\tfixing %s to %g ... " % (var.name, value))
+            logger.info("\tfixing %s to %g ... " % (var.name, value))
             mc += var == value
             mc.optimize()
             if mc.status == OptimizationStatus.OPTIMAL:
-                print("ok, obj now: {}".format(mc.objective_value))
+                logger.info("ok, obj now: {}".format(mc.objective_value))
             else:
-                print("NOT OK, optimization status: {}".format(mc.status))
+                logger.warning(
+                    "NOT OK, optimization status: {}".format(mc.status)
+                )
                 return
 
-        print(
+        logger.info(
             "Linear Programming relaxation of model with fixations from "
             "MIPStart is feasible."
         )
-        print("MIP model may still be infeasible.")
+        logger.info("MIP model may still be infeasible.")
 
     @property
     def num_cols(self: "Model") -> int:
@@ -1413,7 +1420,7 @@ def read_custom_settings():
                         )
 
 
-print("Using Python-MIP package version {}".format(VERSION))
+logger.info("Using Python-MIP package version {}".format(VERSION))
 customCbcLib = ""
 read_custom_settings()
 
