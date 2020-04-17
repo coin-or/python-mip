@@ -746,11 +746,6 @@ class Model:
         """Objective function value of the solution found or None
         if model was not optimized
         """
-        if self.status not in [
-            OptimizationStatus.OPTIMAL,
-            OptimizationStatus.FEASIBLE,
-        ]:
-            return None
         return self.solver.get_objective_value()
 
     @property
