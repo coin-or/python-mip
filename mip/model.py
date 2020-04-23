@@ -27,6 +27,7 @@ from mip.exceptions import (
     SolutionNotAvailable,
 )
 from mip.solver import Solver
+import numbers
 
 
 logger = logging.getLogger(__name__)
@@ -678,8 +679,8 @@ class Model:
         return self.solver.get_objective()
 
     @objective.setter
-    def objective(self: "Model", objective: Union[int, float, Var, LinExpr]):
-        if isinstance(objective, (int, float)):
+    def objective(self: "Model", objective: Union[numbers.Real, Var, LinExpr]):
+        if isinstance(objective, numbers.Real):
             self.solver.set_objective(LinExpr([], [], objective))
         elif isinstance(objective, Var):
             self.solver.set_objective(LinExpr([objective], [1]))
