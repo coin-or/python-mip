@@ -13,8 +13,6 @@ from mip.lists import EmptyVarSol, EmptyRowSol
 from mip.exceptions import (
     ParameterNotAvailable,
     SolutionNotAvailable,
-    ProgrammingError,
-    InterfacingError,
 )
 from mip import (
     Model,
