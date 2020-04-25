@@ -537,7 +537,7 @@ class Model:
         if path.lower().endswith(".sol") or path.lower().endswith(".mst"):
             mip_start = load_mipstart(path)
             if not mip_start:
-                raise Exception(
+                raise FileNotFoundError(
                     "File {} does not contains a valid feasible \
                                  solution.".format(
                         path
@@ -549,7 +549,7 @@ class Model:
                 if var is not None:
                     var_list.append((var, value))
             if not var_list:
-                raise Exception(
+                raise ValueError(
                     "Invalid variable(s) name(s) in \
                                  mipstart file {}".format(
                         path
@@ -571,7 +571,7 @@ class Model:
                 self.constrs.update_constrs(self.solver.num_rows())
                 return
 
-        raise Exception(
+        raise ValueError(
             "Use .lp, .mps, .sol or .mst as file extension \
                          to indicate the file format."
         )
@@ -619,7 +619,7 @@ class Model:
         ):
             self.solver.write(file_path)
         else:
-            raise Exception(
+            raise ValueError(
                 "Use .lp, .mps, .sol or .mst as file extension \
                              to indicate the file format."
             )
@@ -1193,7 +1193,8 @@ class Model:
 
     @sol_pool_size.setter
     def sol_pool_size(self: "Model", sol_pool_size: int):
-        assert sol_pool_size >= 1
+        if sol_pool_size < 1:
+            raise ValueError("Pool size must be at least one.")
         self.__sol_pool_size = sol_pool_size
 
     @property
@@ -1242,17 +1243,16 @@ class Model:
                 elif isinstance(o, Constr):
                     clist.append(o)
                 else:
-                    raise Exception(
+                    raise TypeError(
                         "Cannot handle removal of object of type "
-                        + type(o)
-                        + " from model."
+                        "{} from model".format(type(o))
                     )
             if vlist:
                 self.vars.remove(vlist)
             if clist:
                 self.constrs.remove(clist)
         else:
-            raise Exception(
+            raise TypeError(
                 "Cannot handle removal of object of type "
                 + type(objects)
                 + " from model."

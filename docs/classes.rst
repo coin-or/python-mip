@@ -81,6 +81,18 @@ ProgressLog
 .. autoclass:: mip.model.ProgressLog
     :members:
 
+Exceptions
+-----------
+
+.. autoclass:: mip.exceptions.MipBaseException
+.. autoclass:: mip.exceptions.ProgrammingError
+.. autoclass:: mip.exceptions.InterfacingError
+.. autoclass:: mip.exceptions.InvalidLinExpr
+.. autoclass:: mip.exceptions.InvalidParameter
+.. autoclass:: mip.exceptions.ParameterNotAvailable
+.. autoclass:: mip.exceptions.InfeasibleSolution
+.. autoclass:: mip.exceptions.SolutionNotAvailable
+
 Useful functions
 ----------------
 

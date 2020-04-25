@@ -33,9 +33,8 @@ class ProgressLog:
         :attr:`~mip.model.ProgressLog.instance` and
         :attr:`~mip.model.ProgressLog.settings` attributes"""
         if not self.instance:
-            raise Exception(
-                "Enter model name (instance name) to save \
-                             experimental data."
+            raise ValueError(
+                "Enter model name (instance name) to save experimental data."
             )
         if not file_name:
             file_name = "{}-{}.plog".format(self.instance, self.settings)
