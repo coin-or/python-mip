@@ -74,7 +74,10 @@ class LinExpr:
         self.__sense = sense
 
         if variables:
-            assert len(variables) == len(coeffs)
+            if len(variables) != len(coeffs):
+                raise ValueError(
+                    "Coefficients and variables must be same length."
+                )
             for i in range(len(coeffs)):
                 if abs(coeffs[i]) <= 1e-12:
                     continue
@@ -137,7 +140,10 @@ class LinExpr:
         return self
 
     def __mul__(self: "LinExpr", other: Union[numbers.Real]) -> "LinExpr":
-        assert isinstance(other, numbers.Real)
+        if not isinstance(other, numbers.Real):
+            raise TypeError(
+                "Can not multiply with type {}".format(type(other))
+            )
         result = self.copy()
         result.__const *= other
         for var in result.__expr.keys():
@@ -148,14 +154,18 @@ class LinExpr:
         return self.__mul__(other)
 
     def __imul__(self: "LinExpr", other: Union[numbers.Real]) -> "LinExpr":
-        assert isinstance(other, numbers.Real)
+        if not isinstance(other, numbers.Real):
+            raise TypeError(
+                "Can not multiply with type {}".format(type(other))
+            )
         self.__const *= other
         for var in self.__expr.keys():
             self.__expr[var] *= other
         return self
 
     def __truediv__(self: "LinExpr", other: Union[numbers.Real]) -> "LinExpr":
-        assert isinstance(other, numbers.Real)
+        if not isinstance(other, numbers.Real):
+            raise TypeError("Can not divide with type {}".format(type(other)))
         result = self.copy()
         result.__const /= other
         for var in result.__expr.keys():
@@ -163,7 +173,8 @@ class LinExpr:
         return result
 
     def __itruediv__(self: "LinExpr", other: Union[numbers.Real]) -> "LinExpr":
-        assert isinstance(other, numbers.Real)
+        if not isinstance(other, numbers.Real):
+            raise TypeError("Can not divide with type {}".format(type(other)))
         self.__const /= other
         for var in self.__expr.keys():
             self.__expr[var] /= other
@@ -482,14 +493,18 @@ class Var:
             return LinExpr([self], [-1], other)
 
     def __mul__(self, other: Union[numbers.Real]) -> LinExpr:
-        assert isinstance(other, numbers.Real)
+        if not isinstance(other, numbers.Real):
+            raise TypeError(
+                "Can not multiply with type {}".format(type(other))
+            )
         return LinExpr([self], [other])
 
     def __rmul__(self, other: Union[numbers.Real]) -> LinExpr:
         return self.__mul__(other)
 
     def __truediv__(self, other: Union[numbers.Real]) -> LinExpr:
-        assert isinstance(other, numbers.Real)
+        if not isinstance(other, numbers.Real):
+            raise TypeError("Can not divide with type {}".format(type(other)))
         return self.__mul__(1.0 / other)
 
     def __neg__(self) -> LinExpr:
@@ -567,7 +582,12 @@ class Var:
 
     @var_type.setter
     def var_type(self, value: str):
-        assert value in (BINARY, CONTINUOUS, INTEGER)
+        if value not in (BINARY, CONTINUOUS, INTEGER):
+            raise ValueError(
+                "Expected one of {}, but got {}".format(
+                    (BINARY, CONTINUOUS, INTEGER), value
+                )
+            )
         self.__model.solver.var_set_var_type(self, value)
 
     @property
