@@ -10,6 +10,10 @@ from cffi import FFI
 from mip.model import xsum
 import mip
 from mip.lists import EmptyVarSol, EmptyRowSol
+from mip.exceptions import (
+    ParameterNotAvailable,
+    SolutionNotAvailable,
+)
 from mip import (
     Model,
     Var,
@@ -67,7 +71,9 @@ try:
                 pathlib = os.path.join(pathlib, "lin64")
                 libfile = os.path.join(pathlib, "libCbcSolver.so")
             else:
-                raise Exception("Linux 32 bits platform not supported.")
+                raise NotImplementedError(
+                    "Linux 32 bits platform not supported."
+                )
         elif platform.lower().startswith("win"):
             if os_is_64_bit:
                 pathlib = os.path.join(pathlib, "win64")
@@ -75,14 +81,16 @@ try:
                     os.environ["PATH"] = pathlib + ";" + os.environ["PATH"]
                 libfile = os.path.join(pathlib, "libCbcSolver-0.dll")
             else:
-                raise Exception("Win32 platform not supported.")
+                raise NotImplementedError("Win32 platform not supported.")
         elif platform.lower().startswith(
             "darwin"
         ) or platform.lower().startswith("macos"):
             if os_is_64_bit:
                 libfile = os.path.join(pathlib, "cbc-c-darwin-x86-64.dylib")
         if not libfile:
-            raise Exception("You operating system/platform is not supported")
+            raise NotImplementedError(
+                "You operating system/platform is not supported"
+            )
     old_dir = os.getcwd()
     os.chdir(pathlib)
     cbclib = ffi.dlopen(libfile)
@@ -623,7 +631,9 @@ class SolverCbc(Solver):
     def get_objective(self) -> LinExpr:
         obj = cbclib.Cbc_getObjCoefficients(self._model)
         if obj == ffi.NULL:
-            raise Exception("Error getting objective function coefficients")
+            raise ParameterNotAvailable(
+                "Error getting objective function coefficients"
+            )
         return (
             xsum(
                 obj[j] * self.model.vars[j]
@@ -740,7 +750,7 @@ class SolverCbc(Solver):
             elif rsense == "G":
                 sense = GREATER_OR_EQUAL
             else:
-                raise Exception("Unknow sense: {}".format(rsense))
+                raise ValueError("Unknow sense: {}".format(rsense))
             idx = OsiCuts_idxRowCut(osi_cuts, i)
             coef = OsiCuts_coefRowCut(osi_cuts, i)
             nz = OsiCuts_nzRowCut(osi_cuts, i)
@@ -1017,7 +1027,7 @@ class SolverCbc(Solver):
         elif sense.strip().upper() == MINIMIZE.strip().upper():
             cbclib.Cbc_setObjSense(self._model, 1.0)
         else:
-            raise Exception(
+            raise ValueError(
                 "Unknown sense: {}, use {} or {}".format(
                     sense, MAXIMIZE, MINIMIZE
                 )
@@ -1076,7 +1086,9 @@ class SolverCbc(Solver):
     def var_get_lb(self, var: "Var") -> float:
         lb = cbclib.Cbc_getColLower(self._model)
         if lb == ffi.NULL:
-            raise Exception("Error while getting lower bound of variables")
+            raise ParameterNotAvailable(
+                "Error while getting lower bound of variables"
+            )
         return float(lb[var.idx])
 
     def var_set_lb(self, var: "Var", value: float):
@@ -1085,7 +1097,9 @@ class SolverCbc(Solver):
     def var_get_ub(self, var: "Var") -> float:
         ub = cbclib.Cbc_getColUpper(self._model)
         if ub == ffi.NULL:
-            raise Exception("Error while getting upper bound of variables")
+            raise ParameterNotAvailable(
+                "Error while getting upper bound of variables"
+            )
         return float(ub[var.idx])
 
     def var_set_ub(self, var: "Var", value: float):
@@ -1111,7 +1125,9 @@ class SolverCbc(Solver):
     def var_get_obj(self, var: Var) -> float:
         obj = cbclib.Cbc_getObjCoefficients(self._model)
         if obj == ffi.NULL:
-            raise Exception("Error getting objective function coefficients")
+            raise ParameterNotAvailable(
+                "Error getting objective function coefficients"
+            )
         return obj[var.idx]
 
     def var_get_var_type(self, var: "Var") -> str:
@@ -1131,7 +1147,7 @@ class SolverCbc(Solver):
 
         cidx = cbclib.Cbc_getColIndices(self._model, var.idx)
         if cidx == ffi.NULL:
-            raise Exception("Error getting column indices'")
+            raise ParameterNotAvailable("Error getting column indices'")
         ccoef = cbclib.Cbc_getColCoeffs(self._model, var.idx)
 
         col = Column()
@@ -1199,14 +1215,16 @@ class SolverCbc(Solver):
         elif ".lp" in file_path.lower():
             cbclib.Cbc_writeLp(self._model, fpstr)
         else:
-            raise Exception(
+            raise ValueError(
                 "Enter a valid extension (.lp or .mps) \
                 to indicate the file format"
             )
 
     def read(self, file_path: str) -> None:
         if not isfile(file_path):
-            raise Exception("File {} does not exists".format(file_path))
+            raise FileNotFoundError(
+                "File {} does not exists".format(file_path)
+            )
 
         fpstr = file_path.encode("utf-8")
         if ".mps" in file_path.lower():
@@ -1214,7 +1232,7 @@ class SolverCbc(Solver):
         elif ".lp" in file_path.lower():
             cbclib.Cbc_readLp(self._model, fpstr)
         else:
-            raise Exception(
+            raise ValueError(
                 "Enter a valid extension (.lp or .mps) \
                 to indicate the file format"
             )
@@ -1264,10 +1282,10 @@ class SolverCbc(Solver):
 
         ridx = cbclib.Cbc_getRowIndices(self._model, constr.idx)
         if ridx == ffi.NULL:
-            raise Exception("Error getting row indices.")
+            raise ParameterNotAvailable("Error getting row indices.")
         rcoef = cbclib.Cbc_getRowCoeffs(self._model, constr.idx)
         if rcoef == ffi.NULL:
-            raise Exception("Error getting row coefficients.")
+            raise ParameterNotAvailable("Error getting row coefficients.")
 
         rhs = cbclib.Cbc_getRowRHS(self._model, constr.idx)
         rsense = (
@@ -1283,7 +1301,7 @@ class SolverCbc(Solver):
         elif rsense == "G":
             sense = GREATER_OR_EQUAL
         else:
-            raise Exception("Unknow sense: {}".format(rsense))
+            raise ValueError("Unknow sense: {}".format(rsense))
 
         expr = LinExpr(const=-rhs, sense=sense)
         for i in range(numnz):
@@ -1553,12 +1571,14 @@ class SolverOsi(Solver):
             self.add_constr(lin_expr, name)
 
     def get_objective_bound(self) -> float:
-        raise Exception("Not available in OsiSolver")
+        raise NotImplementedError("Not available in OsiSolver")
 
     def get_objective(self) -> LinExpr:
         obj = cbclib.Osi_getObjCoefficients(self.osi)
         if obj == ffi.NULL:
-            raise Exception("Error getting objective function coefficients")
+            raise ParameterNotAvailable(
+                "Error getting objective function coefficients"
+            )
         return (
             xsum(
                 obj[j] * self.model.vars[j]
@@ -1604,7 +1624,7 @@ class SolverOsi(Solver):
         return []
 
     def get_objective_value_i(self, i: int) -> float:
-        raise Exception("Not available in OsiSolver")
+        raise NotImplementedError("Not available in OsiSolver")
 
     def get_num_solutions(self) -> int:
         if cbclib.Osi_isProvenOptimal(self.osi):
@@ -1625,14 +1645,14 @@ class SolverOsi(Solver):
         elif sense.strip().upper() == MINIMIZE.strip().upper():
             cbclib.Osi_setObjSense(self.osi, 1.0)
         else:
-            raise Exception(
+            raise ValueError(
                 "Unknown sense: {}, use {} or {}".format(
                     sense, MAXIMIZE, MINIMIZE
                 )
             )
 
     def set_start(self, start: List[Tuple["Var", float]]):
-        raise Exception("MIPstart not available in OsiSolver")
+        raise NotImplementedError("MIPstart not available in OsiSolver")
 
     def set_objective(self, lin_expr: "LinExpr", sense: str = ""):
         # collecting variable coefficients
@@ -1649,7 +1669,7 @@ class SolverOsi(Solver):
             cbclib.Osi_setObjSense(self.osi, 1.0)
 
     def set_objective_const(self, const: float):
-        raise Exception("Still not implemented in OsiSolver")
+        raise NotImplementedError("Still not implemented in OsiSolver")
 
     def set_processing_limits(
         self,
@@ -1657,40 +1677,40 @@ class SolverOsi(Solver):
         max_nodes: int = maxsize,
         max_sol: int = maxsize,
     ):
-        raise Exception("Not available in OsiSolver")
+        raise NotImplementedError("Not available in OsiSolver")
 
     def get_max_seconds(self) -> float:
-        raise Exception("Not available in OsiSolver")
+        raise NotImplementedError("Not available in OsiSolver")
 
     def set_max_seconds(self, max_seconds: float):
-        raise Exception("Not available in OsiSolver")
+        raise NotImplementedError("Not available in OsiSolver")
 
     def get_max_solutions(self) -> int:
-        raise Exception("Not available in OsiSolver")
+        raise NotImplementedError("Not available in OsiSolver")
 
     def set_max_solutions(self, max_solutions: int):
-        raise Exception("Not available in OsiSolver")
+        raise NotImplementedError("Not available in OsiSolver")
 
     def get_pump_passes(self) -> int:
-        raise Exception("Not available in OsiSolver")
+        raise NotImplementedError("Not available in OsiSolver")
 
     def set_pump_passes(self, passes: int):
-        raise Exception("Not available in OsiSolver")
+        raise NotImplementedError("Not available in OsiSolver")
 
     def get_max_nodes(self) -> int:
-        raise Exception("Not available in OsiSolver")
+        raise NotImplementedError("Not available in OsiSolver")
 
     def set_max_nodes(self, max_nodes: int):
-        raise Exception("Not available in OsiSolver")
+        raise NotImplementedError("Not available in OsiSolver")
 
     def set_num_threads(self, threads: int):
-        raise Exception("Not available in OsiSolver")
+        raise NotImplementedError("Not available in OsiSolver")
 
     def write(self, file_path: str):
-        raise Exception("Not available in OsiSolver")
+        raise NotImplementedError("Not available in OsiSolver")
 
     def read(self, file_path: str):
-        raise Exception("Not available in OsiSolver")
+        raise NotImplementedError("Not available in OsiSolver")
 
     def num_cols(self) -> int:
         return cbclib.Osi_getNumCols(self.osi)
@@ -1705,34 +1725,34 @@ class SolverOsi(Solver):
         return cbclib.Osi_getNumIntegers(self.osi)
 
     def get_emphasis(self) -> SearchEmphasis:
-        raise Exception("Not available in OsiSolver")
+        raise NotImplementedError("Not available in OsiSolver")
 
     def set_emphasis(self, emph: SearchEmphasis):
-        raise Exception("Not available in OsiSolver")
+        raise NotImplementedError("Not available in OsiSolver")
 
     def get_cutoff(self) -> float:
-        raise Exception("Not available in OsiSolver")
+        raise NotImplementedError("Not available in OsiSolver")
 
     def set_cutoff(self, cutoff: float):
-        raise Exception("Not available in OsiSolver")
+        raise NotImplementedError("Not available in OsiSolver")
 
     def get_mip_gap_abs(self) -> float:
-        raise Exception("Not available in OsiSolver")
+        raise NotImplementedError("Not available in OsiSolver")
 
     def set_mip_gap_abs(self, mip_gap_abs: float):
-        raise Exception("Not available in OsiSolver")
+        raise NotImplementedError("Not available in OsiSolver")
 
     def get_mip_gap(self) -> float:
-        raise Exception("Not available in OsiSolver")
+        raise NotImplementedError("Not available in OsiSolver")
 
     def set_mip_gap(self, mip_gap: float):
-        raise Exception("Not available in OsiSolver")
+        raise NotImplementedError("Not available in OsiSolver")
 
     def get_verbose(self) -> int:
-        raise Exception("Not available in OsiSolver")
+        raise NotImplementedError("Not available in OsiSolver")
 
     def set_verbose(self, verbose: int):
-        raise Exception("Not available in OsiSolver")
+        raise NotImplementedError("Not available in OsiSolver")
 
     # Constraint-related getters/setters
     def constr_get_expr(self, constr: Constr) -> LinExpr:
@@ -1740,10 +1760,10 @@ class SolverOsi(Solver):
 
         ridx = cbclib.Osi_getRowIndices(self.osi, constr.idx)
         if ridx == ffi.NULL:
-            raise Exception("Error getting row indices.")
+            raise ParameterNotAvailable("Error getting row indices.")
         rcoef = cbclib.Osi_getRowCoeffs(self.osi, constr.idx)
         if rcoef == ffi.NULL:
-            raise Exception("Error getting row coefficients.")
+            raise ParameterNotAvailable("Error getting row coefficients.")
 
         rhs = cbclib.Osi_getRowRHS(self.osi, constr.idx)
         rsense = (
@@ -1759,7 +1779,7 @@ class SolverOsi(Solver):
         elif rsense == "G":
             sense = GREATER_OR_EQUAL
         else:
-            raise Exception("Unknow sense: {}".format(rsense))
+            raise ValueError("Unknow sense: {}".format(rsense))
 
         expr = LinExpr(const=-rhs, sense=sense)
         for i in range(numnz):
@@ -1768,7 +1788,7 @@ class SolverOsi(Solver):
         return expr
 
     def constr_set_expr(self, constr: Constr, value: LinExpr) -> LinExpr:
-        raise Exception("Not available in OsiSolver")
+        raise NotImplementedError("Not available in OsiSolver")
 
     def constr_get_name(self, idx: int) -> str:
         namep = self.__name_space
@@ -1776,7 +1796,7 @@ class SolverOsi(Solver):
         return ffi.string(namep).decode("utf-8")
 
     def remove_constrs(self, constrsList: List[int]):
-        raise Exception("Not available in OsiSolver")
+        raise NotImplementedError("Not available in OsiSolver")
 
     def constr_get_index(self, name: str) -> int:
         if self.rowNames is None:
@@ -1842,7 +1862,9 @@ class SolverOsi(Solver):
     def var_get_obj(self, var: "Var") -> float:
         obj = cbclib.Osi_getObjCoefficients(self.osi)
         if obj == ffi.NULL:
-            raise Exception("Error getting objective function coefficients")
+            raise ParameterNotAvailable(
+                "Error getting objective function coefficients"
+            )
         return obj[var.idx]
 
     def var_set_obj(self, var: "Var", value: float):
@@ -1882,7 +1904,7 @@ class SolverOsi(Solver):
 
         cidx = cbclib.Cbc_getColIndices(self.osi, var.idx)
         if cidx == ffi.NULL:
-            raise Exception("Error getting column indices'")
+            raise ParameterNotAvailable("Error getting column indices'")
         ccoef = cbclib.Cbc_getColCoeffs(self.osi, var.idx)
 
         col = Column()
@@ -1894,22 +1916,22 @@ class SolverOsi(Solver):
         return col
 
     def var_set_column(self, var: "Var", value: Column):
-        raise Exception("Not available in OsiSolver")
+        raise NotImplementedError("Not available in OsiSolver")
 
     def var_get_rc(self, var: "Var") -> float:
         rc = cbclib.Osi_getReducedCost(self.osi)
         if rc == ffi.NULL:
-            raise Exception("reduced cost not available")
+            raise ParameterNotAvailable("reduced cost not available")
         return float(rc[var.idx])
 
     def var_get_x(self, var: "Var") -> float:
         x = cbclib.Osi_getColSolution(self.osi)
         if x == ffi.NULL:
-            raise Exception("no solution found")
+            raise SolutionNotAvailable("no solution found")
         return float(x[var.idx])
 
     def var_get_xi(self, var: "Var", i: int) -> float:
-        raise Exception("Solution pool not supported in OsiSolver")
+        raise NotImplementedError("Solution pool not supported in OsiSolver")
 
     def var_get_name(self, idx: int) -> str:
         namep = self.__name_space
@@ -1917,7 +1939,7 @@ class SolverOsi(Solver):
         return ffi.string(namep).decode("utf-8")
 
     def remove_vars(self, varsList: List[int]):
-        raise Exception("Not supported in OsiSolver")
+        raise NotImplementedError("Not supported in OsiSolver")
 
     def var_get_index(self, name: str) -> int:
         if self.colNames is None:
@@ -1931,10 +1953,10 @@ class SolverOsi(Solver):
         return -1
 
     def get_problem_name(self) -> str:
-        raise Exception("Not supported in OsiSolver")
+        raise NotImplementedError("Not supported in OsiSolver")
 
     def set_problem_name(self, name: str):
-        raise Exception("Not supported in OsiSolver")
+        raise NotImplementedError("Not supported in OsiSolver")
 
 
 # vim: ts=4 sw=4 et

@@ -124,7 +124,7 @@ class VVarList(Sequence):
 
             return Var(self.__model, key + self.__start)
 
-        raise Exception("Unknow type")
+        raise TypeError("Unknown type {}".format(type(key)))
 
     def __len__(self: "VVarList") -> int:
         return self.__model.solver.num_cols()
@@ -188,7 +188,7 @@ class VConstrList(Sequence):
         elif isinstance(key, slice):
             return self[key]
 
-        raise Exception("Use int or string as key")
+        raise TypeError("Use int, string or slice as key")
 
     def __len__(self) -> int:
         return self.__model.solver.num_rows()
