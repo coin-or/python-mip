@@ -24,7 +24,11 @@ class Column:
     constraint matrix. To create a variable see
     :meth:`~mip.model.Model.add_var`."""
 
-    def __init__(self, constrs: List["Constr"] = [], coeffs: List[float] = []):
+    def __init__(self, constrs: List["Constr"] = None, coeffs: List[float] = None):
+        if constrs is None:
+            constrs = []
+        if coeffs is None:
+            coeffs = []
         self.constrs = constrs
         self.coeffs = coeffs
 
@@ -64,11 +68,15 @@ class LinExpr:
 
     def __init__(
         self,
-        variables: List["Var"] = [],
-        coeffs: List[float] = [],
+        variables: List["Var"] = None,
+        coeffs: List[float] = None,
         const: float = 0.0,
         sense: str = "",
     ):
+        if variables is None:
+            variables = []
+        if coeffs is None:
+            coeffs = []
         self.__const = const
         self.__expr = {}  # type: Dict[Var, float]
         self.__sense = sense
