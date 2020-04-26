@@ -24,7 +24,9 @@ class Column:
     constraint matrix. To create a variable see
     :meth:`~mip.model.Model.add_var`."""
 
-    def __init__(self, constrs: List["Constr"] = None, coeffs: List[float] = None):
+    def __init__(
+        self, constrs: List["Constr"] = None, coeffs: List[float] = None
+    ):
         if constrs is None:
             constrs = []
         if coeffs is None:
