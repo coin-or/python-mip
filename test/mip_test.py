@@ -591,3 +591,31 @@ def test_variable_bounds(solver: str, val: int):
     assert round(m.objective_value) == val
     assert round(x.x) == 2 * val
     assert round(y.x) == val
+
+
+@pytest.mark.parametrize("val", range(1, 4))
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_linexpr_x(solver: str, val: int):
+    m = Model("bounds", solver_name=solver)
+
+    x = m.add_var(lb=0, ub=2 * val)
+    y = m.add_var(lb=val, ub=2 * val)
+    obj = x - y
+
+    assert obj.x is None  # No solution yet.
+
+    m.objective = maximize(obj)
+    m.optimize()
+
+    assert m.status == OptimizationStatus.OPTIMAL
+    assert round(m.objective_value) == val
+    assert round(x.x) == 2 * val
+    assert round(y.x) == val
+
+    # Check that the linear expression value is equal to the same expression
+    # calculated from the values of the variables.
+    assert abs((x + y).x - (x.x + y.x)) < TOL
+    assert abs((x + 2*y).x - (x.x + 2*y.x)) < TOL
+    assert abs((x + 2*y + x).x - (x.x + 2*y.x + x.x)) < TOL
+    assert abs((x + 2*y + x + 1).x - (x.x + 2*y.x + x.x + 1)) < TOL
+    assert abs((x + 2*y + x + 1 + x/2).x - (x.x + 2*y.x + x.x + 1 + x.x/2)) < TOL

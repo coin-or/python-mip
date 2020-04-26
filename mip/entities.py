@@ -60,6 +60,16 @@ class LinExpr:
     .. code:: python
 
      m += x1 + x2 + x3 == 1
+
+    If used in intermediate calculations, the solved value of the linear
+    expression can be obtained with the ``x`` parameter, just as with
+    a ``Var``.
+
+    .. code:: python
+
+     a = 10*x1 + 7*x4
+     print(a.x)
+
     """
 
     def __init__(
@@ -358,6 +368,18 @@ class LinExpr:
             viol = max(rhs - lhs, 0.0)
 
         return viol
+
+    @property
+    def x(self) -> Optional[numbers.Real]:
+        """Value of this linear expression in the solution. None
+        is returned if no solution is available."""
+        x = self.__const
+        for var, coef in self.__expr.items():
+            var_x = var.x
+            if var_x is None:
+                return None
+            x += var_x * coef
+        return x
 
 
 class Constr:
