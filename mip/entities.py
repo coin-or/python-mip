@@ -103,6 +103,8 @@ class LinExpr:
             result.add_expr(other)
         elif isinstance(other, numbers.Real):
             result.add_const(other)
+        else:
+            raise TypeError("type {} not supported".format(type(other)))
         return result
 
     def __radd__(
@@ -119,6 +121,8 @@ class LinExpr:
             self.add_expr(other)
         elif isinstance(other, numbers.Real):
             self.add_const(other)
+        else:
+            raise TypeError("type {} not supported".format(type(other)))
         return self
 
     def __sub__(
@@ -131,6 +135,8 @@ class LinExpr:
             result.add_expr(other, -1)
         elif isinstance(other, numbers.Real):
             result.add_const(-other)
+        else:
+            raise TypeError("type {} not supported".format(type(other)))
         return result
 
     def __rsub__(
@@ -147,6 +153,8 @@ class LinExpr:
             self.add_expr(other, -1)
         elif isinstance(other, numbers.Real):
             self.add_const(-other)
+        else:
+            raise TypeError("type {} not supported".format(type(other)))
         return self
 
     def __mul__(self: "LinExpr", other: Union[numbers.Real]) -> "LinExpr":
@@ -272,6 +280,8 @@ class LinExpr:
             self.add_expr(__expr, coeff)
         elif isinstance(__expr, numbers.Real):
             self.add_const(__expr)
+        else:
+            raise TypeError("type {} not supported".format(type(__expr)))
 
     def add_var(self: "LinExpr", var: "Var", coeff: float = 1):
         """adds a variable with a coefficient to the constraint"""
@@ -359,13 +369,14 @@ class LinExpr:
         """
         lhs = sum(coef * var.x for (var, coef) in self.__expr.items())
         rhs = -self.const
-        viol = 0.0
         if self.sense == "=":
             viol = abs(lhs - rhs)
         elif self.sense == "<":
             viol = max(lhs - rhs, 0.0)
         elif self.sense == ">":
             viol = max(rhs - lhs, 0.0)
+        else:
+            raise ValueError("Invalid sense {}".format(self.sense))
 
         return viol
 
@@ -433,6 +444,8 @@ class Constr:
             res += " <= {}".format(rhs)
         elif self.expr.sense == ">":
             res += " >= {}".format(rhs)
+        else:
+            raise ValueError("Invalid sense {}".format(self.expr.sense))
 
         return res
 
@@ -494,6 +507,8 @@ class Var:
             return other.__add__(self)
         elif isinstance(other, numbers.Real):
             return LinExpr([self], [1], other)
+        else:
+            raise TypeError("type {} not supported".format(type(other)))
 
     def __radd__(self, other: Union["Var", LinExpr, numbers.Real]) -> LinExpr:
         return self.__add__(other)
@@ -505,6 +520,8 @@ class Var:
             return (-other).__iadd__(self)
         elif isinstance(other, numbers.Real):
             return LinExpr([self], [1], -other)
+        else:
+            raise TypeError("type {} not supported".format(type(other)))
 
     def __rsub__(self, other: Union["Var", LinExpr, numbers.Real]) -> LinExpr:
         if isinstance(other, Var):
@@ -513,6 +530,8 @@ class Var:
             return other.__sub__(self)
         elif isinstance(other, numbers.Real):
             return LinExpr([self], [-1], other)
+        else:
+            raise TypeError("type {} not supported".format(type(other)))
 
     def __mul__(self, other: Union[numbers.Real]) -> LinExpr:
         if not isinstance(other, numbers.Real):
@@ -541,6 +560,8 @@ class Var:
             if other != 0:
                 return LinExpr([self], [1], -1 * other, sense="=")
             return LinExpr([self], [1], sense="=")
+        else:
+            raise TypeError("type {} not supported".format(type(other)))
 
     def __le__(self, other: Union["Var", LinExpr, numbers.Real]) -> LinExpr:
         if isinstance(other, Var):
@@ -551,6 +572,8 @@ class Var:
             if other != 0:
                 return LinExpr([self], [1], -1 * other, sense="<")
             return LinExpr([self], [1], sense="<")
+        else:
+            raise TypeError("type {} not supported".format(type(other)))
 
     def __ge__(self, other: Union["Var", LinExpr, numbers.Real]) -> LinExpr:
         if isinstance(other, Var):
@@ -561,6 +584,8 @@ class Var:
             if other != 0:
                 return LinExpr([self], [1], -1 * other, sense=">")
             return LinExpr([self], [1], sense=">")
+        else:
+            raise TypeError("type {} not supported".format(type(other)))
 
     @property
     def name(self) -> str:
