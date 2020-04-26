@@ -176,7 +176,7 @@ class Model:
             for cut in other.cuts:
                 self.add_constr(cut)
         else:
-            raise TypeError('type {} not supported'.format(type(other)))
+            raise TypeError("type {} not supported".format(type(other)))
 
         return self
 
@@ -689,7 +689,7 @@ class Model:
         elif isinstance(objective, LinExpr):
             self.solver.set_objective(objective)
         else:
-            raise TypeError('type {} not supported'.format(type(objective)))
+            raise TypeError("type {} not supported".format(type(objective)))
 
     @property
     def verbose(self: "Model") -> int:
