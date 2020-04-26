@@ -175,6 +175,8 @@ class Model:
         elif isinstance(other, CutPool):
             for cut in other.cuts:
                 self.add_constr(cut)
+        else:
+            raise TypeError('type {} not supported'.format(type(other)))
 
         return self
 
@@ -686,6 +688,8 @@ class Model:
             self.solver.set_objective(LinExpr([objective], [1]))
         elif isinstance(objective, LinExpr):
             self.solver.set_objective(objective)
+        else:
+            raise TypeError('type {} not supported'.format(type(objective)))
 
     @property
     def verbose(self: "Model") -> int:
