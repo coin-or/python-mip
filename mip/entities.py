@@ -359,7 +359,7 @@ class LinExpr:
         return viol
 
     @property
-    def x(self) -> Optional[float]:
+    def x(self) -> Optional[numbers.Real]:
         """Value of this linear expression in the solution. None
         is returned if no solution is available."""
         x = self.__const
