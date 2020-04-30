@@ -1,12 +1,11 @@
 from ctypes.util import find_library
 import logging
-from sys import maxsize
+from sys import maxsize, platform
 from typing import List, Tuple
 from os.path import isfile
 import os.path
 from glob import glob
 from os import environ
-from sys import platform
 from cffi import FFI
 from mip.exceptions import (
     ParameterNotAvailable,
@@ -36,6 +35,7 @@ from mip import (
     SearchEmphasis,
     LP_Method,
 )
+from mip.lists import EmptyVarSol, EmptyRowSol
 
 logger = logging.getLogger(__name__)
 
@@ -404,7 +404,18 @@ class SolverGurobi(Solver):
         self.__name_space = ffi.new("char[{}]".format(MAX_NAME_SIZE))
         self.__log = []
 
-        self.__x = None
+        # where solution will be stored
+        self.__x = EmptyVarSol(model)
+        self.__rc = EmptyVarSol(model)
+        self.__pi = EmptyRowSol(model)
+        self.__obj_val = None
+
+    def __clear_sol(self):
+        model = self.model
+        self.__x = EmptyVarSol(model)
+        self.__rc = EmptyVarSol(model)
+        self.__pi = EmptyRowSol(model)
+        self.__obj_val = None
 
     def __del__(self):
         # freeing Gurobi model and environment
@@ -671,8 +682,26 @@ class SolverGurobi(Solver):
         self.set_int_param("PoolSolutions", self.model.sol_pool_size)
 
         # executing Gurobi to solve the formulation
-        self.__x = None
+        self.__clear_sol()
+
+        # if solve only LP relax, saving var types
+        int_vars = []
+        if relax:
+            int_vars = [
+                (v, v.var_type)
+                for v in self.model.vars
+                if v.var_type in [BINARY, INTEGER]
+            ]
+            for v, _ in int_vars:
+                v.var_type = CONTINUOUS
+            self.update()
+
         status = GRBoptimize(self._model)
+        if int_vars:
+            for v, vt in int_vars:
+                v.var_type = vt
+            self.update()
+
         if status != 0:
             if status == 10009:
                 raise InterfacingError(
@@ -689,11 +718,13 @@ class SolverGurobi(Solver):
         # checking status for MIP optimization which
         # finished before the search to be
         # concluded (time, iteration limit...)
-        if self.num_int():
+        if self.num_int() and (not relax):
             if status in [8, 9, 10, 11, 13]:
                 nsols = self.get_int_attr("SolCount")
                 if nsols >= 1:
                     self.__x = ffi.new("double[{}]".format(self.num_cols()))
+                    self.__obj_val = self.get_dbl_attr("ObjVal")
+
                     attr = "X".encode("utf-8")
                     st = GRBgetdblattrarray(
                         self._model, attr, 0, self.num_cols(), self.__x
@@ -704,14 +735,15 @@ class SolverGurobi(Solver):
                         )
 
                     return OptimizationStatus.FEASIBLE
-                else:
-                    return OptimizationStatus.NO_SOLUTION_FOUND
 
-        # todo: read solution status (code below is incomplete)
+                return OptimizationStatus.NO_SOLUTION_FOUND
+
         if status == 1:  # LOADED
             return OptimizationStatus.LOADED
         if status == 2:  # OPTIMAL
-            if self.__x is None:
+            if isinstance(self.__x, EmptyVarSol):
+                self.__obj_val = self.get_dbl_attr("ObjVal")
+
                 self.__x = ffi.new("double[{}]".format(self.num_cols()))
                 attr = "X".encode("utf-8")
                 st = GRBgetdblattrarray(
@@ -722,32 +754,53 @@ class SolverGurobi(Solver):
                         "Error quering Gurobi solution"
                     )
 
+                if self.num_int() == 0 or (relax):
+                    self.__pi = ffi.new("double[{}]".format(self.num_rows()))
+                    attr = "Pi".encode("utf-8")
+                    st = GRBgetdblattrarray(
+                        self._model, attr, 0, self.num_rows(), self.__pi
+                    )
+                    if st:
+                        raise ParameterNotAvailable(
+                            "Error quering Gurobi solution"
+                        )
+
+                    self.__rc = ffi.new("double[{}]".format(self.num_cols()))
+                    attr = "RC".encode("utf-8")
+                    st = GRBgetdblattrarray(
+                        self._model, attr, 0, self.num_cols(), self.__rc
+                    )
+                    if st:
+                        raise ParameterNotAvailable(
+                            "Error quering Gurobi solution"
+                        )
+
             return OptimizationStatus.OPTIMAL
-        elif status == 3:  # INFEASIBLE
+        if status == 3:  # INFEASIBLE
             return OptimizationStatus.INFEASIBLE
-        elif status == 4:  # INF_OR_UNBD
+        if status == 4:  # INF_OR_UNBD
             return OptimizationStatus.UNBOUNDED
-        elif status == 5:  # UNBOUNDED
+        if status == 5:  # UNBOUNDED
             return OptimizationStatus.UNBOUNDED
-        elif status == 6:  # CUTOFF
+        if status == 6:  # CUTOFF
             return OptimizationStatus.CUTOFF
-        elif status == 7:  # ITERATION_LIMIT
+        if status == 7:  # ITERATION_LIMIT
             return OptimizationStatus.OTHER
-        elif status == 8:  # NODE_LIMIT
+        if status == 8:  # NODE_LIMIT
             return OptimizationStatus.OTHER
-        elif status == 9:  # TIME_LIMIT
+        if status == 9:  # TIME_LIMIT
             return OptimizationStatus.OTHER
-        elif status == 10:  # SOLUTION_LIMIT
+        if status == 10:  # SOLUTION_LIMIT
             return OptimizationStatus.FEASIBLE
-        elif status == 11:  # INTERRUPTED
+        if status == 11:  # INTERRUPTED
             return OptimizationStatus.OTHER
-        elif status == 12:  # NUMERIC
+        if status == 12:  # NUMERIC
             return OptimizationStatus.OTHER
-        elif status == 13:  # SUBOPTIMAL
+        if status == 13:  # SUBOPTIMAL
             return OptimizationStatus.FEASIBLE
-        elif status == 14:  # INPROGRESS
+        if status == 14:  # INPROGRESS
             return OptimizationStatus.OTHER
-        elif status == 15:  # USER_OBJ_LIMIT
+        if status == 15:  # USER_OBJ_LIMIT
             return OptimizationStatus.FEASIBLE
 
         self._updated = True
@@ -795,7 +848,7 @@ class SolverGurobi(Solver):
         return self.get_dbl_attr("PoolObjVal")
 
     def get_objective_value(self) -> float:
-        return self.get_dbl_attr("ObjVal")
+        return self.__obj_val
 
     def get_log(self) -> List[Tuple[float, Tuple[float, float]]]:
         return self.__log
@@ -1007,7 +1060,7 @@ class SolverGurobi(Solver):
         return self.get_dbl_attr_element("Slack", constr.idx)
 
     def constr_get_pi(self, constr: "Constr") -> float:
-        return self.get_dbl_attr_element("Pi", constr.idx)
+        return self.__pi[constr.idx]
 
     def constr_get_index(self, name: str) -> int:
         GRBupdatemodel(self._model)
@@ -1111,7 +1164,7 @@ class SolverGurobi(Solver):
         raise NotImplementedError("Gurobi functionality currently unavailable")
 
     def var_get_rc(self, var: Var) -> float:
-        return self.get_dbl_attr_element("RC", var.idx)
+        return self.__rc[var.idx]
 
     def var_get_x(self, var: Var) -> float:
         return self.__x[var.idx]
