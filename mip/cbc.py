@@ -6,6 +6,7 @@ from sys import platform, maxsize
 from os.path import dirname, isfile
 import os
 import multiprocessing as multip
+import numbers
 from cffi import FFI
 from mip.model import xsum
 import mip
@@ -60,9 +61,9 @@ try:
     # (for debugging purposes, for example)
     if "PMIP_CBC_LIBRARY" in os.environ:
         libfile = os.environ["PMIP_CBC_LIBRARY"]
+        pathlib = dirname(libfile)
 
         if platform.lower().startswith("win"):
-            pathlib = dirname(libfile)
             if pathlib not in os.environ["PATH"]:
                 os.environ["PATH"] += ";" + pathlib
     else:
@@ -214,6 +215,12 @@ if has_cbc:
     const double *Cbc_getColLower(Cbc_Model *model);
 
     const double *Cbc_getColUpper(Cbc_Model *model);
+
+    double Cbc_getColObj(Cbc_Model *model, int colIdx);
+
+    double Cbc_getColLB(Cbc_Model *model, int colIdx);
+
+    double Cbc_getColUB(Cbc_Model *model, int colIdx);
 
     void Cbc_setColLower(Cbc_Model *model, int index, double value);
 
@@ -861,6 +868,7 @@ class SolverCbc(Solver):
                 self.__obj_val = (
                     cbclib.Cbc_getObjValue(self._model) + self._objconst
                 )
+
                 return OptimizationStatus.OPTIMAL
             if res == 2:
                 return OptimizationStatus.UNBOUNDED
@@ -993,6 +1001,7 @@ class SolverCbc(Solver):
             self.__obj_val = (
                 cbclib.Cbc_getObjValue(self._model) + self._objconst
             )
+
             if self.model.num_int == 0:
                 self.__rc = cbclib.Cbc_getReducedCost(self._model)
                 self.__pi = cbclib.Cbc_getRowPrice(self._model)
@@ -1083,24 +1092,14 @@ class SolverCbc(Solver):
         # (returns None if no solution available)
         return self.__rc[var.idx]
 
-    def var_get_lb(self, var: "Var") -> float:
-        lb = cbclib.Cbc_getColLower(self._model)
-        if lb == ffi.NULL:
-            raise ParameterNotAvailable(
-                "Error while getting lower bound of variables"
-            )
-        return float(lb[var.idx])
+    def var_get_lb(self, var: "Var") -> numbers.Real:
+        return cbclib.Cbc_getColLB(self._model, var.idx)
 
     def var_set_lb(self, var: "Var", value: float):
         cbclib.Cbc_setColLower(self._model, var.idx, value)
 
-    def var_get_ub(self, var: "Var") -> float:
-        ub = cbclib.Cbc_getColUpper(self._model)
-        if ub == ffi.NULL:
-            raise ParameterNotAvailable(
-                "Error while getting upper bound of variables"
-            )
-        return float(ub[var.idx])
+    def var_get_ub(self, var: "Var") -> numbers.Real:
+        return cbclib.Cbc_getColUB(self._model, var.idx)
 
     def var_set_ub(self, var: "Var", value: float):
         cbclib.Cbc_setColUpper(self._model, var.idx, value)
@@ -1122,13 +1121,8 @@ class SolverCbc(Solver):
     def constr_set_rhs(self, idx: int, rhs: float):
         cbclib.Cbc_setRowRHS(self._model, idx, rhs)
 
-    def var_get_obj(self, var: Var) -> float:
-        obj = cbclib.Cbc_getObjCoefficients(self._model)
-        if obj == ffi.NULL:
-            raise ParameterNotAvailable(
-                "Error getting objective function coefficients"
-            )
-        return obj[var.idx]
+    def var_get_obj(self, var: Var) -> numbers.Real:
+        return cbclib.Cbc_getColObj(self._model, var.idx)
 
     def var_get_var_type(self, var: "Var") -> str:
         isInt = cbclib.Cbc_isInteger(self._model, var.idx)
@@ -1144,19 +1138,18 @@ class SolverCbc(Solver):
 
     def var_get_column(self, var: "Var") -> Column:
         numnz = cbclib.Cbc_getColNz(self._model, var.idx)
+        if numnz == 0:
+            return Column()
 
         cidx = cbclib.Cbc_getColIndices(self._model, var.idx)
         if cidx == ffi.NULL:
             raise ParameterNotAvailable("Error getting column indices'")
         ccoef = cbclib.Cbc_getColCoeffs(self._model, var.idx)
 
-        col = Column()
-
-        for i in range(numnz):
-            col.constrs.append(Constr(self, cidx[i]))
-            col.coeffs.append(ccoef[i])
-
-        return col
+        return Column(
+            [Constr(self.model, cidx[i]) for i in range(numnz)],
+            [ccoef[i] for i in range(numnz)],
+        )
 
     def add_constr(self, lin_expr: LinExpr, name: str = ""):
         # collecting linear expression data

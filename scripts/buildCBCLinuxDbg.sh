@@ -58,6 +58,8 @@ make clean ; make distclean
 make -j 6
 make -j 6 install
 
+exit
+
 
 for libfile in $IDIR/lib/*.so*;
 do

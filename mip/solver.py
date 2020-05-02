@@ -3,6 +3,7 @@ Python-MIP
 """
 from typing import List, Tuple, TYPE_CHECKING, Optional
 from sys import maxsize
+import numbers
 from mip.constants import INF, CONTINUOUS
 from mip.constants import SearchEmphasis, OptimizationStatus, CutType
 from mip.callbacks import CutPool
@@ -217,19 +218,19 @@ class Solver:
 
     # Variable-related getters/setters
 
-    def var_get_lb(self: "Solver", var: "Var") -> float:
+    def var_get_lb(self: "Solver", var: "Var") -> numbers.Real:
         pass
 
     def var_set_lb(self: "Solver", var: "Var", value: float):
         pass
 
-    def var_get_ub(self: "Solver", var: "Var") -> float:
+    def var_get_ub(self: "Solver", var: "Var") -> numbers.Real:
         pass
 
     def var_set_ub(self: "Solver", var: "Var", value: float):
         pass
 
-    def var_get_obj(self: "Solver", var: "Var") -> float:
+    def var_get_obj(self: "Solver", var: "Var") -> numbers.Real:
         pass
 
     def var_set_obj(self: "Solver", var: "Var", value: float):
