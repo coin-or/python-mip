@@ -24,14 +24,22 @@ class Column:
     constraint matrix. To create a variable see
     :meth:`~mip.model.Model.add_var`."""
 
-    def __init__(self, constrs: List["Constr"] = [], coeffs: List[float] = []):
+    __slots__ = ["constrs", "coeffs"]
+
+    def __init__(
+        self,
+        constrs: Optional[List["Constr"]] = None,
+        coeffs: Optional[List[numbers.Real]] = None,
+    ):
         self.constrs = constrs
         self.coeffs = coeffs
 
     def __str__(self) -> str:
         res = "["
         for k in range(len(self.constrs)):
-            res += "{}: {}, ".format(self.constrs[k].idx, self.coeffs[k])
+            res += "{} {}".format(self.coeffs[k], self.constrs[k].name)
+            if k < len(self.constrs) - 1:
+                res += ", "
         res += "]"
         return res
 
@@ -72,15 +80,17 @@ class LinExpr:
 
     """
 
+    __slots__ = ["__const", "__expr", "__sense"]
+
     def __init__(
         self,
         variables: List["Var"] = [],
-        coeffs: List[float] = [],
-        const: float = 0.0,
+        coeffs: List[numbers.Real] = [],
+        const: numbers.Real = 0.0,
         sense: str = "",
     ):
         self.__const = const
-        self.__expr = {}  # type: Dict[Var, float]
+        self.__expr = {}  # type: Dict[Var, numbers.Real]
         self.__sense = sense
 
         if variables:
@@ -157,7 +167,7 @@ class LinExpr:
             raise TypeError("type {} not supported".format(type(other)))
         return self
 
-    def __mul__(self: "LinExpr", other: Union[numbers.Real]) -> "LinExpr":
+    def __mul__(self: "LinExpr", other: numbers.Real) -> "LinExpr":
         if not isinstance(other, numbers.Real):
             raise TypeError(
                 "Can not multiply with type {}".format(type(other))
@@ -168,10 +178,10 @@ class LinExpr:
             result.__expr[var] *= other
         return result
 
-    def __rmul__(self: "LinExpr", other: Union[numbers.Real]) -> "LinExpr":
+    def __rmul__(self: "LinExpr", other: numbers.Real) -> "LinExpr":
         return self.__mul__(other)
 
-    def __imul__(self: "LinExpr", other: Union[numbers.Real]) -> "LinExpr":
+    def __imul__(self: "LinExpr", other: numbers.Real) -> "LinExpr":
         if not isinstance(other, numbers.Real):
             raise TypeError(
                 "Can not multiply with type {}".format(type(other))
@@ -181,7 +191,7 @@ class LinExpr:
             self.__expr[var] *= other
         return self
 
-    def __truediv__(self: "LinExpr", other: Union[numbers.Real]) -> "LinExpr":
+    def __truediv__(self: "LinExpr", other: numbers.Real) -> "LinExpr":
         if not isinstance(other, numbers.Real):
             raise TypeError("Can not divide with type {}".format(type(other)))
         result = self.copy()
@@ -190,7 +200,7 @@ class LinExpr:
             result.__expr[var] /= other
         return result
 
-    def __itruediv__(self: "LinExpr", other: Union[numbers.Real]) -> "LinExpr":
+    def __itruediv__(self: "LinExpr", other: numbers.Real) -> "LinExpr":
         if not isinstance(other, numbers.Real):
             raise TypeError("Can not divide with type {}".format(type(other)))
         self.__const /= other
@@ -256,12 +266,12 @@ class LinExpr:
         result.__sense = ">"
         return result
 
-    def add_const(self: "LinExpr", __const: float):
+    def add_const(self: "LinExpr", __const: numbers.Real):
         """adds a constant value to the linear expression, in the case of
         a constraint this correspond to the right-hand-side"""
         self.__const += __const
 
-    def add_expr(self: "LinExpr", __expr: "LinExpr", coeff: float = 1):
+    def add_expr(self: "LinExpr", __expr: "LinExpr", coeff: numbers.Real = 1):
         """extends a linear expression with the contents of another"""
         self.__const += __expr.__const * coeff
         for var, coeff_var in __expr.__expr.items():
@@ -270,7 +280,7 @@ class LinExpr:
     def add_term(
         self: "LinExpr",
         __expr: Union["Var", "LinExpr", numbers.Real],
-        coeff: float = 1,
+        coeff: numbers.Real = 1,
     ):
         """extends a linear expression with another multiplied by a constant
         value coefficient"""
@@ -283,7 +293,7 @@ class LinExpr:
         else:
             raise TypeError("type {} not supported".format(type(__expr)))
 
-    def add_var(self: "LinExpr", var: "Var", coeff: float = 1):
+    def add_var(self: "LinExpr", var: "Var", coeff: numbers.Real = 1):
         """adds a variable with a coefficient to the constraint"""
         if var in self.__expr:
             if -EPS <= self.__expr[var] + coeff <= EPS:
@@ -327,16 +337,16 @@ class LinExpr:
         return hash(tuple(hash_el))
 
     @property
-    def const(self: "LinExpr") -> float:
+    def const(self: "LinExpr") -> numbers.Real:
         """constant part of the linear expression"""
         return self.__const
 
     @property
-    def expr(self: "LinExpr") -> Dict["Var", float]:
+    def expr(self: "LinExpr") -> Dict["Var", numbers.Real]:
         """the non-constant part of the linear expression
 
         Dictionary with pairs: (variable, coefficient) where coefficient
-        is a float.
+        is a numbers.Real.
         """
         return self.__expr
 
@@ -414,6 +424,8 @@ class Constr:
           m += xsum(x[i] for i in range(n)) == 1
     """
 
+    __slots__ = ["__model", "idx"]
+
     def __init__(self, model: "Model", idx: int):
         self.__model = model
         self.idx = idx
@@ -450,23 +462,23 @@ class Constr:
         return res
 
     @property
-    def rhs(self) -> float:
+    def rhs(self) -> numbers.Real:
         """The right-hand-side (constant value) of the linear constraint."""
         return self.__model.solver.constr_get_rhs(self.idx)
 
     @rhs.setter
-    def rhs(self, rhs: float):
+    def rhs(self, rhs: numbers.Real):
         self.__model.solver.constr_set_rhs(self.idx, rhs)
 
     @property
-    def slack(self) -> Optional[float]:
+    def slack(self) -> Optional[numbers.Real]:
         """Value of the slack in this constraint in the optimal
         solution. Available only if the formulation was solved.
         """
         return self.__model.solver.constr_get_slack(self)
 
     @property
-    def pi(self) -> Optional[float]:
+    def pi(self) -> Optional[numbers.Real]:
         """Value for the dual variable of this constraint in the optimal
         solution of a linear programming :class:`~mip.model.Model`. Only
         available if a pure linear programming problem was solved (only
@@ -493,6 +505,8 @@ class Var:
     """ Decision variable of the :class:`~mip.model.Model`. The creation of
     variables is performed calling the :meth:`~mip.model.Model.add_var`."""
 
+    __slots__ = ["__model", "idx"]
+
     def __init__(self, model: "Model", idx: int):
         self.__model = model
         self.idx = idx
@@ -503,12 +517,12 @@ class Var:
     def __add__(self, other: Union["Var", LinExpr, numbers.Real]) -> LinExpr:
         if isinstance(other, Var):
             return LinExpr([self, other], [1, 1])
-        elif isinstance(other, LinExpr):
+        if isinstance(other, LinExpr):
             return other.__add__(self)
-        elif isinstance(other, numbers.Real):
+        if isinstance(other, numbers.Real):
             return LinExpr([self], [1], other)
-        else:
-            raise TypeError("type {} not supported".format(type(other)))
+
+        raise TypeError("type {} not supported".format(type(other)))
 
     def __radd__(self, other: Union["Var", LinExpr, numbers.Real]) -> LinExpr:
         return self.__add__(other)
@@ -533,17 +547,17 @@ class Var:
         else:
             raise TypeError("type {} not supported".format(type(other)))
 
-    def __mul__(self, other: Union[numbers.Real]) -> LinExpr:
+    def __mul__(self, other: numbers.Real) -> LinExpr:
         if not isinstance(other, numbers.Real):
             raise TypeError(
                 "Can not multiply with type {}".format(type(other))
             )
         return LinExpr([self], [other])
 
-    def __rmul__(self, other: Union[numbers.Real]) -> LinExpr:
+    def __rmul__(self, other: numbers.Real) -> LinExpr:
         return self.__mul__(other)
 
-    def __truediv__(self, other: Union[numbers.Real]) -> LinExpr:
+    def __truediv__(self, other: numbers.Real) -> LinExpr:
         if not isinstance(other, numbers.Real):
             raise TypeError("Can not divide with type {}".format(type(other)))
         return self.__mul__(1.0 / other)
@@ -596,30 +610,30 @@ class Var:
         return self.name
 
     @property
-    def lb(self) -> float:
+    def lb(self) -> numbers.Real:
         """Variable lower bound."""
         return self.__model.solver.var_get_lb(self)
 
     @lb.setter
-    def lb(self, value: float):
+    def lb(self, value: numbers.Real):
         self.__model.solver.var_set_lb(self, value)
 
     @property
-    def ub(self) -> float:
+    def ub(self) -> numbers.Real:
         """Variable upper bound."""
         return self.__model.solver.var_get_ub(self)
 
     @ub.setter
-    def ub(self, value: float):
+    def ub(self, value: numbers.Real):
         self.__model.solver.var_set_ub(self, value)
 
     @property
-    def obj(self) -> float:
+    def obj(self) -> numbers.Real:
         """Coefficient of variable in the objective function."""
         return self.__model.solver.var_get_obj(self)
 
     @obj.setter
-    def obj(self, value: float):
+    def obj(self, value: numbers.Real):
         self.__model.solver.var_set_obj(self, value)
 
     @property
@@ -647,7 +661,7 @@ class Var:
         self.__model.solver.var_set_column(self, value)
 
     @property
-    def rc(self) -> Optional[float]:
+    def rc(self) -> Optional[numbers.Real]:
         """Reduced cost, only available after a linear programming model (only
         continuous variables) is optimized. Note that None is returned if no
         optimum solution is available"""
@@ -655,12 +669,12 @@ class Var:
         return self.__model.solver.var_get_rc(self)
 
     @property
-    def x(self) -> Optional[float]:
+    def x(self) -> Optional[numbers.Real]:
         """Value of this variable in the solution. Note that None is returned
         if no solution is not available."""
         return self.__model.solver.var_get_x(self)
 
-    def xi(self, i: int) -> Optional[float]:
+    def xi(self, i: int) -> Optional[numbers.Real]:
         """Value for this variable in the :math:`i`-th solution from the solution
         pool. Note that None is returned if the solution is not available."""
         if self.__model.status in [
