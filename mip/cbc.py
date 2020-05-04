@@ -593,6 +593,8 @@ class SolverCbc(Solver):
         self.__pi = EmptyRowSol(model)
         self.__slack = EmptyRowSol(model)
         self.__obj_val = None
+        self.__obj_bound = None
+        self.__num_solutions = 0
 
     def __clear_sol(self: "SolverCbc"):
         self.__x = EmptyVarSol(self.model)
@@ -600,6 +602,8 @@ class SolverCbc(Solver):
         self.__pi = EmptyRowSol(self.model)
         self.__slack = EmptyRowSol(self.model)
         self.__obj_val = None
+        self.__obj_bound = None
+        self.__num_solutions = 0
 
     def add_var(
         self,
@@ -873,6 +877,8 @@ class SolverCbc(Solver):
                 self.__obj_val = (
                     cbclib.Cbc_getObjValue(self._model) + self._objconst
                 )
+                self.__obj_bound = self.__obj_val
+                self.__num_solutions = 1
 
                 return OptimizationStatus.OPTIMAL
             if res == 2:
@@ -1007,11 +1013,21 @@ class SolverCbc(Solver):
             self.__obj_val = (
                 cbclib.Cbc_getObjValue(self._model) + self._objconst
             )
+            self.__obj_bound = self.__obj_val
+            self.__num_solutions = 1
 
             if self.model.num_int == 0:
                 self.__rc = cbclib.Cbc_getReducedCost(self._model)
                 self.__pi = cbclib.Cbc_getRowPrice(self._model)
                 self.__slack = cbclib.Cbc_getRowSlack(self._model)
+            else:
+                self.__obj_bound = (
+                    cbclib.Cbc_getBestPossibleObjValue(self._model)
+                    + self._objconst
+                )
+                self.__num_solutions = cbclib.Cbc_numberSavedSolutions(
+                    self._model
+                )
             return OptimizationStatus.OPTIMAL
 
         if cbclib.Cbc_isProvenInfeasible(self._model):
@@ -1021,12 +1037,21 @@ class SolverCbc(Solver):
             return OptimizationStatus.UNBOUNDED
 
         if cbclib.Cbc_getNumIntegers(self._model):
+            self.__obj_bound = (
+                cbclib.Cbc_getBestPossibleObjValue(self._model)
+                + self._objconst
+            )
+
             if cbclib.Cbc_bestSolution(self._model):
                 self.__x = cbclib.Cbc_getColSolution(self._model)
                 self.__slack = cbclib.Cbc_getRowSlack(self._model)
                 self.__obj_val = (
                     cbclib.Cbc_getObjValue(self._model) + self._objconst
                 )
+                self.__num_solutions = cbclib.Cbc_numberSavedSolutions(
+                    self._model
+                )
+
                 return OptimizationStatus.FEASIBLE
 
         return OptimizationStatus.NO_SOLUTION_FOUND
@@ -1077,7 +1102,7 @@ class SolverCbc(Solver):
         return self.__log
 
     def get_objective_bound(self) -> float:
-        return cbclib.Cbc_getBestPossibleObjValue(self._model) + self._objconst
+        return self.__obj_bound
 
     def var_get_x(self, var: Var) -> Optional[float]:
         # model status is *already checked* Var x property
@@ -1085,7 +1110,7 @@ class SolverCbc(Solver):
         return self.__x[var.idx]
 
     def get_num_solutions(self) -> int:
-        return cbclib.Cbc_numberSavedSolutions(self._model)
+        return self.__num_solutions
 
     def get_objective_value_i(self, i: int) -> float:
         return cbclib.Cbc_savedSolutionObj(self._model, i) + self._objconst
