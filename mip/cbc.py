@@ -163,6 +163,8 @@ if has_cbc:
 
     const double *Cbc_getRowActivity(Cbc_Model *model);
 
+    const double *Cbc_getRowSlack(Cbc_Model *model);
+
     int Cbc_getColNz(Cbc_Model *model, int col);
 
     int *Cbc_getColIndices(Cbc_Model *model, int col);
@@ -589,12 +591,14 @@ class SolverCbc(Solver):
         self.__x = EmptyVarSol(model)
         self.__rc = EmptyVarSol(model)
         self.__pi = EmptyRowSol(model)
+        self.__slack = EmptyRowSol(model)
         self.__obj_val = None
 
     def __clear_sol(self: "SolverCbc"):
         self.__x = EmptyVarSol(self.model)
         self.__rc = EmptyVarSol(self.model)
         self.__pi = EmptyRowSol(self.model)
+        self.__slack = EmptyRowSol(self.model)
         self.__obj_val = None
 
     def add_var(
@@ -865,6 +869,7 @@ class SolverCbc(Solver):
                 self.__x = cbclib.Cbc_getColSolution(self._model)
                 self.__rc = cbclib.Cbc_getReducedCost(self._model)
                 self.__pi = cbclib.Cbc_getRowPrice(self._model)
+                self.__slack = cbclib.Cbc_getRowSlack(self._model)
                 self.__obj_val = (
                     cbclib.Cbc_getObjValue(self._model) + self._objconst
                 )
@@ -998,6 +1003,7 @@ class SolverCbc(Solver):
 
         if cbclib.Cbc_isProvenOptimal(self._model):
             self.__x = cbclib.Cbc_getColSolution(self._model)
+            self.__slack = cbclib.Cbc_getRowSlack(self._model)
             self.__obj_val = (
                 cbclib.Cbc_getObjValue(self._model) + self._objconst
             )
@@ -1005,6 +1011,7 @@ class SolverCbc(Solver):
             if self.model.num_int == 0:
                 self.__rc = cbclib.Cbc_getReducedCost(self._model)
                 self.__pi = cbclib.Cbc_getRowPrice(self._model)
+                self.__slack = cbclib.Cbc_getRowSlack(self._model)
             return OptimizationStatus.OPTIMAL
 
         if cbclib.Cbc_isProvenInfeasible(self._model):
@@ -1016,6 +1023,7 @@ class SolverCbc(Solver):
         if cbclib.Cbc_getNumIntegers(self._model):
             if cbclib.Cbc_bestSolution(self._model):
                 self.__x = cbclib.Cbc_getColSolution(self._model)
+                self.__slack = cbclib.Cbc_getRowSlack(self._model)
                 self.__obj_val = (
                     cbclib.Cbc_getObjValue(self._model) + self._objconst
                 )
@@ -1359,31 +1367,7 @@ class SolverCbc(Solver):
         return self.__pi[constr.idx]
 
     def constr_get_slack(self, constr: Constr) -> Optional[float]:
-        if self.model.status not in [
-            OptimizationStatus.OPTIMAL,
-            OptimizationStatus.FEASIBLE,
-        ]:
-            return None
-        pac = cbclib.Cbc_getRowActivity(self._model)
-        if pac == ffi.NULL:
-            return None
-        rhs = float(cbclib.Cbc_getRowRHS(self._model, constr.idx))
-        activity = float(pac[constr.idx])
-
-        sense = (
-            cbclib.Cbc_getRowSense(self._model, constr.idx)
-            .decode("utf-8")
-            .upper()
-        )
-
-        if sense in "<L":
-            return rhs - activity
-        if sense in ">G":
-            return activity - rhs
-        if sense in "=E":
-            return abs(activity - rhs)
-
-        return None
+        return self.__slack[constr.idx]
 
 
 class ModelOsi(Model):
