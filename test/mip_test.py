@@ -615,7 +615,41 @@ def test_linexpr_x(solver: str, val: int):
     # Check that the linear expression value is equal to the same expression
     # calculated from the values of the variables.
     assert abs((x + y).x - (x.x + y.x)) < TOL
-    assert abs((x + 2*y).x - (x.x + 2*y.x)) < TOL
-    assert abs((x + 2*y + x).x - (x.x + 2*y.x + x.x)) < TOL
-    assert abs((x + 2*y + x + 1).x - (x.x + 2*y.x + x.x + 1)) < TOL
-    assert abs((x + 2*y + x + 1 + x/2).x - (x.x + 2*y.x + x.x + 1 + x.x/2)) < TOL
+    assert abs((x + 2 * y).x - (x.x + 2 * y.x)) < TOL
+    assert abs((x + 2 * y + x).x - (x.x + 2 * y.x + x.x)) < TOL
+    assert abs((x + 2 * y + x + 1).x - (x.x + 2 * y.x + x.x + 1)) < TOL
+    assert (
+        abs(
+            (x + 2 * y + x + 1 + x / 2).x - (x.x + 2 * y.x + x.x + 1 + x.x / 2)
+        )
+        < TOL
+    )
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_add_column(solver: str):
+    """Simple test which add columns in a specific way"""
+    m = Model()
+    x = m.add_var()
+
+    example_constr1 = m.add_constr(x >= 1, "constr1")
+    example_constr2 = m.add_constr(x <= 2, "constr2")
+    column1 = Column()
+    column1.constrs = [example_constr1]
+    column1.coeffs = [1]
+    second_var = m.add_var("second", column=column1)
+    column2 = Column()
+    column2.constrs = [example_constr2]
+    column2.coeffs = [2]
+    m.add_var("third", column=column2)
+
+    vthird = m.vars["third"]
+    assert vthird is not None
+    assert len(vthird.column.coeffs) == len(vthird.column.constrs)
+    assert len(vthird.column.coeffs) == 1
+
+    pconstr2 = m.constrs["constr2"]
+    assert vthird.column.constrs[0].name == pconstr2.name
+    assert len(example_constr1.expr.expr) == 2
+    assert second_var in example_constr1.expr.expr
+    assert x in example_constr1.expr.expr
