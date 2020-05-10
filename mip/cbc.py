@@ -491,6 +491,23 @@ enum DblParam {
     const double *Osi_getRowPrice(void *osi);
 
     double Osi_getIntegerTolerance(void *osi);
+
+    void Osi_checkCGraph( void *osi );
+
+    const void * Osi_CGraph( void *osi );
+
+    size_t CG_nodes( void *cgraph );
+
+    char CG_conflicting( void *cgraph, int n1, int n2 );
+
+    double CG_density( void *cgraph );
+
+    typedef struct {
+      size_t n;
+      const size_t *neigh;
+    } CGNeighbors;
+
+    CGNeighbors CG_conflictingNodes(Cbc_Model *model, void *cgraph, size_t node);
     """
     )
 
@@ -583,7 +600,7 @@ class SolverCbc(Solver):
         self.__name_space = ffi.new("char[{}]".format(MAX_NAME_SIZE))
         # in cut generation
         self.__name_spacec = ffi.new("char[{}]".format(MAX_NAME_SIZE))
-        self.__log = []  # type: List[Tuple[float, Tuple[float, float]]]
+        self.__log = []  # type: List[Tuple[numbers.Real, Tuple[numbers.Real, numbers.Real]]]
         self.set_problem_name(name)
         self.__pumpp = DEF_PUMPP
 
@@ -607,9 +624,9 @@ class SolverCbc(Solver):
 
     def add_var(
         self,
-        obj: float = 0,
-        lb: float = 0,
-        ub: float = float("inf"),
+        obj: numbers.Real = 0,
+        lb: numbers.Real = 0,
+        ub: numbers.Real = float("inf"),
         coltype: str = "C",
         column: Optional[Column] = None,
         name: str = "",
@@ -640,7 +657,7 @@ class SolverCbc(Solver):
             vval,
         )
 
-    def get_objective_const(self) -> float:
+    def get_objective_const(self) -> numbers.Real:
         return self._objconst
 
     def get_objective(self) -> LinExpr:
@@ -682,10 +699,10 @@ class SolverCbc(Solver):
             if cbclib.Cbc_isInteger(self._model, var.idx):
                 cbclib.Cbc_setContinuous(self._model, var.idx)
 
-    def get_max_seconds(self) -> float:
+    def get_max_seconds(self) -> numbers.Real:
         return cbclib.Cbc_getMaximumSeconds(self._model)
 
-    def set_max_seconds(self, max_seconds: float):
+    def set_max_seconds(self, max_seconds: numbers.Real):
         cbclib.Cbc_setMaximumSeconds(self._model, max_seconds)
 
     def get_max_solutions(self) -> int:
@@ -723,14 +740,14 @@ class SolverCbc(Solver):
             if var.ub != 1.0:
                 var.ub = 1.0
 
-    def var_set_obj(self, var: "Var", value: float):
+    def var_set_obj(self, var: "Var", value: numbers.Real):
         cbclib.Cbc_setObjCoeff(self._model, var.idx, value)
 
     def generate_cuts(
         self,
         cut_types: Optional[List[CutType]] = None,
         max_cuts: int = maxsize,
-        min_viol: float = 1e-4,
+        min_viol: numbers.Real = 1e-4,
     ) -> CutPool:
         cp = CutPool()
         cbc_model = self._model
@@ -771,7 +788,7 @@ class SolverCbc(Solver):
             nz = OsiCuts_nzRowCut(osi_cuts, i)
             model = self.model
             levars = [model.vars[idx[j]] for j in range(nz)]
-            lecoefs = [float(coef[j]) for j in range(nz)]
+            lecoefs = [coef[j] for j in range(nz)]
             cut = LinExpr(levars, lecoefs, -rhs, sense)
             if cut.violation < min_viol:
                 continue
@@ -806,9 +823,9 @@ class SolverCbc(Solver):
             phase: int,
             step: int,
             phaseName,
-            seconds: float,
-            lb: float,
-            ub: float,
+            seconds: numbers.Real,
+            lb: numbers.Real,
+            ub: numbers.Real,
             nint: int,
             vint,
             cbData,
@@ -818,7 +835,7 @@ class SolverCbc(Solver):
 
         # incumbent callback
         def cbc_inc_callback(
-            cbc_model, obj: float, nz: int, colNames, colValues, appData
+            cbc_model, obj: numbers.Real, nz: int, colNames, colValues, appData
         ):
             return
 
@@ -1075,7 +1092,7 @@ class SolverCbc(Solver):
                 )
             )
 
-    def get_objective_value(self) -> float:
+    def get_objective_value(self) -> numbers.Real:
         # return
         return self.__obj_val
 
@@ -1098,13 +1115,13 @@ class SolverCbc(Solver):
 
         return OptimizationStatus.NO_SOLUTION_FOUND
 
-    def get_log(self) -> List[Tuple[float, Tuple[float, float]]]:
+    def get_log(self) -> List[Tuple[numbers.Real, Tuple[numbers.Real, numbers.Real]]]:
         return self.__log
 
-    def get_objective_bound(self) -> float:
+    def get_objective_bound(self) -> numbers.Real:
         return self.__obj_bound
 
-    def var_get_x(self, var: Var) -> Optional[float]:
+    def var_get_x(self, var: Var) -> Optional[numbers.Real]:
         # model status is *already checked* Var x property
         # (returns None if no solution available)
         return self.__x[var.idx]
@@ -1112,15 +1129,15 @@ class SolverCbc(Solver):
     def get_num_solutions(self) -> int:
         return self.__num_solutions
 
-    def get_objective_value_i(self, i: int) -> float:
+    def get_objective_value_i(self, i: int) -> numbers.Real:
         return cbclib.Cbc_savedSolutionObj(self._model, i) + self._objconst
 
-    def var_get_xi(self, var: "Var", i: int) -> float:
+    def var_get_xi(self, var: "Var", i: int) -> numbers.Real:
         # model status is *already checked* Var xi property
         # (returns None if no solution available)
-        return float(cbclib.Cbc_savedSolution(self._model, i)[var.idx])
+        return cbclib.Cbc_savedSolution(self._model, i)[var.idx]
 
-    def var_get_rc(self, var: Var) -> float:
+    def var_get_rc(self, var: Var) -> numbers.Real:
         # model status is *already checked* Var rc property
         # (returns None if no solution available)
         return self.__rc[var.idx]
@@ -1128,13 +1145,13 @@ class SolverCbc(Solver):
     def var_get_lb(self, var: "Var") -> numbers.Real:
         return cbclib.Cbc_getColLB(self._model, var.idx)
 
-    def var_set_lb(self, var: "Var", value: float):
+    def var_set_lb(self, var: "Var", value: numbers.Real):
         cbclib.Cbc_setColLower(self._model, var.idx, value)
 
     def var_get_ub(self, var: "Var") -> numbers.Real:
         return cbclib.Cbc_getColUB(self._model, var.idx)
 
-    def var_set_ub(self, var: "Var", value: float):
+    def var_set_ub(self, var: "Var", value: numbers.Real):
         cbclib.Cbc_setColUpper(self._model, var.idx, value)
 
     def var_get_name(self, idx: int) -> str:
@@ -1148,10 +1165,10 @@ class SolverCbc(Solver):
     def constr_get_index(self, name: str) -> int:
         return cbclib.Cbc_getRowNameIndex(self._model, name.encode("utf-8"))
 
-    def constr_get_rhs(self, idx: int) -> float:
-        return float(cbclib.Cbc_getRowRHS(self._model, idx))
+    def constr_get_rhs(self, idx: int) -> numbers.Real:
+        return cbclib.Cbc_getRowRHS(self._model, idx)
 
-    def constr_set_rhs(self, idx: int, rhs: float):
+    def constr_set_rhs(self, idx: int, rhs: numbers.Real):
         cbclib.Cbc_setRowRHS(self._model, idx, rhs)
 
     def var_get_obj(self, var: Var) -> numbers.Real:
@@ -1223,7 +1240,7 @@ class SolverCbc(Solver):
         mp = self._model
         cbclib.Cbc_addLazyConstraint(mp, numnz, cind, cval, sense, rhs)
 
-    def add_sos(self, sos: List[Tuple["Var", float]], sos_type: int):
+    def add_sos(self, sos: List[Tuple["Var", numbers.Real]], sos_type: int):
         starts = ffi.new("int[]", [0, len(sos)])
         idx = ffi.new("int[]", [v.idx for (v, f) in sos])
         w = ffi.new("double[]", [f for (v, f) in sos])
@@ -1263,7 +1280,7 @@ class SolverCbc(Solver):
                 to indicate the file format"
             )
 
-    def set_start(self, start: List[Tuple[Var, float]]) -> None:
+    def set_start(self, start: List[Tuple[Var, numbers.Real]]) -> None:
         n = len(start)
         dv = ffi.new("double[]", [start[i][1] for i in range(n)])
         keep_alive_str = [
@@ -1285,22 +1302,22 @@ class SolverCbc(Solver):
     def num_nz(self) -> int:
         return cbclib.Cbc_getNumElements(self._model)
 
-    def get_cutoff(self) -> float:
+    def get_cutoff(self) -> numbers.Real:
         return cbclib.Cbc_getCutoff(self._model)
 
-    def set_cutoff(self, cutoff: float):
+    def set_cutoff(self, cutoff: numbers.Real):
         cbclib.Cbc_setCutoff(self._model, cutoff)
 
-    def get_mip_gap_abs(self) -> float:
+    def get_mip_gap_abs(self) -> numbers.Real:
         return cbclib.Cbc_getAllowableGap(self._model)
 
-    def set_mip_gap_abs(self, allowable_gap: float):
+    def set_mip_gap_abs(self, allowable_gap: numbers.Real):
         cbclib.Cbc_setAllowableGap(self._model, allowable_gap)
 
-    def get_mip_gap(self) -> float:
+    def get_mip_gap(self) -> numbers.Real:
         return cbclib.Cbc_getAllowableFractionGap(self._model)
 
-    def set_mip_gap(self, allowable_ratio_gap: float):
+    def set_mip_gap(self, allowable_ratio_gap: numbers.Real):
         cbclib.Cbc_setAllowableFractionGap(self._model, allowable_ratio_gap)
 
     def constr_get_expr(self, constr: Constr) -> LinExpr:
@@ -1342,7 +1359,7 @@ class SolverCbc(Solver):
 
     def set_processing_limits(
         self,
-        max_time: float = INF,
+        max_time: numbers.Real = INF,
         max_nodes: int = maxsize,
         max_sol: int = maxsize,
     ):
@@ -1388,10 +1405,10 @@ class SolverCbc(Solver):
     def set_pump_passes(self, passes: int):
         self.__pumpp = passes
 
-    def constr_get_pi(self, constr: Constr) -> Optional[float]:
+    def constr_get_pi(self, constr: Constr) -> Optional[numbers.Real]:
         return self.__pi[constr.idx]
 
-    def constr_get_slack(self, constr: Constr) -> Optional[float]:
+    def constr_get_slack(self, constr: Constr) -> Optional[numbers.Real]:
         return self.__slack[constr.idx]
 
 
@@ -1475,9 +1492,9 @@ class SolverOsi(Solver):
     def add_var(
         self,
         name: str = "",
-        obj: float = 0,
-        lb: float = 0,
-        ub: float = INF,
+        obj: numbers.Real = 0,
+        lb: numbers.Real = 0,
+        ub: numbers.Real = INF,
         var_type: str = CONTINUOUS,
         column: "Column" = None,
     ):
@@ -1572,7 +1589,7 @@ class SolverOsi(Solver):
             name = "cut{}".format(cut_idx)
             self.add_constr(lin_expr, name)
 
-    def get_objective_bound(self) -> float:
+    def get_objective_bound(self) -> numbers.Real:
         raise NotImplementedError("Not available in OsiSolver")
 
     def get_objective(self) -> LinExpr:
@@ -1590,7 +1607,7 @@ class SolverOsi(Solver):
             + self._objconst
         )
 
-    def get_objective_const(self) -> float:
+    def get_objective_const(self) -> numbers.Real:
         return self._objconst
 
     def relax(self):
@@ -1619,13 +1636,13 @@ class SolverOsi(Solver):
             return OptimizationStatus.ERROR
         return OptimizationStatus.LOADED
 
-    def get_objective_value(self) -> float:
+    def get_objective_value(self) -> numbers.Real:
         return cbclib.Osi_getObjValue(self.osi)
 
-    def get_log(self) -> List[Tuple[float, Tuple[float, float]]]:
+    def get_log(self) -> List[Tuple[numbers.Real, Tuple[numbers.Real, numbers.Real]]]:
         return []
 
-    def get_objective_value_i(self, i: int) -> float:
+    def get_objective_value_i(self, i: int) -> numbers.Real:
         raise NotImplementedError("Not available in OsiSolver")
 
     def get_num_solutions(self) -> int:
@@ -1653,7 +1670,7 @@ class SolverOsi(Solver):
                 )
             )
 
-    def set_start(self, start: List[Tuple["Var", float]]):
+    def set_start(self, start: List[Tuple["Var", numbers.Real]]):
         raise NotImplementedError("MIPstart not available in OsiSolver")
 
     def set_objective(self, lin_expr: "LinExpr", sense: str = ""):
@@ -1670,21 +1687,21 @@ class SolverOsi(Solver):
         elif sense == MINIMIZE:
             cbclib.Osi_setObjSense(self.osi, 1.0)
 
-    def set_objective_const(self, const: float):
+    def set_objective_const(self, const: numbers.Real):
         raise NotImplementedError("Still not implemented in OsiSolver")
 
     def set_processing_limits(
         self,
-        max_time: float = INF,
+        max_time: numbers.Real = INF,
         max_nodes: int = maxsize,
         max_sol: int = maxsize,
     ):
         raise NotImplementedError("Not available in OsiSolver")
 
-    def get_max_seconds(self) -> float:
+    def get_max_seconds(self) -> numbers.Real:
         raise NotImplementedError("Not available in OsiSolver")
 
-    def set_max_seconds(self, max_seconds: float):
+    def set_max_seconds(self, max_seconds: numbers.Real):
         raise NotImplementedError("Not available in OsiSolver")
 
     def get_max_solutions(self) -> int:
@@ -1732,22 +1749,22 @@ class SolverOsi(Solver):
     def set_emphasis(self, emph: SearchEmphasis):
         raise NotImplementedError("Not available in OsiSolver")
 
-    def get_cutoff(self) -> float:
+    def get_cutoff(self) -> numbers.Real:
         raise NotImplementedError("Not available in OsiSolver")
 
-    def set_cutoff(self, cutoff: float):
+    def set_cutoff(self, cutoff: numbers.Real):
         raise NotImplementedError("Not available in OsiSolver")
 
-    def get_mip_gap_abs(self) -> float:
+    def get_mip_gap_abs(self) -> numbers.Real:
         raise NotImplementedError("Not available in OsiSolver")
 
-    def set_mip_gap_abs(self, mip_gap_abs: float):
+    def set_mip_gap_abs(self, mip_gap_abs: numbers.Real):
         raise NotImplementedError("Not available in OsiSolver")
 
-    def get_mip_gap(self) -> float:
+    def get_mip_gap(self) -> numbers.Real:
         raise NotImplementedError("Not available in OsiSolver")
 
-    def set_mip_gap(self, mip_gap: float):
+    def set_mip_gap(self, mip_gap: numbers.Real):
         raise NotImplementedError("Not available in OsiSolver")
 
     def get_verbose(self) -> int:
@@ -1811,13 +1828,13 @@ class SolverOsi(Solver):
 
         return -1
 
-    def constr_get_pi(self, constr: Constr) -> Optional[float]:
+    def constr_get_pi(self, constr: Constr) -> Optional[numbers.Real]:
         if self.model.status != OptimizationStatus.OPTIMAL:
             return None
         rp = cbclib.Osi_getRowPrice(self.osi)
         if rp == ffi.NULL:
             return None
-        return float(rp[constr.idx])
+        return rp[constr.idx]
 
     def constr_get_slack(self, constr: Constr) -> Optional[float]:
         if self.model.status not in [
@@ -1828,8 +1845,8 @@ class SolverOsi(Solver):
         pac = cbclib.Osi_getRowActivity(self.osi)
         if pac == ffi.NULL:
             return None
-        rhs = float(cbclib.Osi_getRowRHS(self.osi, constr.idx))
-        activity = float(pac[constr.idx])
+        rhs = cbclib.Osi_getRowRHS(self.osi, constr.idx)
+        activity = pac[constr.idx]
 
         sense = (
             cbclib.Osi_getRowSense(self.osi, constr.idx)
@@ -1847,21 +1864,21 @@ class SolverOsi(Solver):
         return None
 
     # Variable-related getters/setters
-    def var_get_lb(self, var: "Var") -> float:
+    def var_get_lb(self, var: "Var") -> numbers.Real:
         x = cbclib.Osi_getColLower(self.osi)
         return x[var.idx]
 
-    def var_set_lb(self, var: "Var", value: float):
+    def var_set_lb(self, var: "Var", value: numbers.Real):
         cbclib.Osi_setColLower(self.osi, var.idx, value)
 
-    def var_get_ub(self, var: "Var") -> float:
+    def var_get_ub(self, var: "Var") -> numbers.Real:
         x = cbclib.Osi_getColUpper(self.osi)
         return x[var.idx]
 
-    def var_set_ub(self, var: "Var", value: float):
+    def var_set_ub(self, var: "Var", value: numbers.Real):
         cbclib.Osi_setColUpper(self.osi, var.idx, value)
 
-    def var_get_obj(self, var: "Var") -> float:
+    def var_get_obj(self, var: "Var") -> numbers.Real:
         obj = cbclib.Osi_getObjCoefficients(self.osi)
         if obj == ffi.NULL:
             raise ParameterNotAvailable(
@@ -1869,7 +1886,7 @@ class SolverOsi(Solver):
             )
         return obj[var.idx]
 
-    def var_set_obj(self, var: "Var", value: float):
+    def var_set_obj(self, var: "Var", value: numbers.Real):
         cbclib.Osi_setObjCoef(self.osi, var.idx, value)
 
     def var_get_var_type(self, var: "Var") -> str:
@@ -1920,19 +1937,19 @@ class SolverOsi(Solver):
     def var_set_column(self, var: "Var", value: Column):
         raise NotImplementedError("Not available in OsiSolver")
 
-    def var_get_rc(self, var: "Var") -> float:
+    def var_get_rc(self, var: "Var") -> numbers.Real:
         rc = cbclib.Osi_getReducedCost(self.osi)
         if rc == ffi.NULL:
             raise ParameterNotAvailable("reduced cost not available")
-        return float(rc[var.idx])
+        return rc[var.idx]
 
-    def var_get_x(self, var: "Var") -> float:
+    def var_get_x(self, var: "Var") -> numbers.Real:
         x = cbclib.Osi_getColSolution(self.osi)
         if x == ffi.NULL:
             raise SolutionNotAvailable("no solution found")
         return float(x[var.idx])
 
-    def var_get_xi(self, var: "Var", i: int) -> float:
+    def var_get_xi(self, var: "Var", i: int) -> numbers.Real:
         raise NotImplementedError("Solution pool not supported in OsiSolver")
 
     def var_get_name(self, idx: int) -> str:
