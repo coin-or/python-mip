@@ -32,9 +32,9 @@ class Solver:
     def add_var(
         self: "Solver",
         name: str = "",
-        obj: float = 0,
-        lb: float = 0,
-        ub: float = INF,
+        obj: numbers.Real = 0,
+        lb: numbers.Real = 0,
+        ub: numbers.Real = INF,
         var_type: str = CONTINUOUS,
         column: "Column" = None,
     ):
@@ -46,19 +46,21 @@ class Solver:
     def add_lazy_constr(self: "Solver", lin_expr: "LinExpr"):
         pass
 
-    def add_sos(self: "Solver", sos: List[Tuple["Var", float]], sos_type: int):
+    def add_sos(
+        self: "Solver", sos: List[Tuple["Var", numbers.Real]], sos_type: int
+    ):
         pass
 
     def add_cut(self: "Solver", lin_expr: "LinExpr"):
         pass
 
-    def get_objective_bound(self: "Solver") -> float:
+    def get_objective_bound(self: "Solver") -> numbers.Real:
         pass
 
     def get_objective(self: "Solver") -> "LinExpr":
         pass
 
-    def get_objective_const(self: "Solver") -> float:
+    def get_objective_const(self: "Solver") -> numbers.Real:
         pass
 
     def relax(self: "Solver"):
@@ -68,20 +70,22 @@ class Solver:
         self,
         cut_types: Optional[List[CutType]] = None,
         max_cuts: int = maxsize,
-        min_viol: float = 1e-4,
+        min_viol: numbers.Real = 1e-4,
     ) -> CutPool:
         pass
 
     def optimize(self: "Solver", relax: bool = False,) -> OptimizationStatus:
         pass
 
-    def get_objective_value(self: "Solver") -> float:
+    def get_objective_value(self: "Solver") -> numbers.Real:
         pass
 
-    def get_log(self: "Solver") -> List[Tuple[float, Tuple[float, float]]]:
+    def get_log(
+        self: "Solver",
+    ) -> List[Tuple[numbers.Real, Tuple[numbers.Real, numbers.Real]]]:
         return []
 
-    def get_objective_value_i(self: "Solver", i: int) -> float:
+    def get_objective_value_i(self: "Solver", i: int) -> numbers.Real:
         pass
 
     def get_num_solutions(self: "Solver") -> int:
@@ -93,27 +97,27 @@ class Solver:
     def set_objective_sense(self: "Solver", sense: str):
         pass
 
-    def set_start(self: "Solver", start: List[Tuple["Var", float]]):
+    def set_start(self: "Solver", start: List[Tuple["Var", numbers.Real]]):
         pass
 
     def set_objective(self: "Solver", lin_expr: "LinExpr", sense: str = ""):
         pass
 
-    def set_objective_const(self: "Solver", const: float):
+    def set_objective_const(self: "Solver", const: numbers.Real):
         pass
 
     def set_processing_limits(
         self: "Solver",
-        max_time: float = INF,
+        max_time: numbers.Real = INF,
         max_nodes: int = maxsize,
         max_sol: int = maxsize,
     ):
         pass
 
-    def get_max_seconds(self: "Solver") -> float:
+    def get_max_seconds(self: "Solver") -> numbers.Real:
         pass
 
-    def set_max_seconds(self: "Solver", max_seconds: float):
+    def set_max_seconds(self: "Solver", max_seconds: numbers.Real):
         pass
 
     def get_max_solutions(self: "Solver") -> int:
@@ -161,22 +165,22 @@ class Solver:
     def set_emphasis(self: "Solver", emph: SearchEmphasis):
         pass
 
-    def get_cutoff(self: "Solver") -> float:
+    def get_cutoff(self: "Solver") -> numbers.Real:
         pass
 
-    def set_cutoff(self: "Solver", cutoff: float):
+    def set_cutoff(self: "Solver", cutoff: numbers.Real):
         pass
 
-    def get_mip_gap_abs(self: "Solver") -> float:
+    def get_mip_gap_abs(self: "Solver") -> numbers.Real:
         pass
 
-    def set_mip_gap_abs(self: "Solver", mip_gap_abs: float):
+    def set_mip_gap_abs(self: "Solver", mip_gap_abs: numbers.Real):
         pass
 
-    def get_mip_gap(self: "Solver") -> float:
+    def get_mip_gap(self: "Solver") -> numbers.Real:
         pass
 
-    def set_mip_gap(self: "Solver", mip_gap: float):
+    def set_mip_gap(self: "Solver", mip_gap: numbers.Real):
         pass
 
     def get_verbose(self: "Solver") -> int:
@@ -195,19 +199,19 @@ class Solver:
     ) -> "LinExpr":
         pass
 
-    def constr_get_rhs(self: "Solver", idx: int) -> float:
+    def constr_get_rhs(self: "Solver", idx: int) -> numbers.Real:
         pass
 
-    def constr_set_rhs(self: "Solver", idx: int, rhs: float):
+    def constr_set_rhs(self: "Solver", idx: int, rhs: numbers.Real):
         pass
 
     def constr_get_name(self: "Solver", idx: int) -> str:
         pass
 
-    def constr_get_pi(self: "Solver", constr: "Constr") -> float:
+    def constr_get_pi(self: "Solver", constr: "Constr") -> numbers.Real:
         pass
 
-    def constr_get_slack(self: "Solver", constr: "Constr") -> float:
+    def constr_get_slack(self: "Solver", constr: "Constr") -> numbers.Real:
         pass
 
     def remove_constrs(self: "Solver", constrsList: List[int]):
@@ -221,19 +225,19 @@ class Solver:
     def var_get_lb(self: "Solver", var: "Var") -> numbers.Real:
         pass
 
-    def var_set_lb(self: "Solver", var: "Var", value: float):
+    def var_set_lb(self: "Solver", var: "Var", value: numbers.Real):
         pass
 
     def var_get_ub(self: "Solver", var: "Var") -> numbers.Real:
         pass
 
-    def var_set_ub(self: "Solver", var: "Var", value: float):
+    def var_set_ub(self: "Solver", var: "Var", value: numbers.Real):
         pass
 
     def var_get_obj(self: "Solver", var: "Var") -> numbers.Real:
         pass
 
-    def var_set_obj(self: "Solver", var: "Var", value: float):
+    def var_set_obj(self: "Solver", var: "Var", value: numbers.Real):
         pass
 
     def var_get_var_type(self: "Solver", var: "Var") -> str:
@@ -248,14 +252,14 @@ class Solver:
     def var_set_column(self: "Solver", var: "Var", value: "Column"):
         pass
 
-    def var_get_rc(self: "Solver", var: "Var") -> float:
+    def var_get_rc(self: "Solver", var: "Var") -> numbers.Real:
         pass
 
-    def var_get_x(self: "Solver", var: "Var") -> float:
+    def var_get_x(self: "Solver", var: "Var") -> numbers.Real:
         """Assumes that the solution is available (should be checked
            before calling it"""
 
-    def var_get_xi(self: "Solver", var: "Var", i: int) -> float:
+    def var_get_xi(self: "Solver", var: "Var", i: int) -> numbers.Real:
         pass
 
     def var_get_name(self: "Solver", idx: int) -> str:
