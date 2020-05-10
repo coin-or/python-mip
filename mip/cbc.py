@@ -600,7 +600,9 @@ class SolverCbc(Solver):
         self.__name_space = ffi.new("char[{}]".format(MAX_NAME_SIZE))
         # in cut generation
         self.__name_spacec = ffi.new("char[{}]".format(MAX_NAME_SIZE))
-        self.__log = []  # type: List[Tuple[numbers.Real, Tuple[numbers.Real, numbers.Real]]]
+        self.__log = (
+            []
+        )  # type: List[Tuple[numbers.Real, Tuple[numbers.Real, numbers.Real]]]
         self.set_problem_name(name)
         self.__pumpp = DEF_PUMPP
 
@@ -1115,7 +1117,9 @@ class SolverCbc(Solver):
 
         return OptimizationStatus.NO_SOLUTION_FOUND
 
-    def get_log(self) -> List[Tuple[numbers.Real, Tuple[numbers.Real, numbers.Real]]]:
+    def get_log(
+        self,
+    ) -> List[Tuple[numbers.Real, Tuple[numbers.Real, numbers.Real]]]:
         return self.__log
 
     def get_objective_bound(self) -> numbers.Real:
@@ -1484,6 +1488,22 @@ class SolverOsi(Solver):
         self.rowNames = None
         self._objconst = 0.0
         self.osi_cutsp = ffi.NULL
+        self.__x = EmptyVarSol(model)
+        self.__rc = EmptyVarSol(model)
+        self.__pi = EmptyRowSol(model)
+        self.__obj_val = None
+
+        if cbclib.Osi_isProvenOptimal(self.osi):
+            self.__x = cbclib.Osi_getColSolution(self.osi)
+            self.__rc = cbclib.Osi_getReducedCost(self.osi)
+            self.__pi = cbclib.Osi_getRowPrice(self.osi)
+            self.__obj_val = cbclib.Osi_getObjValue(self.osi)
+
+    def __clear_sol(self: "SolverOsi"):
+        self.__x = EmptyVarSol(self.model)
+        self.__rc = EmptyVarSol(self.model)
+        self.__pi = EmptyRowSol(self.model)
+        self.__obj_val = None
 
     def __del__(self):
         if self.owns_solver:
@@ -1622,6 +1642,13 @@ class SolverOsi(Solver):
                 cbclib.Osi_initialSolve(self.osi)
         else:
             cbclib.Osi_branchAndBound(self.osi)
+
+        if cbclib.Osi_isProvenOptimal(self.osi):
+            self.__x = cbclib.Osi_getColSolution(self.osi)
+            self.__rc = cbclib.Osi_getReducedCost(self.osi)
+            self.__pi = cbclib.Osi_getRowPrice(self.osi)
+            self.__obj_val = cbclib.Osi_getObjValue(self.osi)
+
         return self.get_status()
 
     def get_status(self) -> OptimizationStatus:
@@ -1637,9 +1664,11 @@ class SolverOsi(Solver):
         return OptimizationStatus.LOADED
 
     def get_objective_value(self) -> numbers.Real:
-        return cbclib.Osi_getObjValue(self.osi)
+        return self.__obj_val
 
-    def get_log(self) -> List[Tuple[numbers.Real, Tuple[numbers.Real, numbers.Real]]]:
+    def get_log(
+        self,
+    ) -> List[Tuple[numbers.Real, Tuple[numbers.Real, numbers.Real]]]:
         return []
 
     def get_objective_value_i(self, i: int) -> numbers.Real:
@@ -1829,12 +1858,7 @@ class SolverOsi(Solver):
         return -1
 
     def constr_get_pi(self, constr: Constr) -> Optional[numbers.Real]:
-        if self.model.status != OptimizationStatus.OPTIMAL:
-            return None
-        rp = cbclib.Osi_getRowPrice(self.osi)
-        if rp == ffi.NULL:
-            return None
-        return rp[constr.idx]
+        return self.__pi[constr.idx]
 
     def constr_get_slack(self, constr: Constr) -> Optional[float]:
         if self.model.status not in [
@@ -1938,16 +1962,10 @@ class SolverOsi(Solver):
         raise NotImplementedError("Not available in OsiSolver")
 
     def var_get_rc(self, var: "Var") -> numbers.Real:
-        rc = cbclib.Osi_getReducedCost(self.osi)
-        if rc == ffi.NULL:
-            raise ParameterNotAvailable("reduced cost not available")
-        return rc[var.idx]
+        return self.__rc[var.idx]
 
     def var_get_x(self, var: "Var") -> numbers.Real:
-        x = cbclib.Osi_getColSolution(self.osi)
-        if x == ffi.NULL:
-            raise SolutionNotAvailable("no solution found")
-        return float(x[var.idx])
+        return self.__x[var.idx]
 
     def var_get_xi(self, var: "Var", i: int) -> numbers.Real:
         raise NotImplementedError("Solution pool not supported in OsiSolver")
