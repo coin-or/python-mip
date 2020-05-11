@@ -1,11 +1,11 @@
 """This module implements the solver intependent communication layer of
 Python-MIP
 """
-from typing import List, Tuple, TYPE_CHECKING, Optional
+from typing import List, Tuple, TYPE_CHECKING, Optional, Union
 from sys import maxsize
 import numbers
 from mip.constants import INF, CONTINUOUS
-from mip.constants import SearchEmphasis, OptimizationStatus, CutType
+from mip.constants import SearchEmphasis, OptimizationStatus, CutType, INF
 from mip.callbacks import CutPool
 
 if TYPE_CHECKING:
@@ -278,4 +278,21 @@ class Solver:
         pass
 
     def get_status(self: "Solver") -> OptimizationStatus:
+        pass
+
+    def conflicting(
+        self: "Solver",
+        e1: Union["LinExpr", "Var"],
+        e2: Union["LinExpr", "Var"],
+    ) -> bool:
+        """Checks if two assignment to binary variables are in conflict,
+        returns none if no conflict graph is available"""
+        pass
+
+    def conflicting_nodes(
+        self: "Solver", v1: Union["Var", "LinExpr"]
+    ) -> Tuple[List["Var"], List["Var"]]:
+        """Returns all assignment conflicting with the assignment in v1 in the
+        conflict graph.
+        """
         pass

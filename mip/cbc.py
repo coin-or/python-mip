@@ -1,7 +1,7 @@
 """Python-MIP interface to the COIN-OR Branch-and-Cut solver CBC"""
 
 import logging
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Union
 from sys import platform, maxsize
 from os.path import dirname, isfile
 import os
@@ -14,6 +14,7 @@ from mip.lists import EmptyVarSol, EmptyRowSol
 from mip.exceptions import (
     ParameterNotAvailable,
     SolutionNotAvailable,
+    InvalidParameter,
 )
 from mip import (
     Model,
@@ -658,6 +659,115 @@ class SolverCbc(Solver):
             vind,
             vval,
         )
+
+    def conflicting(
+        self: "SolverCbc",
+        e1: Union["LinExpr", "Var"],
+        e2: Union["LinExpr", "Var"],
+    ) -> bool:
+        idx1, idx2 = (None, None)
+        if isinstance(e1, Var):
+            idx1 = e1.idx
+        elif isinstance(e1, LinExpr):
+            if len(e1.expr) == 1 and e1.sense == EQUAL:
+                v1 = e1.expr.keys()[0]
+                if abs(e1.const) <= 1e-15:
+                    idx1 = v1.idx + v1.__model.num_cols
+                elif abs(e1.const + 1.0) <= 1e-15:
+                    idx1 = v1.idx
+                else:
+                    raise InvalidParameter(
+                        "LinExpr should contain an "
+                        "assignment to a binary variable, "
+                        "e.g.: x1 == 1"
+                    )
+            else:
+                raise InvalidParameter(
+                    "LinExpr should contain an "
+                    "assignment to a binary variable, "
+                    "e.g.: x1 == 1"
+                )
+        else:
+            raise TypeError("type {} not supported".format(type(e1)))
+
+        if isinstance(e2, Var):
+            idx2 = e2.idx
+        elif isinstance(e2, LinExpr):
+            if len(e2.expr) == 1 and e2.sense == EQUAL:
+                v2 = e2.expr.keys()[0]
+                if abs(e2.const) <= 1e-15:
+                    idx2 = v2.idx + v2.__model.num_cols
+                elif abs(e2.const + 1.0) <= 1e-15:
+                    idx2 = v2.idx
+                else:
+                    raise InvalidParameter(
+                        "LinExpr should contain an "
+                        "assignment to a binary variable, "
+                        "e.g.: x1 == 1"
+                    )
+            else:
+                raise InvalidParameter(
+                    "LinExpr should contain an "
+                    "assignment to a binary variable, "
+                    "e.g.: x1 == 1"
+                )
+        else:
+            raise TypeError("type {} not supported".format(type(e2)))
+
+        osi = cbclib.Cbc_getSolverPtr(self._model)
+        cg = cbclib.Osi_CGraph(osi)
+        if cg == ffi.NULL:
+            return False
+
+        return cbclib.CG_conflicting(cg, idx1, idx2) == CHAR_ONE
+
+    def conflicting_nodes(
+        self: "SolverCbc", v1: Union["Var", "LinExpr"]
+    ) -> Tuple[List["Var"], List["Var"]]:
+        """Returns all assignment conflicting with the assignment in v1 in the
+        conflict graph.
+        """
+        osi = cbclib.Cbc_getSolverPtr(self._model)
+        cg = cbclib.Osi_CGraph(osi)
+        if cg == ffi.NULL:
+            return (list(), list())
+
+        idx1 = None
+        if isinstance(v1, Var):
+            idx1 = v1.idx
+        elif isinstance(v1, LinExpr):
+            if len(v1.expr) == 1 and v1.sense == EQUAL:
+                v1 = v1.expr.keys()[0]
+                if abs(v1.const) <= 1e-15:
+                    idx1 = v1.idx + v1.__model.num_cols
+                elif abs(v1.const + 1.0) <= 1e-15:
+                    idx1 = v1.idx
+                else:
+                    raise InvalidParameter(
+                        "LinExpr should contain an "
+                        "assignment to a binary variable, "
+                        "e.g.: x1 == 1"
+                    )
+            else:
+                raise InvalidParameter(
+                    "LinExpr should contain an "
+                    "assignment to a binary variable, "
+                    "e.g.: x1 == 1"
+                )
+        else:
+            raise TypeError("type {} not supported".format(type(v1)))
+
+        cgn = cbclib.CG_conflictingNodes(self._model, cg, idx1)
+        n = cgn.n
+        cols = self.model.num_cols
+        l1, l0 = list(), list()
+        for i in range(n):
+            if cgn.neigh[i] < cols:
+                l1.append(self.model.vars[i])
+            else:
+                l0.append(self.model.vars[i - cols])
+
+        return (l1, l0)
 
     def get_objective_const(self) -> numbers.Real:
         return self._objconst
