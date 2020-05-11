@@ -1,5 +1,5 @@
 from builtins import property
-from typing import List, Optional, Dict, Union, TYPE_CHECKING
+from typing import List, Optional, Dict, Union, TYPE_CHECKING, Tuple
 import numbers
 
 from mip.constants import (
@@ -402,6 +402,15 @@ class LinExpr:
             x += var_x * coef
         return x
 
+    @property
+    def model(self: "LinExpr") -> Optional["Model"]:
+        """Model which this LinExpr refers to, None if no variables are
+        involved."""
+        if not self.expr:
+            return None
+
+        return self.expr.keys()[0].model
+
 
 class Constr:
     """ A row (constraint) in the constraint matrix.
@@ -683,3 +692,70 @@ class Var:
         ]:
             return self.__model.solver.var_get_xi(self, i)
         return None
+
+    def model(self: "Var") -> "Model":
+        """Model which this variable refers to."""
+        return self.__model
+
+
+class ConflictGraph:
+
+    """A conflict graph stores conflicts between incompatible assignments in
+    binary variables.
+
+    For example, if there is a constraint x1 + x2 ≤ 1 then
+    there is a conflict between x1 == 1 and x2 == 1. We can state
+    that x1 and x2 are conflicting. Conflicts can also involve the complement
+    of a binary variable. For example, if there is a constraint x1 ≤ x2 then
+    there is a conflict between x1 == 1 and x2 == 0. We now can state that x1
+    and ¬x2 are conflicting."""
+
+    __slots__ = ["model"]
+
+    def __init__(self: "ConflictGraph", model: "Model"):
+        self.model = model
+
+    def conflicting(
+        self: "ConflictGraph",
+        e1: Union["LinExpr", "Var"],
+        e2: Union["LinExpr", "Var"],
+    ) -> bool:
+        """Checks if two assignments of binary variables are in conflict.
+
+        Args:
+            e1 (Union["LinExpr", "Var"]): binary variable, if assignment to be
+            tested is the assignment to one or a linear expression like x == 0
+            to indicate the complement.
+
+            e2 (Union["LinExpr", "Var"]): binary variable, if assignment to be
+            tested is the assignment to one or a linear expression line x == 0
+            to indicate the complement.
+        """
+        if isinstance(e1, [LinExpr, Var]):
+            raise TypeError("type {} not supported".format(type(e1)))
+        if isinstance(e2, [LinExpr, Var]):
+            raise TypeError("type {} not supported".format(type(e2)))
+
+        return e1.model.solver.conflicting(e1, e2)
+
+    def conflicting_assignments(
+        self: "ConflictGraph", v1: Union["LinExpr", "Var"]
+    ) -> Tuple[List[Var], List[Var]]:
+        """Returns from the conflict graph all assignments conflicting with one
+        specific assignment.
+
+        Args:
+            v1 (Var, LinExpr): binary variable, if assignment to be
+            tested is the assignment to one or a linear expression like x == 0
+            to indicate the complement.
+
+
+        Returns:
+            Returns a tuple with two lists: the first one indicates variables
+            whose conflict occurs when setting them to one. The second list
+            includes variable whose conflict occurs when setting them to zero.
+        """
+        if isinstance(v1, [LinExpr, Var]):
+            raise TypeError("type {} not supported".format(type(v1)))
+
+        return v1.model.solver.conflicting_nodes(v1)
