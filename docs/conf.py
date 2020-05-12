@@ -19,9 +19,9 @@ sys.path.insert(0, os.path.abspath("../"))
 
 # -- Project information -----------------------------------------------------
 
-project = 'Python-MIP'
-copyright = '2018-2020, Santos, H.G. and Toffolo, T.A.M.'
-author = 'Santos, H.G. <haroldo@ufop.edu.br> and Toffolo, T.A.M. <tulio@toffolo.com.br>'
+project = "Python-MIP"
+copyright = "2018-2020, Santos, H.G. and Toffolo, T.A.M."
+author = "Santos, H.G. <haroldo@ufop.edu.br> and Toffolo, T.A.M. <tulio@toffolo.com.br>"
 
 # The short X.Y version
 version = ""
@@ -42,7 +42,14 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx_autodoc_typehints",
     "sphinx.ext.mathjax",
+    "sphinx.ext.intersphinx",
 ]
+
+# Add mappings
+intersphinx_mapping = {
+    "urllib3": ("http://urllib3.readthedocs.org/en/latest", None),
+    "python": ("http://docs.python.org/3", None),
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -76,8 +83,8 @@ pygments_style = None
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'python-mip_theme'
-html_theme_path = ['.']
+html_theme = "python-mip_theme"
+html_theme_path = ["."]
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -88,7 +95,7 @@ html_theme_path = ['.']
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['python-mip_theme/static']
+html_static_path = ["python-mip_theme/static"]
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
@@ -133,8 +140,9 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "python-mip",
-              "python-mip Documentation", [author], 1)]
+man_pages = [
+    (master_doc, "python-mip", "python-mip Documentation", [author], 1)
+]
 
 # -- Options for Texinfo output ----------------------------------------------
 
