@@ -100,8 +100,15 @@ class OptimizationStatus(Enum):
 # search emphasis
 class SearchEmphasis(Enum):
     DEFAULT = 0
+    """Default search emphasis, try to balance between improving the dual
+    bound and producing integer feasible solutions."""
+
     FEASIBILITY = 1
+    """More aggressive search for feasible solutions."""
+
     OPTIMALITY = 2
+    """Focuses more on producing improved dual bounds even if the
+    production of integer feasible solutions is delayed."""
 
 
 class LP_Method(Enum):
