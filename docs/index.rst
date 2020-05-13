@@ -11,6 +11,7 @@ Python MIP Documentation
    examples
    custom
    bench
+   extern
    classes
    bibliography
 
