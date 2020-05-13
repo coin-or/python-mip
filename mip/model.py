@@ -429,7 +429,16 @@ class Model:
         if self.status != mip.OptimizationStatus.OPTIMAL:
             raise mip.SolutionNotAvailable()
 
-        return self.solver.generate_cuts(cut_types, max_cuts, min_viol)
+        return self.solver.generate_cuts(cut_types, max_cuts)
+
+    @property
+    def conflict_graph(self: "Model") -> "mip.ConflictGraph":
+        """Returns the :class:`~mip.ConflictGraph` of a MIP model.
+
+        :rtype: mip.ConflictGraph
+        """
+
+        return mip.ConflictGraph(self)
 
     def optimize(
         self: "Model",

@@ -723,6 +723,7 @@ class Var:
             return self.__model.solver.var_get_xi(self, i)
         return None
 
+    @property
     def model(self: "mip.Var") -> "mip.Model":
         """Model which this variable refers to.
 
@@ -736,17 +737,21 @@ class ConflictGraph:
     """A conflict graph stores conflicts between incompatible assignments in
     binary variables.
 
-    For example, if there is a constraint x1 + x2 ≤ 1 then
-    there is a conflict between x1 == 1 and x2 == 1. We can state
-    that x1 and x2 are conflicting. Conflicts can also involve the complement
-    of a binary variable. For example, if there is a constraint x1 ≤ x2 then
-    there is a conflict between x1 == 1 and x2 == 0. We now can state that x1
-    and ¬x2 are conflicting."""
+    For example, if there is a constraint :math:`x_1 + x_2 \leq 1` then
+    there is a conflict between :math:`x_1 = 1` and :math:`x_2 = 1`. We can state
+    that :math:`x_1` and :math:`x_2` are conflicting. Conflicts can also involve the complement
+    of a binary variable. For example, if there is a constraint :math:`x_1 \leq
+    x_2` then there is a conflict between :math:`x_1 = 1` and :math:`x_2 = 0`.
+    We now can state that :math:`x_1` and :math:`\lnot x_2` are conflicting."""
 
     __slots__ = ["model"]
 
     def __init__(self: "ConflictGraph", model: "mip.Model"):
         self.model = model
+        self.model.solver.update_conflict_graph()
+
+    def density(self: "ConflictGraph") -> float:
+        self.model.solver.cgraph_density()
 
     def conflicting(
         self: "ConflictGraph",
@@ -756,39 +761,42 @@ class ConflictGraph:
         """Checks if two assignments of binary variables are in conflict.
 
         Args:
-            e1 (Union["mip.LinExpr", "mip.Var"]): binary variable, if assignment to be
-            tested is the assignment to one or a linear expression like x == 0
-            to indicate the complement.
+            e1 (Union[mip.LinExpr, mip.Var]): binary variable, if assignment to be
+                tested is the assignment to one, or a linear expression like x == 0
+                to indicate that conflict with the complement of the variable
+                should be tested.
 
-            e2 (Union["mip.LinExpr", "mip.Var"]): binary variable, if assignment to be
-            tested is the assignment to one or a linear expression line x == 0
-            to indicate the complement.
+            e2 (Union[mip.LinExpr, mip.Var]): binary variable, if assignment to be
+                tested is the assignment to one, or a linear expression like x == 0
+                to indicate that conflict with the complement of the variable
+                should be tested.
         """
-        if isinstance(e1, [LinExpr, Var]):
+        if not isinstance(e1, (mip.LinExpr, mip.Var)):
             raise TypeError("type {} not supported".format(type(e1)))
-        if isinstance(e2, [LinExpr, Var]):
+        if not isinstance(e2, (mip.LinExpr, mip.Var)):
             raise TypeError("type {} not supported".format(type(e2)))
 
         return e1.model.solver.conflicting(e1, e2)
 
     def conflicting_assignments(
-        self: "ConflictGraph", v1: Union["mip.LinExpr", "mip.Var"]
-    ) -> Tuple[List[Var], List[Var]]:
+        self: "ConflictGraph", v: Union["mip.LinExpr", "mip.Var"]
+    ) -> Tuple[List["mip.Var"], List["mip.Var"]]:
         """Returns from the conflict graph all assignments conflicting with one
         specific assignment.
 
         Args:
-            v1 (Var, LinExpr): binary variable, if assignment to be
-            tested is the assignment to one or a linear expression like x == 0
-            to indicate the complement.
+            v (Union[mip.Var, mip.LinExpr]): binary variable, if assignment to be
+                tested is the assignment to one or a linear expression like x == 0
+                to indicate the complement.
 
+        :rtype: Tuple[List[mip.Var], List[mip.Var]]
 
         Returns:
-            Returns a tuple with two lists: the first one indicates variables
+            Returns a tuple with two lists. The first one indicates variables
             whose conflict occurs when setting them to one. The second list
             includes variable whose conflict occurs when setting them to zero.
         """
-        if isinstance(v1, [LinExpr, Var]):
-            raise TypeError("type {} not supported".format(type(v1)))
+        if not isinstance(v, (mip.LinExpr, mip.Var)):
+            raise TypeError("type {} not supported".format(type(v)))
 
-        return v1.model.solver.conflicting_nodes(v1)
+        return self.model.solver.conflicting_nodes(v)

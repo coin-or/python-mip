@@ -280,6 +280,10 @@ class Solver:
     def get_status(self: "Solver") -> mip.OptimizationStatus:
         pass
 
+    def cgraph_density(self: "Solver") -> float:
+        """Density of the conflict graph"""
+        pass
+
     def conflicting(
         self: "Solver",
         e1: Union["mip.LinExpr", "mip.Var"],
