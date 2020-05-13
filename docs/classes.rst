@@ -34,6 +34,11 @@ Column
 .. autoclass:: mip.Column
     :members:
 
+ConflictGraph
+-------------
+.. autoclass:: mip.ConflictGraph
+    :members:
+
 VarList
 -------
 .. autoclass:: mip.VarList
