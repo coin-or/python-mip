@@ -1,34 +1,19 @@
 from builtins import property
-from typing import List, Optional, Dict, Union, TYPE_CHECKING
+from typing import List, Optional, Dict, Union, Tuple
 import numbers
-
-from mip.constants import (
-    BINARY,
-    CONTINUOUS,
-    INTEGER,
-    OptimizationStatus,
-    EPS,
-    MAXIMIZE,
-    MINIMIZE,
-    EQUAL,
-    LESS_OR_EQUAL,
-    GREATER_OR_EQUAL,
-)
-
-if TYPE_CHECKING:
-    from mip.model import Model
+import mip
 
 
 class Column:
     """A column contains all the non-zero entries of a variable in the
     constraint matrix. To create a variable see
-    :meth:`~mip.model.Model.add_var`."""
+    :meth:`~mip.Model.add_var`."""
 
     __slots__ = ["constrs", "coeffs"]
 
     def __init__(
         self,
-        constrs: Optional[List["Constr"]] = None,
+        constrs: Optional[List["mip.Constr"]] = None,
         coeffs: Optional[List[numbers.Real]] = None,
     ):
         self.constrs = constrs
@@ -84,13 +69,13 @@ class LinExpr:
 
     def __init__(
         self,
-        variables: List["Var"] = [],
+        variables: List["mip.Var"] = [],
         coeffs: List[numbers.Real] = [],
         const: numbers.Real = 0.0,
         sense: str = "",
     ):
         self.__const = const
-        self.__expr = {}  # type: Dict[Var, numbers.Real]
+        self.__expr = {}  # type: Dict[mip.Var, numbers.Real]
         self.__sense = sense
 
         if variables:
@@ -104,7 +89,7 @@ class LinExpr:
                 self.add_var(variables[i], coeffs[i])
 
     def __add__(
-        self: "LinExpr", other: Union["Var", "LinExpr", numbers.Real]
+        self: "LinExpr", other: Union["mip.Var", "LinExpr", numbers.Real],
     ) -> "LinExpr":
         result = self.copy()
         if isinstance(other, Var):
@@ -118,12 +103,12 @@ class LinExpr:
         return result
 
     def __radd__(
-        self: "LinExpr", other: Union["Var", "LinExpr", numbers.Real]
+        self: "LinExpr", other: Union["mip.Var", "LinExpr", numbers.Real],
     ) -> "LinExpr":
         return self.__add__(other)
 
     def __iadd__(
-        self: "LinExpr", other: Union["Var", "LinExpr", numbers.Real]
+        self: "LinExpr", other: Union["mip.Var", "LinExpr", numbers.Real],
     ) -> "LinExpr":
         if isinstance(other, Var):
             self.add_var(other, 1)
@@ -136,7 +121,7 @@ class LinExpr:
         return self
 
     def __sub__(
-        self: "LinExpr", other: Union["Var", "LinExpr", numbers.Real]
+        self: "LinExpr", other: Union["mip.Var", "LinExpr", numbers.Real],
     ) -> "LinExpr":
         result = self.copy()
         if isinstance(other, Var):
@@ -150,12 +135,12 @@ class LinExpr:
         return result
 
     def __rsub__(
-        self: "LinExpr", other: Union["Var", "LinExpr", numbers.Real]
+        self: "LinExpr", other: Union["mip.Var", "LinExpr", numbers.Real],
     ) -> "LinExpr":
         return (-self).__add__(other)
 
     def __isub__(
-        self: "LinExpr", other: Union["Var", "LinExpr", numbers.Real]
+        self: "LinExpr", other: Union["mip.Var", "LinExpr", numbers.Real],
     ) -> "LinExpr":
         if isinstance(other, Var):
             self.add_var(other, -1)
@@ -215,9 +200,9 @@ class LinExpr:
         result = []
 
         if hasattr(self, "__sense"):
-            if self.__sense == MINIMIZE:
+            if self.__sense == mip.MINIMIZE:
                 result.append("Minimize ")
-            elif self.__sense == MAXIMIZE:
+            elif self.__sense == mip.MAXIMIZE:
                 result.append("Minimize ")
 
         if self.__expr:
@@ -227,11 +212,11 @@ class LinExpr:
                 result.append("{var} ".format(**locals()))
 
         if hasattr(self, "__sense"):
-            if self.__sense == EQUAL:
+            if self.__sense == mip.EQUAL:
                 result.append(" = ")
-            if self.__sense == LESS_OR_EQUAL:
+            if self.__sense == mip.LESS_OR_EQUAL:
                 result.append(" <= ")
-            if self.__sense == GREATER_OR_EQUAL:
+            if self.__sense == mip.GREATER_OR_EQUAL:
                 result.append(" >= ")
             result.append(
                 str(abs(self.__const))
@@ -253,50 +238,73 @@ class LinExpr:
         return result
 
     def __le__(
-        self: "LinExpr", other: Union["Var", "LinExpr", numbers.Real]
+        self: "LinExpr", other: Union["mip.Var", "LinExpr", numbers.Real],
     ) -> "LinExpr":
         result = self - other
         result.__sense = "<"
         return result
 
     def __ge__(
-        self: "LinExpr", other: Union["Var", "LinExpr", numbers.Real]
+        self: "LinExpr", other: Union["mip.Var", "LinExpr", numbers.Real],
     ) -> "LinExpr":
         result = self - other
         result.__sense = ">"
         return result
 
-    def add_const(self: "LinExpr", __const: numbers.Real):
+    def add_const(self: "LinExpr", val: numbers.Real):
         """adds a constant value to the linear expression, in the case of
-        a constraint this correspond to the right-hand-side"""
-        self.__const += __const
+        a constraint this correspond to the right-hand-side
 
-    def add_expr(self: "LinExpr", __expr: "LinExpr", coeff: numbers.Real = 1):
-        """extends a linear expression with the contents of another"""
-        self.__const += __expr.__const * coeff
-        for var, coeff_var in __expr.__expr.items():
+        Args:
+            val(numbers.Real): a real number
+        """
+        self.__const += val
+
+    def add_expr(self: "LinExpr", expr: "LinExpr", coeff: numbers.Real = 1):
+        """Extends a linear expression with the contents of another.
+
+        Args:
+            expr (LinExpr): another linear expression
+            coeff (numbers.Real): coefficient which will multiply the linear
+                expression added
+        """
+        self.__const += expr.const * coeff
+        for var, coeff_var in expr.expr.items():
             self.add_var(var, coeff_var * coeff)
 
     def add_term(
         self: "LinExpr",
-        __expr: Union["Var", "LinExpr", numbers.Real],
+        term: Union["mip.Var", "LinExpr", numbers.Real],
         coeff: numbers.Real = 1,
     ):
-        """extends a linear expression with another multiplied by a constant
-        value coefficient"""
-        if isinstance(__expr, Var):
-            self.add_var(__expr, coeff)
-        elif isinstance(__expr, LinExpr):
-            self.add_expr(__expr, coeff)
-        elif isinstance(__expr, numbers.Real):
-            self.add_const(__expr)
-        else:
-            raise TypeError("type {} not supported".format(type(__expr)))
+        """Adds a term to the linear expression.
 
-    def add_var(self: "LinExpr", var: "Var", coeff: numbers.Real = 1):
-        """adds a variable with a coefficient to the constraint"""
+        Args:
+            expr (Union[mip.Var, LinExpr, numbers.Real]) : can be a
+                variable, another linear expression or a real number.
+
+            coeff (numbers.Real) : coefficient which will multiply the added
+                term
+
+        """
+        if isinstance(term, Var):
+            self.add_var(term, coeff)
+        elif isinstance(term, LinExpr):
+            self.add_expr(term, coeff)
+        elif isinstance(term, numbers.Real):
+            self.add_const(term)
+        else:
+            raise TypeError("type {} not supported".format(type(term)))
+
+    def add_var(self: "LinExpr", var: "mip.Var", coeff: numbers.Real = 1):
+        """Adds a variable with a coefficient to the linear expression.
+
+        Args:
+            var (mip.Var) : a variable
+            coeff (numbers.Real) : coefficient which the variable will be added
+        """
         if var in self.__expr:
-            if -EPS <= self.__expr[var] + coeff <= EPS:
+            if -mip.EPS <= self.__expr[var] + coeff <= mip.EPS:
                 del self.__expr[var]
             else:
                 self.__expr[var] += coeff
@@ -342,11 +350,13 @@ class LinExpr:
         return self.__const
 
     @property
-    def expr(self: "LinExpr") -> Dict["Var", numbers.Real]:
+    def expr(self: "LinExpr") -> Dict["mip.Var", numbers.Real]:
         """the non-constant part of the linear expression
 
         Dictionary with pairs: (variable, coefficient) where coefficient
-        is a numbers.Real.
+        is a real number.
+
+        :rtype: Dict[mip.Var, numbers.Real]
         """
         return self.__expr
 
@@ -402,15 +412,27 @@ class LinExpr:
             x += var_x * coef
         return x
 
+    @property
+    def model(self: "LinExpr") -> Optional["mip.Model"]:
+        """Model which this LinExpr refers to, None if no variables are
+        involved.
+
+        :rtype: Optional[mip.Model]
+        """
+        if not self.expr:
+            return None
+
+        return next(iter(self.expr)).model
+
 
 class Constr:
     """ A row (constraint) in the constraint matrix.
 
-        A constraint is a specific :class:`~mip.entities.LinExpr` that includes a
+        A constraint is a specific :class:`~LinExpr` that includes a
         sense (<, > or == or less-or-equal, greater-or-equal and equal,
         respectively) and a right-hand-side constant value. Constraints can be
         added to the model using the overloaded operator :code:`+=` or using
-        the method :meth:`~mip.model.Model.add_constr` of the
+        the method :meth:`~mip.Model.add_constr` of the
         :class:`~mip.model.Model` class:
 
         .. code:: python
@@ -426,7 +448,7 @@ class Constr:
 
     __slots__ = ["__model", "idx"]
 
-    def __init__(self, model: "Model", idx: int):
+    def __init__(self, model: "mip.Model", idx: int):
         self.__model = model
         self.idx = idx
 
@@ -488,7 +510,9 @@ class Constr:
 
     @property
     def expr(self) -> LinExpr:
-        """contents of the constraint"""
+        """Linear expression that defines the constraint.
+
+        :rtype: mip.LinExpr"""
         return self.__model.solver.constr_get_expr(self)
 
     @expr.setter
@@ -503,18 +527,20 @@ class Constr:
 
 class Var:
     """ Decision variable of the :class:`~mip.model.Model`. The creation of
-    variables is performed calling the :meth:`~mip.model.Model.add_var`."""
+    variables is performed calling the :meth:`~mip.Model.add_var`."""
 
     __slots__ = ["__model", "idx"]
 
-    def __init__(self, model: "Model", idx: int):
+    def __init__(self, model: "mip.Model", idx: int):
         self.__model = model
         self.idx = idx
 
     def __hash__(self) -> int:
         return self.idx
 
-    def __add__(self, other: Union["Var", LinExpr, numbers.Real]) -> LinExpr:
+    def __add__(
+        self, other: Union["mip.Var", LinExpr, numbers.Real]
+    ) -> LinExpr:
         if isinstance(other, Var):
             return LinExpr([self, other], [1, 1])
         if isinstance(other, LinExpr):
@@ -524,10 +550,14 @@ class Var:
 
         raise TypeError("type {} not supported".format(type(other)))
 
-    def __radd__(self, other: Union["Var", LinExpr, numbers.Real]) -> LinExpr:
+    def __radd__(
+        self, other: Union["mip.Var", LinExpr, numbers.Real]
+    ) -> LinExpr:
         return self.__add__(other)
 
-    def __sub__(self, other: Union["Var", LinExpr, numbers.Real]) -> LinExpr:
+    def __sub__(
+        self, other: Union["mip.Var", LinExpr, numbers.Real]
+    ) -> LinExpr:
         if isinstance(other, Var):
             return LinExpr([self, other], [1, -1])
         elif isinstance(other, LinExpr):
@@ -537,7 +567,9 @@ class Var:
         else:
             raise TypeError("type {} not supported".format(type(other)))
 
-    def __rsub__(self, other: Union["Var", LinExpr, numbers.Real]) -> LinExpr:
+    def __rsub__(
+        self, other: Union["mip.Var", LinExpr, numbers.Real]
+    ) -> LinExpr:
         if isinstance(other, Var):
             return LinExpr([self, other], [-1, 1])
         elif isinstance(other, LinExpr):
@@ -577,7 +609,9 @@ class Var:
         else:
             raise TypeError("type {} not supported".format(type(other)))
 
-    def __le__(self, other: Union["Var", LinExpr, numbers.Real]) -> LinExpr:
+    def __le__(
+        self, other: Union["mip.Var", LinExpr, numbers.Real]
+    ) -> LinExpr:
         if isinstance(other, Var):
             return LinExpr([self, other], [1, -1], sense="<")
         elif isinstance(other, LinExpr):
@@ -589,7 +623,9 @@ class Var:
         else:
             raise TypeError("type {} not supported".format(type(other)))
 
-    def __ge__(self, other: Union["Var", LinExpr, numbers.Real]) -> LinExpr:
+    def __ge__(
+        self, other: Union["mip.Var", LinExpr, numbers.Real]
+    ) -> LinExpr:
         if isinstance(other, Var):
             return LinExpr([self, other], [1, -1], sense=">")
         elif isinstance(other, LinExpr):
@@ -643,17 +679,20 @@ class Var:
 
     @var_type.setter
     def var_type(self, value: str):
-        if value not in (BINARY, CONTINUOUS, INTEGER):
+        if value not in (mip.BINARY, mip.CONTINUOUS, mip.INTEGER):
             raise ValueError(
                 "Expected one of {}, but got {}".format(
-                    (BINARY, CONTINUOUS, INTEGER), value
+                    (mip.BINARY, mip.CONTINUOUS, mip.INTEGER), value
                 )
             )
         self.__model.solver.var_set_var_type(self, value)
 
     @property
     def column(self) -> Column:
-        """Variable coefficients in constraints."""
+        """Variable coefficients in constraints.
+
+        :rtype: mip.Column
+        """
         return self.__model.solver.var_get_column(self)
 
     @column.setter
@@ -678,8 +717,87 @@ class Var:
         """Value for this variable in the :math:`i`-th solution from the solution
         pool. Note that None is returned if the solution is not available."""
         if self.__model.status in [
-            OptimizationStatus.OPTIMAL,
-            OptimizationStatus.FEASIBLE,
+            mip.OptimizationStatus.OPTIMAL,
+            mip.OptimizationStatus.FEASIBLE,
         ]:
             return self.__model.solver.var_get_xi(self, i)
         return None
+
+    @property
+    def model(self: "mip.Var") -> "mip.Model":
+        """Model which this variable refers to.
+
+        :rtype: mip.Model
+        """
+        return self.__model
+
+
+class ConflictGraph:
+
+    """A conflict graph stores conflicts between incompatible assignments in
+    binary variables.
+
+    For example, if there is a constraint :math:`x_1 + x_2 \leq 1` then
+    there is a conflict between :math:`x_1 = 1` and :math:`x_2 = 1`. We can state
+    that :math:`x_1` and :math:`x_2` are conflicting. Conflicts can also involve the complement
+    of a binary variable. For example, if there is a constraint :math:`x_1 \leq
+    x_2` then there is a conflict between :math:`x_1 = 1` and :math:`x_2 = 0`.
+    We now can state that :math:`x_1` and :math:`\lnot x_2` are conflicting."""
+
+    __slots__ = ["model"]
+
+    def __init__(self: "ConflictGraph", model: "mip.Model"):
+        self.model = model
+        self.model.solver.update_conflict_graph()
+
+    @property
+    def density(self: "ConflictGraph") -> float:
+        return self.model.solver.cgraph_density()
+
+    def conflicting(
+        self: "ConflictGraph",
+        e1: Union["mip.LinExpr", "mip.Var"],
+        e2: Union["mip.LinExpr", "mip.Var"],
+    ) -> bool:
+        """Checks if two assignments of binary variables are in conflict.
+
+        Args:
+            e1 (Union[mip.LinExpr, mip.Var]): binary variable, if assignment to be
+                tested is the assignment to one, or a linear expression like x == 0
+                to indicate that conflict with the complement of the variable
+                should be tested.
+
+            e2 (Union[mip.LinExpr, mip.Var]): binary variable, if assignment to be
+                tested is the assignment to one, or a linear expression like x == 0
+                to indicate that conflict with the complement of the variable
+                should be tested.
+        """
+        if not isinstance(e1, (mip.LinExpr, mip.Var)):
+            raise TypeError("type {} not supported".format(type(e1)))
+        if not isinstance(e2, (mip.LinExpr, mip.Var)):
+            raise TypeError("type {} not supported".format(type(e2)))
+
+        return e1.model.solver.conflicting(e1, e2)
+
+    def conflicting_assignments(
+        self: "ConflictGraph", v: Union["mip.LinExpr", "mip.Var"]
+    ) -> Tuple[List["mip.Var"], List["mip.Var"]]:
+        """Returns from the conflict graph all assignments conflicting with one
+        specific assignment.
+
+        Args:
+            v (Union[mip.Var, mip.LinExpr]): binary variable, if assignment to be
+                tested is the assignment to one or a linear expression like x == 0
+                to indicate the complement.
+
+        :rtype: Tuple[List[mip.Var], List[mip.Var]]
+
+        Returns:
+            Returns a tuple with two lists. The first one indicates variables
+            whose conflict occurs when setting them to one. The second list
+            includes variable whose conflict occurs when setting them to zero.
+        """
+        if not isinstance(v, (mip.LinExpr, mip.Var)):
+            raise TypeError("type {} not supported".format(type(v)))
+
+        return self.model.solver.conflicting_nodes(v)

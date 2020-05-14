@@ -1,4 +1,4 @@
-.. rubric:: References
+.. rubric::
 
 .. [Ande73] L.G. Anderson: A Simulation Study of some Dynamic Channel Assignment Algorithms in a High Capacity Mobile Telecommunications System. *IEEE Transactions on Communications*, 21:1294--1301. 1973.
 

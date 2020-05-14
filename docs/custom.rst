@@ -93,7 +93,7 @@ be executed. Our separation routine is executed for each pair or nodes at line
 generated and included at line 40. The process repeats while new violated
 inequalities are generated. 
 
-Python-MIP also supports the automatic generation of cutting planes, i.e., cutting planes that can be generated for any model just considering integrality constraints. Line 43 triggers the generation of these cutting planes with the method :meth:`~mip.model.Model.generate_cuts` when our sub-tour elimination procedure does not finds violated sub-tour elimination inequalities anymore.
+Python-MIP also supports the automatic generation of cutting planes, i.e., cutting planes that can be generated for any model just considering integrality constraints. Line 43 triggers the generation of these cutting planes with the method :meth:`~mip.Model.generate_cuts` when our sub-tour elimination procedure does not finds violated sub-tour elimination inequalities anymore.
 
 .. _cut-generation-label:
 
@@ -124,7 +124,7 @@ the initial formulation. In other words, the initial model without cuts may be
 the initial model and then add the stronger sub-tour elimination constraints
 presented in the previous section as cuts. 
 
-In Python-MIP, CGC are implemented extending the :class:`~mip.callbacks.ConstrsGenerator` class. The following example implements the previous cut separation algorithm as a :class:`~mip.callbacks.ConstrsGenerator` class and includes it as a cut generator for the branch-and-cut solver engine. The method that needs to be implemented in this class is the :meth:`~mip.callbacks.ConstrsGenerator.generate_constrs` procedure. This method receives as parameter the object :code:`model` of type :class:`~mip.model.Model`. This object must be used to query the fractional values of the model :attr:`~mip.model.Model.vars`, using the :attr:`~mip.model.Var.x` property. Other model properties can be queried, such as the problem constraints (:attr:`~mip.model.Model.constrs`). Please note that, depending on which solver engine you use, some variables/constraints from the original model may have been removed in the pre-processing phase. Thus, direct references to the original problem variables may be invalid. The method :meth:`~mip.model.Model.translate` (line 15) translates references of variables from the original model to references of variables in the model received in the callback procedure. Whenever a violated inequality is discovered, it can be added to the model using the :code:`+=` operator (line 31). In our example, we temporarily store the generated cuts in a :class:`~mip.callbacks.CutPool` object (line 25) to discard repeated cuts that eventually are found.
+In Python-MIP, CGC are implemented extending the :class:`~mip.ConstrsGenerator` class. The following example implements the previous cut separation algorithm as a :class:`~mip.ConstrsGenerator` class and includes it as a cut generator for the branch-and-cut solver engine. The method that needs to be implemented in this class is the :meth:`~mip.ConstrsGenerator.generate_constrs` procedure. This method receives as parameter the object :code:`model` of type :class:`~mip.Model`. This object must be used to query the fractional values of the model :attr:`~mip.Model.vars`, using the :attr:`~mip.Var.x` property. Other model properties can be queried, such as the problem constraints (:attr:`~mip.Model.constrs`). Please note that, depending on which solver engine you use, some variables/constraints from the original model may have been removed in the pre-processing phase. Thus, direct references to the original problem variables may be invalid. The method :meth:`~mip.Model.translate` (line 15) translates references of variables from the original model to references of variables in the model received in the callback procedure. Whenever a violated inequality is discovered, it can be added to the model using the :code:`+=` operator (line 31). In our example, we temporarily store the generated cuts in a :class:`~mip.CutPool` object (line 25) to discard repeated cuts that eventually are found.
 
 .. literalinclude:: ../examples/tsp-cuts.py
     :caption: Branch-and-cut for the traveling salesman problem (examples/tsp-cuts.py)
@@ -146,7 +146,7 @@ initial formulation only the degree constraints and add all required sub-tour
 elimination constraints on demand. Auxiliary variables :math:`y` would also not
 be necessary. The lazy constraints TSP example is exactly as the cut generator
 callback example with the difference that, besides starting with a smaller
-formulation,  we have to inform that the constraint generator will be used to generate lazy constraints using the model property :attr:`~mip.model.Model.lazy_constrs_generator`.
+formulation,  we have to inform that the constraint generator will be used to generate lazy constraints using the model property :attr:`~mip.Model.lazy_constrs_generator`.
 
 
 .. code-block:: python
@@ -171,7 +171,7 @@ automatically production of these solutions but they do not always succeed.
 
 If you have some problem specific heuristic which can produce an initial
 feasible solution for your application then you can inform this solution to the
-MIP solver using the :attr:`~mip.model.Model.start` model property. Let's
+MIP solver using the :attr:`~mip.Model.start` model property. Let's
 consider our TSP application (:numref:`tsp-label`). If the graph is complete,
 i.e. distances are available for each pair of cities, then *any* permutation
 :math:`\Pi=(\pi_1,\ldots,\pi_n)` of the cities :math:`N` can be used as an
