@@ -422,7 +422,7 @@ class LinExpr:
         if not self.expr:
             return None
 
-        return self.expr.keys()[0].model
+        return next(iter(self.expr)).model
 
 
 class Constr:
@@ -750,8 +750,9 @@ class ConflictGraph:
         self.model = model
         self.model.solver.update_conflict_graph()
 
+    @property
     def density(self: "ConflictGraph") -> float:
-        self.model.solver.cgraph_density()
+        return self.model.solver.cgraph_density()
 
     def conflicting(
         self: "ConflictGraph",
