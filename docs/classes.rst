@@ -11,91 +11,101 @@ Classes
 Model
 -----
 
-.. autoclass:: mip.model.Model
+.. autoclass:: mip.Model
     :members:
 
 LinExpr
 -------
-.. autoclass:: mip.model.LinExpr
+.. autoclass:: mip.LinExpr
     :members:
 
 Var
 ---
-.. autoclass:: mip.model.Var
+.. autoclass:: mip.Var
     :members:
 
 Constr
 ------
-.. autoclass:: mip.model.Constr
+.. autoclass:: mip.Constr
     :members:
 
 Column
 ------
-.. autoclass:: mip.model.Column
+.. autoclass:: mip.Column
+    :members:
+
+ConflictGraph
+-------------
+.. autoclass:: mip.ConflictGraph
     :members:
 
 VarList
 -------
-.. autoclass:: mip.model.VarList
+.. autoclass:: mip.VarList
     :members:
 
 ConstrList
 ----------
-.. autoclass:: mip.model.ConstrList
+.. autoclass:: mip.ConstrList
     :members:
 
 ConstrsGenerator
 ----------------
-.. autoclass:: mip.callbacks.ConstrsGenerator
+.. autoclass:: mip.ConstrsGenerator
     :members:
 
 IncumbentUpdater
 ----------------
-.. autoclass:: mip.callbacks.IncumbentUpdater
+.. autoclass:: mip.IncumbentUpdater
     :members:
 
 CutType
 --------
-.. autoclass:: mip.constants.CutType
+.. autoclass:: mip.CutType
     :members:
 
 CutPool
 -------
-.. autoclass:: mip.callbacks.CutPool
+.. autoclass:: mip.CutPool
     :members:
 
 OptimizationStatus
 ------------------
-.. autoclass:: mip.constants.OptimizationStatus
+.. autoclass:: mip.OptimizationStatus
+    :members:
+
+SearchEmphasis
+--------------
+.. autoclass:: mip.SearchEmphasis
     :members:
 
 LP_Method
 ---------
-.. autoclass:: mip.constants.LP_Method
+.. autoclass:: mip.LP_Method
    :members:
 
 
 
 ProgressLog
 -----------
-.. autoclass:: mip.model.ProgressLog
+.. autoclass:: mip.ProgressLog
     :members:
 
 Exceptions
 -----------
 
-.. autoclass:: mip.exceptions.MipBaseException
-.. autoclass:: mip.exceptions.ProgrammingError
-.. autoclass:: mip.exceptions.InterfacingError
-.. autoclass:: mip.exceptions.InvalidLinExpr
-.. autoclass:: mip.exceptions.InvalidParameter
-.. autoclass:: mip.exceptions.ParameterNotAvailable
-.. autoclass:: mip.exceptions.InfeasibleSolution
-.. autoclass:: mip.exceptions.SolutionNotAvailable
+.. autoclass:: mip.MipBaseException
+.. autoclass:: mip.ProgrammingError
+.. autoclass:: mip.InterfacingError
+.. autoclass:: mip.InvalidLinExpr
+.. autoclass:: mip.InvalidParameter
+.. autoclass:: mip.ParameterNotAvailable
+.. autoclass:: mip.InfeasibleSolution
+.. autoclass:: mip.SolutionNotAvailable
 
 Useful functions
 ----------------
 
-.. automethod:: mip.model.minimize
-.. automethod:: mip.model.maximize
-.. automethod:: mip.model.xsum
+.. autofunction:: mip.minimize
+.. autofunction:: mip.maximize
+.. autofunction:: mip.xsum
