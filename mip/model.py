@@ -211,14 +211,14 @@ class Model:
 
     def add_var_tensor(
         self: "Model",
-        shape: tuple,
+        shape: Tuple[int, ...],
         name: str,
         **kwargs
     ) -> np.ndarray:
         """ Creates new variables in the model, arranging them in a numpy tensor and returning its reference
 
         Args:
-            shape (tuple): shape of the numpy tensor
+            shape (Tuple[int, ...]): shape of the numpy tensor
             name (str): variable name
             **kwargs: all other named arguments will be used as Model.add_var() arguments
 
