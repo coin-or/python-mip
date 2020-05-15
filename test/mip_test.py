@@ -154,7 +154,7 @@ def test_knapsack(solver: str):
     assert round(m.objective_value) == 51
 
     # modifying objective function
-    m.objective += 10 * x[0] + 15 * x[1]
+    m.objective = m.objective + 10 * x[0] + 15 * x[1]
     assert abs(m.objective.expr[x[0]] - 20) <= 1e-10
     assert abs(m.objective.expr[x[1]] - 28) <= 1e-10
 
