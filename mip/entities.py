@@ -89,8 +89,8 @@ class LinExpr:
                 self.add_var(variables[i], coeffs[i])
 
     def __add__(
-        self: "LinExpr", other: Union["mip.Var", "LinExpr", numbers.Real],
-    ) -> "LinExpr":
+        self, other: Union["mip.Var", "mip.LinExpr", numbers.Real],
+    ) -> "mip.LinExpr":
         result = self.copy()
         if isinstance(other, Var):
             result.add_var(other, 1)
@@ -103,13 +103,13 @@ class LinExpr:
         return result
 
     def __radd__(
-        self: "LinExpr", other: Union["mip.Var", "LinExpr", numbers.Real],
-    ) -> "LinExpr":
+        self, other: Union["mip.Var", "mip.LinExpr", numbers.Real],
+    ) -> "mip.LinExpr":
         return self.__add__(other)
 
     def __iadd__(
-        self: "LinExpr", other: Union["mip.Var", "LinExpr", numbers.Real],
-    ) -> "LinExpr":
+        self, other: Union["mip.Var", "mip.LinExpr", numbers.Real],
+    ) -> "mip.LinExpr":
         if isinstance(other, Var):
             self.add_var(other, 1)
         elif isinstance(other, LinExpr):
@@ -121,8 +121,8 @@ class LinExpr:
         return self
 
     def __sub__(
-        self: "LinExpr", other: Union["mip.Var", "LinExpr", numbers.Real],
-    ) -> "LinExpr":
+        self, other: Union["mip.Var", "mip.LinExpr", numbers.Real],
+    ) -> "mip.LinExpr":
         result = self.copy()
         if isinstance(other, Var):
             result.add_var(other, -1)
@@ -135,13 +135,13 @@ class LinExpr:
         return result
 
     def __rsub__(
-        self: "LinExpr", other: Union["mip.Var", "LinExpr", numbers.Real],
-    ) -> "LinExpr":
+        self, other: Union["mip.Var", "mip.LinExpr", numbers.Real],
+    ) -> "mip.LinExpr":
         return (-self).__add__(other)
 
     def __isub__(
-        self: "LinExpr", other: Union["mip.Var", "LinExpr", numbers.Real],
-    ) -> "LinExpr":
+        self, other: Union["mip.Var", "mip.LinExpr", numbers.Real],
+    ) -> "mip.LinExpr":
         if isinstance(other, Var):
             self.add_var(other, -1)
         elif isinstance(other, LinExpr):
@@ -152,7 +152,7 @@ class LinExpr:
             raise TypeError("type {} not supported".format(type(other)))
         return self
 
-    def __mul__(self: "LinExpr", other: numbers.Real) -> "LinExpr":
+    def __mul__(self, other: numbers.Real) -> "mip.LinExpr":
         if not isinstance(other, numbers.Real):
             raise TypeError(
                 "Can not multiply with type {}".format(type(other))
@@ -163,10 +163,10 @@ class LinExpr:
             result.__expr[var] *= other
         return result
 
-    def __rmul__(self: "LinExpr", other: numbers.Real) -> "LinExpr":
+    def __rmul__(self, other: numbers.Real) -> "mip.LinExpr":
         return self.__mul__(other)
 
-    def __imul__(self: "LinExpr", other: numbers.Real) -> "LinExpr":
+    def __imul__(self, other: numbers.Real) -> "mip.LinExpr":
         if not isinstance(other, numbers.Real):
             raise TypeError(
                 "Can not multiply with type {}".format(type(other))
@@ -176,7 +176,7 @@ class LinExpr:
             self.__expr[var] *= other
         return self
 
-    def __truediv__(self: "LinExpr", other: numbers.Real) -> "LinExpr":
+    def __truediv__(self, other: numbers.Real) -> "mip.LinExpr":
         if not isinstance(other, numbers.Real):
             raise TypeError("Can not divide with type {}".format(type(other)))
         result = self.copy()
@@ -185,7 +185,7 @@ class LinExpr:
             result.__expr[var] /= other
         return result
 
-    def __itruediv__(self: "LinExpr", other: numbers.Real) -> "LinExpr":
+    def __itruediv__(self, other: numbers.Real) -> "LinExpr":
         if not isinstance(other, numbers.Real):
             raise TypeError("Can not divide with type {}".format(type(other)))
         self.__const /= other
@@ -193,10 +193,10 @@ class LinExpr:
             self.__expr[var] /= other
         return self
 
-    def __neg__(self: "LinExpr") -> "LinExpr":
+    def __neg__(self) -> "LinExpr":
         return self.__mul__(-1)
 
-    def __str__(self: "LinExpr") -> str:
+    def __str__(self) -> str:
         result = []
 
         if hasattr(self, "__sense"):
@@ -232,26 +232,26 @@ class LinExpr:
 
         return "".join(result)
 
-    def __eq__(self: "LinExpr", other) -> "LinExpr":
+    def __eq__(self, other) -> "LinExpr":
         result = self - other
         result.__sense = "="
         return result
 
     def __le__(
-        self: "LinExpr", other: Union["mip.Var", "LinExpr", numbers.Real],
-    ) -> "LinExpr":
+        self, other: Union["mip.Var", "LinExpr", numbers.Real],
+    ) -> "mip.LinExpr":
         result = self - other
         result.__sense = "<"
         return result
 
     def __ge__(
-        self: "LinExpr", other: Union["mip.Var", "LinExpr", numbers.Real],
-    ) -> "LinExpr":
+        self, other: Union["mip.Var", "LinExpr", numbers.Real],
+    ) -> "mip.LinExpr":
         result = self - other
         result.__sense = ">"
         return result
 
-    def add_const(self: "LinExpr", val: numbers.Real):
+    def add_const(self, val: numbers.Real):
         """adds a constant value to the linear expression, in the case of
         a constraint this correspond to the right-hand-side
 
@@ -260,7 +260,7 @@ class LinExpr:
         """
         self.__const += val
 
-    def add_expr(self: "LinExpr", expr: "LinExpr", coeff: numbers.Real = 1):
+    def add_expr(self, expr: "LinExpr", coeff: numbers.Real = 1):
         """Extends a linear expression with the contents of another.
 
         Args:
@@ -273,8 +273,8 @@ class LinExpr:
             self.add_var(var, coeff_var * coeff)
 
     def add_term(
-        self: "LinExpr",
-        term: Union["mip.Var", "LinExpr", numbers.Real],
+        self,
+        term: Union["mip.Var", "mip.LinExpr", numbers.Real],
         coeff: numbers.Real = 1,
     ):
         """Adds a term to the linear expression.
@@ -296,7 +296,7 @@ class LinExpr:
         else:
             raise TypeError("type {} not supported".format(type(term)))
 
-    def add_var(self: "LinExpr", var: "mip.Var", coeff: numbers.Real = 1):
+    def add_var(self, var: "mip.Var", coeff: numbers.Real = 1):
         """Adds a variable with a coefficient to the linear expression.
 
         Args:
@@ -311,14 +311,14 @@ class LinExpr:
         else:
             self.__expr[var] = coeff
 
-    def copy(self: "LinExpr") -> "LinExpr":
+    def copy(self) -> "mip.LinExpr":
         copy = LinExpr()
         copy.__const = self.__const
         copy.__expr = self.__expr.copy()
         copy.__sense = self.__sense
         return copy
 
-    def equals(self: "LinExpr", other: "LinExpr") -> bool:
+    def equals(self, other: "mip.LinExpr") -> bool:
         """returns true if a linear expression equals to another,
         false otherwise"""
         if self.__sense != other.__sense:
@@ -336,7 +336,7 @@ class LinExpr:
                 return False
         return True
 
-    def __hash__(self: "LinExpr"):
+    def __hash__(self):
         hash_el = [v.idx for v in self.__expr.keys()]
         for c in self.__expr.values():
             hash_el.append(c)
@@ -345,12 +345,12 @@ class LinExpr:
         return hash(tuple(hash_el))
 
     @property
-    def const(self: "LinExpr") -> numbers.Real:
+    def const(self) -> numbers.Real:
         """constant part of the linear expression"""
         return self.__const
 
     @property
-    def expr(self: "LinExpr") -> Dict["mip.Var", numbers.Real]:
+    def expr(self) -> Dict["mip.Var", numbers.Real]:
         """the non-constant part of the linear expression
 
         Dictionary with pairs: (variable, coefficient) where coefficient
@@ -361,7 +361,7 @@ class LinExpr:
         return self.__expr
 
     @property
-    def sense(self: "LinExpr") -> str:
+    def sense(self) -> str:
         """sense of the linear expression
 
         sense can be EQUAL("="), LESS_OR_EQUAL("<"), GREATER_OR_EQUAL(">") or
@@ -371,7 +371,7 @@ class LinExpr:
         return self.__sense
 
     @sense.setter
-    def sense(self: "LinExpr", value):
+    def sense(self, value):
         """sense of the linear expression
 
         sense can be EQUAL("="), LESS_OR_EQUAL("<"), GREATER_OR_EQUAL(">") or
@@ -381,7 +381,7 @@ class LinExpr:
         self.__sense = value
 
     @property
-    def violation(self: "LinExpr"):
+    def violation(self):
         """Amount that current solution violates this constraint
 
         If a solution is available, than this property indicates how much
@@ -413,7 +413,7 @@ class LinExpr:
         return x
 
     @property
-    def model(self: "LinExpr") -> Optional["mip.Model"]:
+    def model(self) -> Optional["mip.Model"]:
         """Model which this LinExpr refers to, None if no variables are
         involved.
 
@@ -724,7 +724,7 @@ class Var:
         return None
 
     @property
-    def model(self: "mip.Var") -> "mip.Model":
+    def model(self) -> "mip.Model":
         """Model which this variable refers to.
 
         :rtype: mip.Model
@@ -746,16 +746,16 @@ class ConflictGraph:
 
     __slots__ = ["model"]
 
-    def __init__(self: "ConflictGraph", model: "mip.Model"):
+    def __init__(self, model: "mip.Model"):
         self.model = model
         self.model.solver.update_conflict_graph()
 
     @property
-    def density(self: "ConflictGraph") -> float:
+    def density(self) -> float:
         return self.model.solver.cgraph_density()
 
     def conflicting(
-        self: "ConflictGraph",
+        self,
         e1: Union["mip.LinExpr", "mip.Var"],
         e2: Union["mip.LinExpr", "mip.Var"],
     ) -> bool:
@@ -780,7 +780,7 @@ class ConflictGraph:
         return e1.model.solver.conflicting(e1, e2)
 
     def conflicting_assignments(
-        self: "ConflictGraph", v: Union["mip.LinExpr", "mip.Var"]
+        self, v: Union["mip.LinExpr", "mip.Var"]
     ) -> Tuple[List["mip.Var"], List["mip.Var"]]:
         """Returns from the conflict graph all assignments conflicting with one
         specific assignment.
