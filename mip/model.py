@@ -213,7 +213,7 @@ class Model:
         self: "Model",
         shape: tuple,
         name: str,
-        **kwargs,
+        **kwargs
     ) -> np.ndarray:
         """ Creates new variables in the model, arranging them in a numpy tensor and returning its reference
 
