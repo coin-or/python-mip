@@ -577,7 +577,7 @@ class Var:
         if isinstance(other, Var):
             return LinExpr([self, other], [1, -1])
         elif isinstance(other, LinExpr):
-            return (-other).__iadd__(self)
+            return (-other).__add__(self)
         elif isinstance(other, numbers.Real):
             if fabs(other) < mip.EPS:
                 return self
