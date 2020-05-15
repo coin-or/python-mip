@@ -305,11 +305,11 @@ class Model:
         # creating a new solver instance
         sense = self.sense
 
-        if self.solver_name in [mip.GUROBI, "gurobi"]:
+        if self.solver_name.upper in ["GRB", "GUROBI"]:
             import mip.gurobi
 
             self.solver = mip.gurobi.SolverGurobi(self, self.name, sense)
-        elif self.solver_name.upper() == mip.CBC:
+        elif self.solver_name.upper() == "CBC":
             import mip.cbc
 
             self.solver = mip.cbc.SolverCbc(self, self.name, sense)
