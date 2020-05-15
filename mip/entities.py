@@ -2,6 +2,7 @@ from builtins import property
 from typing import List, Optional, Dict, Union, Tuple
 import numbers
 import mip
+from math import fabs
 
 
 class Column:
@@ -91,6 +92,9 @@ class LinExpr:
     def __add__(
         self, other: Union["mip.Var", "mip.LinExpr", numbers.Real],
     ) -> "mip.LinExpr":
+        if isinstance(other, numbers.Real) and fabs(other) < mip.EPS:
+            return self
+
         result = self.copy()
         if isinstance(other, Var):
             result.add_var(other, 1)
@@ -110,6 +114,7 @@ class LinExpr:
     def __iadd__(
         self, other: Union["mip.Var", "mip.LinExpr", numbers.Real],
     ) -> "mip.LinExpr":
+        raise DeprecationWarning("Inplace operations are deprecated")
         if isinstance(other, Var):
             self.add_var(other, 1)
         elif isinstance(other, LinExpr):
@@ -142,6 +147,7 @@ class LinExpr:
     def __isub__(
         self, other: Union["mip.Var", "mip.LinExpr", numbers.Real],
     ) -> "mip.LinExpr":
+        raise DeprecationWarning("Inplace operations are deprecated")
         if isinstance(other, Var):
             self.add_var(other, -1)
         elif isinstance(other, LinExpr):
@@ -152,11 +158,17 @@ class LinExpr:
             raise TypeError("type {} not supported".format(type(other)))
         return self
 
-    def __mul__(self, other: numbers.Real) -> "mip.LinExpr":
+    def __mul__(self, other: numbers.Real) -> Union["mip.LinExpr", numbers.Real]:
         if not isinstance(other, numbers.Real):
             raise TypeError(
                 "Can not multiply with type {}".format(type(other))
             )
+        if isinstance(other, numbers.Real):
+            if fabs(other) < mip.EPS :
+                return other
+            if fabs(other - 1) < mip.EPS :
+                return self
+
         result = self.copy()
         result.__const *= other
         for var in result.__expr.keys():
@@ -167,6 +179,7 @@ class LinExpr:
         return self.__mul__(other)
 
     def __imul__(self, other: numbers.Real) -> "mip.LinExpr":
+        raise DeprecationWarning("Inplace operations are deprecated")
         if not isinstance(other, numbers.Real):
             raise TypeError(
                 "Can not multiply with type {}".format(type(other))
@@ -177,6 +190,7 @@ class LinExpr:
         return self
 
     def __truediv__(self, other: numbers.Real) -> "mip.LinExpr":
+        raise DeprecationWarning("Inplace operations are deprecated")
         if not isinstance(other, numbers.Real):
             raise TypeError("Can not divide with type {}".format(type(other)))
         result = self.copy()
@@ -540,56 +554,66 @@ class Var:
 
     def __add__(
         self, other: Union["mip.Var", LinExpr, numbers.Real]
-    ) -> LinExpr:
+    ) -> Union["mip.Var", LinExpr]:
         if isinstance(other, Var):
             return LinExpr([self, other], [1, 1])
         if isinstance(other, LinExpr):
             return other.__add__(self)
         if isinstance(other, numbers.Real):
+            if fabs(other) < mip.EPS:
+                return self
             return LinExpr([self], [1], other)
 
         raise TypeError("type {} not supported".format(type(other)))
 
     def __radd__(
         self, other: Union["mip.Var", LinExpr, numbers.Real]
-    ) -> LinExpr:
+    ) -> Union["mip.Var", LinExpr]:
         return self.__add__(other)
 
     def __sub__(
         self, other: Union["mip.Var", LinExpr, numbers.Real]
-    ) -> LinExpr:
+    ) -> Union["mip.Var", LinExpr]:
         if isinstance(other, Var):
             return LinExpr([self, other], [1, -1])
         elif isinstance(other, LinExpr):
             return (-other).__iadd__(self)
         elif isinstance(other, numbers.Real):
+            if fabs(other) < mip.EPS:
+                return self
             return LinExpr([self], [1], -other)
         else:
             raise TypeError("type {} not supported".format(type(other)))
 
     def __rsub__(
         self, other: Union["mip.Var", LinExpr, numbers.Real]
-    ) -> LinExpr:
+    ) -> Union["mip.Var", LinExpr]:
         if isinstance(other, Var):
             return LinExpr([self, other], [-1, 1])
         elif isinstance(other, LinExpr):
             return other.__sub__(self)
         elif isinstance(other, numbers.Real):
+            if fabs(other) < mip.EPS:
+                return self
             return LinExpr([self], [-1], other)
         else:
             raise TypeError("type {} not supported".format(type(other)))
 
-    def __mul__(self, other: numbers.Real) -> LinExpr:
+    def __mul__(self, other: numbers.Real) -> Union["mip.Var", numbers.Real, LinExpr]:
         if not isinstance(other, numbers.Real):
             raise TypeError(
                 "Can not multiply with type {}".format(type(other))
             )
+        if fabs(other) < mip.EPS:
+                return other
+        if fabs(other - 1) < mip.EPS:
+                return self        
         return LinExpr([self], [other])
 
-    def __rmul__(self, other: numbers.Real) -> LinExpr:
+    def __rmul__(self, other: numbers.Real) -> Union["mip.Var", numbers.Real, LinExpr]:
         return self.__mul__(other)
 
-    def __truediv__(self, other: numbers.Real) -> LinExpr:
+    def __truediv__(self, other: numbers.Real) -> Union["mip.Var", numbers.Real, LinExpr]:
         if not isinstance(other, numbers.Real):
             raise TypeError("Can not divide with type {}".format(type(other)))
         return self.__mul__(1.0 / other)
