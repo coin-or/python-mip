@@ -37,7 +37,7 @@ setuptools.setup(
             "lin64/*.*",
         ]
     },
-    install_requires=["cffi"],
+    install_requires=["cffi", "numpy"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Eclipse Public License 2.0 (EPL-2.0)",

@@ -4,6 +4,7 @@ from os.path import isfile
 from typing import List, Tuple, Optional, Union, Dict, Any
 import numbers
 import mip
+import numpy as np
 
 
 logger = logging.getLogger(__name__)
@@ -149,6 +150,24 @@ class Model:
         elif isinstance(other, mip.CutPool):
             for cut in other.cuts:
                 self.add_constr(cut)
+        elif isinstance(other, np.ndarray):
+            for element in other.flat:
+                # the tensor could contain LinExpr or constraints
+                # add all elements of the tensor
+                if isinstance(element, tuple):
+                    evaluation_element = element[0]
+                else:
+                    evaluation_element = element
+                
+                if isinstance(evaluation_element, mip.LinExpr) and evaluation_element.sense == 0 and other.size > 1:
+                    raise Exception("Only scalar objective functions are allowed")
+
+                # if the problem is sparse, it is common to have multiple boolean elements in constraints, we should ignore those
+                if (
+                    isinstance(evaluation_element, mip.LinExpr) or
+                    isinstance(evaluation_element, mip.CutPool)
+                ):
+                    self.__iadd__(element)
         else:
             raise TypeError("type {} not supported".format(type(other)))
 
@@ -189,6 +208,36 @@ class Model:
                 x = [m.add_var(var_type=BINARY) for i in range(n)]
         """
         return self.vars.add(name, lb, ub, obj, var_type, column)
+
+    def add_var_tensor(
+        self: "Model",
+        shape: tuple,
+        name: str,
+        **kwargs,
+    ) -> np.ndarray:
+        """ Creates new variables in the model, arranging them in a numpy tensor and returning its reference
+
+        Args:
+            shape (tuple): shape of the numpy tensor
+            name (str): variable name
+            **kwargs: all other named arguments will be used as Model.add_var() arguments
+
+        Examples:
+
+            To add a tensor of variables :code:`x` with shape (3, 5) and which is continuous 
+            in any variable and have all values greater or equal to zero to model :code:`m`::
+
+                x = m.add_var_tensor((3, 5), "x")
+        """
+        def _add_tensor(m, shape, name, **kwargs):
+            assert name is not None
+            assert len(shape) > 0
+            
+            if( len(shape) == 1 ):
+                return [m.add_var(name=("%s_%d" % (name, i)), **kwargs) for i in range(shape[0])]
+            return [_add_tensor(m, shape[1:], name=("%s_%d" % (name, i)), **kwargs) for i in range(shape[0])]    
+        
+        return np.array(_add_tensor(self, shape, name, **kwargs))
 
     def add_constr(
         self: "Model", lin_expr: "mip.LinExpr", name: str = ""
