@@ -15,7 +15,7 @@ def test_numpy():
 
     # inefficient way to compute trace, so we can test optimizations
     # equivalent to model += np.trace(x)
-    model += np.matmul(np.ones((N,)), np.matmul(x * np.eye(N), np.ones((N,))))
+    model += np.ones((N,)) @ (x * np.eye(N)) @ np.ones((N,))
     
     # constraints
     model += np.vectorize(lambda x_i_j: x_i_j >= 1)(x)
