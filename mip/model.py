@@ -305,7 +305,7 @@ class Model:
         # creating a new solver instance
         sense = self.sense
 
-        if self.solver_name.upper in ["GRB", "GUROBI"]:
+        if self.solver_name.upper() in ["GRB", "GUROBI"]:
             import mip.gurobi
 
             self.solver = mip.gurobi.SolverGurobi(self, self.name, sense)
