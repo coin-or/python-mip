@@ -325,6 +325,16 @@ class LinExpr:
         else:
             self.__expr[var] = coeff
 
+    def set_expr(self: "LinExpr", expr: Dict["mip.Var", numbers.Real]):
+        """Sets terms of the linear expression
+
+        Args:
+            expr(Dict[mip.Var, numbers.Real]) : dictionary mapping variables to
+                their coefficients in the linear expression.
+        """
+
+        self.__expr = expr
+
     def copy(self) -> "mip.LinExpr":
         copy = LinExpr()
         copy.__const = self.__const
