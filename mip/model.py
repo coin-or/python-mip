@@ -729,7 +729,7 @@ class Model:
 
     @objective.setter
     def objective(
-        self: "Model", objective: Union[numbers.Real, "mip.Var", "mip.LinExpr"]
+        self: "Model", objective: Union[numbers.Real, "mip.Var", "mip.LinExpr", "mip.ndarray.LinExprTensor"]
     ):
         if isinstance(objective, numbers.Real):
             self.solver.set_objective(mip.LinExpr([], [], objective))
@@ -737,6 +737,10 @@ class Model:
             self.solver.set_objective(mip.LinExpr([objective], [1]))
         elif isinstance(objective, mip.LinExpr):
             self.solver.set_objective(objective)
+        elif isinstance(objective, mip.ndarray.LinExprTensor):
+            if objective.size != 1:
+                raise ValueError("objective set to tensor of shape {}, only scalars are allowed".format(objective.shape))
+            self.solver.set_objective(objective.flat()[0])
         else:
             raise TypeError("type {} not supported".format(type(objective)))
 
