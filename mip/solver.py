@@ -1,7 +1,7 @@
 """This module implements the solver intependent communication layer of
 Python-MIP
 """
-from typing import List, Tuple, TYPE_CHECKING, Optional, Union
+from typing import List, Tuple, Optional, Union
 from sys import maxsize
 import numbers
 import mip
@@ -11,9 +11,7 @@ class Solver:
     """The solver is an abstract class with the solver independent
     API to communicate with the solver engine"""
 
-    def __init__(
-        self: "Solver", model: "Model", name: str = "", sense: str = ""
-    ):
+    def __init__(self: "Solver", model: "Model", name: str = "", sense: str = ""):
         self.model = model
         if name:
             self.name = name
@@ -41,9 +39,7 @@ class Solver:
         pass
 
     def add_sos(
-        self: "Solver",
-        sos: List[Tuple["mip.Var", numbers.Real]],
-        sos_type: int,
+        self: "Solver", sos: List[Tuple["mip.Var", numbers.Real]], sos_type: int,
     ):
         pass
 
@@ -70,9 +66,7 @@ class Solver:
     ) -> "mip.CutPool":
         pass
 
-    def optimize(
-        self: "Solver", relax: bool = False,
-    ) -> "mip.OptimizationStatus":
+    def optimize(self: "Solver", relax: bool = False,) -> "mip.OptimizationStatus":
         pass
 
     def get_objective_value(self: "Solver") -> numbers.Real:
@@ -98,9 +92,7 @@ class Solver:
     def set_start(self: "Solver", start: List[Tuple["mip.Var", numbers.Real]]):
         pass
 
-    def set_objective(
-        self: "Solver", lin_expr: "mip.LinExpr", sense: str = ""
-    ):
+    def set_objective(self: "Solver", lin_expr: "mip.LinExpr", sense: str = ""):
         pass
 
     def set_objective_const(self: "Solver", const: numbers.Real):
