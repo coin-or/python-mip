@@ -5,6 +5,7 @@ from typing import List, Tuple, Optional, Union, Dict, Any
 import numbers
 import mip
 import numpy as np
+from mip.ndarray import LinExprTensor
 
 
 logger = logging.getLogger(__name__)
@@ -150,7 +151,7 @@ class Model:
         elif isinstance(other, mip.CutPool):
             for cut in other.cuts:
                 self.add_constr(cut)
-        elif isinstance(other, np.ndarray):
+        elif isinstance(other, LinExprTensor):
             for element in other.flat:
                 # the tensor could contain LinExpr or constraints
                 # add all elements of the tensor
@@ -214,7 +215,7 @@ class Model:
         shape: Tuple[int, ...],
         name: str,
         **kwargs
-    ) -> np.ndarray:
+    ) -> LinExprTensor:
         """ Creates new variables in the model, arranging them in a numpy tensor and returning its reference
 
         Args:
@@ -237,7 +238,7 @@ class Model:
                 return [m.add_var(name=("%s_%d" % (name, i)), **kwargs) for i in range(shape[0])]
             return [_add_tensor(m, shape[1:], name=("%s_%d" % (name, i)), **kwargs) for i in range(shape[0])]    
         
-        return np.array(_add_tensor(self, shape, name, **kwargs))
+        return np.array(_add_tensor(self, shape, name, **kwargs)).view(LinExprTensor)
 
     def add_constr(
         self: "Model", lin_expr: "mip.LinExpr", name: str = ""
