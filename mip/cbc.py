@@ -13,7 +13,6 @@ import mip
 from mip.lists import EmptyVarSol, EmptyRowSol
 from mip.exceptions import (
     ParameterNotAvailable,
-    SolutionNotAvailable,
     InvalidParameter,
 )
 from mip import (
@@ -73,9 +72,7 @@ try:
                 pathlib = os.path.join(pathlib, "lin64")
                 libfile = os.path.join(pathlib, "libCbcSolver.so")
             else:
-                raise NotImplementedError(
-                    "Linux 32 bits platform not supported."
-                )
+                raise NotImplementedError("Linux 32 bits platform not supported.")
         elif platform.lower().startswith("win"):
             if os_is_64_bit:
                 pathlib = os.path.join(pathlib, "win64")
@@ -84,24 +81,20 @@ try:
                 libfile = os.path.join(pathlib, "libCbcSolver-0.dll")
             else:
                 raise NotImplementedError("Win32 platform not supported.")
-        elif platform.lower().startswith(
-            "darwin"
-        ) or platform.lower().startswith("macos"):
+        elif platform.lower().startswith("darwin") or platform.lower().startswith(
+            "macos"
+        ):
             if os_is_64_bit:
                 libfile = os.path.join(pathlib, "cbc-c-darwin-x86-64.dylib")
         if not libfile:
-            raise NotImplementedError(
-                "You operating system/platform is not supported"
-            )
+            raise NotImplementedError("You operating system/platform is not supported")
     old_dir = os.getcwd()
     os.chdir(pathlib)
     cbclib = ffi.dlopen(libfile)
     os.chdir(old_dir)
     has_cbc = True
 except Exception as e:
-    logger.error(
-        "An error occurred while loading the CBC library:\t " "{}\n".format(e)
-    )
+    logger.error("An error occurred while loading the CBC library:\t " "{}\n".format(e))
     has_cbc = False
 
 if has_cbc:
@@ -572,9 +565,7 @@ OsiCuts_delete = cbclib.OsiCuts_delete
 
 
 def cbc_set_parameter(model: Solver, param: str, value: str):
-    cbclib.Cbc_setParameter(
-        model._model, param.encode("utf-8"), value.encode("utf-8")
-    )
+    cbclib.Cbc_setParameter(model._model, param.encode("utf-8"), value.encode("utf-8"))
 
 
 class SolverCbc(Solver):
@@ -648,20 +639,10 @@ class SolverCbc(Solver):
             vval = ffi.new("double[]", [coef for coef in column.coeffs])
 
         isInt = (
-            CHAR_ONE
-            if coltype.upper() == "B" or coltype.upper() == "I"
-            else CHAR_ZERO
+            CHAR_ONE if coltype.upper() == "B" or coltype.upper() == "I" else CHAR_ZERO
         )
         cbclib.Cbc_addCol(
-            self._model,
-            name.encode("utf-8"),
-            lb,
-            ub,
-            obj,
-            isInt,
-            numnz,
-            vind,
-            vval,
+            self._model, name.encode("utf-8"), lb, ub, obj, isInt, numnz, vind, vval,
         )
 
     def update_conflict_graph(self: "SolverCbc"):
@@ -674,9 +655,7 @@ class SolverCbc(Solver):
         return cbclib.CG_density(cg)
 
     def conflicting(
-        self: "SolverCbc",
-        e1: Union["LinExpr", "Var"],
-        e2: Union["LinExpr", "Var"],
+        self: "SolverCbc", e1: Union["LinExpr", "Var"], e2: Union["LinExpr", "Var"],
     ) -> bool:
         idx1, idx2 = (None, None)
         if isinstance(e1, Var):
@@ -787,9 +766,7 @@ class SolverCbc(Solver):
     def get_objective(self) -> LinExpr:
         obj = cbclib.Cbc_getObjCoefficients(self._model)
         if obj == ffi.NULL:
-            raise ParameterNotAvailable(
-                "Error getting objective function coefficients"
-            )
+            raise ParameterNotAvailable("Error getting objective function coefficients")
         return (
             xsum(
                 obj[j] * self.model.vars[j]
@@ -883,8 +860,7 @@ class SolverCbc(Solver):
         for cut_type in cut_types:
             if self.__verbose >= 1:
                 logger.info(
-                    "searching for violated "
-                    "{} cuts ... ".format(cut_type.name)
+                    "searching for violated " "{} cuts ... ".format(cut_type.name)
                 )
             nc1 = OsiCuts_sizeRowCuts(osi_cuts)
             Cgl_generateCuts(osi_solver, int(cut_type.value), osi_cuts, int(1))
@@ -927,9 +903,7 @@ class SolverCbc(Solver):
             nameIdx = {}
             n = cbclib.Osi_getNumCols(osi_solver)
             for i in range(n):
-                cbclib.Osi_getColName(
-                    osi_solver, i, self.__name_spacec, MAX_NAME_SIZE
-                )
+                cbclib.Osi_getColName(osi_solver, i, self.__name_spacec, MAX_NAME_SIZE)
                 cname = ffi.string(self.__name_spacec).decode("utf-8")
                 nameIdx[cname] = i
 
@@ -1015,9 +989,7 @@ class SolverCbc(Solver):
                 self.__rc = cbclib.Cbc_getReducedCost(self._model)
                 self.__pi = cbclib.Cbc_getRowPrice(self._model)
                 self.__slack = cbclib.Cbc_getRowSlack(self._model)
-                self.__obj_val = (
-                    cbclib.Cbc_getObjValue(self._model) + self._objconst
-                )
+                self.__obj_val = cbclib.Cbc_getObjValue(self._model) + self._objconst
                 self.__obj_bound = self.__obj_val
                 self.__num_solutions = 1
 
@@ -1090,9 +1062,7 @@ class SolverCbc(Solver):
             cbc_set_parameter(self, "preprocess", "sos")
 
         if self.model.cut_passes != -1:
-            cbc_set_parameter(
-                self, "passc", "{}".format(self.model.cut_passes)
-            )
+            cbc_set_parameter(self, "passc", "{}".format(self.model.cut_passes))
 
         if self.model.clique == 0:
             cbc_set_parameter(self, "clique", "off")
@@ -1102,9 +1072,7 @@ class SolverCbc(Solver):
         cbc_set_parameter(self, "maxSavedSolutions", "10")
 
         if self.model.store_search_progress_log:
-            cbclib.Cbc_addProgrCallback(
-                self._model, cbc_progress_callback, ffi.NULL
-            )
+            cbclib.Cbc_addProgrCallback(self._model, cbc_progress_callback, ffi.NULL)
 
         if self.model.integer_tol >= 0.0:
             cbclib.Cbc_setDblParam(
@@ -1128,14 +1096,10 @@ class SolverCbc(Solver):
 
         cbclib.Cbc_setAllowableFractionGap(self._model, self.model.max_mip_gap)
         cbclib.Cbc_setAllowableGap(self._model, self.model.max_mip_gap_abs)
-        cbclib.Cbc_setIntParam(
-            self._model, INT_PARAM_RANDOM_SEED, self.model.seed
-        )
+        cbclib.Cbc_setIntParam(self._model, INT_PARAM_RANDOM_SEED, self.model.seed)
 
         cbclib.Cbc_setIntParam(
-            self._model,
-            INT_PARAM_ROUND_INT_VARS,
-            int(self.model.round_int_vars),
+            self._model, INT_PARAM_ROUND_INT_VARS, int(self.model.round_int_vars),
         )
 
         cbclib.Cbc_setIntParam(
@@ -1151,9 +1115,7 @@ class SolverCbc(Solver):
         if cbclib.Cbc_isProvenOptimal(self._model):
             self.__x = cbclib.Cbc_getColSolution(self._model)
             self.__slack = cbclib.Cbc_getRowSlack(self._model)
-            self.__obj_val = (
-                cbclib.Cbc_getObjValue(self._model) + self._objconst
-            )
+            self.__obj_val = cbclib.Cbc_getObjValue(self._model) + self._objconst
             self.__obj_bound = self.__obj_val
             self.__num_solutions = 1
 
@@ -1163,12 +1125,9 @@ class SolverCbc(Solver):
                 self.__slack = cbclib.Cbc_getRowSlack(self._model)
             else:
                 self.__obj_bound = (
-                    cbclib.Cbc_getBestPossibleObjValue(self._model)
-                    + self._objconst
+                    cbclib.Cbc_getBestPossibleObjValue(self._model) + self._objconst
                 )
-                self.__num_solutions = cbclib.Cbc_numberSavedSolutions(
-                    self._model
-                )
+                self.__num_solutions = cbclib.Cbc_numberSavedSolutions(self._model)
             return OptimizationStatus.OPTIMAL
 
         if cbclib.Cbc_isProvenInfeasible(self._model):
@@ -1179,19 +1138,14 @@ class SolverCbc(Solver):
 
         if cbclib.Cbc_getNumIntegers(self._model):
             self.__obj_bound = (
-                cbclib.Cbc_getBestPossibleObjValue(self._model)
-                + self._objconst
+                cbclib.Cbc_getBestPossibleObjValue(self._model) + self._objconst
             )
 
             if cbclib.Cbc_bestSolution(self._model):
                 self.__x = cbclib.Cbc_getColSolution(self._model)
                 self.__slack = cbclib.Cbc_getRowSlack(self._model)
-                self.__obj_val = (
-                    cbclib.Cbc_getObjValue(self._model) + self._objconst
-                )
-                self.__num_solutions = cbclib.Cbc_numberSavedSolutions(
-                    self._model
-                )
+                self.__obj_val = cbclib.Cbc_getObjValue(self._model) + self._objconst
+                self.__num_solutions = cbclib.Cbc_numberSavedSolutions(self._model)
 
                 return OptimizationStatus.FEASIBLE
 
@@ -1211,9 +1165,7 @@ class SolverCbc(Solver):
             cbclib.Cbc_setObjSense(self._model, 1.0)
         else:
             raise ValueError(
-                "Unknown sense: {}, use {} or {}".format(
-                    sense, MAXIMIZE, MINIMIZE
-                )
+                "Unknown sense: {}, use {} or {}".format(sense, MAXIMIZE, MINIMIZE)
             )
 
     def get_objective_value(self) -> numbers.Real:
@@ -1239,9 +1191,7 @@ class SolverCbc(Solver):
 
         return OptimizationStatus.NO_SOLUTION_FOUND
 
-    def get_log(
-        self,
-    ) -> List[Tuple[numbers.Real, Tuple[numbers.Real, numbers.Real]]]:
+    def get_log(self,) -> List[Tuple[numbers.Real, Tuple[numbers.Real, numbers.Real]]]:
         return self.__log
 
     def get_objective_bound(self) -> numbers.Real:
@@ -1391,9 +1341,7 @@ class SolverCbc(Solver):
 
     def read(self, file_path: str) -> None:
         if not isfile(file_path):
-            raise FileNotFoundError(
-                "File {} does not exists".format(file_path)
-            )
+            raise FileNotFoundError("File {} does not exists".format(file_path))
 
         fpstr = file_path.encode("utf-8")
         if ".mps" in file_path.lower():
@@ -1457,11 +1405,7 @@ class SolverCbc(Solver):
             raise ParameterNotAvailable("Error getting row coefficients.")
 
         rhs = cbclib.Cbc_getRowRHS(self._model, constr.idx)
-        rsense = (
-            cbclib.Cbc_getRowSense(self._model, constr.idx)
-            .decode("utf-8")
-            .upper()
-        )
+        rsense = cbclib.Cbc_getRowSense(self._model, constr.idx).decode("utf-8").upper()
         sense = ""
         if rsense == "E":
             sense = EQUAL
@@ -1651,20 +1595,10 @@ class SolverOsi(Solver):
             numnz = len(column.constrs)
 
         isInt = (
-            CHAR_ONE
-            if var_type.upper() == "B" or var_type.upper() == "I"
-            else CHAR_ZERO
+            CHAR_ONE if var_type.upper() == "B" or var_type.upper() == "I" else CHAR_ZERO
         )
         cbclib.Osi_addCol(
-            self.osi,
-            name.encode("utf-8"),
-            lb,
-            ub,
-            obj,
-            isInt,
-            numnz,
-            vind,
-            vval,
+            self.osi, name.encode("utf-8"), lb, ub, obj, isInt, numnz, vind, vval,
         )
 
     def add_constr(self, lin_expr: "LinExpr", name: str = ""):
@@ -1690,17 +1624,13 @@ class SolverOsi(Solver):
             numnz = len(lin_expr.expr)
 
             cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
-            cval = ffi.new(
-                "double[]", [coef for coef in lin_expr.expr.values()]
-            )
+            cval = ffi.new("double[]", [coef for coef in lin_expr.expr.values()])
 
             # constraint sense and rhs
             sense = lin_expr.sense.encode("utf-8")
             rhs = -lin_expr.const
 
-            OsiCuts_addGlobalRowCut(
-                self.osi_cutsp, numnz, cind, cval, sense, rhs
-            )
+            OsiCuts_addGlobalRowCut(self.osi_cutsp, numnz, cind, cval, sense, rhs)
         else:
             global cut_idx
             name = "cut{}".format(cut_idx)
@@ -1715,17 +1645,13 @@ class SolverOsi(Solver):
             numnz = len(lin_expr.expr)
 
             cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
-            cval = ffi.new(
-                "double[]", [coef for coef in lin_expr.expr.values()]
-            )
+            cval = ffi.new("double[]", [coef for coef in lin_expr.expr.values()])
 
             # constraint sense and rhs
             sense = lin_expr.sense.encode("utf-8")
             rhs = -lin_expr.const
 
-            OsiCuts_addGlobalRowCut(
-                self.osi_cutsp, numnz, cind, cval, sense, rhs
-            )
+            OsiCuts_addGlobalRowCut(self.osi_cutsp, numnz, cind, cval, sense, rhs)
         else:
             global cut_idx
             name = "cut{}".format(cut_idx)
@@ -1737,9 +1663,7 @@ class SolverOsi(Solver):
     def get_objective(self) -> LinExpr:
         obj = cbclib.Osi_getObjCoefficients(self.osi)
         if obj == ffi.NULL:
-            raise ParameterNotAvailable(
-                "Error getting objective function coefficients"
-            )
+            raise ParameterNotAvailable("Error getting objective function coefficients")
         return (
             xsum(
                 obj[j] * self.model.vars[j]
@@ -1788,9 +1712,7 @@ class SolverOsi(Solver):
     def get_objective_value(self) -> numbers.Real:
         return self.__obj_val
 
-    def get_log(
-        self,
-    ) -> List[Tuple[numbers.Real, Tuple[numbers.Real, numbers.Real]]]:
+    def get_log(self,) -> List[Tuple[numbers.Real, Tuple[numbers.Real, numbers.Real]]]:
         return []
 
     def get_objective_value_i(self, i: int) -> numbers.Real:
@@ -1816,9 +1738,7 @@ class SolverOsi(Solver):
             cbclib.Osi_setObjSense(self.osi, 1.0)
         else:
             raise ValueError(
-                "Unknown sense: {}, use {} or {}".format(
-                    sense, MAXIMIZE, MINIMIZE
-                )
+                "Unknown sense: {}, use {} or {}".format(sense, MAXIMIZE, MINIMIZE)
             )
 
     def set_start(self, start: List[Tuple["Var", numbers.Real]]):
@@ -1936,11 +1856,7 @@ class SolverOsi(Solver):
             raise ParameterNotAvailable("Error getting row coefficients.")
 
         rhs = cbclib.Osi_getRowRHS(self.osi, constr.idx)
-        rsense = (
-            cbclib.Osi_getRowSense(self.osi, constr.idx)
-            .decode("utf-8")
-            .upper()
-        )
+        rsense = cbclib.Osi_getRowSense(self.osi, constr.idx).decode("utf-8").upper()
         sense = ""
         if rsense == "E":
             sense = EQUAL
@@ -1994,11 +1910,7 @@ class SolverOsi(Solver):
         rhs = cbclib.Osi_getRowRHS(self.osi, constr.idx)
         activity = pac[constr.idx]
 
-        sense = (
-            cbclib.Osi_getRowSense(self.osi, constr.idx)
-            .decode("utf-8")
-            .upper()
-        )
+        sense = cbclib.Osi_getRowSense(self.osi, constr.idx).decode("utf-8").upper()
 
         if sense in "<L":
             return rhs - activity
@@ -2027,9 +1939,7 @@ class SolverOsi(Solver):
     def var_get_obj(self, var: "Var") -> numbers.Real:
         obj = cbclib.Osi_getObjCoefficients(self.osi)
         if obj == ffi.NULL:
-            raise ParameterNotAvailable(
-                "Error getting objective function coefficients"
-            )
+            raise ParameterNotAvailable("Error getting objective function coefficients")
         return obj[var.idx]
 
     def var_set_obj(self, var: "Var", value: numbers.Real):
