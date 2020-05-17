@@ -740,7 +740,7 @@ class Model:
         elif isinstance(objective, mip.ndarray.LinExprTensor):
             if objective.size != 1:
                 raise ValueError("objective set to tensor of shape {}, only scalars are allowed".format(objective.shape))
-            self.solver.set_objective(objective.flat()[0])
+            self.solver.set_objective(objective.flatten()[0])
         else:
             raise TypeError("type {} not supported".format(type(objective)))
 
