@@ -134,6 +134,24 @@ class Model:
     def __del__(self: "Model"):
         del self.solver
 
+    def _iadd_tensor_element(self, tensor, element, index=None, label=None):
+        # the tensor could contain LinExpr or constraints
+        if isinstance(element, mip.LinExpr) and element.sense == 0 and tensor.size > 1:
+            raise Exception("Only scalar objective functions are allowed")
+
+        # if the problem is sparse, it is common to have multiple boolean elements in constraints, we should ignore those
+        if (
+            isinstance(element, mip.LinExpr) or
+            isinstance(element, mip.CutPool)
+        ):
+            if index and label:
+                scalar_label = "%s_%s" % (label, ('_'.join(map(str, index))))
+                scalar = (element, scalar_label)
+            else:
+                scalar = element
+        
+            self.__iadd__(scalar)
+
     def __iadd__(self: "Model", other) -> "Model":
         if isinstance(other, mip.LinExpr):
             if len(other.sense) == 0:
@@ -148,27 +166,16 @@ class Model:
                     self.objective = other[0]
                 else:
                     self.add_constr(other[0], other[1])
+            elif isinstance(other[0], LinExprTensor) and isinstance(other[1], str):
+                for index, element in np.ndenumerate(other[0]):
+                    # add all elements of the tensor
+                    self._iadd_tensor_element(other[0], element, index, other[1])
         elif isinstance(other, mip.CutPool):
             for cut in other.cuts:
                 self.add_constr(cut)
         elif isinstance(other, LinExprTensor):
             for element in other.flat:
-                # the tensor could contain LinExpr or constraints
-                # add all elements of the tensor
-                if isinstance(element, tuple):
-                    evaluation_element = element[0]
-                else:
-                    evaluation_element = element
-                
-                if isinstance(evaluation_element, mip.LinExpr) and evaluation_element.sense == 0 and other.size > 1:
-                    raise Exception("Only scalar objective functions are allowed")
-
-                # if the problem is sparse, it is common to have multiple boolean elements in constraints, we should ignore those
-                if (
-                    isinstance(evaluation_element, mip.LinExpr) or
-                    isinstance(evaluation_element, mip.CutPool)
-                ):
-                    self.__iadd__(element)
+                self._iadd_tensor_element(other, element)
         else:
             raise TypeError("type {} not supported".format(type(other)))
 
