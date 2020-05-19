@@ -81,9 +81,7 @@ class LinExpr:
 
         if variables:
             if len(variables) != len(coeffs):
-                raise ValueError(
-                    "Coefficients and variables must be same length."
-                )
+                raise ValueError("Coefficients and variables must be same length.")
             for i in range(len(coeffs)):
                 if abs(coeffs[i]) <= 1e-12:
                     continue
@@ -160,13 +158,11 @@ class LinExpr:
 
     def __mul__(self, other: numbers.Real) -> Union["mip.LinExpr", numbers.Real]:
         if not isinstance(other, numbers.Real):
-            raise TypeError(
-                "Can not multiply with type {}".format(type(other))
-            )
+            raise TypeError("Can not multiply with type {}".format(type(other)))
         if isinstance(other, numbers.Real):
-            if fabs(other) < mip.EPS :
+            if fabs(other) < mip.EPS:
                 return other
-            if fabs(other - 1) < mip.EPS :
+            if fabs(other - 1) < mip.EPS:
                 return self
 
         result = self.copy()
@@ -181,9 +177,7 @@ class LinExpr:
     def __imul__(self, other: numbers.Real) -> "mip.LinExpr":
         raise DeprecationWarning("Inplace operations are deprecated")
         if not isinstance(other, numbers.Real):
-            raise TypeError(
-                "Can not multiply with type {}".format(type(other))
-            )
+            raise TypeError("Can not multiply with type {}".format(type(other)))
         self.__const *= other
         for var in self.__expr.keys():
             self.__expr[var] *= other
@@ -251,16 +245,12 @@ class LinExpr:
         result.__sense = "="
         return result
 
-    def __le__(
-        self, other: Union["mip.Var", "LinExpr", numbers.Real],
-    ) -> "mip.LinExpr":
+    def __le__(self, other: Union["mip.Var", "LinExpr", numbers.Real],) -> "mip.LinExpr":
         result = self - other
         result.__sense = "<"
         return result
 
-    def __ge__(
-        self, other: Union["mip.Var", "LinExpr", numbers.Real],
-    ) -> "mip.LinExpr":
+    def __ge__(self, other: Union["mip.Var", "LinExpr", numbers.Real],) -> "mip.LinExpr":
         result = self - other
         result.__sense = ">"
         return result
@@ -611,19 +601,19 @@ class Var:
 
     def __mul__(self, other: numbers.Real) -> Union["mip.Var", numbers.Real, LinExpr]:
         if not isinstance(other, numbers.Real):
-            raise TypeError(
-                "Can not multiply with type {}".format(type(other))
-            )
+            raise TypeError("Can not multiply with type {}".format(type(other)))
         if fabs(other) < mip.EPS:
-                return other
+            return other
         if fabs(other - 1) < mip.EPS:
-                return self        
+            return self
         return LinExpr([self], [other])
 
     def __rmul__(self, other: numbers.Real) -> Union["mip.Var", numbers.Real, LinExpr]:
         return self.__mul__(other)
 
-    def __truediv__(self, other: numbers.Real) -> Union["mip.Var", numbers.Real, LinExpr]:
+    def __truediv__(
+        self, other: numbers.Real
+    ) -> Union["mip.Var", numbers.Real, LinExpr]:
         if not isinstance(other, numbers.Real):
             raise TypeError("Can not divide with type {}".format(type(other)))
         return self.__mul__(1.0 / other)
@@ -643,9 +633,7 @@ class Var:
         else:
             raise TypeError("type {} not supported".format(type(other)))
 
-    def __le__(
-        self, other: Union["mip.Var", LinExpr, numbers.Real]
-    ) -> LinExpr:
+    def __le__(self, other: Union["mip.Var", LinExpr, numbers.Real]) -> LinExpr:
         if isinstance(other, Var):
             return LinExpr([self, other], [1, -1], sense="<")
         elif isinstance(other, LinExpr):
@@ -657,9 +645,7 @@ class Var:
         else:
             raise TypeError("type {} not supported".format(type(other)))
 
-    def __ge__(
-        self, other: Union["mip.Var", LinExpr, numbers.Real]
-    ) -> LinExpr:
+    def __ge__(self, other: Union["mip.Var", LinExpr, numbers.Real]) -> LinExpr:
         if isinstance(other, Var):
             return LinExpr([self, other], [1, -1], sense=">")
         elif isinstance(other, LinExpr):
@@ -789,9 +775,7 @@ class ConflictGraph:
         return self.model.solver.cgraph_density()
 
     def conflicting(
-        self,
-        e1: Union["mip.LinExpr", "mip.Var"],
-        e2: Union["mip.LinExpr", "mip.Var"],
+        self, e1: Union["mip.LinExpr", "mip.Var"], e2: Union["mip.LinExpr", "mip.Var"],
     ) -> bool:
         """Checks if two assignments of binary variables are in conflict.
 

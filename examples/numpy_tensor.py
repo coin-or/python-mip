@@ -16,7 +16,7 @@ vals = np.array([0.01, 0.02, 0.05, 0.10, 0.20, 0.50, 1, 2], dtype=float)
 available = np.array([5, 5, 5, 5, 5, 5, 2, 0], dtype=int)
 
 # 8 types of coins in total
-x = model.add_var_tensor(shape=vals.shape, name='x', var_type=INTEGER)
+x = model.add_var_tensor(shape=vals.shape, name="x", var_type=INTEGER)
 
 # objective: minimize number of coins
 model.objective = x.sum()
@@ -38,7 +38,7 @@ model += amount <= (required_change + eps)
 model += x <= available, "availability"
 
 # go and see how the constraint lable was expanded
-model.write('numpy_tensor_example.lp')
+model.write("numpy_tensor_example.lp")
 
 model.optimize()
 

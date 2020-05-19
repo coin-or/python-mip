@@ -3,8 +3,8 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-class LinExprTensor(np.ndarray):
 
+class LinExprTensor(np.ndarray):
     def __new__(cls, *args, **kwargs):
         obj = super(LinExprTensor, cls).__new__(*args, **kwargs)
         return obj
@@ -21,7 +21,8 @@ class LinExprTensor(np.ndarray):
         #    (we're in the middle of the LinExprTensor.__new__
         #    constructor, and self.info will be set when we return to
         #    LinExprTensor.__new__)
-        if obj is None: return
+        if obj is None:
+            return
         # From view casting - e.g arr.view(InfoArray):
         #    obj is arr
         #    (type(obj) can be LinExprTensor)

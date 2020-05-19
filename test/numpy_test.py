@@ -7,17 +7,18 @@ from mip.ndarray import LinExprTensor
 from os import environ
 import time
 
+
 def test_numpy():
     model = Model()
     N = 1000
 
     start = time.time()
-    x = model.add_var_tensor(shape=(N, N), name='x')
+    x = model.add_var_tensor(shape=(N, N), name="x")
 
     # inefficient way to compute trace, so we can test optimizations
     # equivalent to model += np.trace(x)
     model += np.ones((N,)) @ (x * np.eye(N)) @ np.ones((N,))
-    
+
     # constraints
     model += np.vectorize(lambda x_i_j: x_i_j >= 1)(x)
 
@@ -29,9 +30,10 @@ def test_numpy():
 
     assert result == OptimizationStatus.OPTIMAL
 
+
 def test_LinExprTensor():
     model = Model()
-    x = model.add_var_tensor(shape=(3,), name='x')
+    x = model.add_var_tensor(shape=(3,), name="x")
     print(x)
     assert x.shape == (3,)
     assert isinstance(x, LinExprTensor)
@@ -56,6 +58,7 @@ def test_LinExprTensor():
     print(constr)
     assert constr.shape == (3,)
     assert isinstance(x, LinExprTensor)
+
 
 if __name__ == "__main__":
     test_numpy()

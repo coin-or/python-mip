@@ -25,24 +25,19 @@ def test_column_generation(solver: str):
 
     # creating an initial set of patterns which cut one item per bar
     # to provide the restricted master problem with a feasible solution
-    lambdas = [
-        master.add_var(obj=1, name="lambda_%d" % (j + 1)) for j in range(m)
-    ]
+    lambdas = [master.add_var(obj=1, name="lambda_%d" % (j + 1)) for j in range(m)]
 
     # creating constraints
     constraints = []
     for i in range(m):
-        constraints.append(
-            master.add_constr(lambdas[i] >= b[i], name="i_%d" % (i + 1))
-        )
+        constraints.append(master.add_constr(lambdas[i] >= b[i], name="i_%d" % (i + 1)))
 
     # creating the pricing problem
     pricing = Model(solver_name=solver)
 
     # creating pricing variables
     a = [
-        pricing.add_var(obj=0, var_type=INTEGER, name="a_%d" % (i + 1))
-        for i in range(m)
+        pricing.add_var(obj=0, var_type=INTEGER, name="a_%d" % (i + 1)) for i in range(m)
     ]
 
     # creating pricing constraint
@@ -98,16 +93,11 @@ def test_cutting_stock(solver: str):
     # creating the model
     model = Model(solver_name=solver)
     x = {
-        (i, j): model.add_var(
-            obj=0, var_type=INTEGER, name="x[%d,%d]" % (i, j)
-        )
+        (i, j): model.add_var(obj=0, var_type=INTEGER, name="x[%d,%d]" % (i, j))
         for i in range(m)
         for j in range(n)
     }
-    y = {
-        j: model.add_var(obj=1, var_type=BINARY, name="y[%d]" % j)
-        for j in range(n)
-    }
+    y = {j: model.add_var(obj=1, var_type=BINARY, name="y[%d]" % j) for j in range(n)}
 
     # constraints
     for i in range(m):
@@ -167,10 +157,7 @@ def test_queens(solver: str):
     queens.verbose = 0
 
     x = [
-        [
-            queens.add_var("x({},{})".format(i, j), var_type=BINARY)
-            for j in range(n)
-        ]
+        [queens.add_var("x({},{})".format(i, j), var_type=BINARY) for j in range(n)]
         for i in range(n)
     ]
 
@@ -185,16 +172,14 @@ def test_queens(solver: str):
     # diagonal \
     for p, k in enumerate(range(2 - n, n - 2 + 1)):
         queens += (
-            xsum(x[i][j] for i in range(n) for j in range(n) if i - j == k)
-            <= 1,
+            xsum(x[i][j] for i in range(n) for j in range(n) if i - j == k) <= 1,
             "diag1({})".format(p),
         )
 
     # diagonal /
     for p, k in enumerate(range(3, n + n)):
         queens += (
-            xsum(x[i][j] for i in range(n) for j in range(n) if i + j == k)
-            <= 1,
+            xsum(x[i][j] for i in range(n) for j in range(n) if i + j == k) <= 1,
             "diag2({})".format(p),
         )
 
@@ -260,10 +245,7 @@ def test_tsp(solver: str):
     m = Model(solver_name=solver)
     m.verbose = 1
 
-    x = {
-        a: m.add_var(name="x({},{})".format(a[0], a[1]), var_type=BINARY)
-        for a in A
-    }
+    x = {a: m.add_var(name="x({},{})".format(a[0], a[1]), var_type=BINARY) for a in A}
 
     m.objective = xsum(c * x[a] for a, c in A.items())
 
@@ -313,9 +295,7 @@ class SubTourCutGenerator(ConstrsGenerator):
             val, (S, NS) = nx.minimum_cut(G, u, v)
             if val <= 0.99:
                 arcsInS = [
-                    (v, f)
-                    for i, (v, f) in enumerate(r)
-                    if U[i] in S and V[i] in S
+                    (v, f) for i, (v, f) in enumerate(r) if U[i] in S and V[i] in S
                 ]
                 if sum(f for v, f in arcsInS) >= (len(S) - 1) + 1e-4:
                     cut = xsum(1.0 * v for v, fm in arcsInS) <= len(S) - 1
@@ -370,10 +350,7 @@ def test_tsp_cuts(solver: str):
     m = Model(solver_name=solver)
     m.verbose = 0
 
-    x = {
-        a: m.add_var(name="x({},{})".format(a[0], a[1]), var_type=BINARY)
-        for a in A
-    }
+    x = {a: m.add_var(name="x({},{})".format(a[0], a[1]), var_type=BINARY) for a in A}
 
     m.objective = xsum(c * x[a] for a, c in A.items())
 
@@ -444,10 +421,7 @@ def test_tsp_mipstart(solver: str):
     m = Model(solver_name=solver)
     m.verbose = 0
 
-    x = {
-        a: m.add_var(name="x({},{})".format(a[0], a[1]), var_type=BINARY)
-        for a in A
-    }
+    x = {a: m.add_var(name="x({},{})".format(a[0], a[1]), var_type=BINARY) for a in A}
 
     m.objective = xsum(c * x[a] for a, c in A.items())
 
@@ -480,10 +454,7 @@ class TestAPI(object):
         queens.verbose = 0
 
         x = [
-            [
-                queens.add_var("x({},{})".format(i, j), var_type=BINARY)
-                for j in range(n)
-            ]
+            [queens.add_var("x({},{})".format(i, j), var_type=BINARY) for j in range(n)]
             for i in range(n)
         ]
 
@@ -498,16 +469,14 @@ class TestAPI(object):
         # diagonal \
         for p, k in enumerate(range(2 - n, n - 2 + 1)):
             queens += (
-                xsum(x[i][j] for i in range(n) for j in range(n) if i - j == k)
-                <= 1,
+                xsum(x[i][j] for i in range(n) for j in range(n) if i - j == k) <= 1,
                 "diag1({})".format(p),
             )
 
         # diagonal /
         for p, k in enumerate(range(3, n + n)):
             queens += (
-                xsum(x[i][j] for i in range(n) for j in range(n) if i + j == k)
-                <= 1,
+                xsum(x[i][j] for i in range(n) for j in range(n) if i + j == k) <= 1,
                 "diag2({})".format(p),
             )
 
@@ -618,12 +587,7 @@ def test_linexpr_x(solver: str, val: int):
     assert abs((x + 2 * y).x - (x.x + 2 * y.x)) < TOL
     assert abs((x + 2 * y + x).x - (x.x + 2 * y.x + x.x)) < TOL
     assert abs((x + 2 * y + x + 1).x - (x.x + 2 * y.x + x.x + 1)) < TOL
-    assert (
-        abs(
-            (x + 2 * y + x + 1 + x / 2).x - (x.x + 2 * y.x + x.x + 1 + x.x / 2)
-        )
-        < TOL
-    )
+    assert abs((x + 2 * y + x + 1 + x / 2).x - (x.x + 2 * y.x + x.x + 1 + x.x / 2)) < TOL
 
 
 @pytest.mark.parametrize("solver", SOLVERS)
