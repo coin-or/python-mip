@@ -1,5 +1,4 @@
 import logging
-import mip
 import numpy as np
 
 logger = logging.getLogger(__name__)
