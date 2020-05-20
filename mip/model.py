@@ -4,6 +4,8 @@ from os.path import isfile
 from typing import List, Tuple, Optional, Union, Dict, Any
 import numbers
 import mip
+import numpy as np
+from mip.ndarray import LinExprTensor
 
 
 logger = logging.getLogger(__name__)
@@ -132,6 +134,21 @@ class Model:
     def __del__(self: "Model"):
         del self.solver
 
+    def _iadd_tensor_element(self, tensor, element, index=None, label=None):
+        # the tensor could contain LinExpr or constraints
+        if isinstance(element, mip.LinExpr) and element.sense == 0 and tensor.size > 1:
+            raise Exception("Only scalar objective functions are allowed")
+
+        # if the problem is sparse, it is common to have multiple boolean elements in constraints, we should ignore those
+        if isinstance(element, mip.LinExpr) or isinstance(element, mip.CutPool):
+            if index and label:
+                scalar_label = "%s_%s" % (label, ("_".join(map(str, index))))
+                scalar = (element, scalar_label)
+            else:
+                scalar = element
+
+            self.__iadd__(scalar)
+
     def __iadd__(self: "Model", other) -> "Model":
         if isinstance(other, mip.LinExpr):
             if len(other.sense) == 0:
@@ -146,9 +163,16 @@ class Model:
                     self.objective = other[0]
                 else:
                     self.add_constr(other[0], other[1])
+            elif isinstance(other[0], LinExprTensor) and isinstance(other[1], str):
+                for index, element in np.ndenumerate(other[0]):
+                    # add all elements of the tensor
+                    self._iadd_tensor_element(other[0], element, index, other[1])
         elif isinstance(other, mip.CutPool):
             for cut in other.cuts:
                 self.add_constr(cut)
+        elif isinstance(other, LinExprTensor):
+            for element in other.flat:
+                self._iadd_tensor_element(other, element)
         else:
             raise TypeError("type {} not supported".format(type(other)))
 
@@ -189,6 +213,40 @@ class Model:
                 x = [m.add_var(var_type=BINARY) for i in range(n)]
         """
         return self.vars.add(name, lb, ub, obj, var_type, column)
+
+    def add_var_tensor(
+        self: "Model", shape: Tuple[int, ...], name: str, **kwargs
+    ) -> LinExprTensor:
+        """ Creates new variables in the model, arranging them in a numpy tensor and returning its reference
+
+        Args:
+            shape (Tuple[int, ...]): shape of the numpy tensor
+            name (str): variable name
+            **kwargs: all other named arguments will be used as Model.add_var() arguments
+
+        Examples:
+
+            To add a tensor of variables :code:`x` with shape (3, 5) and which is continuous 
+            in any variable and have all values greater or equal to zero to model :code:`m`::
+
+                x = m.add_var_tensor((3, 5), "x")
+        """
+
+        def _add_tensor(m, shape, name, **kwargs):
+            assert name is not None
+            assert len(shape) > 0
+
+            if len(shape) == 1:
+                return [
+                    m.add_var(name=("%s_%d" % (name, i)), **kwargs)
+                    for i in range(shape[0])
+                ]
+            return [
+                _add_tensor(m, shape[1:], name=("%s_%d" % (name, i)), **kwargs)
+                for i in range(shape[0])
+            ]
+
+        return np.array(_add_tensor(self, shape, name, **kwargs)).view(LinExprTensor)
 
     def add_constr(
         self: "Model", lin_expr: "mip.LinExpr", name: str = ""
@@ -252,9 +310,7 @@ class Model:
         """
         self.solver.add_lazy_constr(expr)
 
-    def add_sos(
-        self: "Model", sos: List[Tuple["mip.Var", numbers.Real]], sos_type: int
-    ):
+    def add_sos(self: "Model", sos: List[Tuple["mip.Var", numbers.Real]], sos_type: int):
         r"""Adds an Special Ordered Set (SOS) to the model
 
         In models with binary variables it is often the case that from a list
@@ -355,9 +411,7 @@ class Model:
 
         # adding variables
         for v in self.vars:
-            copy.add_var(
-                name=v.name, lb=v.lb, ub=v.ub, obj=v.obj, var_type=v.var_type
-            )
+            copy.add_var(name=v.name, lb=v.lb, ub=v.ub, obj=v.obj, var_type=v.var_type)
 
         # adding constraints
         for c in self.constrs:
@@ -485,9 +539,7 @@ class Model:
             self.solver.set_num_threads(self.__threads)
         # self.solver.set_callbacks(branch_selector,
         # incumbent_updater, lazy_constrs_generator)
-        self.solver.set_processing_limits(
-            max_seconds, max_nodes, max_solutions
-        )
+        self.solver.set_processing_limits(max_seconds, max_nodes, max_solutions)
 
         self._status = self.solver.optimize(relax)
         # has a solution and is a MIP
@@ -601,19 +653,13 @@ class Model:
         Args:
             file_path(str): file name
         """
-        if file_path.lower().endswith(".sol") or file_path.lower().endswith(
-            ".mst"
-        ):
+        if file_path.lower().endswith(".sol") or file_path.lower().endswith(".mst"):
             if self.start:
                 save_mipstart(self.start, file_path)
             else:
-                mip_start = [
-                    (var, var.x) for var in self.vars if abs(var.x) >= 1e-8
-                ]
+                mip_start = [(var, var.x) for var in self.vars if abs(var.x) >= 1e-8]
                 save_mipstart(mip_start, file_path)
-        elif file_path.lower().endswith(".lp") or file_path.lower().endswith(
-            ".mps"
-        ):
+        elif file_path.lower().endswith(".lp") or file_path.lower().endswith(".mps"):
             self.solver.write(file_path)
         else:
             raise ValueError(
@@ -679,7 +725,10 @@ class Model:
 
     @objective.setter
     def objective(
-        self: "Model", objective: Union[numbers.Real, "mip.Var", "mip.LinExpr"]
+        self: "Model",
+        objective: Union[
+            numbers.Real, "mip.Var", "mip.LinExpr", "mip.ndarray.LinExprTensor"
+        ],
     ):
         if isinstance(objective, numbers.Real):
             self.solver.set_objective(mip.LinExpr([], [], objective))
@@ -687,6 +736,14 @@ class Model:
             self.solver.set_objective(mip.LinExpr([objective], [1]))
         elif isinstance(objective, mip.LinExpr):
             self.solver.set_objective(objective)
+        elif isinstance(objective, mip.ndarray.LinExprTensor):
+            if objective.size != 1:
+                raise ValueError(
+                    "objective set to tensor of shape {}, only scalars are allowed".format(
+                        objective.shape
+                    )
+                )
+            self.solver.set_objective(objective.flatten()[0])
         else:
             raise TypeError("type {} not supported".format(type(objective)))
 
@@ -840,10 +897,7 @@ class Model:
             as an array from 0 (the best solution) to
             :attr:`~mip.Model.num_solutions`-1.
         """
-        return [
-            self.solver.get_objective_value_i(i)
-            for i in range(self.num_solutions)
-        ]
+        return [self.solver.get_objective_value_i(i) for i in range(self.num_solutions)]
 
     @property
     def cuts_generator(self: "Model") -> Optional["mip.ConstrsGenerator"]:
@@ -859,15 +913,11 @@ class Model:
         return self.__cuts_generator
 
     @cuts_generator.setter
-    def cuts_generator(
-        self: "Model", cuts_generator: Optional["mip.ConstrsGenerator"]
-    ):
+    def cuts_generator(self: "Model", cuts_generator: Optional["mip.ConstrsGenerator"]):
         self.__cuts_generator = cuts_generator
 
     @property
-    def lazy_constrs_generator(
-        self: "Model",
-    ) -> Optional["mip.ConstrsGenerator"]:
+    def lazy_constrs_generator(self: "Model",) -> Optional["mip.ConstrsGenerator"]:
         """A lazy constraints generator is an
         :class:`~mip.ConstrsGenerator` object that receives
         an integer solution and checks its feasibility. If
@@ -988,9 +1038,7 @@ class Model:
         return self.__start
 
     @start.setter
-    def start(
-        self: "Model", start: Optional[List[Tuple["mip.Var", numbers.Real]]]
-    ):
+    def start(self: "Model", start: Optional[List[Tuple["mip.Var", numbers.Real]]]):
         self.__start = start
         if start is not None:
             self.solver.set_start(start)
@@ -1026,9 +1074,7 @@ class Model:
                 " {}".format(mc.status)
             )
 
-        logger.info(
-            "Model LP relaxation bound is {}".format(mc.objective_value)
-        )
+        logger.info("Model LP relaxation bound is {}".format(mc.objective_value))
 
         for (var, value) in self.start:
             logger.info("\tfixing %s to %g ... " % (var.name, value))
@@ -1037,9 +1083,7 @@ class Model:
             if mc.status == mip.OptimizationStatus.OPTIMAL:
                 logger.info("ok, obj now: {}".format(mc.objective_value))
             else:
-                logger.warning(
-                    "NOT OK, optimization status: {}".format(mc.status)
-                )
+                logger.warning("NOT OK, optimization status: {}".format(mc.status))
                 return
 
         logger.info(
@@ -1253,9 +1297,7 @@ class Model:
 
     def remove(
         self: "Model",
-        objects: Union[
-            mip.Var, mip.Constr, List[Union["mip.Var", "mip.Constr"]]
-        ],
+        objects: Union[mip.Var, mip.Constr, List[Union["mip.Var", "mip.Constr"]]],
     ):
         """removes variable(s) and/or constraint(s) from the model
 
@@ -1290,9 +1332,7 @@ class Model:
                 + " from model."
             )
 
-    def translate(
-        self: "Model", ref
-    ) -> Union[List[Any], Dict[Any, Any], "mip.Var"]:
+    def translate(self: "Model", ref) -> Union[List[Any], Dict[Any, Any], "mip.Var"]:
         """Translates references of variables/containers of variables
         from another model to this model. Can be used to translate
         references of variables in the original model to references
@@ -1359,13 +1399,9 @@ class Model:
                         " are [{}, {}].".format(v.name, v.x, v.lb, v.ub)
                     )
                 if v.var_type in [mip.BINARY, mip.INTEGER]:
-                    if (
-                        round(v.x) - v.x
-                    ) >= self.integer_tol + self.integer_tol * 0.1:
+                    if (round(v.x) - v.x) >= self.integer_tol + self.integer_tol * 0.1:
                         raise mip.InfeasibleSolution(
-                            "Variable {}={} should be integral.".format(
-                                v.name, v.x
-                            )
+                            "Variable {}={} should be integral.".format(v.name, v.x)
                         )
 
 
@@ -1423,9 +1459,7 @@ def xsum(terms) -> "mip.LinExpr":
 quicksum = xsum
 
 
-def save_mipstart(
-    sol: List[Tuple["mip.Var", numbers.Real]], file_name: str, obj=0.0
-):
+def save_mipstart(sol: List[Tuple["mip.Var", numbers.Real]], file_name: str, obj=0.0):
     f = open(file_name, "w")
     f.write("Feasible solution - objective {}\n".format(obj))
     for i, (var, val) in enumerate(sol):
@@ -1461,9 +1495,7 @@ def read_custom_settings():
                 if "=" in line:
                     cols = line.split("=")
                     if cols[0].strip().lower() == "cbc-library":
-                        customCbcLib = (
-                            cols[1].lstrip().rstrip().replace('"', "")
-                        )
+                        customCbcLib = cols[1].lstrip().rstrip().replace('"', "")
 
 
 logger.info("Using Python-MIP package version {}".format(mip.VERSION))

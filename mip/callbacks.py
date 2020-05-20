@@ -9,9 +9,7 @@ class BranchSelector:
     def __init__(self, model: "mip.Model"):
         self.model = model
 
-    def select_branch(
-        self, rsol: List[Tuple["mip.Var", float]]
-    ) -> Tuple["Var", int]:
+    def select_branch(self, rsol: List[Tuple["mip.Var", float]]) -> Tuple["Var", int]:
         raise NotImplementedError()
 
 

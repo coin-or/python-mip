@@ -1,14 +1,14 @@
 language: python
 cache: pip
 install:
-    - python3 -m pip install cffi pytest flake8 networkx
-    - if [[ $TRAVIS_PYTHON_VERSION != 3.5 ]]; then python3 -m pip install black; fi
-    - python3 -m pip install .
+  - python3 -m pip install cffi pytest flake8 networkx numpy>=1.17.0
+  - if [[ $TRAVIS_PYTHON_VERSION != 3.5 ]]; then python3 -m pip install black; fi
+  - python3 -m pip install .
 script:
-    - if [[ $TRAVIS_PYTHON_VERSION != 3.5 ]]; then python3 -m black mip --line-length=89 --check; fi
-    - python3 -m flake8 mip --select=F401 --exclude=__init__.py # Look for unused imports
-    - python3 -m pytest test --verbose --color=yes --doctest-modules
-    - python3 -m pytest mip --verbose --color=yes --doctest-modules --ignore="mip/gurobi.py"
+  - if [[ $TRAVIS_PYTHON_VERSION != 3.5 ]]; then python3 -m black mip --line-length=89 --check; fi
+  - python3 -m flake8 mip --select=F401 --exclude=__init__.py # Look for unused imports
+  - python3 -m pytest test --verbose --color=yes --doctest-modules
+  - python3 -m pytest mip --verbose --color=yes --doctest-modules --ignore="mip/gurobi.py"
 jobs:
   include:
     - name: "Python 3.5 on Linux"
@@ -25,5 +25,5 @@ jobs:
       python: 3.8
     - name: "Python 3.7.4 on macOS"
       os: osx
-      osx_image: xcode11.2  # Python 3.7.4 running on macOS 10.14.4
-      language: shell       # 'language: python' is an error on Travis CI macOS
+      osx_image: xcode11.2 # Python 3.7.4 running on macOS 10.14.4
+      language: shell # 'language: python' is an error on Travis CI macOS

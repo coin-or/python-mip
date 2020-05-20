@@ -78,9 +78,7 @@ class VarList(Sequence):
 # references for variables, used in
 # callbacks
 class VVarList(Sequence):
-    def __init__(
-        self: "VVarList", model: "mip.Model", start: int = -1, end: int = -1
-    ):
+    def __init__(self: "VVarList", model: "mip.Model", start: int = -1, end: int = -1):
         self.__model = model
         if start == -1:
             self.__start = 0
@@ -167,9 +165,7 @@ class ConstrList(Sequence):
         self.__constrs = [c for c in self.__constrs if c.idx != -1]
 
     def update_constrs(self: "ConstrList", n_constrs: int):
-        self.__constrs = [
-            mip.Constr(self.__model, i) for i in range(n_constrs)
-        ]
+        self.__constrs = [mip.Constr(self.__model, i) for i in range(n_constrs)]
 
 
 # same as previous class, but does not stores
