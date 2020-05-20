@@ -19,6 +19,11 @@ LinExpr
 .. autoclass:: mip.LinExpr
     :members:
 
+LinExprTensor
+-------------
+.. autoclass:: mip.LinExprTensor
+    :members:
+
 Var
 ---
 .. autoclass:: mip.Var
