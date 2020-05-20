@@ -28,16 +28,9 @@ setuptools.setup(
     url="https://github.com/coin-or/python-mip",
     packages=["mip", "mip.libraries"],
     package_data={
-        "mip.libraries": [
-            "*",
-            "*.*",
-            "win64/*",
-            "win64/*.*",
-            "lin64/*",
-            "lin64/*.*",
-        ]
+        "mip.libraries": ["*", "*.*", "win64/*", "win64/*.*", "lin64/*", "lin64/*.*",]
     },
-    install_requires=["cffi", "numpy>=1.16.0"],
+    install_requires=["cffi", "numpy>=1.17.0"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Eclipse Public License 2.0 (EPL-2.0)",
