@@ -138,7 +138,7 @@ class Model:
     def _iadd_tensor_element(
         self: "Model",
         tensor: mip.LinExprTensor,
-        element: Union[mip.LinExpr, mip.CutPool, numbers.Real],
+        element: Union[mip.LinExpr, mip.CutPool, numbers.Real, bool],
         index: Tuple[int, ...] = None,
         label: str = None,
     ):
