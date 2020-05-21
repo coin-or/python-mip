@@ -3,6 +3,7 @@ from os import environ
 from os.path import isfile
 from typing import List, Tuple, Optional, Union, Dict, Any
 import numbers
+import numpy as np
 import mip
 import numpy as np
 from mip.ndarray import LinExprTensor
@@ -163,14 +164,14 @@ class Model:
                     self.objective = other[0]
                 else:
                     self.add_constr(other[0], other[1])
-            elif isinstance(other[0], LinExprTensor) and isinstance(other[1], str):
+            elif isinstance(other[0], mip.LinExprTensor) and isinstance(other[1], str):
                 for index, element in np.ndenumerate(other[0]):
                     # add all elements of the tensor
                     self._iadd_tensor_element(other[0], element, index, other[1])
         elif isinstance(other, mip.CutPool):
             for cut in other.cuts:
                 self.add_constr(cut)
-        elif isinstance(other, LinExprTensor):
+        elif isinstance(other, mip.LinExprTensor):
             for element in other.flat:
                 self._iadd_tensor_element(other, element)
         else:
@@ -216,7 +217,7 @@ class Model:
 
     def add_var_tensor(
         self: "Model", shape: Tuple[int, ...], name: str, **kwargs
-    ) -> LinExprTensor:
+    ) -> mip.LinExprTensor:
         """ Creates new variables in the model, arranging them in a numpy tensor and returning its reference
 
         Args:
@@ -226,8 +227,9 @@ class Model:
 
         Examples:
 
-            To add a tensor of variables :code:`x` with shape (3, 5) and which is continuous 
-            in any variable and have all values greater or equal to zero to model :code:`m`::
+            To add a tensor of variables :code:`x` with shape (3, 5) and which
+            is continuous in any variable and have all values greater or equal
+            to zero to model :code:`m`::
 
                 x = m.add_var_tensor((3, 5), "x")
         """
@@ -246,7 +248,7 @@ class Model:
                 for i in range(shape[0])
             ]
 
-        return np.array(_add_tensor(self, shape, name, **kwargs)).view(LinExprTensor)
+        return np.array(_add_tensor(self, shape, name, **kwargs)).view(mip.LinExprTensor)
 
     def add_constr(
         self: "Model", lin_expr: "mip.LinExpr", name: str = ""
@@ -361,7 +363,7 @@ class Model:
         # creating a new solver instance
         sense = self.sense
 
-        if self.solver_name.upper in ["GRB", "GUROBI"]:
+        if self.solver_name.upper() in ["GRB", "GUROBI"]:
             import mip.gurobi
 
             self.solver = mip.gurobi.SolverGurobi(self, self.name, sense)
@@ -726,9 +728,7 @@ class Model:
     @objective.setter
     def objective(
         self: "Model",
-        objective: Union[
-            numbers.Real, "mip.Var", "mip.LinExpr", "mip.ndarray.LinExprTensor"
-        ],
+        objective: Union[numbers.Real, "mip.Var", "mip.LinExpr", "mip.LinExprTensor"],
     ):
         if isinstance(objective, numbers.Real):
             self.solver.set_objective(mip.LinExpr([], [], objective))
@@ -736,7 +736,7 @@ class Model:
             self.solver.set_objective(mip.LinExpr([objective], [1]))
         elif isinstance(objective, mip.LinExpr):
             self.solver.set_objective(objective)
-        elif isinstance(objective, mip.ndarray.LinExprTensor):
+        elif isinstance(objective, mip.LinExprTensor):
             if objective.size != 1:
                 raise ValueError(
                     "objective set to tensor of shape {}, only scalars are allowed".format(
