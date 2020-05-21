@@ -135,7 +135,13 @@ class Model:
     def __del__(self: "Model"):
         del self.solver
 
-    def _iadd_tensor_element(self, tensor, element, index=None, label=None):
+    def _iadd_tensor_element(
+        self: "Model",
+        tensor: mip.LinExprTensor,
+        element: Union[mip.LinExpr, mip.CutPool, numbers.Real, bool],
+        index: Tuple[int, ...] = None,
+        label: str = None,
+    ):
         # the tensor could contain LinExpr or constraints
         if isinstance(element, mip.LinExpr) and element.sense == 0 and tensor.size > 1:
             raise Exception("Only scalar objective functions are allowed")
