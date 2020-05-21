@@ -6,7 +6,6 @@ import numbers
 import numpy as np
 import mip
 import numpy as np
-from mip.ndarray import LinExprTensor
 
 
 logger = logging.getLogger(__name__)
