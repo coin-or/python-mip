@@ -6,6 +6,24 @@ try:
 
 
     class LinExprTensor(np.ndarray):
+        """ Tensor of :class:`~mip.Var` or :class:`~mip.LinExpr` elements
+
+        This is a Numpy ndarray subclass with the only purpose to change the default
+        behaviour when the comparison operators are used.
+        For the operators :code:`<=`, :code:`>=`, :code:`==`, the default ndarray 
+        behavior is to perform element-wise comparisons and then cast the results to
+        :code:`bool`. This class does not cast the results to :code:`bool`.
+
+        It is otherwise a completely normal Numpy ndarray, on which to operate with
+        Numpy functions and methods for any linear algebra purpose, and can be used in
+        operations with other :code:`int` or :code:`float` ndarrays.
+
+        Even though it is possible to create an instance of LinExprTensor on your own,
+        it is seldom necessary: you can use :class:`~mip.Model` method :code:`add_var_tensor()`
+        to create a LinExprTensor containing :class:`~mip.Var` elements, and perform
+        linear operations on that to build your model.
+        """
+
         def __new__(cls, *args, **kwargs):
             obj = super(LinExprTensor, cls).__new__(*args, **kwargs)
             return obj
