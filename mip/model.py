@@ -167,7 +167,9 @@ class Model:
                     self.add_constr(other[0], other[1])
             elif isinstance(other[0], mip.LinExprTensor) and isinstance(other[1], str):
                 if np is None:
-                    raise ModuleNotFoundError("You need to install package numpy to use tensors")
+                    raise ModuleNotFoundError(
+                        "You need to install package numpy to use tensors"
+                    )
                 for index, element in np.ndenumerate(other[0]):
                     # add all elements of the tensor
                     self._iadd_tensor_element(other[0], element, index, other[1])
@@ -176,7 +178,9 @@ class Model:
                 self.add_constr(cut)
         elif isinstance(other, mip.LinExprTensor):
             if np is None:
-                raise ModuleNotFoundError("You need to install package numpy to use tensors")
+                raise ModuleNotFoundError(
+                    "You need to install package numpy to use tensors"
+                )
             for element in other.flat:
                 self._iadd_tensor_element(other, element)
         else:
@@ -239,7 +243,9 @@ class Model:
                 x = m.add_var_tensor((3, 5), "x")
         """
         if np is None:
-            raise ModuleNotFoundError("You need to install package numpy in order to use tensors")
+            raise ModuleNotFoundError(
+                "You need to install package numpy in order to use tensors"
+            )
 
         def _add_tensor(m, shape, name, **kwargs):
             assert name is not None
@@ -745,7 +751,9 @@ class Model:
             self.solver.set_objective(objective)
         elif isinstance(objective, mip.LinExprTensor):
             if np is None:
-                raise ModuleNotFoundError("You need to install package numpy to use tensors")
+                raise ModuleNotFoundError(
+                    "You need to install package numpy to use tensors"
+                )
             if objective.size != 1:
                 raise ValueError(
                     "objective set to tensor of shape {}, only scalars are allowed".format(
