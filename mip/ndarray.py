@@ -4,7 +4,6 @@ try:
 
     logger = logging.getLogger(__name__)
 
-
     class LinExprTensor(np.ndarray):
         """ Tensor of :class:`~mip.Var` or :class:`~mip.LinExpr` elements
 
@@ -68,6 +67,8 @@ try:
         def __eq__(self, other):
             return np.equal(self, other, dtype=object)
 
+
 except:
+
     class LinExprTensor:
         pass
