@@ -11,7 +11,7 @@ try:
     import numpy as np
 except ImportError:
     np = None
-    logger.debug('Unable to import numpy', exc_info=True)
+    logger.debug("Unable to import numpy", exc_info=True)
 
 
 class Model:

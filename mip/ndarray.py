@@ -1,4 +1,5 @@
 import logging
+
 logger = logging.getLogger(__name__)
 
 try:
@@ -69,7 +70,7 @@ try:
 
 
 except ImportError:
-    logger.debug('Unable to import numpy', exc_info=True)
+    logger.debug("Unable to import numpy", exc_info=True)
 
     class LinExprTensor:
         pass
