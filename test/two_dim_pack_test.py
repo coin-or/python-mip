@@ -39,8 +39,9 @@ def test_2dpack_relax_and_cut(solver: str, instance: str):
 
     cuts = mip.generate_cuts()
 
-    mip += cuts
-    mip.optimize(relax=True)
+    if cuts:
+        mip += cuts
+        mip.optimize(relax=True)
 
     sobj = mip.objective_value
 
