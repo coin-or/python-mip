@@ -328,30 +328,8 @@ class Model:
     def add_sos(self: "Model", sos: List[Tuple["mip.Var", numbers.Real]], sos_type: int):
         r"""Adds an Special Ordered Set (SOS) to the model
 
-        In models with binary variables it is often the case that from a list
-        of variables only one can receive value 1 in a feasible solution. When
-        large constraints of this type exist (packing and partitioning),
-        branching in one variable at time usually doesn't work well: while
-        fixing one of these variables to one leaves only one possible feasible
-        value for the other variables in this set (zero), fixing one variable
-        to zero keeps all other variables free. This *unbalanced* branching is
-        highly ineffective. A Special ordered set (SOS) is a set
-        :math:`\mathcal{S}=\{s_1, s_2, \ldots, s_k\}` with weights
-        :math:`[w_1, w_2, \ldots, w_k] \in \mathbb{R}^+`. With this structure
-        available branching on a fractional solution :math:`x^*` for these
-        variables can be performed computing:
+        An explanation on Special Ordered Sets is provided :ref:`here <chapSOS>`.
 
-
-        .. math::
-
-            \min \{ u_{k'} : u_{k'} = | \sum_{j=1\,\ldots \,k'-1}
-            w_j \ldotp x^*_j - \sum_{j=k'\,\ldots ,k} w_j \ldotp x^*_j | \}
-
-
-        Then, branching :math:`\mathcal{S}_1` would be
-        :math:`\displaystyle \sum_{j=1, \ldots, k'-1} x_j = 0`
-        and
-        :math:`\displaystyle \mathcal{S}_2 = \sum_{j=k', \ldots, k} x_j = 0`.
 
         Args:
             sos(List[Tuple[Var, numbers.Real]]):

@@ -178,6 +178,8 @@ if has_cbc:
     void Cbc_addSOS(Cbc_Model *model, int numRows, const int *rowStarts,
         const int *colIndices, const double *weights, const int type);
 
+    int Cbc_numberSOS(Cbc_Model *model);
+
     void Cbc_setObjCoeff(Cbc_Model *model, int index, double value);
 
     double Cbc_getObjSense(Cbc_Model *model);
@@ -1119,7 +1121,7 @@ class SolverCbc(Solver):
             self.__obj_bound = self.__obj_val
             self.__num_solutions = 1
 
-            if self.model.num_int == 0:
+            if self.model.num_int == 0 and cbclib.Cbc_numberSOS(self._model) == 0:
                 self.__rc = cbclib.Cbc_getReducedCost(self._model)
                 self.__pi = cbclib.Cbc_getRowPrice(self._model)
                 self.__slack = cbclib.Cbc_getRowSlack(self._model)
