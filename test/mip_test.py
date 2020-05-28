@@ -5,6 +5,7 @@ import networkx as nx
 from mip import Model, xsum, OptimizationStatus, MAXIMIZE, BINARY, INTEGER
 from mip import ConstrsGenerator, CutPool, maximize, CBC, GUROBI, Column
 from os import environ
+import math
 
 TOL = 1e-4
 
@@ -617,3 +618,23 @@ def test_add_column(solver: str):
     assert len(example_constr1.expr.expr) == 2
     assert second_var in example_constr1.expr.expr
     assert x in example_constr1.expr.expr
+
+
+@pytest.mark.parametrize("val", range(1, 4))
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_float(solver: str, val: int):
+    m = Model("bounds", solver_name=solver)
+    x = m.add_var(lb=0, ub=2 * val)
+    y = m.add_var(lb=val, ub=2 * val)
+    obj = x - y
+    # No solution yet. __float__ MUST return a float type, so it returns nan.
+    assert obj.x is None
+    assert math.isnan(float(obj))
+    m.objective = maximize(obj)
+    m.optimize()
+    assert m.status == OptimizationStatus.OPTIMAL
+    # test vars.
+    assert x.x == float(x)
+    assert y.x == float(y)
+    # test linear expressions.
+    assert float(x + y) - (x + y).x
