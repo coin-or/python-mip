@@ -637,4 +637,4 @@ def test_float(solver: str, val: int):
     assert x.x == float(x)
     assert y.x == float(y)
     # test linear expressions.
-    assert float(x + y) - (x + y).x
+    assert float(x + y) == (x + y).x
