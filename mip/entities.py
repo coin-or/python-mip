@@ -398,7 +398,7 @@ class LinExpr:
 
     def __float__(self):
         x = self.x
-        return math.nan if x is None else x
+        return math.nan if x is None else float(x)
 
     @property
     def model(self) -> Optional["mip.Model"]:
@@ -719,7 +719,7 @@ class Var:
 
     def __float__(self):
         x = self.x
-        return math.nan if x is None else x
+        return math.nan if x is None else float(x)
 
     @property
     def model(self) -> "mip.Model":
