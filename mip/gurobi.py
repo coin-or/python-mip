@@ -691,7 +691,7 @@ class SolverGurobi(Solver):
         # checking status for MIP optimization which
         # finished before the search to be
         # concluded (time, iteration limit...)
-        if self.num_int() and (not relax):
+        if (self.num_int() + self.get_int_attr("NumSOS")) and (not relax):
             if status in [8, 9, 10, 11, 13]:
                 nsols = self.get_int_attr("SolCount")
                 if nsols >= 1:
@@ -721,7 +721,7 @@ class SolverGurobi(Solver):
                 if st:
                     raise ParameterNotAvailable("Error quering Gurobi solution")
 
-                if self.num_int() == 0 or (relax):
+                if (self.num_int() + self.get_int_attr("NumSOS")) == 0 or (relax):
                     self.__pi = ffi.new("double[{}]".format(self.num_rows()))
                     attr = "Pi".encode("utf-8")
                     st = GRBgetdblattrarray(
