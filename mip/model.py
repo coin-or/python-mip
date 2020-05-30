@@ -4,7 +4,6 @@ from os.path import isfile
 from typing import List, Tuple, Optional, Union, Dict, Any
 import numbers
 import mip
-import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +11,7 @@ try:
     import numpy as np
 except ImportError:
     np = None
-    logger.debug("Unable to import numpy", exc_info=True)
+    logger.debug("Numpy not available", exc_info=True)
 
 
 class Model:
