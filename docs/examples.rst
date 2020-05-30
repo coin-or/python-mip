@@ -411,7 +411,7 @@ the optimal solution found:
 
 
 Cutting Stock / One-dimensional Bin Packing Problem
------------------------------------
+---------------------------------------------------
 
 The One-dimensional Cutting Stock Problem (also often referred to as
 One-dimensional Bin Packing Problem) is an NP-hard problem first studied
@@ -488,7 +488,7 @@ Before presenting the complete formulation, we introduce two sets to simplify th
         & x_{i,j} \in \{0,1\}                        \;\; \forall (i,j) \in I^2 
 
 
-The first contraints enforce that each item needs to be packed as the largest item of the set or to be included in the set of another item with width at least as large. The second set of constraints indicates that if an item is chosen as representative of a set, then the total width of the items packed within this same set should not exceed the width of the roll.
+The first constraints enforce that each item needs to be packed as the largest item of the set or to be included in the set of another item with width at least as large. The second set of constraints indicates that if an item is chosen as representative of a set, then the total width of the items packed within this same set should not exceed the width of the roll.
 
 The following Python-MIP code creates and optimizes a model to solve the two-dimensional level packing problem illustrated in the previous figure.
 
@@ -497,4 +497,40 @@ The following Python-MIP code creates and optimizes a model to solve the two-dim
     :linenos:
     :lines: 4-39
 
+.. _exSOS:
 
+Plant Location with Non-Linear Costs
+------------------------------------
+
+One industry plans to install two plants, one to the west (region 1) and
+another to the east (region 2). It must decide also the production
+capacity of each plant and allocate clients with different demands to
+plants in order to minimize shipping costs, which depend on the distance
+to the selected plant. Clients can be served by facilities of both
+regions. The cost of installing a plant with capacity :math:`z` is
+:math:`f(z)=1520 \log z`. The Figure below shows the distribution of
+clients in circles and possible plant locations as triangles.
+
+.. image:: ./images/location.*
+    :width: 80%
+    :align: center
+
+
+This example illustrates the use of  :ref:`Special Ordered Sets <chapSOS>`
+(SOS). We'll use Type 1 SOS to ensure that only one of the plants in each
+region has a non-zero production capacity. The cost :math:`f(z)` of building
+a plant with capacity :math:`z` grows according to the non-linear function
+:math:`f(z)=1520 \log z`. Type 2 SOS will be used to model the cost of
+installing each one of the plants in auxiliary variables :math:`y`.
+
+.. literalinclude:: ../examples/plant_location.py
+    :caption: Plant location problem with non-linear costs handled with Special Ordered Sets
+    :linenos:
+    :lines: 12-109
+
+The allocation of clients and plants in the optimal solution is shown bellow. This example uses 
+`Matplotlib <https://matplotlib.org/>`_ to draw the Figures.
+
+.. image:: ./images/location-sol.*
+    :width: 80%
+    :align: center
