@@ -1,8 +1,9 @@
-try:
-    import logging
-    import numpy as np
+import logging
 
-    logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
+
+try:
+    import numpy as np
 
     class LinExprTensor(np.ndarray):
         """ Tensor of :class:`~mip.Var` or :class:`~mip.LinExpr` elements
@@ -68,7 +69,8 @@ try:
             return np.equal(self, other, dtype=object)
 
 
-except:
+except ImportError:
+    logger.debug("Unable to import numpy", exc_info=True)
 
     class LinExprTensor:
         pass

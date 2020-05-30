@@ -5,12 +5,13 @@ from typing import List, Tuple, Optional, Union, Dict, Any
 import numbers
 import mip
 
+logger = logging.getLogger(__name__)
+
 try:
     import numpy as np
-except:
+except ImportError:
     np = None
-
-logger = logging.getLogger(__name__)
+    logger.debug("Unable to import numpy", exc_info=True)
 
 
 class Model:
