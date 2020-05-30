@@ -15,7 +15,7 @@ environment:
 build: off
 
 install:
-  - "%PYTHON%\\python.exe -m pip install cffi pytest networkx"
+  - "%PYTHON%\\python.exe -m pip install cffi pytest networkx matplotlib"
   - "%PYTHON%\\python.exe -m pip install ."
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
   - "python --version"
