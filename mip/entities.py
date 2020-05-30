@@ -3,6 +3,7 @@ from typing import List, Optional, Dict, Union, Tuple
 import numbers
 import mip
 from math import fabs
+import math
 
 
 class Column:
@@ -395,6 +396,10 @@ class LinExpr:
             x += var_x * coef
         return x
 
+    def __float__(self):
+        x = self.x
+        return math.nan if x is None else float(x)
+
     @property
     def model(self) -> Optional["mip.Model"]:
         """Model which this LinExpr refers to, None if no variables are
@@ -711,6 +716,10 @@ class Var:
         ]:
             return self.__model.solver.var_get_xi(self, i)
         return None
+
+    def __float__(self):
+        x = self.x
+        return math.nan if x is None else float(x)
 
     @property
     def model(self) -> "mip.Model":
