@@ -30,7 +30,7 @@ setuptools.setup(
     package_data={
         "mip.libraries": ["*", "*.*", "win64/*", "win64/*.*", "lin64/*", "lin64/*.*",]
     },
-    install_requires=["cffi", "numpy>=1.17.0"],
+    install_requires=["cffi"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Eclipse Public License 2.0 (EPL-2.0)",
