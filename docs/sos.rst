@@ -45,6 +45,6 @@ In this example, the approximation of :math:`z = 1520 \log x` for points :math:`
 provided that :math:`\{(w_1, 0),  (w_2, 10), (w_3, 30), (w_4, 70), (w_5, 150)\}` is included as S2.
 
 
-
+For a complete example showing the use of Type 1 and Type 2 SOS see :ref:`this example <exSOS>`.
 
     
