@@ -12,7 +12,7 @@ Type 1 SOS (S1):
 Type 2 SOS (S2):
     In this case, up to two consecutive variables in the set may assume non-zero values. S2 are specially useful to model piecewise linear approximations of non-linear functions.
 
-Given nonlinear function :math:`f(x)`, a linear approximation can be computed for a set of points :math:`x_1, x_2, \ldots, x_k`, using continuous variables :math:`w_1, w_2, \ldots, w_k`, as with the following constraints:
+Given nonlinear function :math:`f(x)`, a linear approximation can be computed for a set of :math:`k` points :math:`x_1, x_2, \ldots, x_k`, using continuous variables :math:`w_1, w_2, \ldots, w_k`, with the following constraints:
 
 .. math::
 
@@ -20,15 +20,16 @@ Given nonlinear function :math:`f(x)`, a linear approximation can be computed fo
     \sum_{i=1}^{k} x_i \ldotp w_i & = x
 
 
-The result of :math:`f(x)` can be approximate in :math:`z`:
+Thus, the result of :math:`f(x)` can be approximate in :math:`z`:
 
 .. math::
 
    z = \sum_{i=1}^{k} f(x_i) \ldotp w_i
 
-Provided that at most two of the :math:`w_i` are allowed to be non-zero and they are adjacent, i.e., the pairs (variables, weight) :math:`\{(w_i, x_i) \forall i \in \{1,\ldots, k\}\}` are added to the model as S2, using function :meth:`~mip.Model.add_sos`.
 
-As an example, consider that the production cost of some product, due to some economy of scale phenomenon, is :math:`f(x) = 1520 * \log x`. The graph bellow depicts the growing of :math:`f(x)` for :math:`x \in [0, 150]`. Triangles indicate possible discretization points for :math:`x`. Observe that, in this case, the approximation (straight lines connecting the triangles) remains pretty close the curve using only 5 discretization points. Additional discretization points can be included, not necessarily evenly distributed, for an improved precision.
+Provided that at most two of the :math:`w_i` variables are allowed to be non-zero and they are adjacent, which can be ensured by adding the pairs (variables, weight) :math:`\{(w_i, x_i) \forall i \in \{1,\ldots, k\}\}` to the model as a S2 set, using function :meth:`~mip.Model.add_sos`. The approximation is exact at the selected points and is adequately approximated by linear interpolation between them.
+
+As an example, consider that the production cost of some product that due to some economy of scale phenomenon, is :math:`f(x) = 1520 * \log x`. The graph bellow depicts the growing of :math:`f(x)` for :math:`x \in [0, 150]`. Triangles indicate selected discretization points for :math:`x`. Observe that, in this case, the approximation (straight lines connecting the triangles) remains pretty close to the real curve using only 5 discretization points. Additional discretization points can be included, not necessarily evenly distributed, for an improved precision.
 
 .. image:: ./images/log_cost.*
    :width: 60%
