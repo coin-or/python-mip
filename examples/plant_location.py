@@ -12,10 +12,18 @@ model the cost of installing each one of the plants.
 from math import sqrt, log
 from itertools import product
 from mip import Model, xsum, minimize, OptimizationStatus
-import matplotlib as mpl
 import sys
+
+# If running as a unit test, then skip if under pypy
+if hasattr(sys, '_called_from_test') and sys._called_from_test is True:
+    import platform
+    if 'pypy' in platform.python_implementation().lower():
+        import pytest
+        pytest.skip("Matplotlib installation not working under pypy")
+
 # Workaround for issues with python not being installed as a framework on mac
 # by using a different backend.
+import matplotlib as mpl
 if sys.platform == "darwin":  # OS X
     mpl.use('TkAgg')
 import matplotlib.pyplot as plt
