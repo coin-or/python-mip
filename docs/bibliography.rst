@@ -1,4 +1,4 @@
-.. rubric:: References
+.. rubric::
 
 .. [Ande73] L.G. Anderson: A Simulation Study of some Dynamic Channel Assignment Algorithms in a High Capacity Mobile Telecommunications System. *IEEE Transactions on Communications*, 21:1294--1301. 1973.
 
@@ -7,6 +7,10 @@
 .. [Bala75] E. Balas. Facets of the knapsack polytope. *Mathematical Programming*, 8, 146-164, 1975.
 
 .. [BCC93] E.Balas, S. Ceria and G. Cornuéjols. A lift-and-project cutting plane algorithm for mixed 0–1 programs. *Mathematical Programming*, 58, 295-324, 1993.
+
+.. [BeFo76] E. Beale, J. Forrest. Global optimization using special ordered sets. *Mathematical Programming*, 10:52-69, 1976.
+
+.. [BeTo70] E. Beale, J. Tomlin. Special facilities in a general mathematical programming system for non-convex problems. *OR*, 69:447-454, 1970.
 
 .. [Capr96] A. Caprara and M. Fischetti. {0, 1/2}-Chvátal-Gomory cuts. *Mathematical Programming*, 74, 221-235, 1996.
 

@@ -1,20 +1,15 @@
 """Classes used in solver callbacks, for a bi-directional communication
 with the solver engine"""
 from collections import defaultdict
-from typing import List, Tuple, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from mip.model import Model
-    from mip.entities import LinExpr
+from typing import List, Tuple
+import mip
 
 
 class BranchSelector:
-    def __init__(self, model: "Model"):
+    def __init__(self, model: "mip.Model"):
         self.model = model
 
-    def select_branch(
-        self, rsol: List[Tuple["Var", float]]
-    ) -> Tuple["Var", int]:
+    def select_branch(self, rsol: List[Tuple["mip.Var", float]]) -> Tuple["Var", int]:
         raise NotImplementedError()
 
 
@@ -24,7 +19,7 @@ class ColumnsGenerator:
     def __init__(self):
         self.lazy_constraints = False
 
-    def generate_columns(self, model: "Model"):
+    def generate_columns(self, model: "mip.Model"):
         """Method called by the solver engine to generate cuts
 
            After analyzing the contents of the fractional solution in model
@@ -35,7 +30,7 @@ class ColumnsGenerator:
 
         Args:
 
-            model(Model): model for which cuts may be generated. Please note
+            model(mip.Model): model for which cuts may be generated. Please note
                 that this model may have fewer variables than the original
                 model due to pre-processing. If you want to generate cuts
                 in terms of the original variables, one alternative is to
@@ -54,14 +49,14 @@ class ConstrsGenerator:
     def __init__(self):
         pass
 
-    def generate_constrs(self, model: "Model"):
+    def generate_constrs(self, model: "mip.Model"):
         """Method called by the solver engine to generate *cuts* or *lazy constraints*.
 
            After analyzing the contents of the solution in model
-           variables :attr:`~mip.model.Model.vars`, whose solution values can
-           be queried with the in :attr:`~mip.model.Var.x` attribute, one or more
+           variables :attr:`~mip.Model.vars`, whose solution values can
+           be queried with the :attr:`~mip.Var.x` attribute, one or more
            constraints may be generated and added to the solver with
-           the :meth:`~mip.model.Model.add_cut` method for cuts. This method
+           the :meth:`~mip.Model.add_cut` method for cuts. This method
            can be called by the solver engine in two situations, in the first
            one a fractional solution is found and one or more inequalities
            can be generated (cutting planes) to remove this fractional
@@ -69,21 +64,21 @@ class ConstrsGenerator:
            and then a new constraint can be generated (lazy constraint) to
            report that this integer solution is not feasible.  To control when
            the constraint generator will be called set your
-           :class:`~mip.callbacks.ConstrsGenerator` object in the attributes
-           :attr:`~mip.model.Model.cuts_generator` or
-           :attr:`~mip.model.Model.lazy_constrs_generator` (adding
+           :class:`ConstrsGenerator` object in the attributes
+           :attr:`~mip.Model.cuts_generator` or
+           :attr:`~mip.Model.lazy_constrs_generator` (adding
            to both is also possible).
 
         Args:
 
-            model(Model): model for which cuts may be generated. Please note
+            model(mip.Model): model for which cuts may be generated. Please note
                 that this model may have fewer variables than the original
                 model due to pre-processing. If you want to generate cuts
                 in terms of the original variables, one alternative is to
                 query variables by their names, checking which ones remain
                 in this pre-processed problem. In this procedure you can
-                query model properties and add cuts or lazy constraints
-                (:meth:`~mip.model.Model.add_constrs`), but you cannot
+                query model properties and add cuts (:meth:`~mip.Model.add_cut`) or lazy constraints
+                (:meth:`~mip.Model.add_lazy_constr`), but you cannot
                 perform other model modifications, such as add columns.
         """
         raise NotImplementedError()
@@ -99,12 +94,12 @@ class CutPool:
         # the search of repeated cuts
         self.__pos = defaultdict(list)
 
-    def add(self, cut: "LinExpr") -> bool:
+    def add(self, cut: "mip.LinExpr") -> bool:
         """tries to add a cut to the pool, returns true if this is a new cut,
         false if it is a repeated one
 
         Args:
-            cut(LinExpr): a constraint
+            cut(mip.LinExpr): a constraint
         """
         hcode = hash(cut)
         bucket = self.__pos[hcode]
@@ -118,7 +113,7 @@ class CutPool:
         return True
 
     @property
-    def cuts(self) -> List["LinExpr"]:
+    def cuts(self) -> List["mip.LinExpr"]:
         return self.__cuts
 
 
@@ -128,21 +123,23 @@ class IncumbentUpdater:
     local search heuristic) and returned to the MIP solver.
     """
 
-    def __init__(self, model: "Model"):
+    def __init__(self, model: "mip.Model"):
         self.model = model
 
     def update_incumbent(
         self,
         objective_value: float,
         best_bound: float,
-        solution: List[Tuple["Var", float]],
-    ) -> List[Tuple["Var", float]]:
+        solution: List[Tuple["mip.Var", float]],
+    ) -> List[Tuple["mip.Var", float]]:
         """method that is called when a new integer feasible solution is found
 
         Args:
             objective_value(float): cost of the new solution found
             best_bound(float): current lower bound for the optimal solution
-            cost solution(List[Tuple[Var,float]]): non-zero variables
+            cost solution(List[Tuple[mip.Var,float]]): non-zero variables
             in the solution
+
+        :rtype: List[Tuple[mip.Var, float]]
         """
         raise NotImplementedError()

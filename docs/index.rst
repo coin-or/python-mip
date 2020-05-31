@@ -9,8 +9,10 @@ Python MIP Documentation
    install
    quickstart
    examples
+   sos
    custom
    bench
+   extern
    classes
    bibliography
 
