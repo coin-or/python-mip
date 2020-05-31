@@ -36,10 +36,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [pypy3]
+        python-version: [3.5, 3.6, 3.7, 3.8, pypy3]
         os: [ubuntu-latest, windows-latest, macos-latest]
         exclude:
-          # excludes pypy Windows
+          # excludes pypy Windows because only 32 bit pypy is supported.
           - os: windows-latest
             python-version: pypy3
 
