@@ -31,5 +31,5 @@ jobs:
 
     - name: run tests
       run: |
-        python3 -m pytest test --verbose --color=yes --doctest-modules
-        python3 -m pytest mip --verbose --color=yes --doctest-modules --ignore="mip/gurobi.py"
+        python -m pytest test --verbose --color=yes --doctest-modules
+        python -m pytest mip --verbose --color=yes --doctest-modules --ignore="mip/gurobi.py"
