@@ -11,8 +11,14 @@ model the cost of installing each one of the plants.
 
 from math import sqrt, log
 from itertools import product
-import matplotlib.pyplot as plt
 from mip import Model, xsum, minimize, OptimizationStatus
+import matplotlib as mpl
+import sys
+# Workaround for issues with python not being installed as a framework on mac
+# by using a different backend.
+if sys.platform == "darwin":  # OS X
+    mpl.use('TkAgg')
+import matplotlib.pyplot as plt
 
 # possible plants
 F = [1, 2, 3, 4, 5, 6]
