@@ -9,9 +9,6 @@ to the non-linear function :math:`f(z)=1520 \log z`. Type 2 SOS will be used to
 model the cost of installing each one of the plants.
 """
 
-from math import sqrt, log
-from itertools import product
-from mip import Model, xsum, minimize, OptimizationStatus
 import sys
 
 # If running as a unit test, then skip if under pypy
@@ -23,10 +20,15 @@ if hasattr(sys, '_called_from_test') and sys._called_from_test is True:
 
 # Workaround for issues with python not being installed as a framework on mac
 # by using a different backend.
-import matplotlib as mpl
 if sys.platform == "darwin":  # OS X
+    import matplotlib as mpl
     mpl.use('TkAgg')
+    del mpl
+
 import matplotlib.pyplot as plt
+from math import sqrt, log
+from itertools import product
+from mip import Model, xsum, minimize, OptimizationStatus
 
 # possible plants
 F = [1, 2, 3, 4, 5, 6]
