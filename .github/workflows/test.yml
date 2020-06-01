@@ -60,11 +60,11 @@ jobs:
 
     - name: Install dependencies CPython
       if: matrix.python-version != 'pypy3'
-      run: python -m pip install cffi pytest networkx "numpy>=1.17.0" matplotlib
+      run: python -m pip install cffi pytest pytest-xdist networkx "numpy>=1.17.0" matplotlib
 
     - name: Install dependencies PyPy
       if: matrix.python-version == 'pypy3'
-      run: python -m pip install cffi pytest networkx "numpy>=1.17.0"
+      run: python -m pip install cffi pytest pytest-xdist networkx "numpy>=1.17.0"
 
     - name: Install mip
       run: python -m pip install .
@@ -74,5 +74,5 @@ jobs:
 
     - name: run tests
       run: |
-        python -m pytest test --verbose --color=yes --doctest-modules
-        python -m pytest mip --verbose --color=yes --doctest-modules --ignore="mip/gurobi.py"
+        python -m pytest test --verbose --color=yes --doctest-modules -n 2
+        python -m pytest mip --verbose --color=yes --doctest-modules --ignore="mip/gurobi.py" -n 2
