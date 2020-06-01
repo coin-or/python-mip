@@ -526,7 +526,7 @@ installing each one of the plants in auxiliary variables :math:`y`.
 .. literalinclude:: ../examples/plant_location.py
     :caption: Plant location problem with non-linear costs handled with Special Ordered Sets
     :linenos:
-    :lines: 12-109
+    :lines: 28-125
 
 The allocation of clients and plants in the optimal solution is shown bellow. This example uses 
 `Matplotlib <https://matplotlib.org/>`_ to draw the Figures.
