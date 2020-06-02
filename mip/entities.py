@@ -412,6 +412,9 @@ class LinExpr:
 
         return next(iter(self.expr)).model
 
+    def __repr__(self):
+        return "LinExpr[{}]".format(self.x)
+
 
 class Constr:
     """ A row (constraint) in the constraint matrix.
@@ -728,6 +731,9 @@ class Var:
         :rtype: mip.Model
         """
         return self.__model
+
+    def __repr__(self):
+        return "Var[{}]".format(self.x)
 
 
 class ConflictGraph:

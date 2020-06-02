@@ -638,3 +638,20 @@ def test_float(solver: str, val: int):
     assert y.x == float(y)
     # test linear expressions.
     assert float(x + y) == (x + y).x
+
+
+@pytest.mark.parametrize("val", range(1, 4))
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_repr(solver: str, val: int):
+    m = Model("bounds", solver_name=solver)
+    x = m.add_var(lb=0, ub=2 * val)
+    y = m.add_var(lb=val, ub=2 * val)
+    obj = x - y
+    # No solution yet.
+    assert repr(x) == 'Var[None]'
+    assert repr(x + y) == 'LinExpr[None]'
+    m.objective = maximize(obj)
+    m.optimize()
+    assert m.status == OptimizationStatus.OPTIMAL
+    assert repr(y) == 'Var[{}]'.format(y.x)
+    assert repr(x + y) == 'LinExpr[{}]'.format((x + y).x)
