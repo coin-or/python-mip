@@ -74,3 +74,5 @@ Please note that CBC uses multiple libraries which are installed in the same dir
 .. code-block:: sh
 
     export LD_LIBRARY_PATH="/home/haroldo/prog/lib/":$LD_LIBRARY_PATH
+
+In Linux, to make these changes persistent, you may also want to add the :code:`export` lines to your :code:`.bashrc`.
