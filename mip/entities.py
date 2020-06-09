@@ -71,8 +71,8 @@ class LinExpr:
 
     def __init__(
         self,
-        variables: List["mip.Var"] = [],
-        coeffs: List[numbers.Real] = [],
+        variables: Optional[List["mip.Var"]] = None,
+        coeffs: Optional[List[numbers.Real]] = None,
         const: numbers.Real = 0.0,
         sense: str = "",
     ):
@@ -80,7 +80,7 @@ class LinExpr:
         self.__expr = {}  # type: Dict[mip.Var, numbers.Real]
         self.__sense = sense
 
-        if variables:
+        if variables is not None and coeffs is not None:
             if len(variables) != len(coeffs):
                 raise ValueError("Coefficients and variables must be same length.")
             for i in range(len(coeffs)):
