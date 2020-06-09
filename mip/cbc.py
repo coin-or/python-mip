@@ -14,6 +14,7 @@ from mip.lists import EmptyVarSol, EmptyRowSol
 from mip.exceptions import (
     ParameterNotAvailable,
     InvalidParameter,
+    MipBaseException,
 )
 from mip import (
     Model,
@@ -130,6 +131,10 @@ if has_cbc:
     void Cbc_readLp(Cbc_Model *model, const char *file);
 
     void Cbc_readMps(Cbc_Model *model, const char *file);
+
+    char Cbc_supportsGzip();
+
+    char Cbc_supportsBzip2();
 
     void Cbc_writeLp(Cbc_Model *model, const char *file);
 
@@ -1344,6 +1349,14 @@ class SolverCbc(Solver):
     def read(self, file_path: str) -> None:
         if not isfile(file_path):
             raise FileNotFoundError("File {} does not exists".format(file_path))
+
+        if file_path.lower().endswith(".gz") and cbclib.Cbc_supportsGzip() == CHAR_ZERO:
+            raise MipBaseException("CBC not compiled with gzip support")
+        if (
+            file_path.lower().endswith(".bz2")
+            and cbclib.Cbc_supportsBzip2() == CHAR_ZERO
+        ):
+            raise MipBaseException("CBC not compiled with bzip2 support")
 
         fpstr = file_path.encode("utf-8")
         if ".mps" in file_path.lower():
