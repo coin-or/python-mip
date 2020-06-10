@@ -1462,6 +1462,7 @@ quicksum = xsum
 
 
 def save_mipstart(sol: List[Tuple["mip.Var", numbers.Real]], file_name: str, obj=0.0):
+    """Saves a solution in a MIPStart (MST) file."""
     f = open(file_name, "w")
     f.write("Feasible solution - objective {}\n".format(obj))
     for i, (var, val) in enumerate(sol):
@@ -1470,11 +1471,12 @@ def save_mipstart(sol: List[Tuple["mip.Var", numbers.Real]], file_name: str, obj
 
 
 def load_mipstart(file_name: str) -> List[Tuple[str, numbers.Real]]:
+    """Loads a MIPStart (MST) file."""
     f = open(file_name)
     result = []
     next(f)
     for line in f:
-        line = line.rstrip().lstrip().lower()
+        line = line.rstrip().lstrip()
         line = " ".join(line.split())
         lc = line.split(" ")
         result.append((lc[1], float(lc[2])))
