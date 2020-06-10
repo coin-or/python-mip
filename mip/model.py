@@ -1470,9 +1470,9 @@ def save_mipstart(sol: List[Tuple["mip.Var", numbers.Real]], file_name: str, obj
 
 
 def load_mipstart(file_name: str) -> List[Tuple[str, numbers.Real]]:
-    f = open(file_name, "w")
+    f = open(file_name)
     result = []
-    line = f.next()
+    next(f)
     for line in f:
         line = line.rstrip().lstrip().lower()
         line = " ".join(line.split())
