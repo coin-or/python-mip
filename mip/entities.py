@@ -161,15 +161,16 @@ class LinExpr:
         raise DeprecationWarning("Inplace operations are deprecated")
 
     def __truediv__(self, other: numbers.Real) -> "mip.LinExpr":
-        raise DeprecationWarning("Inplace operations are deprecated")
-
-    def __itruediv__(self, other: numbers.Real) -> "LinExpr":
         if not isinstance(other, numbers.Real):
             raise TypeError("Can not divide with type {}".format(type(other)))
-        self.__const /= other
-        for var in self.__expr.keys():
-            self.__expr[var] /= other
-        return self
+        result = self.copy()
+        result.__const /= other
+        for var in result.__expr.keys():
+            result.__expr[var] /= other
+        return result
+
+    def __itruediv__(self, other: numbers.Real) -> "LinExpr":
+        raise DeprecationWarning("Inplace operations are deprecated")
 
     def __neg__(self) -> "LinExpr":
         return self.__mul__(-1)
