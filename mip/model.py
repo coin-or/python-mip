@@ -167,19 +167,30 @@ class Model:
                 # adding constraint
                 self.add_constr(other)
         elif isinstance(other, tuple):
-            if isinstance(other[0], mip.LinExpr) and isinstance(other[1], str):
-                if len(other[0].sense) == 0:
-                    self.objective = other[0]
+            if len(other) == 2:
+                if isinstance(other[0], mip.LinExpr) and isinstance(other[1], str):
+                    if len(other[0].sense) == 0:
+                        self.objective = other[0]
+                    else:
+                        self.add_constr(other[0], other[1])
+                elif isinstance(other[0], mip.LinExprTensor) and isinstance(
+                    other[1], str
+                ):
+                    if np is None:
+                        raise ModuleNotFoundError(
+                            "You need to install package numpy to use tensors"
+                        )
+                    for index, element in np.ndenumerate(other[0]):
+                        # add all elements of the tensor
+                        self._iadd_tensor_element(other[0], element, index, other[1])
                 else:
-                    self.add_constr(other[0], other[1])
-            elif isinstance(other[0], mip.LinExprTensor) and isinstance(other[1], str):
-                if np is None:
-                    raise ModuleNotFoundError(
-                        "You need to install package numpy to use tensors"
+                    raise TypeError(
+                        "tuple with types {} and {} not supported.".format(
+                            type(other[0]), type(other[1])
+                        )
                     )
-                for index, element in np.ndenumerate(other[0]):
-                    # add all elements of the tensor
-                    self._iadd_tensor_element(other[0], element, index, other[1])
+            else:
+                raise TypeError("tuple with len {} not supported".format(len(other)))
         elif isinstance(other, mip.CutPool):
             for cut in other.cuts:
                 self.add_constr(cut)
