@@ -355,7 +355,9 @@ enum DblParam {
 
     void Cgl_generateCuts( void *osiClpSolver, enum CutType ct, void *osiCuts, int strength );
 
-    Cbc_strengthenPacking(Cbc_Model *model);
+    void Cbc_strengthenPacking(Cbc_Model *model);
+
+    void Cbc_strengthenPackingRows(Cbc_Model *model, size_t n, const size_t rows[]);
 
     void *Cbc_getSolverPtr(Cbc_Model *model);
 
