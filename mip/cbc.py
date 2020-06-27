@@ -908,6 +908,15 @@ class SolverCbc(Solver):
         OsiCuts_delete(osi_cuts)
         return cp
 
+    def clique_merge(self, constrs: Optional[List["mip.Constr"]] = None):
+        if constrs is None:
+            cbclib.Cbc_strengthenPacking(self._model)
+        else:
+            nr = len(constrs)
+            idxr = ffi.new("int[]", [c.idx for c in constrs])
+            strengthenPacking = cbclib.Cbc_strengthenPackingRows
+            strengthenPacking(self._model, nr, idxr)
+
     def optimize(self, relax: bool = False) -> OptimizationStatus:
         # get name indexes from an osi problem
         def cbc_get_osi_name_indexes(osi_solver) -> Dict[str, int]:
