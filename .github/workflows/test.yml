@@ -77,7 +77,7 @@ jobs:
 
     - name: Install dependencies PyPy
       if: matrix.python-version == 'pypy3'
-      run: python -m pip install cffi pytest pytest-xdist networkx
+      run: python -m pip install cffi pytest pytest-xdist networkx numpy
 
     - name: Install mip
       run: python -m pip install .
