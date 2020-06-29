@@ -73,7 +73,7 @@ jobs:
 
     - name: Install dependencies CPython
       if: matrix.python-version != 'pypy3'
-      run: python -m pip install cffi pytest pytest-xdist networkx "numpy>=1.17.0" matplotlib
+      run: python -m pip install cffi pytest pytest-xdist networkx numpy matplotlib
 
     - name: Install dependencies PyPy
       if: matrix.python-version == 'pypy3'
