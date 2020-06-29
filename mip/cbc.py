@@ -1035,6 +1035,11 @@ class SolverCbc(Solver):
                 1,
                 atSol,
             )
+        else:
+            if self.model.preprocess == 0:
+                cbc_set_parameter(self, "preprocess", "off")
+            elif self.model.preprocess == 1:
+                cbc_set_parameter(self, "preprocess", "sos")
 
         if self.emphasis == SearchEmphasis.FEASIBILITY:
             cbc_set_parameter(self, "passf", "50")
@@ -1066,11 +1071,6 @@ class SolverCbc(Solver):
             Cbc_setIntParam(self._model, INT_PARAM_THREADS, self.__threads)
         elif self.__threads == -1:
             cbc_set_parameter(self, "threads", "{}".format(multip.cpu_count()))
-
-        if self.model.preprocess == 0:
-            cbc_set_parameter(self, "preprocess", "off")
-        elif self.model.preprocess == 1:
-            cbc_set_parameter(self, "preprocess", "sos")
 
         if self.model.cut_passes != -1:
             cbc_set_parameter(self, "passc", "{}".format(self.model.cut_passes))
