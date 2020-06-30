@@ -1026,6 +1026,7 @@ class SolverCbc(Solver):
         if m.lazy_constrs_generator is not None:
             atSol = CHAR_ONE
             cbc_set_parameter(self, "preprocess", "off")
+            cbc_set_parameter(self, "clqstr", "off")
             cbc_set_parameter(self, "heur", "off")
             cbclib.Cbc_addCutCallback(
                 self._model,
@@ -1036,10 +1037,13 @@ class SolverCbc(Solver):
                 atSol,
             )
         else:
+            # no lazy constraints, more freedom to change parameters
             if self.model.preprocess == 0:
                 cbc_set_parameter(self, "preprocess", "off")
             elif self.model.preprocess == 1:
                 cbc_set_parameter(self, "preprocess", "sos")
+            if self.__pumpp != DEF_PUMPP:
+                cbc_set_parameter(self, "passf", "{}".format(self.__pumpp))
 
         if self.emphasis == SearchEmphasis.FEASIBILITY:
             cbc_set_parameter(self, "passf", "50")
@@ -1049,9 +1053,6 @@ class SolverCbc(Solver):
             cbc_set_parameter(self, "trust", "20")
             cbc_set_parameter(self, "lagomory", "endonly")
             cbc_set_parameter(self, "latwomir", "endonly")
-
-        if self.__pumpp != DEF_PUMPP:
-            cbc_set_parameter(self, "passf", "{}".format(self.__pumpp))
 
         if self.model.cuts == 0:
             cbc_set_parameter(self, "cuts", "off")
