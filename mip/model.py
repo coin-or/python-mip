@@ -133,6 +133,8 @@ class Model:
         self.__seed = 0
         self.__round_int_vars = True
         self.__sol_pool_size = 10
+        self.__max_seconds_same_incumbent = mip.INF
+        self.__max_nodes_same_incumbent = mip.INF
 
     def __del__(self: "Model"):
         del self.solver
@@ -512,9 +514,11 @@ class Model:
 
     def optimize(
         self: "Model",
-        max_seconds: float = mip.INF,
-        max_nodes: int = mip.INF,
-        max_solutions: int = mip.INF,
+        max_seconds: numbers.Real = mip.INF,
+        max_nodes: int = mip.INT_MAX,
+        max_solutions: int = mip.INT_MAX,
+        max_seconds_same_incumbent: numbers.Real = mip.INF,
+        max_nodes_same_incumbent: int = mip.INT_MAX,
         relax: bool = False,
     ) -> mip.OptimizationStatus:
         """ Optimizes current model
@@ -527,9 +531,15 @@ class Model:
             m.optimize(max_seconds=300)
 
         Args:
-            max_seconds (float): Maximum runtime in seconds (default: inf)
-            max_nodes (float): Maximum number of nodes (default: inf)
-            max_solutions (float): Maximum number of solutions (default: inf)
+            max_seconds (numbers.Real): Maximum runtime in seconds (default: inf)
+            max_nodes (int): Maximum number of nodes (default: inf)
+            max_solutions (int): Maximum number of solutions (default: inf)
+            max_seconds_same_incumbent (numbers.Real): Maximum time in seconds
+                that the search can go on if a feasible solution is available
+                and it is not being improved
+            max_nodes_same_incumbent (int): Maximum number of nodes
+                that the search can go on if a feasible solution is available
+                and it is not being improved
             relax (bool): if true only the linear programming relaxation will
                 be solved, i.e. integrality constraints will be temporarily
                 discarded.
@@ -555,7 +565,13 @@ class Model:
             self.solver.set_num_threads(self.__threads)
         # self.solver.set_callbacks(branch_selector,
         # incumbent_updater, lazy_constrs_generator)
-        self.solver.set_processing_limits(max_seconds, max_nodes, max_solutions)
+        self.solver.set_processing_limits(
+            max_seconds,
+            max_nodes,
+            max_solutions,
+            max_seconds_same_incumbent,
+            max_nodes_same_incumbent,
+        )
 
         self._status = self.solver.optimize(relax)
         # has a solution and is a MIP

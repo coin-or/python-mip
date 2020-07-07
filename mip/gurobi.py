@@ -6,6 +6,7 @@ from os.path import isfile
 import os.path
 from glob import glob
 from os import environ
+import numbers
 from cffi import FFI
 from mip.exceptions import (
     ParameterNotAvailable,
@@ -36,6 +37,7 @@ from mip import (
     LP_Method,
 )
 from mip.lists import EmptyVarSol, EmptyRowSol
+import mip
 
 logger = logging.getLogger(__name__)
 
@@ -815,7 +817,12 @@ class SolverGurobi(Solver):
         return self.__log
 
     def set_processing_limits(
-        self, max_time: float = INF, max_nodes: float = INF, max_sol: int = INF
+        self: "Solver",
+        max_time: numbers.Real = mip.INF,
+        max_nodes: int = mip.INT_MAX,
+        max_sol: int = mip.INT_MAX,
+        max_seconds_same_incumbent: float = mip.INF,
+        max_nodes_same_incumbent: int = mip.INT_MAX,
     ):
         # todo: Set limits even when they are 'inf'
         if max_time != INF:
