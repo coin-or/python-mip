@@ -2,7 +2,6 @@
 Python-MIP
 """
 from typing import List, Tuple, Optional, Union
-from sys import maxsize
 import numbers
 import mip
 
@@ -61,7 +60,7 @@ class Solver:
     def generate_cuts(
         self,
         cut_types: Optional[List[mip.CutType]] = None,
-        max_cuts: int = maxsize,
+        max_cuts: int = mip.INT_MAX,
         min_viol: numbers.Real = 1e-4,
     ) -> "mip.CutPool":
         pass
@@ -101,8 +100,10 @@ class Solver:
     def set_processing_limits(
         self: "Solver",
         max_time: numbers.Real = mip.INF,
-        max_nodes: int = maxsize,
-        max_sol: int = maxsize,
+        max_nodes: int = mip.INT_MAX,
+        max_sol: int = mip.INT_MAX,
+        max_seconds_same_incumbent: float = mip.INF,
+        max_nodes_same_incumbent: int = mip.INT_MAX,
     ):
         pass
 
