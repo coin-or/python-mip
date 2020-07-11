@@ -23,13 +23,13 @@ for j in range(n):
 
 # diagonal \
 for p, k in enumerate(range(2 - n, n - 2 + 1)):
-    queens += xsum(x[i][j] for i in range(n) for j in range(n)
-                   if i - j == k) <= 1, 'diag1({})'.format(p)
+    queens += xsum(x[i][i - k] for i in range(n)
+                   if 0 <= i - k < n) <= 1, 'diag1({})'.format(p)
 
 # diagonal /
 for p, k in enumerate(range(3, n + n)):
-    queens += xsum(x[i][j] for i in range(n) for j in range(n)
-                   if i + j == k) <= 1, 'diag2({})'.format(p)
+    queens += xsum(x[i][k - i] for i in range(n)
+                   if 0 <= k - i < n) <= 1, 'diag2({})'.format(p)
 
 queens.optimize()
 
