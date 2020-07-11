@@ -320,7 +320,11 @@ class Model:
 
         if isinstance(lin_expr, bool):
             raise mip.InvalidLinExpr(
-                "A boolean (true/false) cannot be " "used as a constraint."
+                "A boolean (true/false) cannot be used as a constraint."
+            )
+        if len(lin_expr) == 0:
+            raise mip.InvalidLinExpr(
+                "An empty linear expression cannot be used as a constraint."
             )
         return self.constrs.add(lin_expr, name)
 

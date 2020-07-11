@@ -226,6 +226,9 @@ class LinExpr:
         result.__sense = ">"
         return result
 
+    def __len__(self):
+        return len(self.__expr)
+
     def add_const(self, val: numbers.Real):
         """adds a constant value to the linear expression, in the case of
         a constraint this correspond to the right-hand-side
