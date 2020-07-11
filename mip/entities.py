@@ -568,8 +568,6 @@ class Var:
         elif isinstance(other, LinExpr):
             return other.__sub__(self)
         elif isinstance(other, numbers.Real):
-            if fabs(other) < mip.EPS:
-                return self
             return LinExpr([self], [-1], other)
         else:
             raise TypeError("type {} not supported".format(type(other)))
