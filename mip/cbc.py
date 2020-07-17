@@ -75,6 +75,7 @@ try:
                 if not exists(libfile):
                     pathlibe = pathlib
                     libfile = os.path.join(pathlib, "cbc-c-linux-x86-64.so")
+                pathlib = pathlibe
             else:
                 raise NotImplementedError("Linux 32 bits platform not supported.")
         elif platform.lower().startswith("win"):
@@ -93,7 +94,7 @@ try:
         if not libfile:
             raise NotImplementedError("You operating system/platform is not supported")
     old_dir = os.getcwd()
-    os.chdir(pathlibe)
+    os.chdir(pathlib)
     cbclib = ffi.dlopen(libfile)
     os.chdir(old_dir)
     has_cbc = True
