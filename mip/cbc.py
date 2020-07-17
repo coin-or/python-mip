@@ -3,7 +3,7 @@
 import logging
 from typing import Dict, List, Tuple, Optional, Union
 from sys import platform, maxsize
-from os.path import dirname, isfile
+from os.path import dirname, isfile, exists
 import os
 import multiprocessing as multip
 import numbers
@@ -70,8 +70,11 @@ try:
     else:
         if "linux" in platform.lower():
             if os_is_64_bit:
-                pathlib = os.path.join(pathlib, "lin64")
-                libfile = os.path.join(pathlib, "libCbcSolver.so")
+                pathlibe = os.path.join(pathlib, "lin64")
+                libfile = os.path.join(pathlibe, "libCbcSolver.so")
+                if not exists(libfile):
+                    pathlibe = pathlib
+                    libfile = os.path.join(pathlib, "cbc-c-linux-x86-64.so")
             else:
                 raise NotImplementedError("Linux 32 bits platform not supported.")
         elif platform.lower().startswith("win"):
@@ -90,7 +93,7 @@ try:
         if not libfile:
             raise NotImplementedError("You operating system/platform is not supported")
     old_dir = os.getcwd()
-    os.chdir(pathlib)
+    os.chdir(pathlibe)
     cbclib = ffi.dlopen(libfile)
     os.chdir(old_dir)
     has_cbc = True
