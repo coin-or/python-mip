@@ -99,7 +99,8 @@ for (i, j) in product(V - {0}, V - {0}):
 
 # optimizing
 model.threads = 4
-model.optimize(max_nodes=75)
+model.max_nodes = 5
+model.optimize()
 
 # checking if a solution was found
 if model.num_solutions:
