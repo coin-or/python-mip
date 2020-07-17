@@ -1170,7 +1170,7 @@ class SolverCbc(Solver):
                 cbclib.Cbc_getBestPossibleObjValue(self._model) + self._objconst
             )
 
-            if cbclib.Cbc_bestSolution(self._model):
+            if cbclib.Cbc_numberSavedSolutions(self._model) >= 1:
                 self.__x = cbclib.Cbc_getColSolution(self._model)
                 self.__slack = cbclib.Cbc_getRowSlack(self._model)
                 self.__obj_val = cbclib.Cbc_getObjValue(self._model) + self._objconst
