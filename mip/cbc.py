@@ -80,10 +80,18 @@ try:
                 raise NotImplementedError("Linux 32 bits platform not supported.")
         elif platform.lower().startswith("win"):
             if os_is_64_bit:
-                pathlib = os.path.join(pathlib, "win64")
-                if pathlib not in os.environ["PATH"]:
-                    os.environ["PATH"] = pathlib + ";" + os.environ["PATH"]
-                libfile = os.path.join(pathlib, "libCbcSolver-0.dll")
+                pathlibe = os.path.join(pathlib, "win64")
+                libfile = os.path.join(pathlibe, "libCbcSolver-0.dll")
+                if exists(libfile):
+                    if pathlibe not in os.environ["PATH"]:
+                        os.environ["PATH"] = pathlibe + ";" + os.environ["PATH"]
+                else:
+                    pathlibe = pathlib
+                    libfile = os.path.join(pathlibe, "cbc-c-windows-x86-64.dll")
+                    if pathlibe not in os.environ["PATH"]:
+                        os.environ["PATH"] = pathlibe + ";" + os.environ["PATH"]
+                pathlib = pathlibe
+
             else:
                 raise NotImplementedError("Win32 platform not supported.")
         elif platform.lower().startswith("darwin") or platform.lower().startswith(
