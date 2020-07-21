@@ -1,7 +1,6 @@
 """Python-MIP constants"""
 
 from enum import Enum
-from sys import maxsize
 from cffi import FFI
 
 VERSION = "1.9.3"
