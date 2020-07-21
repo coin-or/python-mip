@@ -3,7 +3,7 @@
 from enum import Enum
 from cffi import FFI
 
-VERSION = "1.9.3"
+VERSION = "1.9.4"
 
 ffi = FFI()
 
