@@ -44,6 +44,9 @@ jobs:
             python-version: pypy3
           - os: windows-2016
             python-version: pypy3
+          # temporarily exclude pypy3 on macos
+          - os: macos-latest
+            python-version: pypy3
 
     steps:
 
