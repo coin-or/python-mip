@@ -1,3 +1,4 @@
-sphinx_autodoc_typehints cffi
+sphinx_autodoc_typehints
+cffi
 
 
