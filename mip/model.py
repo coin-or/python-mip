@@ -473,6 +473,35 @@ class Model:
             return None
         return self.vars[v]
 
+    def clique_merge(self, constrs: Optional[List["mip.Constr"]] = None):
+        r"""This procedure searches for constraints with conflicting variables
+        and attempts to group these constraints in larger constraints with all
+        conflicts merged.
+
+        For example, if your model has the following constraints:
+
+        .. math::
+
+            x_1 + x_2   \leq 1
+
+            x_2 + x_3   \leq 1
+
+            x_1 + x_3   \leq 1
+
+        Then they can all be removed and replaced by the stronger inequality:
+
+        .. math::
+
+            x_1 + x_2 + x_3 \leq 1
+
+        Args:
+            constrs (Optional[List[Constrs]]): constraints that should be checked for
+                merging. If nor informed, all constraints will be checked.
+
+        """
+        self.solver.clique_merge(constrs)
+        self.constrs.update_constrs(self.solver.num_rows())
+
     def generate_cuts(
         self: "Model",
         cut_types: Optional[List["mip.CutType"]] = None,

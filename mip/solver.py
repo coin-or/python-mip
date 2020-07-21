@@ -65,6 +65,9 @@ class Solver:
     ) -> "mip.CutPool":
         pass
 
+    def clique_merge(self, constrs: Optional[List["mip.Constr"]] = None):
+        pass
+
     def optimize(self: "Solver", relax: bool = False,) -> "mip.OptimizationStatus":
         pass
 
