@@ -65,4 +65,3 @@ google group](https://groups.google.com/forum/#!forum/python-mip).
 ## Build status
 
 [![Github Actions Status](https://github.com/coin-or/python-mip/workflows/CI/badge.svg?branch=master)](https://github.com/coin-or/python-mip/actions)
-[![Travis Build Status](https://api.travis-ci.org/coin-or/python-mip.svg?branch=master)](https://travis-ci.org/coin-or/python-mip)

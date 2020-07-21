@@ -3,7 +3,7 @@
 import logging
 from typing import Dict, List, Tuple, Optional, Union
 from sys import platform, maxsize
-from os.path import dirname, isfile
+from os.path import dirname, isfile, exists
 import os
 import multiprocessing as multip
 import numbers
@@ -70,16 +70,28 @@ try:
     else:
         if "linux" in platform.lower():
             if os_is_64_bit:
-                pathlib = os.path.join(pathlib, "lin64")
-                libfile = os.path.join(pathlib, "libCbcSolver.so")
+                pathlibe = os.path.join(pathlib, "lin64")
+                libfile = os.path.join(pathlibe, "libCbcSolver.so")
+                if not exists(libfile):
+                    pathlibe = pathlib
+                    libfile = os.path.join(pathlib, "cbc-c-linux-x86-64.so")
+                pathlib = pathlibe
             else:
                 raise NotImplementedError("Linux 32 bits platform not supported.")
         elif platform.lower().startswith("win"):
             if os_is_64_bit:
-                pathlib = os.path.join(pathlib, "win64")
-                if pathlib not in os.environ["PATH"]:
-                    os.environ["PATH"] = pathlib + ";" + os.environ["PATH"]
-                libfile = os.path.join(pathlib, "libCbcSolver-0.dll")
+                pathlibe = os.path.join(pathlib, "win64")
+                libfile = os.path.join(pathlibe, "libCbcSolver-0.dll")
+                if exists(libfile):
+                    if pathlibe not in os.environ["PATH"]:
+                        os.environ["PATH"] = pathlibe + ";" + os.environ["PATH"]
+                else:
+                    pathlibe = pathlib
+                    libfile = os.path.join(pathlibe, "cbc-c-windows-x86-64.dll")
+                    if pathlibe not in os.environ["PATH"]:
+                        os.environ["PATH"] = pathlibe + ";" + os.environ["PATH"]
+                pathlib = pathlibe
+
             else:
                 raise NotImplementedError("Win32 platform not supported.")
         elif platform.lower().startswith("darwin") or platform.lower().startswith(
@@ -1166,7 +1178,7 @@ class SolverCbc(Solver):
                 cbclib.Cbc_getBestPossibleObjValue(self._model) + self._objconst
             )
 
-            if cbclib.Cbc_bestSolution(self._model):
+            if cbclib.Cbc_numberSavedSolutions(self._model) >= 1:
                 self.__x = cbclib.Cbc_getColSolution(self._model)
                 self.__slack = cbclib.Cbc_getRowSlack(self._model)
                 self.__obj_val = cbclib.Cbc_getObjValue(self._model) + self._objconst
@@ -1473,18 +1485,18 @@ class SolverCbc(Solver):
         """processing limits should be set even when they INF, since
         smaller limits could have been set in a previous iteration"""
 
-        if max_time != INF:
+        if max_time != mip.INF:
             cbc_set_parameter(self, "timeMode", "elapsed")
             self.set_max_seconds(max_time)
-        if max_nodes != maxsize:
+        if max_nodes != mip.INT_MAX:
             self.set_max_nodes(max_nodes)
-        if max_sol != maxsize:
+        if max_sol != mip.INT_MAX:
             self.set_max_solutions(max_sol)
-        if max_seconds_same_incumbent != INF:
+        if max_seconds_same_incumbent != mip.INF:
             Cbc_setDblParam(
                 pmodel, DBL_PARAM_MAX_SECS_NOT_IMPROV_FS, max_seconds_same_incumbent
             )
-        if max_nodes_same_incumbent != maxsize:
+        if max_nodes_same_incumbent != mip.INT_MAX:
             Cbc_setIntParam(
                 pmodel, INT_PARAM_MAX_NODES_NOT_IMPROV_FS, max_nodes_same_incumbent
             )
