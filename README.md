@@ -65,3 +65,7 @@ google group](https://groups.google.com/forum/#!forum/python-mip).
 ## Build status
 
 [![Github Actions Status](https://github.com/coin-or/python-mip/workflows/CI/badge.svg?branch=master)](https://github.com/coin-or/python-mip/actions)
+[![Current version](https://badge.fury.io/gh/coin-or%2Fpython-mip.svg)](https://github.com/coin-or/python-mip/releases)
+[![Current total of lines](https://tokei.rs/b1/github/coin-or/python-mip?category=lines)](https://github.com/coin-or/python-mip)
+[![License](https://img.shields.io/badge/license-EPL-blue.svg)](https://github.com/coin-or/python-mip/blob/master/LICENSE)
+
