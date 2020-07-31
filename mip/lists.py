@@ -73,6 +73,24 @@ class VarList(Sequence):
                 i += 1
         self.__vars = [v for v in self.__vars if v.idx != -1]
 
+    def __str__(self) -> str:
+        res = ""
+        if len(self.__vars) <= 5:
+            for v in self.__vars:
+                res += str(v) + "\n"
+        else:
+            res = (
+                str(self.__vars[0])
+                + "\n"
+                + str(self.__vars[1])
+                + "\n... (more %d variables)\n" % (len(self.__vars) - 4)
+                + str(self.__vars[-2])
+                + "\n"
+                + str(self.__vars[-1])
+                + "\n"
+            )
+        return res
+
 
 # same as VarList but does not stores
 # references for variables, used in
@@ -166,6 +184,24 @@ class ConstrList(Sequence):
 
     def update_constrs(self: "ConstrList", n_constrs: int):
         self.__constrs = [mip.Constr(self.__model, i) for i in range(n_constrs)]
+
+    def __str__(self) -> str:
+        res = ""
+        if len(self.__constrs) <= 5:
+            for c in self.__constrs:
+                res += str(c) + "\n"
+        else:
+            res = (
+                str(self.__constrs[0])
+                + "\n"
+                + str(self.__constrs[1])
+                + "\n... (more %d constraints)\n" % (len(self.__constrs) - 4)
+                + str(self.__constrs[-2])
+                + "\n"
+                + str(self.__constrs[-1])
+                + "\n"
+            )
+        return res
 
 
 # same as previous class, but does not stores

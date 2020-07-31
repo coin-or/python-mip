@@ -36,6 +36,7 @@ m.objective = minimize(z)
 for i in N:
     m += xsum(x[i][c] for c in U) == r[i]
 
+
 for i, j, c1, c2 in product(N, N, U, U):
     if i != j and c1 <= c2 < c1+d[i][j]:
         m += x[i][c1] + x[j][c2] <= 1
