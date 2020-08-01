@@ -249,12 +249,14 @@ class Model:
     def add_var_tensor(
         self: "Model", shape: Tuple[int, ...], name: str, **kwargs
     ) -> mip.LinExprTensor:
-        """Creates new variables in the model, arranging them in a numpy tensor and returning its reference
+        """Creates new variables in the model, arranging them in a numpy
+        tensor and returning its reference
 
         Args:
             shape (Tuple[int, ...]): shape of the numpy tensor
             name (str): variable name
-            **kwargs: all other named arguments will be used as Model.add_var() arguments
+            **kwargs: all other named arguments will be used as
+              :meth:`~mip.Model.add_var` arguments
 
         Examples:
 
@@ -539,7 +541,7 @@ class Model:
 
     @property
     def conflict_graph(self: "Model") -> "mip.ConflictGraph":
-        """Returns the :class:`~mip.ConflictGraph` of a MIP model.
+        """: Returns the :class:`~mip.ConflictGraph` of a MIP model.
 
         :rtype: mip.ConflictGraph
         """
@@ -735,11 +737,9 @@ class Model:
 
     @property
     def objective_bound(self: "Model") -> Optional[numbers.Real]:
-        """
-            A valid estimate computed for the optimal solution cost,
-            lower bound in the case of minimization, equals to
-            :attr:`~mip.Model.objective_value` if the
-            optimal solution was found.
+        """:A valid estimate computed for the optimal solution cost, lower
+        bound in the case of minimization, equals to
+        :attr:`~mip.Model.objective_value` if the optimal solution was found.
         """
         if self.status not in [
             mip.OptimizationStatus.OPTIMAL,
@@ -752,7 +752,7 @@ class Model:
 
     @property
     def name(self: "Model") -> str:
-        """The problem (instance) name
+        """:The problem (instance) name.
 
            This name should be used to identify the instance that this model
            refers, e.g.: productionPlanningMay19. This name is stored when
@@ -898,26 +898,24 @@ class Model:
 
     @property
     def search_progress_log(self: "Model") -> mip.ProgressLog:
-        """
-            Log of bound improvements in the search.
-            The output of MIP solvers is a sequence of improving
-            incumbent solutions (primal bound) and estimates for the optimal
-            cost (dual bound). When the costs of these two bounds match the
-            search is concluded. In truncated searches, the most common
-            situation for hard problems, at the end of the search there is a
-            :attr:`~mip.Model.gap` between these bounds. This
-            property stores the detailed events of improving these
-            bounds during the search process. Analyzing the evolution
-            of these bounds you can see if you need to improve your
-            solver w.r.t. the production of feasible solutions, by including an
-            heuristic to produce a better initial feasible solution, for
-            example, or improve the formulation with cutting planes, for
-            example, to produce better dual bounds. To enable storing the
-            :attr:`~mip.Model.search_progress_log` set
-            :attr:`~mip.Model.store_search_progress_log` to True.
+        """:Log of bound improvements in the search.  The output of MIP
+        solvers is a sequence of improving incumbent solutions (primal bound)
+        and estimates for the optimal cost (dual bound). When the costs of
+        these two bounds match the search is concluded. In truncated searches,
+        the most common situation for hard problems, at the end of the search
+        there is a :attr:`~mip.Model.gap` between these bounds. This property
+        stores the detailed events of improving these bounds during the search
+        process. Analyzing the evolution of these bounds you can see if you
+        need to improve your solver w.r.t. the production of feasible
+        solutions, by including an heuristic to produce a better initial
+        feasible solution, for example, or improve the formulation with cutting
+        planes, for example, to produce better dual bounds. To enable storing
+        the :attr:`~mip.Model.search_progress_log` set
+        :attr:`~mip.Model.store_search_progress_log` to True.
 
-            :rtype: mip.ProgressLog
+        :rtype: mip.ProgressLog
         """
+
         return self.__plog
 
     @property
@@ -1322,10 +1320,11 @@ class Model:
 
     @property
     def sol_pool_size(self: "Model") -> int:
-        """Size of the solution pool, i.e.: maximum number of solutions
-        that will be stored during the search. To check how many solutions were
-        found during the search use :meth:`~mip.Model.num_solutions`.
-        """
+
+        """Maximum number of solutions that will be stored during the search.
+        To check how many solutions were found during the search use
+        :meth:`~mip.Model.num_solutions`."""
+
         return self.__sol_pool_size
 
     @sol_pool_size.setter

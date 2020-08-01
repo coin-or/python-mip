@@ -5,18 +5,22 @@ class ProgressLog:
     performance of a given formulation/parameter setting
     for solving a instance. To be able to automatically
     generate summarized experimental results, fill the
-    :attr:`~mip.model.ProgressLog.instance` and
-    :attr:`~mip.model.ProgressLog.settings` of this object with the instance
+    :attr:`~mip.ProgressLog.instance` and
+    :attr:`~mip.ProgressLog.settings` of this object with the instance
     name and formulation/parameter setting details, respectively.
 
     Attributes:
-        log(Tuple[float, Tuple[float, float]]): Tuple in the format :math:`(time, (lb, ub))`, where :math:`time` is the processing time and :math:`lb` and :math:`ub` are the lower and upper bounds, respectively
+
+        log(List[Tuple[float, Tuple[float, float]]]): List of tuples in the format
+            :math:`(time, (lb, ub))`, where :math:`time` is the processing time
+            in seconds and :math:`lb` and :math:`ub` are the lower and upper bounds,
+            respectively
 
         instance(str): instance name
 
         settings(str): identification of the formulation/parameter
-        settings used in the optimization (whatever is relevant to
-        identify a given computational experiment)
+            settings used in the optimization (whatever is relevant to
+            identify a given computational experiment)
     """
 
     def __init__(self):
@@ -30,8 +34,8 @@ class ProgressLog:
         """Saves the progress log. If no extension is informed,
         the :code:`.plog` extension will be used. If only a directory is
         informed then the name will be built considering the
-        :attr:`~mip.model.ProgressLog.instance` and
-        :attr:`~mip.model.ProgressLog.settings` attributes"""
+        :attr:`~mip.ProgressLog.instance` and
+        :attr:`~mip.ProgressLog.settings` attributes"""
         if not self.instance:
             raise ValueError(
                 "Enter model name (instance name) to save experimental data."

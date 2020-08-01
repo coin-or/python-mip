@@ -132,13 +132,14 @@ class IncumbentUpdater:
         best_bound: float,
         solution: List[Tuple["mip.Var", float]],
     ) -> List[Tuple["mip.Var", float]]:
-        """method that is called when a new integer feasible solution is found
+        """Method that is called when a new integer feasible solution is found
 
         Args:
             objective_value(float): cost of the new solution found
             best_bound(float): current lower bound for the optimal solution
-            cost solution(List[Tuple[mip.Var,float]]): non-zero variables
-            in the solution
+              cost
+            solution(List[Tuple[mip.Var,float]]): non-zero variables
+              in the solution
 
         :rtype: List[Tuple[mip.Var, float]]
         """

@@ -425,7 +425,7 @@ class Constr:
         respectively) and a right-hand-side constant value. Constraints can be
         added to the model using the overloaded operator :code:`+=` or using
         the method :meth:`~mip.Model.add_constr` of the
-        :class:`~mip.model.Model` class:
+        :class:`~mip.Model` class:
 
         .. code:: python
 
@@ -494,7 +494,7 @@ class Constr:
     @property
     def pi(self) -> Optional[numbers.Real]:
         """Value for the dual variable of this constraint in the optimal
-        solution of a linear programming :class:`~mip.model.Model`. Only
+        solution of a linear programming :class:`~mip.Model`. Only
         available if a pure linear programming problem was solved (only
         continuous variables).
         """
@@ -518,7 +518,7 @@ class Constr:
 
 
 class Var:
-    """ Decision variable of the :class:`~mip.model.Model`. The creation of
+    """ Decision variable of the :class:`~mip.Model`. The creation of
     variables is performed calling the :meth:`~mip.Model.add_var`."""
 
     __slots__ = ["__model", "idx"]
@@ -670,7 +670,7 @@ class Var:
 
     @property
     def var_type(self) -> str:
-        """Variable type: ('B') BINARY, ('C') CONTINUOUS and ('I') INTEGER."""
+        """Variable type, ('B') BINARY, ('C') CONTINUOUS and ('I') INTEGER."""
         return self.__model.solver.var_get_var_type(self)
 
     @var_type.setter
