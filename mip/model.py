@@ -237,17 +237,19 @@ class Model:
 
                 x = m.add_var()
 
-            The following code creates a vector of binary variables
-            :code:`x[0], ..., x[n-1]` to model :code:`m`::
+            The following code adds a vector of binary variables
+            :code:`x[0], ..., x[n-1]` to the model :code:`m`::
 
                 x = [m.add_var(var_type=BINARY) for i in range(n)]
+
+        :rtype: mip.Var
         """
         return self.vars.add(name, lb, ub, obj, var_type, column)
 
     def add_var_tensor(
         self: "Model", shape: Tuple[int, ...], name: str, **kwargs
     ) -> mip.LinExprTensor:
-        """ Creates new variables in the model, arranging them in a numpy tensor and returning its reference
+        """Creates new variables in the model, arranging them in a numpy tensor and returning its reference
 
         Args:
             shape (Tuple[int, ...]): shape of the numpy tensor
@@ -261,6 +263,8 @@ class Model:
             to zero to model :code:`m`::
 
                 x = m.add_var_tensor((3, 5), "x")
+
+        :rtype: mip.LinExprTensor
         """
         if np is None:
             raise ModuleNotFoundError(
@@ -293,7 +297,7 @@ class Model:
         Args:
             lin_expr(mip.LinExpr): linear expression
             name(str): optional constraint name, used when saving model to
-            lp or mps files
+              lp or mps files
 
         Examples:
 
@@ -495,8 +499,8 @@ class Model:
             x_1 + x_2 + x_3 \leq 1
 
         Args:
-            constrs (Optional[List[Constrs]]): constraints that should be checked for
-                merging. If nor informed, all constraints will be checked.
+            constrs (Optional[List[mip.Constr]]): constraints that should be checked for
+              merging. All constraints will be checked if :code:`constrs` is None.
 
         """
         self.solver.clique_merge(constrs)
@@ -526,6 +530,7 @@ class Model:
                 will be discarded.
 
 
+        :rtype: mip.CutPool
         """
         if self.status != mip.OptimizationStatus.OPTIMAL:
             raise mip.SolutionNotAvailable()
@@ -1203,11 +1208,12 @@ class Model:
 
     @property
     def infeas_tol(self: "Model") -> float:
-        """Maximum allowed violation for constraints. Default value: 1e-6.
-        Tightening this value can increase the numerical precision but also
-        probably increase the running time. As floating point computations
-        always involve some loss of precision, values too close to zero will
-        likely render some models impossible to optimize."""
+        """Maximum allowed violation for constraints. 
+
+        Default value: 1e-6.  Tightening this value can increase the numerical
+        precision but also probably increase the running time. As floating
+        point computations always involve some loss of precision, values too
+        close to zero will likely render some models impossible to optimize."""
 
         return self.__infeas_tol
 
@@ -1425,7 +1431,7 @@ class Model:
         """Checks the consistency of the optimization results, i.e., if the
         solution(s) produced by the MIP solver respect all constraints and
         variable values are within acceptable bounds and are integral when
-        requested"""
+        requested."""
         if self.status in [
             mip.OptimizationStatus.FEASIBLE,
             mip.OptimizationStatus.OPTIMAL,
