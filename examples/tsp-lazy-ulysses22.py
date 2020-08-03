@@ -36,7 +36,7 @@ class SubTourLazyGenerator(ConstrsGenerator):
     def __init__(self, xv):
         self._x = xv
 
-    def generate_constrs(self, model: Model):
+    def generate_constrs(self, model: Model, depth: int = 0, npass: int = 0):
         x_, N, cp = model.translate(self._x), range(len(self._x)), CutPool()
         outa = [[j for j in N if x_[i][j].x >= 0.99] for i in N]
 

@@ -18,7 +18,7 @@ class SubTourCutGenerator(ConstrsGenerator):
     def __init__(self, Fl: List[Tuple[int, int]], x_, V_):
         self.F, self.x, self.V = Fl, x_, V_
 
-    def generate_constrs(self, model: Model):
+    def generate_constrs(self, model: Model, depth: int = 0, npass: int = 0):
         xf, V_, cp, G = model.translate(self.x), self.V, CutPool(), nx.DiGraph()
         for (u, v) in [(k, l) for (k, l) in product(V_, V_) if k != l and xf[k][l]]:
             G.add_edge(u, v, capacity=xf[u][v].x)

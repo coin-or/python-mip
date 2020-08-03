@@ -79,7 +79,7 @@ class SubTourCutGenerator(ConstrsGenerator):
     def __init__(self, Fl: List[Tuple[int, int]], x_):
         self.F, self.x = Fl, x_
 
-    def generate_constrs(self, m_: Model):
+    def generate_constrs(self, m_: Model, depth: int = 0, npass: int = 0):
         xf, cp, Gl = m_.translate(self.x), CutPool(), nx.DiGraph()
         Ar = [(i, j) for (i, j) in Arcs if xf[i][j] and xf[i][j].x >= 1e-4]
         for (u, v) in Ar:

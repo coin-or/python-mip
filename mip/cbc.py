@@ -129,8 +129,7 @@ if has_cbc:
         const double *dvec, int nint, const int *ivec,
         int nchar, char **cvec);
 
-    typedef void(*cbc_cut_callback)(void *osiSolver,
-        void *osiCuts, void *appdata);
+    typedef void(*cbc_cut_callback)(void *osiSolver, void *osiCuts, void *appdata, int level, int npass);
 
     typedef int (*cbc_incumbent_callback)(void *cbcModel,
         double obj, int nz,
@@ -985,10 +984,10 @@ class SolverCbc(Solver):
         # cut callback
         @ffi.callback(
             """
-            void (void *osi_solver, void *osi_cuts, void *app_data)
+            void (void *osi_solver, void *osi_cuts, void *app_data, int level, int npass)
         """
         )
-        def cbc_cut_callback(osi_solver, osi_cuts, app_data):
+        def cbc_cut_callback(osi_solver, osi_cuts, app_data, depth, npass):
             if (
                 osi_solver == ffi.NULL
                 or osi_cuts == ffi.NULL
@@ -1017,9 +1016,11 @@ class SolverCbc(Solver):
             osi_model.solver.osi_cutsp = osi_cuts
             osi_model.fractional = fractional
             if fractional and self.model.cuts_generator:
-                self.model.cuts_generator.generate_constrs(osi_model)
+                self.model.cuts_generator.generate_constrs(osi_model, depth, npass)
             if (not fractional) and self.model.lazy_constrs_generator:
-                self.model.lazy_constrs_generator.generate_constrs(osi_model)
+                self.model.lazy_constrs_generator.generate_constrs(
+                    osi_model, depth, npass
+                )
 
         if self.__verbose == 0:
             cbclib.Cbc_setLogLevel(self._model, 0)
