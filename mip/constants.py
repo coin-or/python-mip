@@ -40,25 +40,62 @@ INTEGER = "I"
 
 # cutting planes types
 class CutType(Enum):
-    """ Types of cuts that can be generated"""
 
-    GOMORY = 0
-    """Gomory Mixed Integer cuts [Gomo69]_ ."""
+    """Types of cuts that can be generated. Each cut type is an implementation
+    in the `COIN-OR Cut Generation Library <https://github.com/coin-or/Cgl>`_.
+    For some cut types multiple implementations are available. Sometimes these
+    implementations were designed with different objectives: for the generation
+    of Gomory cutting planes, for example, the GMI cuts are focused on numerical
+    stability, while Forrest's implementation (GOMORY) is more integrated into
+    the CBC code."""
 
-    MIR = 1
+    PROBING = 0
+    """Cuts generated evaluating the impact of fixing bounds for integer
+    variables"""
+
+    GOMORY = 1
+    """Gomory Mixed Integer cuts [Gomo69]_, as implemented by John Forrest."""
+
+    GMI = 2
+    """Gomory Mixed Integer cuts [Gomo69]_, as implemented by Giacomo
+    Nannicini, focusing on numerically safer cuts."""
+
+    RED_SPLIT = 3
+    """Reduce and split cuts [AGY05]_, implemented by Francois Margot."""
+
+    RED_SPLIT_G = 4
+    """Reduce and split cuts [AGY05]_, implemented by Giacomo Nannicini."""
+
+    FLOW_COVER = 5
+    """Lifted Simple Generalized Flow Cover Cut Generator."""
+
+    MIR = 6
     """Mixed-Integer Rounding cuts [Marc01]_."""
 
-    ZERO_HALF = 2
+    TWO_MIR = 7
+    """Two-phase Mixed-integer rounding cuts."""
+
+    LATWO_MIR = 8
+    """Lagrangean relaxation for two-phase Mixed-integer rounding cuts, as in
+    LAGomory"""
+
+    LIFT_AND_PROJECT = 9
+    """Lift-and-project cuts [BCC93]_, implemented by Pierre Bonami."""
+
+    RESIDUAL_CAPACITY = 10
+    """Residual capacity cuts [AtRa02]_, implemented by Francisco Barahona."""
+
+    ZERO_HALF = 11
     """Zero/Half cuts [Capr96]_."""
 
-    CLIQUE = 3
+    CLIQUE = 12
     """Clique cuts [Padb73]_."""
 
-    KNAPSACK_COVER = 4
-    """Knapsack cover cuts [Bala75]_."""
+    ODD_WHEEL = 13
+    """Lifted odd-hole inequalities."""
 
-    LIFT_AND_PROJECT = 5
-    """Lift-and-project cuts [BCC93]_."""
+    KNAPSACK_COVER = 14
+    """Knapsack cover cuts [Bala75]_."""
 
 
 # optimization status

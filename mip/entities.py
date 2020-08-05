@@ -190,7 +190,7 @@ class LinExpr:
                 result.append(str(abs(coeff)) if abs(coeff) != 1 else "")
                 result.append("{var} ".format(**locals()))
 
-        if hasattr(self, "__sense"):
+        if self.__sense:
             if self.__sense == mip.EQUAL:
                 result.append(" = ")
             if self.__sense == mip.LESS_OR_EQUAL:

@@ -9,8 +9,11 @@ import pytest
 import mip
 from mip import Model, OptimizationStatus, GUROBI, CBC
 
+# for each MIP in test/data, best lower and upper bounds
+# to be used when checking optimization results
 BOUNDS = {
     "bft": (-995, -995),
+    "1443_0-9": (-590001.9, -590001.9),
     "2050_3_7": (-43751.7, -43751.7),
     "gesa3_o": (2.7991e07, 2.7991e07),
     "flugpl": (1.2015e06, 1.2015e06),

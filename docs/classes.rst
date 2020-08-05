@@ -112,5 +112,7 @@ Useful functions
 .. autofunction:: mip.minimize
 .. autofunction:: mip.maximize
 .. autofunction:: mip.xsum
+.. autofunction:: mip.compute_features
+.. autofunction:: mip.features
 
 

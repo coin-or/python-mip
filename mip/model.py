@@ -511,6 +511,8 @@ class Model:
     def generate_cuts(
         self: "Model",
         cut_types: Optional[List["mip.CutType"]] = None,
+        depth: int = 0,
+        npass: int = 0,
         max_cuts: int = 8192,
         min_viol: float = 1e-4,
     ) -> mip.CutPool:
@@ -526,6 +528,8 @@ class Model:
             cut_types (List[CutType]): types of cuts that can be generated, if
                 an empty list is specified then all available cut generators
                 will be called.
+            depth: depth of the search tree, when informed the cut generator
+                may decide to generate more/less cuts depending on the depth.
             max_cuts(int): cut separation will stop when at least max_cuts
                 violated cuts were found.
             min_viol(float): cuts which are not violated by at least min_viol
@@ -537,7 +541,7 @@ class Model:
         if self.status != mip.OptimizationStatus.OPTIMAL:
             raise mip.SolutionNotAvailable()
 
-        return self.solver.generate_cuts(cut_types, max_cuts)
+        return self.solver.generate_cuts(cut_types, depth, npass, max_cuts, min_viol)
 
     @property
     def conflict_graph(self: "Model") -> "mip.ConflictGraph":
@@ -1521,6 +1525,28 @@ def xsum(terms) -> "mip.LinExpr":
     for term in terms:
         result.add_term(term)
     return result
+
+
+def compute_features(model: "Model") -> List[float]:
+    """This function computes instance features for a MIP. Features are
+    instance characteristics, such as number of columns, rows, matrix density,
+    etc. These features can be used in machine learning algorithms to recommend
+    parameter settings. To check names of features that are computed in this
+    vector use :py:meth:`~mip.features`
+
+    Arguments:
+        model(Model): the MIP model were features will be extracted
+    """
+    return model.solver.feature_values()
+
+
+def features() -> List[str]:
+    """This function returns the list of problem feature names that can be
+    computed :py:meth:`~mip.compute_features`
+     """
+    import mip.cbc
+
+    return mip.cbc.feature_names()
 
 
 # function aliases

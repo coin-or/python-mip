@@ -60,6 +60,8 @@ class Solver:
     def generate_cuts(
         self,
         cut_types: Optional[List[mip.CutType]] = None,
+        depth: int = 0,
+        npass: int = 0,
         max_cuts: int = mip.INT_MAX,
         min_viol: numbers.Real = 1e-4,
     ) -> "mip.CutPool":
@@ -295,4 +297,10 @@ class Solver:
         """Returns all assignment conflicting with the assignment in v1 in the
         conflict graph.
         """
+        pass
+
+    def feature_values(self: "Solver") -> List[float]:
+        pass
+
+    def feature_names(self: "Solver") -> List[str]:
         pass

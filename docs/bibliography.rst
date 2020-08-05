@@ -1,8 +1,12 @@
 .. rubric::
 
+.. [AGY05] K. Andersen, G. Cornuéjols and Y. Li, Reduce-and-Split Cuts: Improving the Performance of Mixed-Integer Gomory Cuts. *Management Science*, 51, 1593-1732, 2005.
+
 .. [Ande73] L.G. Anderson: A Simulation Study of some Dynamic Channel Assignment Algorithms in a High Capacity Mobile Telecommunications System. *IEEE Transactions on Communications*, 21:1294--1301. 1973.
 
 .. [Appleg06] D.L. Applegate, R.E. Bixby, V. Chvatal and W.J. Cook. *The traveling salesman problem: a computational study*. Princeton university press. 2006.
+
+.. [AtRa02] A Atamtürk, D Rajan. On splittable and unsplittable flow capacitated network design arc–set polyhedra. *Mathematical Programming*, 92(2), 315-333, 2002.
 
 .. [Bala75] E. Balas. Facets of the knapsack polytope. *Mathematical Programming*, 8, 146-164, 1975.
 
@@ -21,6 +25,8 @@
 .. [FGL05] M. Fischetti, F. Glover, and A. Lodi. The feasibility pump. *Mathematical Programming*, 104(1):91–104, 2005.
 
 .. [Fisch14] M. Fischetti, M. Monaci. Exploiting erraticism in search. *Operations Research*, 62:114--122, 2014.
+
+.. [FiSa11] M. Fischetti, and D. Salvagnin. A relax-and-cut framework for Gomory mixed-integer cuts. *Mathematical Programming Computation*, 3(2), 79-102, 2011.
 
 .. [Gomo69] R.E. Gomory. Some polyhedra related to combinatorial problems. *Linear Algebra and its Applications*, 2(4):451-558, 1969.
 
