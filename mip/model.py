@@ -15,6 +15,7 @@ except ImportError:
 
 try:
     import mip.gurobi
+
     has_gurobi = True
 except ImportError:
     has_gurobi = False
@@ -95,6 +96,7 @@ class Model:
             else:
                 if has_gurobi:
                     import mip.gurobi
+
                     self.solver = mip.gurobi.SolverGurobi(self, name, sense)
                     self.solver_name = mip.GUROBI
                 else:
