@@ -22,7 +22,7 @@ except ImportError:
 
 
 class Model:
-    """ Mixed Integer Programming Model
+    """Mixed Integer Programming Model
 
     This is the main class, providing methods for building, optimizing,
     querying optimization results and re-optimizing Mixed-Integer Programming
@@ -218,7 +218,7 @@ class Model:
         var_type: str = mip.CONTINUOUS,
         column: "mip.Column" = None,
     ) -> "mip.Var":
-        """ Creates a new variable in the model, returning its reference
+        """Creates a new variable in the model, returning its reference
 
         Args:
             name (str): variable name (optional)
@@ -341,19 +341,19 @@ class Model:
     def add_lazy_constr(self: "Model", expr: "mip.LinExpr"):
         """Adds a lazy constraint
 
-           A lazy constraint is a constraint that is only inserted
-           into the model after the first integer solution that violates
-           it is found. When lazy constraints are used a restricted
-           pre-processing is executed since the complete model is not
-           available at the beginning. If the number of lazy constraints
-           is too large then they can be added during the search process
-           by implementing a
-           :class:`~mip.ConstrsGenerator` and setting the
-           property :attr:`~mip.Model.lazy_constrs_generator` of
-           :class:`Model`.
+        A lazy constraint is a constraint that is only inserted
+        into the model after the first integer solution that violates
+        it is found. When lazy constraints are used a restricted
+        pre-processing is executed since the complete model is not
+        available at the beginning. If the number of lazy constraints
+        is too large then they can be added during the search process
+        by implementing a
+        :class:`~mip.ConstrsGenerator` and setting the
+        property :attr:`~mip.Model.lazy_constrs_generator` of
+        :class:`Model`.
 
-           Args:
-               expr(mip.LinExpr): the linear constraint
+        Args:
+            expr(mip.LinExpr): the linear constraint
         """
         self.solver.add_lazy_constr(expr)
 
@@ -420,7 +420,7 @@ class Model:
         self.__threads = 0
 
     def copy(self: "Model", solver_name: str = "") -> "Model":
-        """ Creates a copy of the current model
+        """Creates a copy of the current model
 
         Args:
             solver_name(str): solver name (optional)
@@ -452,7 +452,7 @@ class Model:
         return copy
 
     def constr_by_name(self: "Model", name: str) -> Optional["mip.Constr"]:
-        """ Queries a constraint by its name
+        """Queries a constraint by its name
 
         Args:
             name(str): constraint name
@@ -562,7 +562,7 @@ class Model:
         max_nodes_same_incumbent: int = mip.INT_MAX,
         relax: bool = False,
     ) -> mip.OptimizationStatus:
-        """ Optimizes current model
+        """Optimizes current model
 
         Optimizes current model, optionally specifying processing limits.
 
@@ -699,7 +699,7 @@ class Model:
         )
 
     def relax(self: "Model"):
-        """ Relax integrality constraints of variables
+        """Relax integrality constraints of variables
 
         Changes the type of all integer and binary variables to
         continuous. Bounds are preserved.
@@ -759,10 +759,10 @@ class Model:
     def name(self: "Model") -> str:
         """:The problem (instance) name.
 
-           This name should be used to identify the instance that this model
-           refers, e.g.: productionPlanningMay19. This name is stored when
-           saving (:meth:`~mip.Model.write`) the model in :code:`.LP`
-           or :code:`.MPS` file formats.
+        This name should be used to identify the instance that this model
+        refers, e.g.: productionPlanningMay19. This name is stored when
+        saving (:meth:`~mip.Model.write`) the model in :code:`.LP`
+        or :code:`.MPS` file formats.
         """
         return self.solver.get_problem_name()
 
@@ -822,8 +822,7 @@ class Model:
 
     @property
     def verbose(self: "Model") -> int:
-        """0 to disable solver messages printed on the screen, 1 to enable
-        """
+        """0 to disable solver messages printed on the screen, 1 to enable"""
         return self.solver.get_verbose()
 
     @verbose.setter
@@ -859,7 +858,7 @@ class Model:
 
     @property
     def sense(self: "Model") -> str:
-        """ The optimization sense
+        """The optimization sense
 
         Returns:
             the objective function sense, MINIMIZE (default) or (MAXIMIZE)
@@ -873,8 +872,7 @@ class Model:
 
     @property
     def objective_const(self: "Model") -> float:
-        """Returns the constant part of the objective function
-        """
+        """Returns the constant part of the objective function"""
         return self.solver.get_objective_const()
 
     @objective_const.setter
@@ -891,13 +889,13 @@ class Model:
     @property
     def gap(self: "Model") -> float:
         r"""
-           The optimality gap considering the cost of the best solution found
-           (:attr:`~mip.Model.objective_value`)
-           :math:`b` and the best objective bound :math:`l`
-           (:attr:`~mip.Model.objective_bound`) :math:`g` is
-           computed as: :math:`g=\\frac{|b-l|}{|b|}`.
-           If no solution was found or if :math:`b=0` then :math:`g=\infty`.
-           If the optimal solution was found then :math:`g=0`.
+        The optimality gap considering the cost of the best solution found
+        (:attr:`~mip.Model.objective_value`)
+        :math:`b` and the best objective bound :math:`l`
+        (:attr:`~mip.Model.objective_bound`) :math:`g` is
+        computed as: :math:`g=\\frac{|b-l|}{|b|}`.
+        If no solution was found or if :math:`b=0` then :math:`g=\infty`.
+        If the optimal solution was found then :math:`g=0`.
         """
         return self.__gap
 
@@ -926,9 +924,9 @@ class Model:
     @property
     def store_search_progress_log(self: "Model") -> bool:
         """
-            Wether :attr:`~mip.Model.search_progress_log` will be stored
-            or not when optimizing. Default False. Activate it if you want to
-            analyze bound improvements over time."""
+        Wether :attr:`~mip.Model.search_progress_log` will be stored
+        or not when optimizing. Default False. Activate it if you want to
+        analyze bound improvements over time."""
         return self.__store_search_progress_log
 
     @store_search_progress_log.setter
@@ -988,7 +986,9 @@ class Model:
         self.__cuts_generator = cuts_generator
 
     @property
-    def lazy_constrs_generator(self: "Model",) -> Optional["mip.ConstrsGenerator"]:
+    def lazy_constrs_generator(
+        self: "Model",
+    ) -> Optional["mip.ConstrsGenerator"]:
         """A lazy constraints generator is an
         :class:`~mip.ConstrsGenerator` object that receives
         an integer solution and checks its feasibility. If
@@ -1047,8 +1047,8 @@ class Model:
     @property
     def pump_passes(self: "Model") -> int:
         """Number of passes of the Feasibility Pump [FGL05]_ heuristic.
-           You may increase this value if you are not getting feasible
-           solutions."""
+        You may increase this value if you are not getting feasible
+        solutions."""
         return self.solver.get_pump_passes()
 
     @pump_passes.setter
@@ -1211,7 +1211,7 @@ class Model:
 
     @property
     def infeas_tol(self: "Model") -> float:
-        """Maximum allowed violation for constraints. 
+        """Maximum allowed violation for constraints.
 
         Default value: 1e-6.  Tightening this value can increase the numerical
         precision but also probably increase the running time. As floating
@@ -1340,7 +1340,7 @@ class Model:
 
     @property
     def status(self: "Model") -> mip.OptimizationStatus:
-        """ optimization status, which can be OPTIMAL(0), ERROR(-1),
+        """optimization status, which can be OPTIMAL(0), ERROR(-1),
         INFEASIBLE(1), UNBOUNDED(2). When optimizing problems
         with integer variables some additional cases may happen, FEASIBLE(3)
         for the case when a feasible solution was found but optimality was
@@ -1547,7 +1547,7 @@ def compute_features(model: "Model") -> List[float]:
 def features() -> List[str]:
     """This function returns the list of problem feature names that can be
     computed :py:meth:`~mip.compute_features`
-     """
+    """
     import mip.cbc
 
     return mip.cbc.feature_names()

@@ -57,7 +57,8 @@ try:
             if not libfile:
                 libfile = glob(
                     os.path.join(
-                        os.environ["GUROBI_HOME"], "lib/libgurobi.so.[0-9].[0-9].*",
+                        os.environ["GUROBI_HOME"],
+                        "lib/libgurobi.so.[0-9].[0-9].*",
                     )
                 )
 
@@ -441,7 +442,15 @@ class SolverGurobi(Solver):
         vtype = var_type.encode("utf-8")
 
         st = GRBaddvar(
-            self._model, nz, vind, vval, obj, lb, ub, vtype, name.encode("utf-8"),
+            self._model,
+            nz,
+            vind,
+            vval,
+            obj,
+            lb,
+            ub,
+            vtype,
+            name.encode("utf-8"),
         )
         if st != 0:
             raise ParameterNotAvailable(
@@ -1311,8 +1320,8 @@ class SolverGurobi(Solver):
 
 class SolverGurobiCB(SolverGurobi):
     """Just like previous solver, but aware that
-       running in the callback, so some methods
-       should be different (e.g. to get the frac sol)"""
+    running in the callback, so some methods
+    should be different (e.g. to get the frac sol)"""
 
     def __init__(
         self,
@@ -1465,7 +1474,10 @@ class SolverGurobiCB(SolverGurobi):
 
 class ModelGurobiCB(Model):
     def __init__(
-        self, grb_model: CData = ffi.NULL, cb_data: CData = ffi.NULL, where: int = -1,
+        self,
+        grb_model: CData = ffi.NULL,
+        cb_data: CData = ffi.NULL,
+        where: int = -1,
     ):
         # initializing variables with default values
         self.solver_name = "gurobicb"

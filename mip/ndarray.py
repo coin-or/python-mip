@@ -6,11 +6,11 @@ try:
     import numpy as np
 
     class LinExprTensor(np.ndarray):
-        """ Tensor of :class:`~mip.Var` or :class:`~mip.LinExpr` elements
+        """Tensor of :class:`~mip.Var` or :class:`~mip.LinExpr` elements
 
         This is a Numpy ndarray subclass with the only purpose to change the default
         behaviour when the comparison operators are used.
-        For the operators :code:`<=`, :code:`>=`, :code:`==`, the default ndarray 
+        For the operators :code:`<=`, :code:`>=`, :code:`==`, the default ndarray
         behavior is to perform element-wise comparisons and then cast the results to
         :code:`bool`. This class does not cast the results to :code:`bool`.
 

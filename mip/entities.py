@@ -89,7 +89,8 @@ class LinExpr:
                 self.add_var(variables[i], coeffs[i])
 
     def __add__(
-        self, other: Union["mip.Var", "mip.LinExpr", numbers.Real],
+        self,
+        other: Union["mip.Var", "mip.LinExpr", numbers.Real],
     ) -> "mip.LinExpr":
         if isinstance(other, numbers.Real) and fabs(other) < mip.EPS:
             return self
@@ -106,17 +107,20 @@ class LinExpr:
         return result
 
     def __radd__(
-        self, other: Union["mip.Var", "mip.LinExpr", numbers.Real],
+        self,
+        other: Union["mip.Var", "mip.LinExpr", numbers.Real],
     ) -> "mip.LinExpr":
         return self.__add__(other)
 
     def __iadd__(
-        self, other: Union["mip.Var", "mip.LinExpr", numbers.Real],
+        self,
+        other: Union["mip.Var", "mip.LinExpr", numbers.Real],
     ) -> "mip.LinExpr":
         raise DeprecationWarning("Inplace operations are deprecated")
 
     def __sub__(
-        self, other: Union["mip.Var", "mip.LinExpr", numbers.Real],
+        self,
+        other: Union["mip.Var", "mip.LinExpr", numbers.Real],
     ) -> "mip.LinExpr":
         result = self.copy()
         if isinstance(other, Var):
@@ -130,12 +134,14 @@ class LinExpr:
         return result
 
     def __rsub__(
-        self, other: Union["mip.Var", "mip.LinExpr", numbers.Real],
+        self,
+        other: Union["mip.Var", "mip.LinExpr", numbers.Real],
     ) -> "mip.LinExpr":
         return (-self).__add__(other)
 
     def __isub__(
-        self, other: Union["mip.Var", "mip.LinExpr", numbers.Real],
+        self,
+        other: Union["mip.Var", "mip.LinExpr", numbers.Real],
     ) -> "mip.LinExpr":
         raise DeprecationWarning("Inplace operations are deprecated")
 
@@ -216,12 +222,18 @@ class LinExpr:
         result.__sense = "="
         return result
 
-    def __le__(self, other: Union["mip.Var", "LinExpr", numbers.Real],) -> "mip.LinExpr":
+    def __le__(
+        self,
+        other: Union["mip.Var", "LinExpr", numbers.Real],
+    ) -> "mip.LinExpr":
         result = self - other
         result.__sense = "<"
         return result
 
-    def __ge__(self, other: Union["mip.Var", "LinExpr", numbers.Real],) -> "mip.LinExpr":
+    def __ge__(
+        self,
+        other: Union["mip.Var", "LinExpr", numbers.Real],
+    ) -> "mip.LinExpr":
         result = self - other
         result.__sense = ">"
         return result
@@ -418,24 +430,24 @@ class LinExpr:
 
 
 class Constr:
-    """ A row (constraint) in the constraint matrix.
+    """A row (constraint) in the constraint matrix.
 
-        A constraint is a specific :class:`~LinExpr` that includes a
-        sense (<, > or == or less-or-equal, greater-or-equal and equal,
-        respectively) and a right-hand-side constant value. Constraints can be
-        added to the model using the overloaded operator :code:`+=` or using
-        the method :meth:`~mip.Model.add_constr` of the
-        :class:`~mip.Model` class:
+    A constraint is a specific :class:`~LinExpr` that includes a
+    sense (<, > or == or less-or-equal, greater-or-equal and equal,
+    respectively) and a right-hand-side constant value. Constraints can be
+    added to the model using the overloaded operator :code:`+=` or using
+    the method :meth:`~mip.Model.add_constr` of the
+    :class:`~mip.Model` class:
 
-        .. code:: python
+    .. code:: python
 
-          m += 3*x1 + 4*x2 <= 5
+      m += 3*x1 + 4*x2 <= 5
 
-        summation expressions are also supported:
+    summation expressions are also supported:
 
-        .. code:: python
+    .. code:: python
 
-          m += xsum(x[i] for i in range(n)) == 1
+      m += xsum(x[i] for i in range(n)) == 1
     """
 
     __slots__ = ["__model", "idx"]
@@ -518,7 +530,7 @@ class Constr:
 
 
 class Var:
-    """ Decision variable of the :class:`~mip.Model`. The creation of
+    """Decision variable of the :class:`~mip.Model`. The creation of
     variables is performed calling the :meth:`~mip.Model.add_var`."""
 
     __slots__ = ["__model", "idx"]
@@ -755,7 +767,9 @@ class ConflictGraph:
         return self.model.solver.cgraph_density()
 
     def conflicting(
-        self, e1: Union["mip.LinExpr", "mip.Var"], e2: Union["mip.LinExpr", "mip.Var"],
+        self,
+        e1: Union["mip.LinExpr", "mip.Var"],
+        e2: Union["mip.LinExpr", "mip.Var"],
     ) -> bool:
         """Checks if two assignments of binary variables are in conflict.
 

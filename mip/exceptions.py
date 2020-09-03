@@ -9,8 +9,8 @@ class MipBaseException(Exception):
 
 class ProgrammingError(MipBaseException):
     """Exception that is raised when the calling program performs an invalid
-     or nonsensical operation.
-     Inherits from :attr:`mip.MipBaseException`."""
+    or nonsensical operation.
+    Inherits from :attr:`mip.MipBaseException`."""
 
 
 class InterfacingError(MipBaseException):

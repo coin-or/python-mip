@@ -38,7 +38,9 @@ class Solver:
         pass
 
     def add_sos(
-        self: "Solver", sos: List[Tuple["mip.Var", numbers.Real]], sos_type: int,
+        self: "Solver",
+        sos: List[Tuple["mip.Var", numbers.Real]],
+        sos_type: int,
     ):
         pass
 
@@ -70,7 +72,10 @@ class Solver:
     def clique_merge(self, constrs: Optional[List["mip.Constr"]] = None):
         pass
 
-    def optimize(self: "Solver", relax: bool = False,) -> "mip.OptimizationStatus":
+    def optimize(
+        self: "Solver",
+        relax: bool = False,
+    ) -> "mip.OptimizationStatus":
         pass
 
     def get_objective_value(self: "Solver") -> numbers.Real:
@@ -255,7 +260,7 @@ class Solver:
 
     def var_get_x(self: "Solver", var: "mip.Var") -> numbers.Real:
         """Assumes that the solution is available (should be checked
-           before calling it"""
+        before calling it"""
 
     def var_get_xi(self: "Solver", var: "mip.Var", i: int) -> numbers.Real:
         pass

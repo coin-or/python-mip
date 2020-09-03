@@ -44,9 +44,7 @@ class ColumnsGenerator:
 
 
 class ConstrsGenerator:
-    """Abstract class for implementing cuts and lazy constraints generators.
-
-    """
+    """Abstract class for implementing cuts and lazy constraints generators."""
 
     def __init__(self):
         pass
@@ -90,8 +88,7 @@ class ConstrsGenerator:
 
 class CutPool:
     def __init__(self):
-        """Stores a list list of different cuts, repeated cuts are discarded.
-        """
+        """Stores a list list of different cuts, repeated cuts are discarded."""
         self.__cuts = []
 
         # positions for each hash code to speedup

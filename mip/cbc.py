@@ -698,7 +698,15 @@ class SolverCbc(Solver):
             CHAR_ONE if coltype.upper() == "B" or coltype.upper() == "I" else CHAR_ZERO
         )
         cbclib.Cbc_addCol(
-            self._model, name.encode("utf-8"), lb, ub, obj, isInt, numnz, vind, vval,
+            self._model,
+            name.encode("utf-8"),
+            lb,
+            ub,
+            obj,
+            isInt,
+            numnz,
+            vind,
+            vval,
         )
 
     def update_conflict_graph(self: "SolverCbc"):
@@ -711,7 +719,9 @@ class SolverCbc(Solver):
         return cbclib.CG_density(cg)
 
     def conflicting(
-        self: "SolverCbc", e1: Union["LinExpr", "Var"], e2: Union["LinExpr", "Var"],
+        self: "SolverCbc",
+        e1: Union["LinExpr", "Var"],
+        e2: Union["LinExpr", "Var"],
     ) -> bool:
         idx1, idx2 = (None, None)
         if isinstance(e1, Var):
@@ -940,7 +950,11 @@ class SolverCbc(Solver):
             nc1 = OsiCuts_sizeRowCuts(osi_cuts)
 
             Cbc_generateCuts(
-                self._model, int(cut_type.value), osi_cuts, int(depth), int(npass),
+                self._model,
+                int(cut_type.value),
+                osi_cuts,
+                int(depth),
+                int(npass),
             )
             nc2 = OsiCuts_sizeRowCuts(osi_cuts)
             if self.__verbose >= 1:
@@ -1189,7 +1203,9 @@ class SolverCbc(Solver):
         cbclib.Cbc_setIntParam(self._model, INT_PARAM_RANDOM_SEED, self.model.seed)
 
         cbclib.Cbc_setIntParam(
-            self._model, INT_PARAM_ROUND_INT_VARS, int(self.model.round_int_vars),
+            self._model,
+            INT_PARAM_ROUND_INT_VARS,
+            int(self.model.round_int_vars),
         )
 
         cbclib.Cbc_setIntParam(
@@ -1281,7 +1297,9 @@ class SolverCbc(Solver):
 
         return OptimizationStatus.NO_SOLUTION_FOUND
 
-    def get_log(self,) -> List[Tuple[numbers.Real, Tuple[numbers.Real, numbers.Real]]]:
+    def get_log(
+        self,
+    ) -> List[Tuple[numbers.Real, Tuple[numbers.Real, numbers.Real]]]:
         return self.__log
 
     def get_objective_bound(self) -> numbers.Real:
@@ -1722,7 +1740,15 @@ class SolverOsi(Solver):
             CHAR_ONE if var_type.upper() == "B" or var_type.upper() == "I" else CHAR_ZERO
         )
         cbclib.Osi_addCol(
-            self.osi, name.encode("utf-8"), lb, ub, obj, isInt, numnz, vind, vval,
+            self.osi,
+            name.encode("utf-8"),
+            lb,
+            ub,
+            obj,
+            isInt,
+            numnz,
+            vind,
+            vval,
         )
 
     def add_constr(self, lin_expr: "LinExpr", name: str = ""):
@@ -1836,7 +1862,9 @@ class SolverOsi(Solver):
     def get_objective_value(self) -> numbers.Real:
         return self.__obj_val
 
-    def get_log(self,) -> List[Tuple[numbers.Real, Tuple[numbers.Real, numbers.Real]]]:
+    def get_log(
+        self,
+    ) -> List[Tuple[numbers.Real, Tuple[numbers.Real, numbers.Real]]]:
         return []
 
     def get_objective_value_i(self, i: int) -> numbers.Real:

@@ -5,22 +5,22 @@ import mip
 
 
 class VarList(Sequence):
-    """ List of model variables (:class:`~mip.Var`).
+    """List of model variables (:class:`~mip.Var`).
 
-        The number of variables of a model :code:`m` can be queried as
-        :code:`len(m.vars)` or as :code:`m.num_cols`.
+    The number of variables of a model :code:`m` can be queried as
+    :code:`len(m.vars)` or as :code:`m.num_cols`.
 
-        Specific variables can be retrieved by their indices or names.
-        For example, to print the lower bounds of the first
-        variable or of a varible named :code:`z`, you can use, respectively:
+    Specific variables can be retrieved by their indices or names.
+    For example, to print the lower bounds of the first
+    variable or of a varible named :code:`z`, you can use, respectively:
 
-        .. code-block:: python
+    .. code-block:: python
 
-            print(m.vars[0].lb)
+        print(m.vars[0].lb)
 
-        .. code-block:: python
+    .. code-block:: python
 
-            print(m.vars['z'].lb)
+        print(m.vars['z'].lb)
     """
 
     def __init__(self: "VarList", model: "mip.Model"):
