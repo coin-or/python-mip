@@ -1465,7 +1465,10 @@ class Model:
                         )
                     )
             for v in self.vars:
-                if v.x <= v.lb - 1e-10 or v.x >= v.ub + 1e-10:
+                if (
+                    v.x <= v.lb - self.infeas_tol - 1e-20
+                    or v.x >= v.ub + self.infeas_tol + 1e-20
+                ):
                     raise mip.InfeasibleSolution(
                         "Invalid solution value for "
                         "variable {}={} variable bounds"

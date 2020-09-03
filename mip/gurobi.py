@@ -658,6 +658,9 @@ class SolverGurobi(Solver):
         self.set_int_param("Seed", self.model.seed)
         self.set_int_param("PoolSolutions", self.model.sol_pool_size)
 
+        self.set_mip_gap(self.model.max_mip_gap)
+        self.set_mip_gap_abs(self.model.max_mip_gap_abs)
+
         # executing Gurobi to solve the formulation
         self.__clear_sol()
 
