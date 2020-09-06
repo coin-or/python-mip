@@ -2137,7 +2137,7 @@ class SolverOsi(Solver):
         col = Column()
 
         for i in range(numnz):
-            col.constrs.append(Constr(self, cidx[i]))
+            col.constrs.append(Constr(self.model, cidx[i]))
             col.coeffs.append(ccoef[i])
 
         return col
