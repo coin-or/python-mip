@@ -207,6 +207,12 @@ class Solver:
 
     def constr_set_rhs(self: "Solver", idx: int, rhs: numbers.Real):
         pass
+    
+    def constr_get_priority(self: "Solver", idx: int) -> mip.constants.ConstraintPriority:
+        pass
+
+    def constr_set_priority(self: "Solver", idx: int, priority: mip.constants.ConstraintPriority):
+        pass
 
     def constr_get_name(self: "Solver", idx: int) -> str:
         pass
