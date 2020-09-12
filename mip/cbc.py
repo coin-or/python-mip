@@ -141,6 +141,11 @@ if has_cbc:
 
     void Cbc_readLp(Cbc_Model *model, const char *file);
 
+    int Cbc_readBasis(Cbc_Model *model, const char *filename);
+
+    int Cbc_writeBasis(Cbc_Model *model, const char *filename, char
+        writeValues, int formatType);
+
     void Cbc_readMps(Cbc_Model *model, const char *file);
 
     char Cbc_supportsGzip();
@@ -1441,9 +1446,11 @@ class SolverCbc(Solver):
             cbclib.Cbc_writeMps(self._model, fpstr)
         elif ".lp" in file_path.lower():
             cbclib.Cbc_writeLp(self._model, fpstr)
+        elif ".bas" in file_path.lower():
+            cbclib.Cbc_writeBasis(self._model, fpstr, CHAR_ONE, 2)
         else:
             raise ValueError(
-                "Enter a valid extension (.lp or .mps) \
+                "Enter a valid extension (.lp, .mps or .bas) \
                 to indicate the file format"
             )
 
@@ -1464,9 +1471,18 @@ class SolverCbc(Solver):
             cbclib.Cbc_readMps(self._model, fpstr)
         elif ".lp" in file_path.lower():
             cbclib.Cbc_readLp(self._model, fpstr)
+        elif ".bas" in file_path.lower():
+            status = cbclib.Cbc_readBasis(self._model, fpstr)
+            if status == -1:
+                raise IOError("Error reading %s" % file_path)
+            elif status == 0:
+                logger.warning("No values read from %s" % file_path)
+            elif status == 1:
+                logger.info("Optimal LP basis successfully loaded.")
+
         else:
             raise ValueError(
-                "Enter a valid extension (.lp or .mps) \
+                "Enter a valid extension (.lp, .mps or .bas) \
                 to indicate the file format"
             )
 
