@@ -449,11 +449,12 @@ class Constr:
       m += xsum(x[i] for i in range(n)) == 1
     """
 
-    __slots__ = ["__model", "idx"]
+    __slots__ = ["__model", "idx", "__priority"]
 
-    def __init__(self, model: "mip.Model", idx: int):
+    def __init__(self, model: "mip.Model", idx: int, priority : "mip.constants.ConstraintPriority" = None):
         self.__model = model
         self.idx = idx
+        self.__priority = priority
 
     def __hash__(self) -> int:
         return self.idx
@@ -530,11 +531,11 @@ class Constr:
     @property
     def priority(self) -> mip.constants.ConstraintPriority:
         """priority value"""
-        return self.__model.solver.constr_get_priority(self.idx)
+        return self.__priority
         
     @priority.setter
     def priority(self, priority: mip.constants.ConstraintPriority):
-        self.__model.solver.constr_set_priority(self.idx, priority)
+        self.__priority = priority
         
 
 class Var:

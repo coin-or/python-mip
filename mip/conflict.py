@@ -84,7 +84,7 @@ class ConflictFinder:
                 mip.OptimizationStatus.FEASIBLE,
                 mip.OptimizationStatus.OPTIMAL,
             ]:
-                aux_model.add_constr(inc_crt.expr, name=inc_crt.name)
+                aux_model.add_constr(inc_crt.expr, name=inc_crt.name, priority=inc_crt.priority)
 
         iis = aux_model.constrs
 
@@ -196,7 +196,7 @@ class ConflictFinder:
                 name=var.name, lb=-mip.INF, ub=mip.INF, var_type=mip.CONTINUOUS
             )
         for crt in linear_constraints + variable_bound_constraints:
-            iis_aux_model.add_constr(crt.expr, name=crt.name)
+            iis_aux_model.add_constr(crt.expr, name=crt.name, priority=crt.priority)
 
         iis_aux_model.optimize()
         if iis_aux_model.status == mip.OptimizationStatus.INFEASIBLE:
@@ -345,7 +345,6 @@ class ConflictRelaxer:
         Args:
             iis (mip.ConstrList): IIS constraint list 
             relaxer_objective (str, optional): objective function to use when relaxing. Defaults to 'min_abs_slack_val'.
-            big_m (float, optional): this is just for abs value codification. Defaults to 10e10.
 
         Returns:
             dict: a slack variable dictionary with the value of the {constraint_name:slack.value} pair to be added to each constraint in order to make the IIS feasible
@@ -386,7 +385,7 @@ class ConflictRelaxer:
                 # add relaxed constraint to model
                 relax_expr = crt.expr + slack_vars[crt.name]
                 relax_iis_model.add_constr(
-                    relax_expr, name="{}_relaxed".format(crt.name)
+                    relax_expr, name="{}_relaxed".format(crt.name),
                 )
 
                 # add abs(slack) variable encoding constraints
@@ -401,7 +400,7 @@ class ConflictRelaxer:
 
             else:
                 # if not to be relaxed we added directly to the model
-                relax_iis_model.add_constr(crt.expr, name="{}_original".format(crt.name))
+                relax_iis_model.add_constr(crt.expr, name="{}_original".format(crt.name), priority=crt.priority)
 
         # find the min abs value of the slack variables
         relax_iis_model.objective = mip.xsum(list(abs_slack_vars.values()))
@@ -434,7 +433,7 @@ class ConflictRelaxer:
             crt_original = relaxed_model.constr_by_name(crt_name)
 
             relax_expr = crt_original.expr + slack_dict[crt_name]
-            relaxed_model.add_constr(relax_expr, name=crt_original.name)
+            relaxed_model.add_constr(relax_expr, name=crt_original.name, priority = crt_original.priority )
             relaxed_model.remove(crt_original)  # remove constraint
 
         return relaxed_model
