@@ -5,6 +5,7 @@ import mip
 from math import fabs
 import math
 
+
 class Column:
     """A column contains all the non-zero entries of a variable in the
     constraint matrix. To create a variable see
@@ -451,7 +452,12 @@ class Constr:
 
     __slots__ = ["__model", "idx", "__priority"]
 
-    def __init__(self, model: "mip.Model", idx: int, priority : "mip.constants.ConstraintPriority" = None):
+    def __init__(
+        self,
+        model: "mip.Model",
+        idx: int,
+        priority: "mip.constants.ConstraintPriority" = None,
+    ):
         self.__model = model
         self.idx = idx
         self.__priority = priority
@@ -532,11 +538,11 @@ class Constr:
     def priority(self) -> mip.constants.ConstraintPriority:
         """priority value"""
         return self.__priority
-        
+
     @priority.setter
     def priority(self, priority: mip.constants.ConstraintPriority):
         self.__priority = priority
-        
+
 
 class Var:
     """Decision variable of the :class:`~mip.Model`. The creation of

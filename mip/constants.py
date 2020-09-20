@@ -169,7 +169,8 @@ class LP_Method(Enum):
 
 
 class ConstraintPriority(Enum):
-    """ A constraint categorization level that can be used for the relaxation algorithms"""    
+    """ A constraint categorization level that can be used for the relaxation algorithms"""
+
     # constraints levels
     VERY_LOW_PRIORITY = 1
     LOW_PRIORITY = 2

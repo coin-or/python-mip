@@ -291,7 +291,10 @@ class Model:
         return np.array(_add_tensor(self, shape, name, **kwargs)).view(mip.LinExprTensor)
 
     def add_constr(
-        self: "Model", lin_expr: "mip.LinExpr", name: str = "", priority: "mip.constants.ConstraintPriority" = None 
+        self: "Model",
+        lin_expr: "mip.LinExpr",
+        name: str = "",
+        priority: "mip.constants.ConstraintPriority" = None,
     ) -> "mip.Constr":
         r"""Creates a new constraint (row).
 
