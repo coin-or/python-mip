@@ -1,13 +1,7 @@
 import logging
-import sys
-from copy import copy, deepcopy
 from enum import Enum
-from functools import reduce, total_ordering
-from operator import add
-from typing import Any, Dict, List, Optional, Tuple, Union
 
 import mip
-import numpy as np
 
 logger = logging.getLogger("conflict")
 
