@@ -381,7 +381,7 @@ class LinExpr:
         self.__sense = value
 
     @property
-    def violation(self):
+    def violation(self) -> Optional[numbers.Real]:
         """Amount that current solution violates this constraint
 
         If a solution is available, than this property indicates how much
@@ -389,6 +389,7 @@ class LinExpr:
         """
         lhs = sum(coef * var.x for (var, coef) in self.__expr.items())
         rhs = -self.const
+        viol = None
         if self.sense == "=":
             viol = abs(lhs - rhs)
         elif self.sense == "<":
