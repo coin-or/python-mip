@@ -15,8 +15,8 @@ class Column:
 
     def __init__(
         self,
-        constrs: Optional[List["mip.Constr"]] = None,
-        coeffs: Optional[List[numbers.Real]] = None,
+        constrs=None,  # type : Optional[List["mip.Constr"]]
+        coeffs=None,  # type: Optional[List[numbers.Real]]
     ):
         self.constrs = constrs
         self.coeffs = coeffs
