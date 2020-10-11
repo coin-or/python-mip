@@ -166,3 +166,21 @@ class LP_Method(Enum):
 
     BARRIER = 3
     """The barrier algorithm"""
+
+
+class ConstraintPriority(Enum):
+    """ A constraint categorization level that can be used for the relaxation algorithms"""
+
+    # constraints levels
+    VERY_LOW_PRIORITY = 1
+    LOW_PRIORITY = 2
+    NORMAL_PRIORITY = 3
+    MID_PRIORITY = 4
+    HIGH_PRIORITY = 5
+    VERY_HIGH_PRIORITY = 6
+    MANDATORY = 7
+
+    def __lt__(self, other):
+        if self.__class__ is other.__class__:
+            return self.value < other.value
+        return NotImplemented

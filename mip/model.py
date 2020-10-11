@@ -291,7 +291,10 @@ class Model:
         return np.array(_add_tensor(self, shape, name, **kwargs)).view(mip.LinExprTensor)
 
     def add_constr(
-        self: "Model", lin_expr: "mip.LinExpr", name: str = ""
+        self: "Model",
+        lin_expr: "mip.LinExpr",
+        name: str = "",
+        priority: "mip.constants.ConstraintPriority" = None,
     ) -> "mip.Constr":
         r"""Creates a new constraint (row).
 
@@ -301,6 +304,8 @@ class Model:
             lin_expr(mip.LinExpr): linear expression
             name(str): optional constraint name, used when saving model to
               lp or mps files
+            priority(mip.constants.ConstraintPriority): optional constraint
+              priority
 
         Examples:
 
@@ -336,7 +341,7 @@ class Model:
         #     raise mip.InvalidLinExpr(
         #         "An empty linear expression cannot be used as a constraint."
         #     )
-        return self.constrs.add(lin_expr, name)
+        return self.constrs.add(lin_expr, name, priority)
 
     def add_lazy_constr(self: "Model", expr: "mip.LinExpr"):
         """Adds a lazy constraint
@@ -441,10 +446,11 @@ class Model:
         # adding constraints
         for c in self.constrs:
             orig_expr = c.expr
+            priority = c.priority
             expr = mip.LinExpr(const=orig_expr.const, sense=orig_expr.sense)
             for (var, value) in orig_expr.expr.items():
                 expr.add_term(self.vars[var.idx], value)
-            copy.add_constr(lin_expr=expr, name=c.name)
+            copy.add_constr(lin_expr=expr, name=c.name, priority=priority)
 
         # setting objective function"s constant
         copy.objective_const = self.objective_const

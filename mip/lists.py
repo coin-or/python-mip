@@ -137,10 +137,15 @@ class ConstrList(Sequence):
             return self.__model.constr_by_name(key)
         return self.__constrs[key]
 
-    def add(self, lin_expr: "mip.LinExpr", name: str = "") -> "mip.Constr":
+    def add(
+        self,
+        lin_expr: "mip.LinExpr",
+        name: str = "",
+        priority: "mip.constants.ConstraintPriority" = None,
+    ) -> "mip.Constr":
         if not name:
             name = "constr({})".format(len(self.__constrs))
-        new_constr = mip.Constr(self.__model, len(self.__constrs))
+        new_constr = mip.Constr(self.__model, len(self.__constrs), priority=priority)
         self.__model.solver.add_constr(lin_expr, name)
         self.__constrs.append(new_constr)
         return new_constr
