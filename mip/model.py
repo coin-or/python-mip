@@ -4,6 +4,7 @@ from os.path import isfile
 from typing import List, Tuple, Optional, Union, Dict, Any
 import numbers
 import mip
+from .version import version
 
 logger = logging.getLogger(__name__)
 
@@ -1616,7 +1617,7 @@ def read_custom_settings():
                         customCbcLib = cols[1].lstrip().rstrip().replace('"', "")
 
 
-logger.info("Using Python-MIP package version {}".format(mip.VERSION))
+logger.info("Using Python-MIP package version {}".format(version))
 customCbcLib = ""
 read_custom_settings()
 
