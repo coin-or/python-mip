@@ -13,13 +13,6 @@ except ImportError:
     np = None
     logger.debug("Numpy not available", exc_info=True)
 
-try:
-    import mip.gurobi
-
-    has_gurobi = True
-except ImportError:
-    has_gurobi = False
-
 
 class Model:
     """Mixed Integer Programming Model
@@ -94,8 +87,9 @@ class Model:
 
                 self.solver = mip.cbc.SolverCbc(self, name, sense)
             else:
-                if has_gurobi:
-                    import mip.gurobi
+                import mip.gurobi
+
+                if mip.gurobi.found:
 
                     self.solver = mip.gurobi.SolverGurobi(self, name, sense)
                     self.solver_name = mip.GUROBI

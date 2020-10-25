@@ -41,303 +41,301 @@ import mip
 
 logger = logging.getLogger(__name__)
 
-try:
-    found = False
-    lib_path = None
-
-    if "GUROBI_HOME" in environ:
-        if platform.lower().startswith("win"):
-            libfile = glob(
-                os.path.join(os.environ["GUROBI_HOME"], "bin\\gurobi[0-9][0-9].dll")
-            )
-        else:
-            libfile = glob(
-                os.path.join(os.environ["GUROBI_HOME"], "lib/libgurobi[0-9][0-9].*")
-            )
-            if not libfile:
-                libfile = glob(
-                    os.path.join(
-                        os.environ["GUROBI_HOME"],
-                        "lib/libgurobi.so.[0-9].[0-9].*",
-                    )
-                )
-
-        if libfile:
-            lib_path = libfile[0]
-
-        # checking gurobi version
-        s1 = lib_path.split('"')[-1].split("/")[-1]
-        vs = [c for c in s1 if c.isdigit()]
-        major_ver = vs[0]
-        minor_ver = vs[1]
-
-    if lib_path is None:
-        for major_ver in reversed(range(6, 10)):
-            for minor_ver in reversed(range(0, 11)):
-                lib_path = find_library("gurobi{}{}".format(major_ver, minor_ver))
-                if lib_path is not None:
-                    break
-            if lib_path is not None:
-                break
-
-    if lib_path is None:
-        raise FileNotFoundError(
-            """Gurobi not found. Plase check if the
-        Gurobi dynamic loadable library is reachable or define
-        the environment variable GUROBI_HOME indicating the gurobi
-        installation path.
-        """
-        )
-    ffi = FFI()
-
-    grblib = ffi.dlopen(lib_path)
-    logger.warning("gurobi version {}.{} found".format(major_ver, minor_ver))
-except Exception:
-    raise ImportError
-
-
+ffi = FFI()
 CData = ffi.CData
 os_is_64_bit = maxsize > 2 ** 32
 INF = float("inf")
 MAX_NAME_SIZE = 512  # for variables and constraints
 
-ffi.cdef(
+lib_path = None
+
+if "GUROBI_HOME" in environ:
+    if platform.lower().startswith("win"):
+        libfile = glob(
+            os.path.join(os.environ["GUROBI_HOME"], "bin\\gurobi[0-9][0-9].dll")
+        )
+    else:
+        libfile = glob(
+            os.path.join(os.environ["GUROBI_HOME"], "lib/libgurobi[0-9][0-9].*")
+        )
+        if not libfile:
+            libfile = glob(
+                os.path.join(
+                    os.environ["GUROBI_HOME"],
+                    "lib/libgurobi.so.[0-9].[0-9].*",
+                )
+            )
+
+    if libfile:
+        lib_path = libfile[0]
+
+    # checking gurobi version
+    s1 = lib_path.split('"')[-1].split("/")[-1]
+    vs = [c for c in s1 if c.isdigit()]
+    major_ver = vs[0]
+    minor_ver = vs[1]
+
+if lib_path is None:
+    for major_ver in reversed(range(6, 10)):
+        for minor_ver in reversed(range(0, 11)):
+            lib_path = find_library("gurobi{}{}".format(major_ver, minor_ver))
+            if lib_path is not None:
+                break
+        if lib_path is not None:
+            break
+
+if lib_path is None:
+    found = False
+else:
+    found = True
+    grblib = ffi.dlopen(lib_path)
+
+    ffi.cdef(
+        """
+        typedef struct _GRBmodel GRBmodel;
+        typedef struct _GRBenv GRBenv;
+
+        typedef int(*gurobi_callback)(GRBmodel *model, void *cbdata,
+                                    int where, void *usrdata);
+
+
+        GRBenv *GRBgetenv(GRBmodel *model);
+
+        int GRBloadenv(GRBenv **envP, const char *logfilename);
+
+        int GRBnewmodel(GRBenv *env, GRBmodel **modelP,
+            const char *Pname, int numvars,
+            double *obj, double *lb, double *ub, char *vtype,
+            char **varnames);
+
+        void GRBfreeenv(GRBenv *env);
+
+        int GRBfreemodel(GRBmodel *model);
+
+        int GRBgetintattr(GRBmodel *model, const char *attrname, int *valueP);
+
+        int GRBsetintattr(GRBmodel *model, const char *attrname, int newvalue);
+
+        int GRBgetintattrelement(GRBmodel *model, const char *attrname,
+            int element, int *valueP);
+
+        int GRBsetintattrelement(GRBmodel *model, const char *attrname,
+            int element, int newvalue);
+
+        int GRBgetdblattr(GRBmodel *model, const char *attrname,
+            double *valueP);
+
+        int GRBsetdblattr(GRBmodel *model, const char *attrname,
+            double newvalue);
+
+        int GRBgetdblattrarray(GRBmodel *model, const char *attrname,
+            int first, int len, double *values);
+
+        int GRBsetdblattrarray(GRBmodel *model, const char *attrname,
+            int first, int len, double *newvalues);
+
+        int GRBsetdblattrlist(GRBmodel *model, const char *attrname,
+            int len, int *ind, double *newvalues);
+
+        int GRBgetdblattrelement(GRBmodel *model, const char *attrname,
+            int element, double *valueP);
+
+        int GRBsetdblattrelement(GRBmodel *model, const char *attrname,
+            int element, double newvalue);
+
+        int GRBgetcharattrarray(GRBmodel *model, const char *attrname,
+                    int first, int len, char *values);
+
+        int GRBsetcharattrarray(GRBmodel *model, const char *attrname,
+            int first, int len, char *newvalues);
+
+        int GRBgetcharattrelement(GRBmodel *model, const char *attrname,
+                                int element, char *valueP);
+        int GRBsetcharattrelement(GRBmodel *model, const char *attrname,
+                                int element, char newvalue);
+
+        int GRBgetstrattrelement(GRBmodel *model, const char *attrname,
+                            int element, char **valueP);
+
+        int GRBgetstrattr (GRBmodel *model, const char *attrname,
+            char **valueP);
+
+        int GRBsetstrattr (GRBmodel *model, const char *attrname,
+            const char *newvalue);
+
+        int GRBgetintparam(GRBenv *env, const char *paramname, int *valueP);
+
+        int GRBsetintparam(GRBenv *env, const char *paramname, int value);
+
+        int GRBgetdblparam(GRBenv *env, const char *paramname, double *valueP);
+
+        int GRBsetdblparam(GRBenv *env, const char *paramname, double value);
+
+        int GRBsetobjectiven(GRBmodel *model, int index,
+                        int priority, double weight,
+                        double abstol, double reltol, const char *name,
+                        double constant, int lnz, int *lind, double *lval);
+
+        int GRBaddvar(GRBmodel *model, int numnz, int *vind, double *vval,
+                    double obj, double lb, double ub, char vtype,
+                    const char *varname);
+
+        int GRBaddconstr(GRBmodel *model, int numnz, int *cind, double *cval,
+            char sense, double rhs, const char *constrname);
+
+        int GRBaddsos(GRBmodel *model,
+            int numsos, int nummembers, int *types,
+                int *beg, int *ind, double *weight);
+
+        int GRBgetconstrs(GRBmodel *model, int *numnzP, int *cbeg,
+                int *cind, double *cval, int start, int len);
+
+        int GRBgetvars(GRBmodel *model, int *numnzP, int *vbeg, int *vind,
+            double *vval, int start, int len);
+
+        int GRBgetvarbyname(GRBmodel *model, const char *name, int *indexP);
+
+        int GRBgetconstrbyname(GRBmodel *model, const char *name, int *indexP);
+
+        int GRBoptimize(GRBmodel *model);
+
+        int GRBupdatemodel(GRBmodel *model);
+
+        int GRBwrite(GRBmodel *model, const char *filename);
+
+        int GRBreadmodel(GRBenv *env, const char *filename, GRBmodel **modelP);
+
+        int GRBread(GRBmodel *model, const char *filename);
+
+        int GRBdelvars(GRBmodel *model, int numdel, int *ind );
+
+        int GRBsetcharattrlist(GRBmodel *model, const char *attrname,
+            int len, int *ind, char *newvalues);
+
+        int GRBsetcallbackfunc(GRBmodel *model,
+                    gurobi_callback grbcb,
+                    void  *usrdata);
+
+        int GRBcbget(void *cbdata, int where, int what, void *resultP);
+
+        int GRBcbsetparam(void *cbdata, const char *paramname,
+            const char *newvalue);
+
+        int GRBcbsolution(void *cbdata, const double *solution,
+            double *objvalP);
+
+        int GRBcbcut(void *cbdata, int cutlen, const int *cutind,
+            const double *cutval,
+            char cutsense, double cutrhs);
+
+        int GRBcblazy(void *cbdata, int lazylen, const int *lazyind,
+            const double *lazyval, char lazysense, double lazyrhs);
+
+        int GRBdelconstrs (GRBmodel *model, int numdel, int *ind);
     """
-    typedef struct _GRBmodel GRBmodel;
-    typedef struct _GRBenv GRBenv;
+    )
 
-    typedef int(*gurobi_callback)(GRBmodel *model, void *cbdata,
-                                  int where, void *usrdata);
+    GRBloadenv = grblib.GRBloadenv
+    GRBnewmodel = grblib.GRBnewmodel
+    GRBfreeenv = grblib.GRBfreeenv
+    GRBfreemodel = grblib.GRBfreemodel
+    GRBaddvar = grblib.GRBaddvar
+    GRBaddconstr = grblib.GRBaddconstr
+    GRBaddsos = grblib.GRBaddsos
+    GRBoptimize = grblib.GRBoptimize
+    GRBgetvarbyname = grblib.GRBgetvarbyname
+    GRBsetdblattrarray = grblib.GRBsetdblattrarray
+    GRBsetcharattrlist = grblib.GRBsetcharattrlist
+    GRBsetdblattrlist = grblib.GRBsetdblattrlist
+    GRBwrite = grblib.GRBwrite
+    GRBreadmodel = grblib.GRBreadmodel
+    GRBread = grblib.GRBread
+    GRBgetconstrbyname = grblib.GRBgetconstrbyname
+    GRBupdatemodel = grblib.GRBupdatemodel
+    GRBgetcharattrelement = grblib.GRBgetcharattrelement
+    GRBgetconstrs = grblib.GRBgetconstrs
+    GRBgetdblattrelement = grblib.GRBgetdblattrelement
+    GRBgetvars = grblib.GRBgetvars
+    GRBsetcharattrelement = grblib.GRBsetcharattrelement
+    GRBsetdblattrelement = grblib.GRBsetdblattrelement
+    GRBsetintattr = grblib.GRBsetintattr
+    GRBsetintattrelement = grblib.GRBsetintattrelement
+    GRBsetdblattr = grblib.GRBsetdblattr
+    GRBgetintattr = grblib.GRBgetintattr
+    GRBgetintparam = grblib.GRBgetintparam
+    GRBsetintparam = grblib.GRBsetintparam
+    GRBgetdblattr = grblib.GRBgetdblattr
+    GRBsetdblparam = grblib.GRBsetdblparam
+    GRBgetdblparam = grblib.GRBgetdblparam
+    GRBgetstrattrelement = grblib.GRBgetstrattrelement
+    GRBcbget = grblib.GRBcbget
+    GRBcbsetparam = grblib.GRBcbsetparam
+    GRBcbsolution = grblib.GRBcbsolution
+    GRBcbcut = grblib.GRBcbcut
+    GRBcblazy = grblib.GRBcblazy
+    GRBsetcallbackfunc = grblib.GRBsetcallbackfunc
+    GRBdelvars = grblib.GRBdelvars
+    GRBdelconstrs = grblib.GRBdelconstrs
+    GRBgetenv = grblib.GRBgetenv
+    GRBgetstrattr = grblib.GRBgetstrattr
+    GRBsetstrattr = grblib.GRBsetstrattr
+    GRBgetdblattrarray = grblib.GRBgetdblattrarray
 
+    GRB_CB_MIPSOL = 4
+    GRB_CB_MIPNODE = 5
 
-    GRBenv *GRBgetenv(GRBmodel *model);
+    GRB_CB_PRE_COLDEL = 1000
+    GRB_CB_PRE_ROWDEL = 1001
+    GRB_CB_PRE_SENCHG = 1002
+    GRB_CB_PRE_BNDCHG = 1003
+    GRB_CB_PRE_COECHG = 1004
 
-    int GRBloadenv(GRBenv **envP, const char *logfilename);
+    GRB_CB_SPX_ITRCNT = 2000
+    GRB_CB_SPX_OBJVAL = 2001
+    GRB_CB_SPX_PRIMINF = 2002
+    GRB_CB_SPX_DUALINF = 2003
+    GRB_CB_SPX_ISPERT = 2004
 
-    int GRBnewmodel(GRBenv *env, GRBmodel **modelP,
-        const char *Pname, int numvars,
-        double *obj, double *lb, double *ub, char *vtype,
-        char **varnames);
+    GRB_CB_MIP_OBJBST = 3000
+    GRB_CB_MIP_OBJBND = 3001
+    GRB_CB_MIP_NODCNT = 3002
+    GRB_CB_MIP_SOLCNT = 3003
+    GRB_CB_MIP_CUTCNT = 3004
+    GRB_CB_MIP_NODLFT = 3005
+    GRB_CB_MIP_ITRCNT = 3006
 
-    void GRBfreeenv(GRBenv *env);
+    GRB_CB_MIPSOL_SOL = 4001
+    GRB_CB_MIPSOL_OBJ = 4002
+    GRB_CB_MIPSOL_OBJBST = 4003
+    GRB_CB_MIPSOL_OBJBND = 4004
+    GRB_CB_MIPSOL_NODCNT = 4005
+    GRB_CB_MIPSOL_SOLCNT = 4006
 
-    int GRBfreemodel(GRBmodel *model);
+    GRB_CB_MIPNODE_STATUS = 5001
+    GRB_CB_MIPNODE_REL = 5002
+    GRB_CB_MIPNODE_OBJBST = 5003
+    GRB_CB_MIPNODE_OBJBND = 5004
+    GRB_CB_MIPNODE_NODCNT = 5005
+    GRB_CB_MIPNODE_SOLCNT = 5006
 
-    int GRBgetintattr(GRBmodel *model, const char *attrname, int *valueP);
-
-    int GRBsetintattr(GRBmodel *model, const char *attrname, int newvalue);
-
-    int GRBgetintattrelement(GRBmodel *model, const char *attrname,
-        int element, int *valueP);
-
-    int GRBsetintattrelement(GRBmodel *model, const char *attrname,
-        int element, int newvalue);
-
-    int GRBgetdblattr(GRBmodel *model, const char *attrname,
-        double *valueP);
-
-    int GRBsetdblattr(GRBmodel *model, const char *attrname,
-        double newvalue);
-
-    int GRBgetdblattrarray(GRBmodel *model, const char *attrname,
-        int first, int len, double *values);
-
-    int GRBsetdblattrarray(GRBmodel *model, const char *attrname,
-        int first, int len, double *newvalues);
-
-    int GRBsetdblattrlist(GRBmodel *model, const char *attrname,
-        int len, int *ind, double *newvalues);
-
-    int GRBgetdblattrelement(GRBmodel *model, const char *attrname,
-        int element, double *valueP);
-
-    int GRBsetdblattrelement(GRBmodel *model, const char *attrname,
-        int element, double newvalue);
-
-    int GRBgetcharattrarray(GRBmodel *model, const char *attrname,
-                  int first, int len, char *values);
-
-    int GRBsetcharattrarray(GRBmodel *model, const char *attrname,
-        int first, int len, char *newvalues);
-
-    int GRBgetcharattrelement(GRBmodel *model, const char *attrname,
-                            int element, char *valueP);
-    int GRBsetcharattrelement(GRBmodel *model, const char *attrname,
-                            int element, char newvalue);
-
-    int GRBgetstrattrelement(GRBmodel *model, const char *attrname,
-                        int element, char **valueP);
-
-    int GRBgetstrattr (GRBmodel *model, const char *attrname,
-        char **valueP);
-
-    int GRBsetstrattr (GRBmodel *model, const char *attrname,
-        const char *newvalue);
-
-    int GRBgetintparam(GRBenv *env, const char *paramname, int *valueP);
-
-    int GRBsetintparam(GRBenv *env, const char *paramname, int value);
-
-    int GRBgetdblparam(GRBenv *env, const char *paramname, double *valueP);
-
-    int GRBsetdblparam(GRBenv *env, const char *paramname, double value);
-
-    int GRBsetobjectiven(GRBmodel *model, int index,
-                    int priority, double weight,
-                    double abstol, double reltol, const char *name,
-                    double constant, int lnz, int *lind, double *lval);
-
-    int GRBaddvar(GRBmodel *model, int numnz, int *vind, double *vval,
-                double obj, double lb, double ub, char vtype,
-                const char *varname);
-
-    int GRBaddconstr(GRBmodel *model, int numnz, int *cind, double *cval,
-           char sense, double rhs, const char *constrname);
-
-    int GRBaddsos(GRBmodel *model,
-        int numsos, int nummembers, int *types,
-            int *beg, int *ind, double *weight);
-
-    int GRBgetconstrs(GRBmodel *model, int *numnzP, int *cbeg,
-            int *cind, double *cval, int start, int len);
-
-    int GRBgetvars(GRBmodel *model, int *numnzP, int *vbeg, int *vind,
-         double *vval, int start, int len);
-
-    int GRBgetvarbyname(GRBmodel *model, const char *name, int *indexP);
-
-    int GRBgetconstrbyname(GRBmodel *model, const char *name, int *indexP);
-
-    int GRBoptimize(GRBmodel *model);
-
-    int GRBupdatemodel(GRBmodel *model);
-
-    int GRBwrite(GRBmodel *model, const char *filename);
-
-    int GRBreadmodel(GRBenv *env, const char *filename, GRBmodel **modelP);
-
-    int GRBread(GRBmodel *model, const char *filename);
-
-    int GRBdelvars(GRBmodel *model, int numdel, int *ind );
-
-    int GRBsetcharattrlist(GRBmodel *model, const char *attrname,
-        int len, int *ind, char *newvalues);
-
-    int GRBsetcallbackfunc(GRBmodel *model,
-                 gurobi_callback grbcb,
-                 void  *usrdata);
-
-    int GRBcbget(void *cbdata, int where, int what, void *resultP);
-
-    int GRBcbsetparam(void *cbdata, const char *paramname,
-        const char *newvalue);
-
-    int GRBcbsolution(void *cbdata, const double *solution,
-        double *objvalP);
-
-    int GRBcbcut(void *cbdata, int cutlen, const int *cutind,
-        const double *cutval,
-        char cutsense, double cutrhs);
-
-    int GRBcblazy(void *cbdata, int lazylen, const int *lazyind,
-        const double *lazyval, char lazysense, double lazyrhs);
-
-    int GRBdelconstrs (GRBmodel *model, int numdel, int *ind);
-"""
-)
-
-GRBloadenv = grblib.GRBloadenv
-GRBnewmodel = grblib.GRBnewmodel
-GRBfreeenv = grblib.GRBfreeenv
-GRBfreemodel = grblib.GRBfreemodel
-GRBaddvar = grblib.GRBaddvar
-GRBaddconstr = grblib.GRBaddconstr
-GRBaddsos = grblib.GRBaddsos
-GRBoptimize = grblib.GRBoptimize
-GRBgetvarbyname = grblib.GRBgetvarbyname
-GRBsetdblattrarray = grblib.GRBsetdblattrarray
-GRBsetcharattrlist = grblib.GRBsetcharattrlist
-GRBsetdblattrlist = grblib.GRBsetdblattrlist
-GRBwrite = grblib.GRBwrite
-GRBreadmodel = grblib.GRBreadmodel
-GRBread = grblib.GRBread
-GRBgetconstrbyname = grblib.GRBgetconstrbyname
-GRBupdatemodel = grblib.GRBupdatemodel
-GRBgetcharattrelement = grblib.GRBgetcharattrelement
-GRBgetconstrs = grblib.GRBgetconstrs
-GRBgetdblattrelement = grblib.GRBgetdblattrelement
-GRBgetvars = grblib.GRBgetvars
-GRBsetcharattrelement = grblib.GRBsetcharattrelement
-GRBsetdblattrelement = grblib.GRBsetdblattrelement
-GRBsetintattr = grblib.GRBsetintattr
-GRBsetintattrelement = grblib.GRBsetintattrelement
-GRBsetdblattr = grblib.GRBsetdblattr
-GRBgetintattr = grblib.GRBgetintattr
-GRBgetintparam = grblib.GRBgetintparam
-GRBsetintparam = grblib.GRBsetintparam
-GRBgetdblattr = grblib.GRBgetdblattr
-GRBsetdblparam = grblib.GRBsetdblparam
-GRBgetdblparam = grblib.GRBgetdblparam
-GRBgetstrattrelement = grblib.GRBgetstrattrelement
-GRBcbget = grblib.GRBcbget
-GRBcbsetparam = grblib.GRBcbsetparam
-GRBcbsolution = grblib.GRBcbsolution
-GRBcbcut = grblib.GRBcbcut
-GRBcblazy = grblib.GRBcblazy
-GRBsetcallbackfunc = grblib.GRBsetcallbackfunc
-GRBdelvars = grblib.GRBdelvars
-GRBdelconstrs = grblib.GRBdelconstrs
-GRBgetenv = grblib.GRBgetenv
-GRBgetstrattr = grblib.GRBgetstrattr
-GRBsetstrattr = grblib.GRBsetstrattr
-GRBgetdblattrarray = grblib.GRBgetdblattrarray
-
-GRB_CB_MIPSOL = 4
-GRB_CB_MIPNODE = 5
-
-GRB_CB_PRE_COLDEL = 1000
-GRB_CB_PRE_ROWDEL = 1001
-GRB_CB_PRE_SENCHG = 1002
-GRB_CB_PRE_BNDCHG = 1003
-GRB_CB_PRE_COECHG = 1004
-
-GRB_CB_SPX_ITRCNT = 2000
-GRB_CB_SPX_OBJVAL = 2001
-GRB_CB_SPX_PRIMINF = 2002
-GRB_CB_SPX_DUALINF = 2003
-GRB_CB_SPX_ISPERT = 2004
-
-GRB_CB_MIP_OBJBST = 3000
-GRB_CB_MIP_OBJBND = 3001
-GRB_CB_MIP_NODCNT = 3002
-GRB_CB_MIP_SOLCNT = 3003
-GRB_CB_MIP_CUTCNT = 3004
-GRB_CB_MIP_NODLFT = 3005
-GRB_CB_MIP_ITRCNT = 3006
-
-GRB_CB_MIPSOL_SOL = 4001
-GRB_CB_MIPSOL_OBJ = 4002
-GRB_CB_MIPSOL_OBJBST = 4003
-GRB_CB_MIPSOL_OBJBND = 4004
-GRB_CB_MIPSOL_NODCNT = 4005
-GRB_CB_MIPSOL_SOLCNT = 4006
-
-GRB_CB_MIPNODE_STATUS = 5001
-GRB_CB_MIPNODE_REL = 5002
-GRB_CB_MIPNODE_OBJBST = 5003
-GRB_CB_MIPNODE_OBJBND = 5004
-GRB_CB_MIPNODE_NODCNT = 5005
-GRB_CB_MIPNODE_SOLCNT = 5006
-
-GRB_CB_MSG_STRING = 6001
-GRB_CB_RUNTIME = 6002
-GRB_OPTIMAL = 2
+    GRB_CB_MSG_STRING = 6001
+    GRB_CB_RUNTIME = 6002
+    GRB_OPTIMAL = 2
 
 
 class SolverGurobi(Solver):
     def __init__(self, model: Model, name: str, sense: str, modelp: CData = ffi.NULL):
         """modelp should be informed if a model should not be created,
         but only allow access to an existing one"""
+        if not found:
+            raise FileNotFoundError(
+                """Gurobi not found. Plase check if the
+            Gurobi dynamic loadable library is reachable or define
+            the environment variable GUROBI_HOME indicating the gurobi
+            installation path.
+            """
+            )
+
         super().__init__(model, name, sense)
 
         # setting class members to default values
@@ -573,7 +571,7 @@ class SolverGurobi(Solver):
         # todo add branch_selector and incumbent_updater callbacks
         @ffi.callback(
             """
-           int (GRBmodel *, void *, int, void *)
+        int (GRBmodel *, void *, int, void *)
         """
         )
         def callback(
