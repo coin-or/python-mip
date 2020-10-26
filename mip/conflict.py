@@ -54,6 +54,7 @@ class ConflictFinder:
         """
         # 1. create a model with all constraints but one
         aux_model = self.model.copy()
+        aux_model.verbose = 0
         aux_model.objective = 1
         aux_model.emphasis = 1  # feasibility
         aux_model.preprocess = 1  # -1  automatic, 0  off, 1  on.
@@ -103,12 +104,14 @@ class ConflictFinder:
                 # obj= var.obj,
                 # column=var.column   #!! libc++abi.dylib: terminating with uncaught exception of type CoinError
             )
+        aux_model_testing.verbose = 0
         aux_model_testing.objective = 1
         aux_model_testing.emphasis = 1  # feasibility
         aux_model_testing.preprocess = 1  # -1  automatic, 0  off, 1  on.
         aux_model_iis = (
             aux_model_testing.copy()
         )  # a second aux model to test feasibility of the incumbent iis
+        aux_model_iis.verbose = 0
 
         # algorithm start
         all_constraints = self.model.constrs
@@ -154,6 +157,9 @@ class ConflictFinder:
         # major constraint sets definition
         t_aux_model = mip.Model(name="t_auxiliary_model")
         iis_aux_model = mip.Model(name="t_auxiliary_model")
+
+        t_aux_model.verbose = 0
+        iis_aux_model.verbose = 0
 
         linear_constraints = mip.ConstrList(
             model=t_aux_model
@@ -280,6 +286,7 @@ class ConflictRelaxer:
 
         relaxed_model = self.model.copy()
         relaxed_model._status = self.model._status  # TODO solve this in a different way
+        relaxed_model.verbose = 0 
 
         # map unmaped constraitns to default
         for crt in relaxed_model.constrs:
@@ -341,6 +348,7 @@ class ConflictRelaxer:
             dict: a slack variable dictionary with the value of the {constraint_name:slack.value} pair to be added to each constraint in order to make the IIS feasible
         """
         relax_iis_model = mip.Model()
+        relax_iis_model.verbose = 0
         lowest_priority = min([crt.priority for crt in iis])
         to_relax_crts = [crt for crt in iis if crt.priority == lowest_priority]
 
