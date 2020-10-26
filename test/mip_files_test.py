@@ -3,7 +3,7 @@
 
 from glob import glob
 from os import environ
-from os.path import basename, dirname, join
+from os.path import basename, dirname, join, exists
 from itertools import product
 import pytest
 import mip
@@ -111,9 +111,15 @@ def test_mip_file(solver: str, instance: str):
     """Tests optimization of MIP models stored in .mps or .lp files"""
     m = Model(solver_name=solver)
 
+    # optional file for optimal LP basis
+    bas_file = ""
+
     iname = ""
     for ext in EXTS:
         if instance.endswith(ext):
+            bas_file = instance.replace(ext, ".bas")
+            if not exists(bas_file):
+                bas_file = ""
             iname = basename(instance.replace(ext, ""))
             break
     assert iname in BOUNDS.keys()
@@ -126,6 +132,11 @@ def test_mip_file(solver: str, instance: str):
     max_dif = max(max(abs(ub), abs(lb)) * 0.01, TOL)
 
     m.read(instance)
+    if bas_file:
+        m.verbose = True
+        m.read(bas_file)
+        m.optimize(relax=True)
+        print("Basis loaded!!! Obj value: %f" % m.objective_value)
     m.optimize(max_nodes=MAX_NODES)
     if m.status in [OptimizationStatus.OPTIMAL, OptimizationStatus.FEASIBLE]:
         assert m.num_solutions >= 1

@@ -651,7 +651,10 @@ class Model:
              `MPS file format <https://en.wikipedia.org/wiki/MPS_(format)>`_
 
            :code:`.sol`
-             initial feasible solution
+             initial integer feasible solution
+
+           :code:`.bas`
+             `optimal basis <http://lpsolve.sourceforge.net/5.5/bas-format.htm>`_ for the linear programming relaxation.
 
         Note: if a new problem is readed, all variables, constraints
         and parameters from the current model will be cleared.
@@ -685,6 +688,14 @@ class Model:
                 )
 
             self.start = var_list
+            return
+
+        if path.lower().endswith(".bas"):
+            if self.num_cols == 0:
+                raise mip.ProgrammingError(
+                    "Cannot load optimal LP basis for empty model."
+                )
+            self.solver.read(path)
             return
 
         # reading model
@@ -729,6 +740,9 @@ class Model:
            :code:`.sol`
              initial feasible solution
 
+           :code:`.bas`
+             `optimal basis <http://lpsolve.sourceforge.net/5.5/bas-format.htm>`_ for the linear programming relaxation.
+
         Args:
             file_path(str): file name
         """
@@ -738,7 +752,11 @@ class Model:
             else:
                 mip_start = [(var, var.x) for var in self.vars if abs(var.x) >= 1e-8]
                 save_mipstart(mip_start, file_path)
-        elif file_path.lower().endswith(".lp") or file_path.lower().endswith(".mps"):
+        elif (
+            file_path.lower().endswith(".lp")
+            or file_path.lower().endswith(".mps")
+            or file_path.lower().endswith(".bas")
+        ):
             self.solver.write(file_path)
         else:
             raise ValueError(
