@@ -8,28 +8,22 @@ import os
 import multiprocessing as multip
 import numbers
 from cffi import FFI
-from mip.model import xsum
-import mip
-from mip.lists import EmptyVarSol, EmptyRowSol
-from mip.exceptions import (
+from .model import Model, xsum
+from .lists import EmptyVarSol, EmptyRowSol, VConstrList, VVarList
+from .exceptions import (
     ParameterNotAvailable,
     InvalidParameter,
     MipBaseException,
 )
-from mip import (
-    Model,
-    Var,
-    Constr,
-    Column,
-    LinExpr,
-    VConstrList,
-    VVarList,
-    Solver,
+from .solver import Solver
+from .entities import Var, Constr, Column, LinExpr
+from .constants import (
     MAXIMIZE,
     SearchEmphasis,
     CONTINUOUS,
     BINARY,
     INTEGER,
+    INT_MAX,
     MINIMIZE,
     EQUAL,
     LESS_OR_EQUAL,
@@ -37,8 +31,9 @@ from mip import (
     OptimizationStatus,
     LP_Method,
     CutType,
-    CutPool,
+    INF,
 )
+from .callbacks import CutPool
 
 logger = logging.getLogger(__name__)
 warningMessages = 0
@@ -46,7 +41,6 @@ warningMessages = 0
 ffi = FFI()
 has_cbc = False
 os_is_64_bit = maxsize > 2 ** 32
-INF = float("inf")
 cut_idx = 0
 
 # for variables and rows
@@ -55,7 +49,7 @@ MAX_NAME_SIZE = 512
 DEF_PUMPP = 30
 
 try:
-    pathmip = dirname(mip.__file__)
+    pathmip = dirname(__file__)
     pathlib = os.path.join(pathmip, "libraries")
     libfile = ""
     # if user wants to force the loading of an specific CBC library
@@ -994,7 +988,7 @@ class SolverCbc(Solver):
         OsiCuts_delete(osi_cuts)
         return cp
 
-    def clique_merge(self, constrs: Optional[List["mip.Constr"]] = None):
+    def clique_merge(self, constrs: Optional[List[Constr]] = None):
         if constrs is None:
             cbclib.Cbc_strengthenPacking(self._model)
         else:
@@ -1561,29 +1555,29 @@ class SolverCbc(Solver):
 
     def set_processing_limits(
         self: "Solver",
-        max_time: numbers.Real = mip.INF,
-        max_nodes: int = mip.INT_MAX,
-        max_sol: int = mip.INT_MAX,
-        max_seconds_same_incumbent: int = mip.INT_MAX,
-        max_nodes_same_incumbent: float = mip.INF,
+        max_time: numbers.Real = INF,
+        max_nodes: int = INT_MAX,
+        max_sol: int = INT_MAX,
+        max_seconds_same_incumbent: int = INT_MAX,
+        max_nodes_same_incumbent: float = INF,
     ):
         pmodel = self._model
 
         """processing limits should be set even when they INF, since
         smaller limits could have been set in a previous iteration"""
 
-        if max_time != mip.INF:
+        if max_time != INF:
             cbc_set_parameter(self, "timeMode", "elapsed")
             self.set_max_seconds(max_time)
-        if max_nodes != mip.INT_MAX:
+        if max_nodes != INT_MAX:
             self.set_max_nodes(max_nodes)
-        if max_sol != mip.INT_MAX:
+        if max_sol != INT_MAX:
             self.set_max_solutions(max_sol)
-        if max_seconds_same_incumbent != mip.INF:
+        if max_seconds_same_incumbent != INF:
             Cbc_setDblParam(
                 pmodel, DBL_PARAM_MAX_SECS_NOT_IMPROV_FS, max_seconds_same_incumbent
             )
-        if max_nodes_same_incumbent != mip.INT_MAX:
+        if max_nodes_same_incumbent != INT_MAX:
             Cbc_setIntParam(
                 pmodel, INT_PARAM_MAX_NODES_NOT_IMPROV_FS, max_nodes_same_incumbent
             )

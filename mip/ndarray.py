@@ -4,6 +4,14 @@ logger = logging.getLogger(__name__)
 
 try:
     import numpy as np
+except ImportError:
+    logger.debug("Unable to import numpy", exc_info=True)
+
+    class LinExprTensor:
+        pass
+
+
+else:
 
     class LinExprTensor(np.ndarray):
         """Tensor of :class:`~mip.Var` or :class:`~mip.LinExpr` elements
@@ -67,10 +75,3 @@ try:
 
         def __eq__(self, other):
             return np.equal(self, other, dtype=object)
-
-
-except ImportError:
-    logger.debug("Unable to import numpy", exc_info=True)
-
-    class LinExprTensor:
-        pass

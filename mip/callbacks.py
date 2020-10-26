@@ -2,14 +2,16 @@
 with the solver engine"""
 from collections import defaultdict
 from typing import List, Tuple
-import mip
+
+from .entities import LinExpr, Var
+from .model import Model
 
 
 class BranchSelector:
-    def __init__(self, model: "mip.Model"):
+    def __init__(self, model: Model):
         self.model = model
 
-    def select_branch(self, rsol: List[Tuple["mip.Var", float]]) -> Tuple["Var", int]:
+    def select_branch(self, rsol: List[Tuple[Var, float]]) -> Tuple[Var, int]:
         raise NotImplementedError()
 
 
@@ -19,7 +21,7 @@ class ColumnsGenerator:
     def __init__(self):
         self.lazy_constraints = False
 
-    def generate_columns(self, model: "mip.Model"):
+    def generate_columns(self, model: Model):
         """Method called by the solver engine to generate cuts
 
            After analyzing the contents of the fractional solution in model
@@ -49,7 +51,7 @@ class ConstrsGenerator:
     def __init__(self):
         pass
 
-    def generate_constrs(self, model: "mip.Model", depth: int = 0, npass: int = 0):
+    def generate_constrs(self, model: Model, depth: int = 0, npass: int = 0):
         """Method called by the solver engine to generate *cuts* or *lazy constraints*.
 
            After analyzing the contents of the solution in model
@@ -95,7 +97,7 @@ class CutPool:
         # the search of repeated cuts
         self.__pos = defaultdict(list)
 
-    def add(self, cut: "mip.LinExpr") -> bool:
+    def add(self, cut: LinExpr) -> bool:
         """tries to add a cut to the pool, returns true if this is a new cut,
         false if it is a repeated one
 
@@ -114,7 +116,7 @@ class CutPool:
         return True
 
     @property
-    def cuts(self) -> List["mip.LinExpr"]:
+    def cuts(self) -> List[LinExpr]:
         return self.__cuts
 
 
@@ -124,15 +126,15 @@ class IncumbentUpdater:
     local search heuristic) and returned to the MIP solver.
     """
 
-    def __init__(self, model: "mip.Model"):
+    def __init__(self, model: Model):
         self.model = model
 
     def update_incumbent(
         self,
         objective_value: float,
         best_bound: float,
-        solution: List[Tuple["mip.Var", float]],
-    ) -> List[Tuple["mip.Var", float]]:
+        solution: List[Tuple[Var, float]],
+    ) -> List[Tuple[Var, float]]:
         """Method that is called when a new integer feasible solution is found
 
         Args:

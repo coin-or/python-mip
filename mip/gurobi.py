@@ -8,22 +8,19 @@ from glob import glob
 from os import environ
 import numbers
 from cffi import FFI
-from mip.exceptions import (
+from .exceptions import (
     ParameterNotAvailable,
     SolutionNotAvailable,
     ProgrammingError,
     InterfacingError,
 )
-from mip import (
-    Model,
-    Column,
-    Var,
-    LinExpr,
-    Constr,
-    Solver,
-    VConstrList,
-    VVarList,
-    xsum,
+from .model import Model, xsum
+from .entities import Column, Var, LinExpr, Constr
+from .solver import Solver
+from .lists import VConstrList, VVarList, EmptyVarSol, EmptyRowSol
+from .constants import (
+    INF,
+    INT_MAX,
     MAXIMIZE,
     MINIMIZE,
     CONTINUOUS,
@@ -36,8 +33,6 @@ from mip import (
     SearchEmphasis,
     LP_Method,
 )
-from mip.lists import EmptyVarSol, EmptyRowSol
-import mip
 
 logger = logging.getLogger(__name__)
 
@@ -831,11 +826,11 @@ class SolverGurobi(Solver):
 
     def set_processing_limits(
         self: "Solver",
-        max_time: numbers.Real = mip.INF,
-        max_nodes: int = mip.INT_MAX,
-        max_sol: int = mip.INT_MAX,
-        max_seconds_same_incumbent: float = mip.INF,
-        max_nodes_same_incumbent: int = mip.INT_MAX,
+        max_time: numbers.Real = INF,
+        max_nodes: int = INT_MAX,
+        max_sol: int = INT_MAX,
+        max_seconds_same_incumbent: float = INF,
+        max_nodes_same_incumbent: int = INT_MAX,
     ):
         # todo: Set limits even when they are 'inf'
         if max_time != INF:

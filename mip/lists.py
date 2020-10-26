@@ -1,7 +1,9 @@
 from collections.abc import Sequence
 from typing import List
 import numbers
-import mip
+from .constants import INF, CONTINUOUS, BINARY, ConstraintPriority
+from .entities import Column, LinExpr, Var, Constr
+from .model import Model
 
 
 class VarList(Sequence):
@@ -23,7 +25,7 @@ class VarList(Sequence):
         print(m.vars['z'].lb)
     """
 
-    def __init__(self: "VarList", model: "mip.Model"):
+    def __init__(self: "VarList", model: Model):
         self.__model = model
         self.__vars = []  # type: List[Var]
 
@@ -31,17 +33,17 @@ class VarList(Sequence):
         self,
         name: str = "",
         lb: numbers.Real = 0.0,
-        ub: numbers.Real = mip.INF,
+        ub: numbers.Real = INF,
         obj: numbers.Real = 0.0,
-        var_type: str = mip.CONTINUOUS,
-        column: "mip.Column" = None,
-    ) -> "mip.Var":
+        var_type: str = CONTINUOUS,
+        column: Column = None,
+    ) -> Var:
         if not name:
             name = "var({})".format(len(self.__vars))
-        if var_type == mip.BINARY:
+        if var_type == BINARY:
             lb = 0.0
             ub = 1.0
-        new_var = mip.Var(self.__model, len(self.__vars))
+        new_var = Var(self.__model, len(self.__vars))
         self.__model.solver.add_var(obj, lb, ub, var_type, column, name)
         self.__vars.append(new_var)
         return new_var
@@ -55,9 +57,9 @@ class VarList(Sequence):
         return len(self.__vars)
 
     def update_vars(self: "VarList", n_vars: int):
-        self.__vars = [mip.Var(self.__model, i) for i in range(n_vars)]
+        self.__vars = [Var(self.__model, i) for i in range(n_vars)]
 
-    def remove(self: "VarList", vars: List["mip.Var"]):
+    def remove(self: "VarList", vars: List[Var]):
         iv = [1 for i in range(len(self.__vars))]
         vlist = [v.idx for v in vars]
         vlist.sort()
@@ -78,7 +80,7 @@ class VarList(Sequence):
 # references for variables, used in
 # callbacks
 class VVarList(Sequence):
-    def __init__(self: "VVarList", model: "mip.Model", start: int = -1, end: int = -1):
+    def __init__(self: "VVarList", model: Model, start: int = -1, end: int = -1):
         self.__model = model
         if start == -1:
             self.__start = 0
@@ -91,18 +93,18 @@ class VVarList(Sequence):
         self: "VVarList",
         name: str = "",
         lb: numbers.Real = 0.0,
-        ub: numbers.Real = mip.INF,
+        ub: numbers.Real = INF,
         obj: numbers.Real = 0.0,
-        var_type: str = mip.CONTINUOUS,
-        column: "mip.Column" = None,
-    ) -> "mip.Var":
+        var_type: str = CONTINUOUS,
+        column: Column = None,
+    ) -> Var:
         solver = self.__model.solver
         if not name:
             name = "var({})".format(len(self))
-        if var_type == mip.BINARY:
+        if var_type == BINARY:
             lb = 0.0
             ub = 1.0
-        new_var = mip.Var(self.__model, solver.num_cols())
+        new_var = Var(self.__model, solver.num_cols())
         solver.add_var(obj, lb, ub, var_type, column, name)
         return new_var
 
@@ -117,7 +119,7 @@ class VVarList(Sequence):
             if key >= self.__end:
                 raise IndexError
 
-            return mip.Var(self.__model, key + self.__start)
+            return Var(self.__model, key + self.__start)
 
         raise TypeError("Unknown type {}".format(type(key)))
 
@@ -128,9 +130,9 @@ class VVarList(Sequence):
 class ConstrList(Sequence):
     """ List of problem constraints"""
 
-    def __init__(self: "ConstrList", model: "mip.Model"):
+    def __init__(self: "ConstrList", model: Model):
         self.__model = model
-        self.__constrs = []  # type: List["mip.Constr"]
+        self.__constrs = []  # type: List["Constr"]
 
     def __getitem__(self: "ConstrList", key):
         if isinstance(key, str):
@@ -139,13 +141,13 @@ class ConstrList(Sequence):
 
     def add(
         self,
-        lin_expr: "mip.LinExpr",
+        lin_expr: LinExpr,
         name: str = "",
-        priority: "mip.constants.ConstraintPriority" = None,
-    ) -> "mip.Constr":
+        priority: ConstraintPriority = None,
+    ) -> Constr:
         if not name:
             name = "constr({})".format(len(self.__constrs))
-        new_constr = mip.Constr(self.__model, len(self.__constrs), priority=priority)
+        new_constr = Constr(self.__model, len(self.__constrs), priority=priority)
         self.__model.solver.add_constr(lin_expr, name)
         self.__constrs.append(new_constr)
         return new_constr
@@ -153,7 +155,7 @@ class ConstrList(Sequence):
     def __len__(self) -> int:
         return len(self.__constrs)
 
-    def remove(self: "ConstrList", constrs: List["mip.Constr"]):
+    def remove(self: "ConstrList", constrs: List[Constr]):
         iv = [1 for i in range(len(self.__constrs))]
         clist = [c.idx for c in constrs]
         clist.sort()
@@ -170,21 +172,21 @@ class ConstrList(Sequence):
         self.__constrs = [c for c in self.__constrs if c.idx != -1]
 
     def update_constrs(self: "ConstrList", n_constrs: int):
-        self.__constrs = [mip.Constr(self.__model, i) for i in range(n_constrs)]
+        self.__constrs = [Constr(self.__model, i) for i in range(n_constrs)]
 
 
 # same as previous class, but does not stores
 # anything and does not allows modification,
 # used in callbacks
 class VConstrList(Sequence):
-    def __init__(self: "VConstrList", model: "mip.Model"):
+    def __init__(self: "VConstrList", model: Model):
         self.__model = model
 
     def __getitem__(self: "VConstrList", key):
         if isinstance(key, str):
             return self.__model.constr_by_name(key)
         elif isinstance(key, int):
-            return mip.Constr(self.__model, key)
+            return Constr(self.__model, key)
         elif isinstance(key, slice):
             return self[key]
 
@@ -198,7 +200,7 @@ class EmptyVarSol(Sequence):
     """A list that always returns None when acessed, just to be used
     when no solution is available."""
 
-    def __init__(self: "EmptyVarSol", model: "mip.Model"):
+    def __init__(self: "EmptyVarSol", model: Model):
         self.__model = model
 
     def __len__(self) -> int:
@@ -212,7 +214,7 @@ class EmptyRowSol(Sequence):
     """A list that always returns None when acessed, just to be used
     when no solution is available."""
 
-    def __init__(self: "EmptyRowSol", model: "mip.Model"):
+    def __init__(self: "EmptyRowSol", model: Model):
         self.__model = model
 
     def __len__(self) -> int:

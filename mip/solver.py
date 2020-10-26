@@ -3,14 +3,25 @@ Python-MIP
 """
 from typing import List, Tuple, Optional, Union
 import numbers
-import mip
+
+from .constants import (
+    INF,
+    CONTINUOUS,
+    CutType,
+    INT_MAX,
+    OptimizationStatus,
+    SearchEmphasis,
+)
+from .entities import Column, LinExpr, Var, Constr, Column
+from .model import Model
+from .callbacks import CutPool
 
 
 class Solver:
     """The solver is an abstract class with the solver independent
     API to communicate with the solver engine"""
 
-    def __init__(self: "Solver", model: "Model", name: str = "", sense: str = ""):
+    def __init__(self: "Solver", model: Model, name: str = "", sense: str = ""):
         self.model = model
         if name:
             self.name = name
@@ -25,32 +36,32 @@ class Solver:
         name: str = "",
         obj: numbers.Real = 0,
         lb: numbers.Real = 0,
-        ub: numbers.Real = mip.INF,
-        var_type: str = mip.CONTINUOUS,
-        column: "Column" = None,
+        ub: numbers.Real = INF,
+        var_type: str = CONTINUOUS,
+        column: Column = None,
     ):
         pass
 
-    def add_constr(self: "Solver", lin_expr: "mip.LinExpr", name: str = ""):
+    def add_constr(self: "Solver", lin_expr: LinExpr, name: str = ""):
         pass
 
-    def add_lazy_constr(self: "Solver", lin_expr: "mip.LinExpr"):
+    def add_lazy_constr(self: "Solver", lin_expr: LinExpr):
         pass
 
     def add_sos(
         self: "Solver",
-        sos: List[Tuple["mip.Var", numbers.Real]],
+        sos: List[Tuple[Var, numbers.Real]],
         sos_type: int,
     ):
         pass
 
-    def add_cut(self: "Solver", lin_expr: "mip.LinExpr"):
+    def add_cut(self: "Solver", lin_expr: LinExpr):
         pass
 
     def get_objective_bound(self: "Solver") -> numbers.Real:
         pass
 
-    def get_objective(self: "Solver") -> "mip.LinExpr":
+    def get_objective(self: "Solver") -> LinExpr:
         pass
 
     def get_objective_const(self: "Solver") -> numbers.Real:
@@ -61,21 +72,21 @@ class Solver:
 
     def generate_cuts(
         self,
-        cut_types: Optional[List[mip.CutType]] = None,
+        cut_types: Optional[List[CutType]] = None,
         depth: int = 0,
         npass: int = 0,
-        max_cuts: int = mip.INT_MAX,
+        max_cuts: int = INT_MAX,
         min_viol: numbers.Real = 1e-4,
-    ) -> "mip.CutPool":
+    ) -> CutPool:
         pass
 
-    def clique_merge(self, constrs: Optional[List["mip.Constr"]] = None):
+    def clique_merge(self, constrs: Optional[List[Constr]] = None):
         pass
 
     def optimize(
         self: "Solver",
         relax: bool = False,
-    ) -> "mip.OptimizationStatus":
+    ) -> OptimizationStatus:
         pass
 
     def get_objective_value(self: "Solver") -> numbers.Real:
@@ -98,10 +109,10 @@ class Solver:
     def set_objective_sense(self: "Solver", sense: str):
         pass
 
-    def set_start(self: "Solver", start: List[Tuple["mip.Var", numbers.Real]]):
+    def set_start(self: "Solver", start: List[Tuple[Var, numbers.Real]]):
         pass
 
-    def set_objective(self: "Solver", lin_expr: "mip.LinExpr", sense: str = ""):
+    def set_objective(self: "Solver", lin_expr: LinExpr, sense: str = ""):
         pass
 
     def set_objective_const(self: "Solver", const: numbers.Real):
@@ -109,11 +120,11 @@ class Solver:
 
     def set_processing_limits(
         self: "Solver",
-        max_time: numbers.Real = mip.INF,
-        max_nodes: int = mip.INT_MAX,
-        max_sol: int = mip.INT_MAX,
-        max_seconds_same_incumbent: float = mip.INF,
-        max_nodes_same_incumbent: int = mip.INT_MAX,
+        max_time: numbers.Real = INF,
+        max_nodes: int = INT_MAX,
+        max_sol: int = INT_MAX,
+        max_seconds_same_incumbent: float = INF,
+        max_nodes_same_incumbent: int = INT_MAX,
     ):
         pass
 
@@ -162,10 +173,10 @@ class Solver:
     def num_int(self: "Solver") -> int:
         pass
 
-    def get_emphasis(self: "Solver") -> mip.SearchEmphasis:
+    def get_emphasis(self: "Solver") -> SearchEmphasis:
         pass
 
-    def set_emphasis(self: "Solver", emph: mip.SearchEmphasis):
+    def set_emphasis(self: "Solver", emph: SearchEmphasis):
         pass
 
     def get_cutoff(self: "Solver") -> numbers.Real:
@@ -194,12 +205,10 @@ class Solver:
 
     # Constraint-related getters/setters
 
-    def constr_get_expr(self: "Solver", constr: "mip.Constr") -> "mip.LinExpr":
+    def constr_get_expr(self: "Solver", constr: Constr) -> LinExpr:
         pass
 
-    def constr_set_expr(
-        self: "Solver", constr: "mip.Constr", value: "mip.LinExpr"
-    ) -> "mip.LinExpr":
+    def constr_set_expr(self: "Solver", constr: Constr, value: LinExpr) -> LinExpr:
         pass
 
     def constr_get_rhs(self: "Solver", idx: int) -> numbers.Real:
@@ -211,10 +220,10 @@ class Solver:
     def constr_get_name(self: "Solver", idx: int) -> str:
         pass
 
-    def constr_get_pi(self: "Solver", constr: "mip.Constr") -> numbers.Real:
+    def constr_get_pi(self: "Solver", constr: Constr) -> numbers.Real:
         pass
 
-    def constr_get_slack(self: "Solver", constr: "mip.Constr") -> numbers.Real:
+    def constr_get_slack(self: "Solver", constr: Constr) -> numbers.Real:
         pass
 
     def remove_constrs(self: "Solver", constrsList: List[int]):
@@ -225,44 +234,44 @@ class Solver:
 
     # Variable-related getters/setters
 
-    def var_get_lb(self: "Solver", var: "mip.Var") -> numbers.Real:
+    def var_get_lb(self: "Solver", var: Var) -> numbers.Real:
         pass
 
-    def var_set_lb(self: "Solver", var: "mip.Var", value: numbers.Real):
+    def var_set_lb(self: "Solver", var: Var, value: numbers.Real):
         pass
 
-    def var_get_ub(self: "Solver", var: "mip.Var") -> numbers.Real:
+    def var_get_ub(self: "Solver", var: Var) -> numbers.Real:
         pass
 
-    def var_set_ub(self: "Solver", var: "mip.Var", value: numbers.Real):
+    def var_set_ub(self: "Solver", var: Var, value: numbers.Real):
         pass
 
-    def var_get_obj(self: "Solver", var: "mip.Var") -> numbers.Real:
+    def var_get_obj(self: "Solver", var: Var) -> numbers.Real:
         pass
 
-    def var_set_obj(self: "Solver", var: "mip.Var", value: numbers.Real):
+    def var_set_obj(self: "Solver", var: Var, value: numbers.Real):
         pass
 
-    def var_get_var_type(self: "Solver", var: "mip.Var") -> str:
+    def var_get_var_type(self: "Solver", var: Var) -> str:
         pass
 
-    def var_set_var_type(self: "Solver", var: "mip.Var", value: str):
+    def var_set_var_type(self: "Solver", var: Var, value: str):
         pass
 
-    def var_get_column(self: "Solver", var: "mip.Var") -> "Column":
+    def var_get_column(self: "Solver", var: Var) -> Column:
         pass
 
-    def var_set_column(self: "Solver", var: "mip.Var", value: "Column"):
+    def var_set_column(self: "Solver", var: Var, value: Column):
         pass
 
-    def var_get_rc(self: "Solver", var: "mip.Var") -> numbers.Real:
+    def var_get_rc(self: "Solver", var: Var) -> numbers.Real:
         pass
 
-    def var_get_x(self: "Solver", var: "mip.Var") -> numbers.Real:
+    def var_get_x(self: "Solver", var: Var) -> numbers.Real:
         """Assumes that the solution is available (should be checked
         before calling it"""
 
-    def var_get_xi(self: "Solver", var: "mip.Var", i: int) -> numbers.Real:
+    def var_get_xi(self: "Solver", var: Var, i: int) -> numbers.Real:
         pass
 
     def var_get_name(self: "Solver", idx: int) -> str:
@@ -280,7 +289,7 @@ class Solver:
     def set_problem_name(self: "Solver", name: str):
         pass
 
-    def get_status(self: "Solver") -> mip.OptimizationStatus:
+    def get_status(self: "Solver") -> OptimizationStatus:
         pass
 
     def cgraph_density(self: "Solver") -> float:
@@ -289,16 +298,16 @@ class Solver:
 
     def conflicting(
         self: "Solver",
-        e1: Union["mip.LinExpr", "mip.Var"],
-        e2: Union["mip.LinExpr", "mip.Var"],
+        e1: Union[LinExpr, Var],
+        e2: Union[LinExpr, Var],
     ) -> bool:
         """Checks if two assignment to binary variables are in conflict,
         returns none if no conflict graph is available"""
         pass
 
     def conflicting_nodes(
-        self: "Solver", v1: Union["mip.Var", "mip.LinExpr"]
-    ) -> Tuple[List["mip.Var"], List["mip.Var"]]:
+        self: "Solver", v1: Union[Var, LinExpr]
+    ) -> Tuple[List[Var], List[Var]]:
         """Returns all assignment conflicting with the assignment in v1 in the
         conflict graph.
         """

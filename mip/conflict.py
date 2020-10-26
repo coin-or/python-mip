@@ -1,7 +1,16 @@
 import logging
 from enum import Enum
-
-import mip
+from .model import Model, xsum
+from .constants import (
+    INF,
+    OptimizationStatus,
+    INTEGER,
+    BINARY,
+    CONTINUOUS,
+    ConstraintPriority,
+    MINIMIZE,
+)
+from .lists import ConstrList, VarList
 
 logger = logging.getLogger("conflict")
 
@@ -14,20 +23,20 @@ class IISFinderAlgorithm(Enum):
 class ConflictFinder:
     """This class groups some IIS (Irreducible Infeasible Set) search algorithms"""
 
-    def __init__(self, model: mip.Model):
-        if model.status == mip.OptimizationStatus.LOADED:
+    def __init__(self, model: Model):
+        if model.status == OptimizationStatus.LOADED:
             logger.debug("model not runned yet, checking if feasible or not")
             model.emphasis = 1  # feasibility
             model.preprocess = 1  # -1  automatic, 0  off, 1  on.
             model.optimize()
         assert (
-            model.status == mip.OptimizationStatus.INFEASIBLE
+            model.status == OptimizationStatus.INFEASIBLE
         ), "model is not linear infeasible"
         self.model = model
 
     def find_iis(
         self, method: IISFinderAlgorithm = IISFinderAlgorithm.DELETION_FILTER
-    ) -> mip.ConstrList:
+    ) -> ConstrList:
         """main method to find an IIS, this method is just a grouping of the other implementations
 
         Args:
@@ -43,7 +52,7 @@ class ConflictFinder:
         if method == IISFinderAlgorithm.ADDITIVE_ALGORITHM:
             return self.additive_algorithm()
 
-    def deletion_filter(self) -> mip.ConstrList:
+    def deletion_filter(self) -> ConstrList:
         """deletion filter algorithm for search an IIS
 
         Args:
@@ -71,12 +80,12 @@ class ConflictFinder:
             # 2. test feasibility, if feasible, return dropped constraint to the set
             # 2.1 else removed it permanently
             # logger.debug('status {}'.format(status))
-            if status == mip.OptimizationStatus.INFEASIBLE:
+            if status == OptimizationStatus.INFEASIBLE:
                 logger.debug("removing permanently {}".format(inc_crt.name))
                 continue
             elif status in [
-                mip.OptimizationStatus.FEASIBLE,
-                mip.OptimizationStatus.OPTIMAL,
+                OptimizationStatus.FEASIBLE,
+                OptimizationStatus.OPTIMAL,
             ]:
                 aux_model.add_constr(
                     inc_crt.expr, name=inc_crt.name, priority=inc_crt.priority
@@ -86,14 +95,14 @@ class ConflictFinder:
 
         return iis
 
-    def additive_algorithm(self) -> mip.ConstrList:
+    def additive_algorithm(self) -> ConstrList:
         """Additive algorithm to find an IIS
 
         Returns:
             mip.ConstrList: IIS
         """
         # Create some aux models to test feasibility of the set of constraints
-        aux_model_testing = mip.Model()
+        aux_model_testing = Model()
         for var in self.model.vars:
             aux_model_testing.add_var(
                 name=var.name,
@@ -112,8 +121,8 @@ class ConflictFinder:
 
         # algorithm start
         all_constraints = self.model.constrs
-        testing_crt_set = mip.ConstrList(model=aux_model_testing)  # T
-        iis = mip.ConstrList(model=aux_model_iis)  # I
+        testing_crt_set = ConstrList(model=aux_model_testing)  # T
+        iis = ConstrList(model=aux_model_iis)  # I
 
         while True:
             for crt in all_constraints:
@@ -121,18 +130,18 @@ class ConflictFinder:
                 aux_model_testing.constrs = testing_crt_set
                 aux_model_testing.optimize()
 
-                if aux_model_testing.status == mip.OptimizationStatus.INFEASIBLE:
+                if aux_model_testing.status == OptimizationStatus.INFEASIBLE:
                     iis.add(crt.expr, name=crt.name)
                     aux_model_iis.constrs = iis
                     aux_model_iis.optimize()
 
-                    if aux_model_iis.status == mip.OptimizationStatus.INFEASIBLE:
+                    if aux_model_iis.status == OptimizationStatus.INFEASIBLE:
                         return iis
                     elif aux_model_iis.status in [
-                        mip.OptimizationStatus.FEASIBLE,
-                        mip.OptimizationStatus.OPTIMAL,
+                        OptimizationStatus.FEASIBLE,
+                        OptimizationStatus.OPTIMAL,
                     ]:
-                        testing_crt_set = mip.ConstrList(model=aux_model_testing)
+                        testing_crt_set = ConstrList(model=aux_model_testing)
                         for (
                             crt
                         ) in (
@@ -141,7 +150,7 @@ class ConflictFinder:
                             testing_crt_set.add(crt.expr, name=crt.name)
                         break
 
-    def deletion_filter_milp_ir_lc_bd(self) -> mip.ConstrList:
+    def deletion_filter_milp_ir_lc_bd(self) -> ConstrList:
         """Integer deletion filter algorithm (milp_ir_lc_bd)
 
         Raises:
@@ -152,16 +161,16 @@ class ConflictFinder:
         """
         raise NotImplementedError("WIP")
         # major constraint sets definition
-        t_aux_model = mip.Model(name="t_auxiliary_model")
-        iis_aux_model = mip.Model(name="t_auxiliary_model")
+        t_aux_model = Model(name="t_auxiliary_model")
+        iis_aux_model = Model(name="t_auxiliary_model")
 
-        linear_constraints = mip.ConstrList(
+        linear_constraints = ConstrList(
             model=t_aux_model
         )  # all the linear model constraints
-        variable_bound_constraints = mip.ConstrList(
+        variable_bound_constraints = ConstrList(
             model=t_aux_model
         )  # all the linear model constrants related specifically for the variable bounds
-        integer_varlist_crt = mip.VarList(
+        integer_varlist_crt = VarList(
             model=t_aux_model
         )  # the nature vars constraints for vartype in Integer/Binary
 
@@ -169,16 +178,16 @@ class ConflictFinder:
         for crt in self.model.constrs:
             linear_constraints.add(crt.expr, name=crt.name)
         for var in self.model.vars:
-            if var.lb != -mip.INF:
+            if var.lb != -INF:
                 variable_bound_constraints.add(
                     var >= var.lb, name="{}_lb_crt".format(var.name)
                 )
-            if var.ub != mip.INF:
+            if var.ub != INF:
                 variable_bound_constraints.add(
                     var <= var.ub, name="{}_ub_crt".format(var.name)
                 )
         for var in self.model.vars:
-            if var.var_type in (mip.INTEGER, mip.BINARY):
+            if var.var_type in (INTEGER, BINARY):
                 integer_varlist_crt.add(var)
 
         status = "IIS"
@@ -188,14 +197,12 @@ class ConflictFinder:
         ) in (
             self.model.vars
         ):  # add all variables as if they where CONTINUOUS and without bonds (because this will be separated)
-            iis_aux_model.add_var(
-                name=var.name, lb=-mip.INF, ub=mip.INF, var_type=mip.CONTINUOUS
-            )
+            iis_aux_model.add_var(name=var.name, lb=-INF, ub=INF, var_type=CONTINUOUS)
         for crt in linear_constraints + variable_bound_constraints:
             iis_aux_model.add_constr(crt.expr, name=crt.name, priority=crt.priority)
 
         iis_aux_model.optimize()
-        if iis_aux_model.status == mip.OptimizationStatus.INFEASIBLE:
+        if iis_aux_model.status == OptimizationStatus.INFEASIBLE:
             # if infeasible means that this is a particular version of an LP
             return self.deletion_filter()  # (STEP 2)
 
@@ -206,8 +213,8 @@ class ConflictFinder:
         for var in integer_varlist_crt:
             iis_aux_model.add_var(
                 name=var.name,
-                lb=-mip.INF,
-                ub=mip.INF,
+                lb=-INF,
+                ub=INF,
                 var_type=var.var_type,  # this will add the var with his original type
             )
         # filter IR constraints that create infeasibility (STEP 1)
@@ -215,9 +222,9 @@ class ConflictFinder:
             iis_aux_model.vars.remove(iis_aux_model.var_by_name(var.name))
             iis_aux_model.add_var(
                 name=var.name,
-                lb=-mip.INF,
-                ub=mip.INF,
-                var_type=mip.CONTINUOUS,  # relax the integer constraint over var
+                lb=-INF,
+                ub=INF,
+                var_type=CONTINUOUS,  # relax the integer constraint over var
             )
             iis_aux_model.optimize()
             # if infeasible then update incumbent T = T-{ir_var_crt}
@@ -226,20 +233,20 @@ class ConflictFinder:
         # STEP 3 filter BD constraints
         # return IS o IIS
 
-    def deletion_filter_milp_lc_ir_bd(self) -> mip.ConstrList:
+    def deletion_filter_milp_lc_ir_bd(self) -> ConstrList:
         # TODO
         raise NotImplementedError
 
 
 class ConflictRelaxer:
-    def __init__(self, model: mip.Model):
-        if model.status == mip.OptimizationStatus.LOADED:
+    def __init__(self, model: Model):
+        if model.status == OptimizationStatus.LOADED:
             logger.debug("model not runned yet, checking if feasible or not")
             model.emphasis = 1  # feasibility
             model.preprocess = 1  # -1  automatic, 0  off, 1  on.
             model.optimize()
         assert (
-            model.status == mip.OptimizationStatus.INFEASIBLE
+            model.status == OptimizationStatus.INFEASIBLE
         ), "model is not linear infeasible"
 
         self.model = model
@@ -261,8 +268,8 @@ class ConflictRelaxer:
     def hierarchy_relaxer(
         self,
         relaxer_objective: str = "min_abs_slack_val",
-        default_priority: mip.constants.ConstraintPriority = mip.constants.ConstraintPriority.MANDATORY,
-    ) -> mip.Model:
+        default_priority: ConstraintPriority = ConstraintPriority.MANDATORY,
+    ) -> Model:
         """hierarchy relaxer algorithm, it's gonna find a IIS and then relax it using the objective function defined (`relaxer_objective`) and then update the model
         with the relaxed constraints. This process runs until there's not more IIS on the model.
 
@@ -295,9 +302,7 @@ class ConflictRelaxer:
 
             iis_priority_list = [crt.priority for crt in iis]
             # check if "relaxable" model mapping
-            if set(iis_priority_list) == set(
-                [mip.constants.ConstraintPriority.MANDATORY]
-            ):
+            if set(iis_priority_list) == {ConstraintPriority.MANDATORY}:
                 raise Exception(
                     "Infeasible model, is not possible to relax MANDATORY constraints"
                 )
@@ -313,8 +318,8 @@ class ConflictRelaxer:
             relaxed_model.emphasis = 1  # feasibility
             relaxed_model.optimize()
             if relaxed_model.status in [
-                mip.OptimizationStatus.FEASIBLE,
-                mip.OptimizationStatus.OPTIMAL,
+                OptimizationStatus.FEASIBLE,
+                OptimizationStatus.OPTIMAL,
             ]:
                 logger.debug("finished relaxation process !")
                 break
@@ -328,7 +333,7 @@ class ConflictRelaxer:
 
     @classmethod
     def relax_iis(
-        cls, iis: mip.ConstrList, relaxer_objective: str = "min_abs_slack_val"
+        cls, iis: ConstrList, relaxer_objective: str = "min_abs_slack_val"
     ) -> dict:
 
         """This function is the sub module that finds the optimum relaxation for an IIS, given a crt priority mapping and a objective function
@@ -340,7 +345,7 @@ class ConflictRelaxer:
         Returns:
             dict: a slack variable dictionary with the value of the {constraint_name:slack.value} pair to be added to each constraint in order to make the IIS feasible
         """
-        relax_iis_model = mip.Model()
+        relax_iis_model = Model()
         lowest_priority = min([crt.priority for crt in iis])
         to_relax_crts = [crt for crt in iis if crt.priority == lowest_priority]
 
@@ -361,16 +366,16 @@ class ConflictRelaxer:
                 # if this is a -toberelax- constraint
                 slack_vars[crt.name] = relax_iis_model.add_var(
                     name="{0}__{1}".format(crt.name, "slack"),
-                    lb=-mip.INF,
-                    ub=mip.INF,
-                    var_type=mip.CONTINUOUS,
+                    lb=-INF,
+                    ub=INF,
+                    var_type=CONTINUOUS,
                 )
 
                 abs_slack_vars[crt.name] = relax_iis_model.add_var(
                     name="{0}_abs".format(slack_vars[crt.name].name),
                     lb=0,
-                    ub=mip.INF,
-                    var_type=mip.CONTINUOUS,
+                    ub=INF,
+                    var_type=CONTINUOUS,
                 )
 
                 # add relaxed constraint to model
@@ -397,10 +402,10 @@ class ConflictRelaxer:
                 )
 
         # find the min abs value of the slack variables
-        relax_iis_model.objective = mip.xsum(list(abs_slack_vars.values()))
-        relax_iis_model.sense = mip.MINIMIZE
+        relax_iis_model.objective = xsum(list(abs_slack_vars.values()))
+        relax_iis_model.sense = MINIMIZE
         relax_iis_model.optimize()
-        if relax_iis_model.status == mip.OptimizationStatus.INFEASIBLE:
+        if relax_iis_model.status == OptimizationStatus.INFEASIBLE:
             raise ValueError(
                 "sub relaxation model infeasible, this could mean that in the IIS the mandatory constraints are infeasible sometimes. Also could mean that the big_m parameter is overflowed "
             )
@@ -412,7 +417,7 @@ class ConflictRelaxer:
         return slack_dict
 
     @classmethod
-    def relax_constraints(cls, relaxed_model: mip.Model, slack_dict: dict) -> mip.Model:
+    def relax_constraints(cls, relaxed_model: Model, slack_dict: dict) -> Model:
         """this method creates a modification of the model `relaxed_model` where all the constraints in the slack_dict are
         modified in order to add the slack values to make the IIS disappear
 
