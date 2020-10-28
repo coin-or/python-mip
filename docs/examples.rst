@@ -435,7 +435,7 @@ given below:
 This formulation can be improved by including symmetry reducing constraints, such as:
 
 .. math::
-        y_{j-1} \geq y_{j}  \;\; \forall j \in \{ 2 \ldots m \} \\
+        y_{j-1} \geq y_{j}  \;\; \forall j \in \{ 2 \ldots n \} \\
 
 
 The following Python-MIP code creates the formulation proposed by
@@ -445,6 +445,8 @@ The following Python-MIP code creates the formulation proposed by
     :caption: Formulation for the One-dimensional Cutting Stock Problem (examples/cuttingstock_kantorovich.py)
     :linenos:
     :lines: 4-39
+
+Note in the code above that argument :code:`obj` was employed to create the variables (see lines 11 and 13). By setting :code:`obj` to a value different than zero, the created variable is automatically added to the objective function with coefficient equal to :code:`obj`'s value.
 
 
 Two-Dimensional Level Packing
