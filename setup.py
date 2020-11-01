@@ -1,18 +1,12 @@
 import setuptools
 
 
-# read the version number
-version_dict = {}
-exec(open("mip/constants.py").read(), version_dict)
-VERSION = version_dict["VERSION"]
-
 with open("README.md", "r") as fh:
     long_descr = fh.read()
 
 setuptools.setup(
     name="mip",
     python_requires=">3.5.0",
-    version=VERSION,
     author="Santos, H.G. and Toffolo, T.A.M.",
     author_email="haroldo@ufop.edu.br",
     description="Python tools for Modeling and Solving Mixed-Integer Linear \
@@ -36,4 +30,8 @@ setuptools.setup(
         "License :: OSI Approved :: Eclipse Public License 2.0 (EPL-2.0)",
         "Operating System :: OS Independent",
     ],
+    use_scm_version={
+        "write_to": "mip/version.py"
+    },
+    setup_requires=['setuptools_scm']
 )
