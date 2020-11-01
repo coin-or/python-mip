@@ -79,24 +79,24 @@ class Model:
 
             # creating a solver instance
             if self.solver_name.upper() in ["GUROBI", "GRB"]:
-                import mip.gurobi
+                from . import gurobi
 
-                self.solver = mip.gurobi.SolverGurobi(self, name, sense)
+                self.solver = gurobi.SolverGurobi(self, name, sense)
             elif self.solver_name.upper() == "CBC":
-                import mip.cbc
+                from . import cbc
 
-                self.solver = mip.cbc.SolverCbc(self, name, sense)
+                self.solver = cbc.SolverCbc(self, name, sense)
             else:
-                import mip.gurobi
+                from . import gurobi
 
-                if mip.gurobi.found:
+                if gurobi.found:
 
-                    self.solver = mip.gurobi.SolverGurobi(self, name, sense)
+                    self.solver = gurobi.SolverGurobi(self, name, sense)
                     self.solver_name = mip.GUROBI
                 else:
-                    import mip.cbc
+                    from . import cbc
 
-                    self.solver = mip.cbc.SolverCbc(self, name, sense)
+                    self.solver = cbc.SolverCbc(self, name, sense)
                     self.solver_name = mip.CBC
 
         # list of constraints and variables
