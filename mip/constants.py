@@ -3,8 +3,6 @@
 from enum import Enum
 from cffi import FFI
 
-VERSION = "1.12.0"
-
 ffi = FFI()
 
 # epsilon number (practical zero)
