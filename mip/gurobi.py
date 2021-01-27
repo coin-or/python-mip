@@ -1067,6 +1067,15 @@ class SolverGurobi(Solver):
             raise ParameterNotAvailable("Error calling GRBdelconstrs")
         self.__n_modified_rows += len(constrsList)
 
+    # Variable-related getters/setters\
+
+    def var_get_branch_priority(self: "Solver", var: "mip.Var") -> numbers.Real:
+        self.flush_cols()
+        return self.get_int_attr_element("BranchPriority", var.idx)
+
+    def var_set_branch_priority(self: "Solver", var: "mip.Var", value: numbers.Real):
+        self.set_int_attr_element("BranchPriority", var.idx, value)
+
     def var_get_lb(self, var: Var) -> float:
         self.flush_cols()
         return self.get_dbl_attr_element("LB", var.idx)

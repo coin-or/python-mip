@@ -2090,6 +2090,13 @@ class SolverOsi(Solver):
         return None
 
     # Variable-related getters/setters
+
+    def var_get_branch_priority(self, var: "Var") -> numbers.Real:
+        return 0 # todo: modify branch priority in CBC
+
+    def var_set_branch_priority(self, var: "Var", value: numbers.Real):
+        raise ParameterNotAvailable("Attribute branch_priority cannot be modified in CBC at the moment")
+
     def var_get_lb(self, var: "Var") -> numbers.Real:
         x = cbclib.Osi_getColLower(self.osi)
         return x[var.idx]

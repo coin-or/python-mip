@@ -225,6 +225,12 @@ class Solver:
 
     # Variable-related getters/setters
 
+    def var_get_branch_priority(self: "Solver", var: "mip.Var") -> numbers.Real:
+        pass
+
+    def var_set_branch_priority(self: "Solver", var: "mip.Var", value: numbers.Real):
+        pass
+
     def var_get_lb(self: "Solver", var: "mip.Var") -> numbers.Real:
         pass
 

@@ -697,6 +697,18 @@ class Var:
         self.__model.solver.var_set_obj(self, value)
 
     @property
+    def branch_priority(self) -> numbers.Real:
+        """
+        Variable's branching priority in the branch and bound process.
+        Note: variables with higher priority are selected first. Default value is zero.
+        """
+        return self.__model.solver.var_get_branch_priority(self)
+
+    @branch_priority.setter
+    def branch_priority(self, value: numbers.Real):
+        self.__model.solver.var_set_branch_priority(self, value)
+
+    @property
     def var_type(self) -> str:
         """Variable type, ('B') BINARY, ('C') CONTINUOUS and ('I') INTEGER."""
         return self.__model.solver.var_get_var_type(self)
