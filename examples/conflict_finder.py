@@ -1,6 +1,4 @@
 
-"""Conflict Finder and Conflict Relaxer example"""
-
 import logging
 import numpy as np
 import sys
@@ -8,22 +6,14 @@ import random
 from mip.conflict import ConflictFinder, ConflictRelaxer
 import mip
 
+# logger = logging.getLogger(__name__)
 logger = logging.getLogger("conflict")
 
 
 def build_infeasible_cont_model(
     num_constraints: int = 10, num_infeasible_sets: int = 20
 ) -> mip.Model:
-    """ This function creates a random infeasible model. The infeasibility it's just 
-    created using mutual infeasible set (x >= a) and  (x <= -a)
-
-    Args:
-        num_constraints (int, optional): number of constraints added into the model . Defaults to 10.
-        num_infeasible_sets (int, optional): the number of infeasible sets (num_constraints*2). Defaults to 20.
-
-    Returns:
-        mip.Model: an infeasible model 
-    """    
+    # build an infeasible model, based on many redundant constraints
     mdl = mip.Model(name="infeasible_model_continuous")
     var = mdl.add_var(name="x", var_type=mip.CONTINUOUS, lb=-1000, ub=1000)
 
@@ -45,6 +35,9 @@ def build_infeasible_cont_model(
         crt.priority = random.choice(list(mip.constants.ConstraintPriority)[:1])
         logger.debug("added {} to the model".format(crt))
 
+    mdl.emphasis = 1  # feasibility
+    mdl.preprocess = 1  # -1  automatic, 0  off, 1  on.
+    # mdl.pump_passes TODO configure to feasibility emphasis
     return mdl
 
 
