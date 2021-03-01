@@ -117,7 +117,7 @@ The following code alters the objective function to :math:`\sum_{i=0}^{n-1} c_ix
 
    m.objective = xsum(c[i]*x[i] for i in range(n))
 
-To specify whether the goal is to *Minimize* or *Maximize* the objetive function, two useful functions were included: :func:`~mip.minimize` and :func:`~mip.maximize`. Below are two usage examples:
+To specify whether the goal is to *Minimize* or *Maximize* the objective function, two useful functions were included: :func:`~mip.minimize` and :func:`~mip.maximize`. Below are two usage examples:
 
 .. code-block:: python
 
