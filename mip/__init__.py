@@ -6,8 +6,8 @@ from mip.lists import ConstrList, VarList, VConstrList, VVarList
 from mip.exceptions import *
 from mip.ndarray import LinExprTensor
 from mip.entities import Column, Constr, LinExpr, Var, ConflictGraph
-from mip.conflict import *
 from mip.model import *
+from mip.conflict import *
 from mip.version import version as __version__
 
 name = "mip"
