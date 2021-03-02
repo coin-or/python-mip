@@ -109,6 +109,11 @@ class ConflictFinder:
         aux_model_iis = (
             aux_model_testing.copy()
         )  # a second aux model to test feasibility of the incumbent iis
+
+        # algorithm start	
+        all_constraints = self.model.constrs	
+        testing_crt_set = mip.ConstrList(model=aux_model_testing)  # T
+
         iis = mip.ConstrList(model=aux_model_iis)  # I
 
         while True:
