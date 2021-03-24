@@ -349,10 +349,11 @@ if has_cbc:
         const double colValues[]);
 
     enum LPMethod {
-      LPM_Auto    = 0,  /*! Solver will decide automatically which method to use */
-      LPM_Dual    = 1,  /*! Dual simplex */
-      LPM_Primal  = 2,  /*! Primal simplex */
-      LPM_Barrier = 3   /*! The barrier algorithm. */
+      LPM_Auto           = 0,  /*! Solver will decide automatically which method to use */
+      LPM_Dual           = 1,  /*! Dual simplex */
+      LPM_Primal         = 2,  /*! Primal simplex */
+      LPM_Barrier        = 3,  /*! The barrier algorithm */
+      LPM_BarrierNoCross = 4   /*! Barrier algorithm, not to be followed by crossover */
     };
 
     void
@@ -1196,6 +1197,8 @@ class SolverCbc(Solver):
 
         if self.model.lp_method == LP_Method.BARRIER:
             cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_Barrier)
+        elif self.model.lp_method == LP_Method.BARRIERNOCROSS:
+            cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_BarrierNoCross)
         elif self.model.lp_method == LP_Method.DUAL:
             cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_Dual)
         elif self.model.lp_method == LP_Method.PRIMAL:

@@ -662,6 +662,9 @@ class SolverGurobi(Solver):
             self.set_int_param("Method", 1)
         elif self.model.lp_method == LP_Method.BARRIER:
             self.set_int_param("Method", 2)
+        elif self.model.lp_method == LP_Method.BARRIERNOCROSS:
+            self.set_int_param("Method", 2)
+            self.set_int_param("Crossover", 0)
         else:
             self.set_int_param("Method", 3)
 
