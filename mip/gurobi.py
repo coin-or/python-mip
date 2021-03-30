@@ -232,6 +232,8 @@ else:
             const double *lazyval, char lazysense, double lazyrhs);
 
         int GRBdelconstrs (GRBmodel *model, int numdel, int *ind);
+
+        int	GRBreset (GRBmodel *model, int clearall);
     """
     )
 
@@ -280,6 +282,7 @@ else:
     GRBgetstrattr = grblib.GRBgetstrattr
     GRBsetstrattr = grblib.GRBsetstrattr
     GRBgetdblattrarray = grblib.GRBgetdblattrarray
+    GRBreset = grblib.GRBreset
 
     GRB_CB_MIPSOL = 4
     GRB_CB_MIPNODE = 5
@@ -1336,6 +1339,15 @@ class SolverGurobi(Solver):
     def set_pump_passes(self, passes: int):
         self.set_int_param("PumpPasses", passes)
 
+    def reset(self):
+        self.__x = EmptyVarSol(self.model)
+        self.__rc = EmptyVarSol(self.model)
+        self.__pi = EmptyRowSol(self.model)
+        self.__obj_val = None
+        error = GRBreset(self._model, 0)
+        if error != 0:
+            raise ParameterNotAvailable("Error resetting gurobi model")
+    
 
 class SolverGurobiCB(SolverGurobi):
     """Just like previous solver, but aware that

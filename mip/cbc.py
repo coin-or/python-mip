@@ -557,6 +557,8 @@ if has_cbc:
     int Cbc_nFeatures();
 
     const char *Cbc_featureName(int i);
+
+    void Cbc_reset(Cbc_Model *model);
     """
     )
 
@@ -609,6 +611,8 @@ Cbc_getSolverPtr = cbclib.Cbc_getSolverPtr
 
 Cbc_generateCuts = cbclib.Cbc_generateCuts
 Cbc_solveLinearProgram = cbclib.Cbc_solveLinearProgram
+
+Cbc_reset = cbclib.Cbc_reset
 
 Cbc_computeFeatures = cbclib.Cbc_computeFeatures
 Cbc_nFeatures = cbclib.Cbc_nFeatures
@@ -1636,6 +1640,13 @@ class SolverCbc(Solver):
         fv = ffi.new("double[%d]" % n)
         Cbc_computeFeatures(self._model, fv)
         return [float(fv[i]) for i in range(n)]
+
+    def reset(self):
+        self.__x = EmptyVarSol(self.model)
+        self.__rc = EmptyVarSol(self.model)
+        self.__pi = EmptyRowSol(self.model)
+        self.__obj_val = None
+        Cbc_reset(self._model)
 
 
 def feature_names() -> List[str]:
