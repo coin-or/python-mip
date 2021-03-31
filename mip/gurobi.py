@@ -1347,7 +1347,7 @@ class SolverGurobi(Solver):
         error = GRBreset(self._model, 0)
         if error != 0:
             raise ParameterNotAvailable("Error resetting gurobi model")
-    
+
 
 class SolverGurobiCB(SolverGurobi):
     """Just like previous solver, but aware that
