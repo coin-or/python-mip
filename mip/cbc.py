@@ -1043,10 +1043,28 @@ class SolverCbc(Solver):
             return -1
 
         # incumbent callback
-        def cbc_inc_callback(
-            cbc_model, obj: numbers.Real, nz: int, colNames, colValues, appData
+        @ffi.callback(
+            """
+            int (
+                void *cbcModel,
+                double obj,
+                int nz,
+                char **vnames,
+                double *x,
+                void *appData
+            )
+        """
+        )
+        def cbc_incumbent_callback(
+            cbc_model, obj: numbers.Real, nz: int, vnames, x, appData
         ):
-            return
+
+            x_py = ffi.unpack(x, nz)
+            vnames_py = [ffi.string(s).decode("ascii") for s in ffi.unpack(vnames, nz)]
+            vars = {n: v for n, v in zip(vnames_py, x_py)}
+            print(vars)
+            print(f"incumbent callback!!!")
+            return 1
 
         # cut callback
         @ffi.callback(
@@ -1055,6 +1073,7 @@ class SolverCbc(Solver):
         """
         )
         def cbc_cut_callback(osi_solver, osi_cuts, app_data, depth, npass):
+            print(f"cut callback")
             if (
                 osi_solver == ffi.NULL
                 or osi_cuts == ffi.NULL
@@ -1112,6 +1131,9 @@ class SolverCbc(Solver):
             if res == 3:
                 return OptimizationStatus.INFEASIBLE
             return OptimizationStatus.ERROR
+
+        # adding incumbent updater
+        cbclib.Cbc_addIncCallback(self._model, cbc_incumbent_callback, ffi.NULL)
 
         # adding cut generators
         m = self.model
