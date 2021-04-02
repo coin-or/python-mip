@@ -1087,7 +1087,7 @@ class SolverCbc(Solver):
 
             # TODO lmao what is the correct return value???
             # https://github.com/coin-or/Cbc/blob/9d5ff256842bb6c3baa50f62cd23f3de135572b0/test/CInterfaceTest.c#L889
-            return 1
+            return 0
 
         # cut callback
         @ffi.callback(
