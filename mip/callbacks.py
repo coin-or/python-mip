@@ -1,7 +1,7 @@
 """Classes used in solver callbacks, for a bi-directional communication
 with the solver engine"""
 from collections import defaultdict
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 import mip
 
 
@@ -131,7 +131,7 @@ class IncumbentUpdater:
         self,
         objective_value: float,
         solution: List[Tuple["mip.Var", float]],
-    ) -> List[Tuple["mip.Var", float]]:
+    ) -> Optional[List[Tuple["mip.Var", float]]]:
         """Method that is called when a new integer feasible solution is found
 
         Args:

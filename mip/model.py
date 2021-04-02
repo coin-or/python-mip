@@ -113,6 +113,7 @@ class Model:
         self.__preprocess = -1
         self.__cuts_generator = None
         self.__lazy_constrs_generator = None
+        self.__incumbent_updater = None
         self.__start = None
         self.__threads = 0
         self.__lp_method = mip.LP_Method.AUTO
@@ -415,6 +416,7 @@ class Model:
         self.__cuts = 1
         self.__cuts_generator = None
         self.__lazy_constrs_generator = None
+        self.__incumbent_updater = None
         self.__start = []
         self._status = mip.OptimizationStatus.LOADED
         self.__threads = 0
@@ -1003,6 +1005,17 @@ class Model:
     @cuts_generator.setter
     def cuts_generator(self: "Model", cuts_generator: Optional["mip.ConstrsGenerator"]):
         self.__cuts_generator = cuts_generator
+
+    @property
+    def incumbent_updater(self: "Model") -> Optional["mip.IncumbentUpdater"]:
+        """TODO: docstring"""
+        return self.__incumbent_updater
+
+    @incumbent_updater.setter
+    def incumbent_updater(
+        self: "Model", incumbent_updater: Optional["mip.IncumbentUpdater"]
+    ):
+        self.__incumbent_updater = incumbent_updater
 
     @property
     def lazy_constrs_generator(

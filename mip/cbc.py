@@ -1058,12 +1058,35 @@ class SolverCbc(Solver):
         def cbc_incumbent_callback(
             cbc_model, obj: numbers.Real, nz: int, vnames, x, appData
         ):
+            m: mip.Model = self.model
+            if m.incumbent_updater is None:
+                return
 
-            x_py = ffi.unpack(x, nz)
-            vnames_py = [ffi.string(s).decode("ascii") for s in ffi.unpack(vnames, nz)]
-            vars = {n: v for n, v in zip(vnames_py, x_py)}
-            print(vars)
-            print(f"incumbent callback!!!")
+            x_py = [float(x) for x in ffi.unpack(x, nz)]
+            vnames_py = [
+                str(ffi.string(s).decode("ascii")) for s in ffi.unpack(vnames, nz)
+            ]
+
+            mip_vars = []
+            for varname in vnames_py:
+                var = m.var_by_name(varname)
+                if var is None:
+                    raise ValueError(f"No variable named {varname}")
+                mip_vars.append(var)
+            solution = [(var, x) for var, x in zip(mip_vars, x_py)]
+
+            new_solution = m.incumbent_updater.update_incumbent(
+                objective_value=float(obj),
+                solution=solution,
+            )
+            if new_solution is not None:
+                raise NotImplementedError(
+                    f"Updating incumbent using the incumbent"
+                    f"updater is not yet supported."
+                )
+
+            # TODO lmao what is the correct return value???
+            # https://github.com/coin-or/Cbc/blob/9d5ff256842bb6c3baa50f62cd23f3de135572b0/test/CInterfaceTest.c#L889
             return 1
 
         # cut callback
@@ -1132,7 +1155,8 @@ class SolverCbc(Solver):
             return OptimizationStatus.ERROR
 
         # adding incumbent updater
-        cbclib.Cbc_addIncCallback(self._model, cbc_incumbent_callback, ffi.NULL)
+        if self.model.incumbent_updater is not None:
+            cbclib.Cbc_addIncCallback(self._model, cbc_incumbent_callback, ffi.NULL)
 
         # adding cut generators
         m = self.model
