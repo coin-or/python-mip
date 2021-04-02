@@ -1073,7 +1073,6 @@ class SolverCbc(Solver):
         """
         )
         def cbc_cut_callback(osi_solver, osi_cuts, app_data, depth, npass):
-            print(f"cut callback")
             if (
                 osi_solver == ffi.NULL
                 or osi_cuts == ffi.NULL
