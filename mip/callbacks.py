@@ -130,7 +130,6 @@ class IncumbentUpdater:
     def update_incumbent(
         self,
         objective_value: float,
-        best_bound: float,
         solution: List[Tuple["mip.Var", float]],
     ) -> List[Tuple["mip.Var", float]]:
         """Method that is called when a new integer feasible solution is found
