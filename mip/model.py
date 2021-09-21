@@ -1499,6 +1499,13 @@ class Model:
                             "Variable {}={} should be integral.".format(v.name, v.x)
                         )
 
+    def reset(self):
+        """Discards the current solution, putting the model to an unsolved state."""
+        self.solver.reset()
+        self._status = mip.OptimizationStatus.LOADED
+        self.__gap = mip.INF
+        self.__plog = mip.ProgressLog()
+
 
 def maximize(objective: Union["mip.LinExpr", "mip.Var"]) -> "mip.LinExpr":
     """

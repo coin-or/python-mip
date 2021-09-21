@@ -165,6 +165,9 @@ class LP_Method(Enum):
     BARRIER = 3
     """The barrier algorithm"""
 
+    BARRIERNOCROSS = 4
+    """The barrier algorithm without performing crossover"""
+
 
 class ConstraintPriority(Enum):
     """ A constraint categorization level that can be used for the relaxation algorithms"""

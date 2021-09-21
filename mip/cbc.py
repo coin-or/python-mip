@@ -349,10 +349,11 @@ if has_cbc:
         const double colValues[]);
 
     enum LPMethod {
-      LPM_Auto    = 0,  /*! Solver will decide automatically which method to use */
-      LPM_Dual    = 1,  /*! Dual simplex */
-      LPM_Primal  = 2,  /*! Primal simplex */
-      LPM_Barrier = 3   /*! The barrier algorithm. */
+      LPM_Auto           = 0,  /*! Solver will decide automatically which method to use */
+      LPM_Dual           = 1,  /*! Dual simplex */
+      LPM_Primal         = 2,  /*! Primal simplex */
+      LPM_Barrier        = 3,  /*! The barrier algorithm */
+      LPM_BarrierNoCross = 4   /*! Barrier algorithm, not to be followed by crossover */
     };
 
     void
@@ -556,6 +557,8 @@ if has_cbc:
     int Cbc_nFeatures();
 
     const char *Cbc_featureName(int i);
+
+    void Cbc_reset(Cbc_Model *model);
     """
     )
 
@@ -608,6 +611,8 @@ Cbc_getSolverPtr = cbclib.Cbc_getSolverPtr
 
 Cbc_generateCuts = cbclib.Cbc_generateCuts
 Cbc_solveLinearProgram = cbclib.Cbc_solveLinearProgram
+
+Cbc_reset = cbclib.Cbc_reset
 
 Cbc_computeFeatures = cbclib.Cbc_computeFeatures
 Cbc_nFeatures = cbclib.Cbc_nFeatures
@@ -1196,6 +1201,8 @@ class SolverCbc(Solver):
 
         if self.model.lp_method == LP_Method.BARRIER:
             cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_Barrier)
+        elif self.model.lp_method == LP_Method.BARRIERNOCROSS:
+            cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_BarrierNoCross)
         elif self.model.lp_method == LP_Method.DUAL:
             cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_Dual)
         elif self.model.lp_method == LP_Method.PRIMAL:
@@ -1633,6 +1640,13 @@ class SolverCbc(Solver):
         fv = ffi.new("double[%d]" % n)
         Cbc_computeFeatures(self._model, fv)
         return [float(fv[i]) for i in range(n)]
+
+    def reset(self):
+        self.__x = EmptyVarSol(self.model)
+        self.__rc = EmptyVarSol(self.model)
+        self.__pi = EmptyRowSol(self.model)
+        self.__obj_val = None
+        Cbc_reset(self._model)
 
 
 def feature_names() -> List[str]:
