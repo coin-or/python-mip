@@ -39,8 +39,10 @@ class VarList(Sequence):
         if not name:
             name = "var({})".format(len(self.__vars))
         if var_type == mip.BINARY:
-            lb = 0.0
-            ub = 1.0
+            if ub == mip.INF:
+                ub = 1.0
+            if not (0.0 <= lb <= 1.0 and 0.0 <= ub <= 1.0):
+                raise ValueError("Invalid bounds for binary variable")
         new_var = mip.Var(self.__model, len(self.__vars))
         self.__model.solver.add_var(obj, lb, ub, var_type, column, name)
         self.__vars.append(new_var)
