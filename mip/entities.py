@@ -116,7 +116,15 @@ class LinExpr:
         self,
         other: Union["mip.Var", "mip.LinExpr", numbers.Real],
     ) -> "mip.LinExpr":
-        raise DeprecationWarning("Inplace operations are deprecated")
+        if isinstance(other, Var):
+            self.add_var(other, 1)
+        elif isinstance(other, LinExpr):
+            self.add_expr(other)
+        elif isinstance(other, numbers.Real):
+            self.add_const(other)
+        else:
+            raise TypeError("type {} not supported".format(type(other)))
+        return self
 
     def __sub__(
         self,
@@ -143,16 +151,24 @@ class LinExpr:
         self,
         other: Union["mip.Var", "mip.LinExpr", numbers.Real],
     ) -> "mip.LinExpr":
-        raise DeprecationWarning("Inplace operations are deprecated")
+        if isinstance(other, Var):
+            self.add_var(other, -1)
+        elif isinstance(other, LinExpr):
+            self.add_expr(other, -1)
+        elif isinstance(other, numbers.Real):
+            self.add_const(-other)
+        else:
+            raise TypeError("type {} not supported".format(type(other)))
+        return self
 
     def __mul__(self, other: numbers.Real) -> Union["mip.LinExpr", numbers.Real]:
         if not isinstance(other, numbers.Real):
             raise TypeError("Can not multiply with type {}".format(type(other)))
-        if isinstance(other, numbers.Real):
-            if fabs(other) < mip.EPS:
-                return other
-            if fabs(other - 1) < mip.EPS:
-                return self
+
+        if fabs(other) < mip.EPS:
+            return other
+        elif fabs(other - 1) < mip.EPS:
+            return self
 
         result = self.copy()
         result.__const *= other
@@ -164,19 +180,49 @@ class LinExpr:
         return self.__mul__(other)
 
     def __imul__(self, other: numbers.Real) -> "mip.LinExpr":
-        raise DeprecationWarning("Inplace operations are deprecated")
+        if not isinstance(other, numbers.Real):
+            raise TypeError("Can not multiply with type {}".format(type(other)))
+
+        if fabs(other) < mip.EPS:
+            self.__const = 0.0
+            self.__expr = {}  # type: Dict[mip.Var, numbers.Real]
+            return self
+        elif fabs(other - 1) < mip.EPS:
+            return self
+
+        self.__const *= other
+        for var in self.__expr.keys():
+            self.__expr[var] *= other
+        return self
 
     def __truediv__(self, other: numbers.Real) -> "mip.LinExpr":
         if not isinstance(other, numbers.Real):
             raise TypeError("Can not divide with type {}".format(type(other)))
+
+        if fabs(other) < mip.EPS:
+            raise ZeroDivisionError()
+        elif fabs(other - 1) < mip.EPS:
+            return self
+
         result = self.copy()
         result.__const /= other
         for var in result.__expr.keys():
             result.__expr[var] /= other
         return result
 
-    def __itruediv__(self, other: numbers.Real) -> "LinExpr":
-        raise DeprecationWarning("Inplace operations are deprecated")
+    def __itruediv__(self, other: numbers.Real) -> "mip.LinExpr":
+        if not isinstance(other, numbers.Real):
+            raise TypeError("Can not divide with type {}".format(type(other)))
+
+        if fabs(other) < mip.EPS:
+            raise ZeroDivisionError()
+        elif fabs(other - 1) < mip.EPS:
+            return self
+
+        self.__const /= other
+        for var in self.__expr.keys():
+            self.__expr[var] /= other
+        return self
 
     def __neg__(self) -> "LinExpr":
         return self.__mul__(-1)
@@ -270,7 +316,7 @@ class LinExpr:
         """Adds a term to the linear expression.
 
         Args:
-            expr (Union[mip.Var, LinExpr, numbers.Real]) : can be a
+            term (Union[mip.Var, LinExpr, numbers.Real]) : can be a
                 variable, another linear expression or a real number.
 
             coeff (numbers.Real) : coefficient which will multiply the added
