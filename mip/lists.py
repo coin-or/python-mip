@@ -25,7 +25,7 @@ class VarList(Sequence):
 
     def __init__(self: "VarList", model: "mip.Model"):
         self.__model = model
-        self.__vars = []  # type: List[Var]
+        self.__vars = []  # type: List[mip.Var]
 
     def add(
         self,
@@ -100,8 +100,10 @@ class VVarList(Sequence):
         if not name:
             name = "var({})".format(len(self))
         if var_type == mip.BINARY:
-            lb = 0.0
-            ub = 1.0
+            if ub == mip.INF:
+                ub = 1.0
+            if not (0.0 <= lb <= 1.0 and 0.0 <= ub <= 1.0):
+                raise ValueError("Invalid bounds for binary variable")
         new_var = mip.Var(self.__model, solver.num_cols())
         solver.add_var(obj, lb, ub, var_type, column, name)
         return new_var
