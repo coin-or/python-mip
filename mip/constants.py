@@ -98,10 +98,10 @@ class CutType(Enum):
 
 # optimization status
 class OptimizationStatus(Enum):
-    """ Status of the optimization """
+    """Status of the optimization"""
 
     ERROR = -1
-    """ Solver returned an error"""
+    """Solver returned an error"""
 
     OPTIMAL = 0
     """Optimal solution was computed"""
@@ -170,7 +170,7 @@ class LP_Method(Enum):
 
 
 class ConstraintPriority(Enum):
-    """ A constraint categorization level that can be used for the relaxation algorithms"""
+    """A constraint categorization level that can be used for the relaxation algorithms"""
 
     # constraints levels
     VERY_LOW_PRIORITY = 1

@@ -128,7 +128,7 @@ class VVarList(Sequence):
 
 
 class ConstrList(Sequence):
-    """ List of problem constraints"""
+    """List of problem constraints"""
 
     def __init__(self: "ConstrList", model: "mip.Model"):
         self.__model = model
