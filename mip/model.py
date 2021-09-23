@@ -694,7 +694,7 @@ class Model:
             return
 
         # reading model
-        model_ext = [".lp", ".mps", ".mps.gz"]
+        model_ext = [".lp", ".mps", ".lp.gz", ".mps.gz"]
 
         fn_low = path.lower()
         for ext in model_ext:
