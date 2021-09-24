@@ -59,8 +59,7 @@ https://python-mip.readthedocs.io/_/downloads/en/latest/pdf/
 
 ## Mailing list
 
-Questions, suggestions and development news can be posted at the [Python-MIP
-google group](https://groups.google.com/forum/#!forum/python-mip).
+Questions, suggestions and feature request can be posted at [Discussions](https://github.com/coin-or/python-mip/discussions).
  
 ## Build status
 
