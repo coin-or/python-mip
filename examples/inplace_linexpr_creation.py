@@ -5,8 +5,8 @@ but should work and therefore are included for testing purposes.
 Note: the code is based on issue #163
 Contributors: @jachymb and @christian2022
 """
-
-import mip, random, time, yaml
+from collections import OrderedDict
+import mip, random, time
 
 
 def using_addvar(n):
@@ -139,10 +139,10 @@ functions = [
     using_dict,
 ]
 
-runtimes = {}
+runtimes = OrderedDict()
 
 for k, result in zip(sizes, results):
-    runtimes[k] = {}
+    runtimes[k] = OrderedDict()
 
     for function in functions:
         random.seed(0)  # resetting seed to make result predictable
@@ -152,4 +152,8 @@ for k, result in zip(sizes, results):
 
         runtimes[k][function.__name__] = construction_time
 
-print(yaml.dump(runtimes))
+# printing report in the end
+for k in runtimes:
+    print("n =", k)
+    for function, runtime in runtimes[k].items():
+        print("   ", function, ":", runtime)
