@@ -75,6 +75,7 @@ class LinExpr:
         coeffs: Optional[List[numbers.Real]] = None,
         const: numbers.Real = 0.0,
         sense: str = "",
+        expr: Optional[Dict["mip.Var", numbers.Real]] = None,
     ):
         self.__const = const
         self.__expr = {}  # type: Dict[mip.Var, numbers.Real]
@@ -83,10 +84,13 @@ class LinExpr:
         if variables is not None and coeffs is not None:
             if len(variables) != len(coeffs):
                 raise ValueError("Coefficients and variables must be same length.")
-            for i in range(len(coeffs)):
-                if abs(coeffs[i]) <= 1e-12:
-                    continue
-                self.add_var(variables[i], coeffs[i])
+            if expr is not None:
+                raise ValueError("You should pass eiter 'expr' or 'variables and coeffs' to the"
+                                 "constructor, not the three simultaneously.")
+            self.__expr = dict(zip(variables, coeffs))
+
+        elif expr is not None:
+            self.__expr = expr.copy()
 
     def __add__(
         self,
