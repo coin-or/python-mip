@@ -85,8 +85,10 @@ class LinExpr:
             if len(variables) != len(coeffs):
                 raise ValueError("Coefficients and variables must be same length.")
             if expr is not None:
-                raise ValueError("You should pass eiter 'expr' or 'variables and coeffs' to the"
-                                 "constructor, not the three simultaneously.")
+                raise ValueError(
+                    "You should pass eiter 'expr' or 'variables and coeffs' to the"
+                    "constructor, not the three simultaneously."
+                )
             self.__expr = dict(zip(variables, coeffs))
 
         elif expr is not None:
