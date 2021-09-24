@@ -131,7 +131,13 @@ def recreating_linexpr(n):
 
 sizes = [100, 500, 1000, 2000]
 results = [0.897191700, 0.504060660, 0.990206267, 0.715224329]
-functions = [recreating_linexpr, using_addvar, using_inplace_op, using_lists, using_dict]
+functions = [
+    recreating_linexpr,
+    using_addvar,
+    using_inplace_op,
+    using_lists,
+    using_dict,
+]
 
 runtimes = {}
 
@@ -139,10 +145,10 @@ for k, result in zip(sizes, results):
     runtimes[k] = {}
 
     for function in functions:
-        random.seed(0) # resetting seed to make result predictable
+        random.seed(0)  # resetting seed to make result predictable
         cost, construction_time, solution_time = function(k)
         if result is not None:
-            assert(result - 1e-9 <= cost <= result + 1e-9)
+            assert result - 1e-9 <= cost <= result + 1e-9
 
         runtimes[k][function.__name__] = construction_time
 
