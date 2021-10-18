@@ -34,9 +34,9 @@ The following python code creates, optimizes and prints the optimal solution for
     :linenos:
     :lines: 3-21
 
-Line 3 imports the required classes and definitions from Python-MIP. Lines 5-8 define the problem data. Line 10 creates an empty maximization
-problem :code:`m` with the (optional) name of "knapsack". Line 12 adds the binary decision variables to model :code:`m` and stores their references in a list :code:`x`. Line 14 defines the objective function of this model and line 16 adds the capacity constraint. The model is optimized in line 18 and the solution, a list of the selected
-items, is computed at line 20.
+Line 1 imports the required classes and definitions from Python-MIP. Lines 3-5 define the problem data. Line 7 creates an empty maximization
+problem :code:`m` with the (optional) name of "knapsack". Line 9 adds the binary decision variables to model :code:`m` and stores their references in a list :code:`x`. Line 11 defines the objective function of this model and line 13 adds the capacity constraint. The model is optimized in line 15 and the solution, a list of the selected
+items, is computed at line 17.
 
 .. _tsp-label:
 
