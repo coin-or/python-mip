@@ -547,6 +547,21 @@ class TestAPI(object):
         v = model.var_by_name("x({},{})".format(0, 0))
         assert v is not None
 
+    @pytest.mark.parametrize("solver", SOLVERS)
+    def test_obj_const1(self, solver: str):
+        n, model = self.build_model(solver)
+
+        model.objective = 1
+        e = model.objective
+        assert e.const == 1
+
+    @pytest.mark.parametrize("solver", SOLVERS)
+    def test_obj_const2(self, solver: str):
+        n, model = self.build_model(solver)
+
+        model.objective = 1
+        assert model.objective_const == 1
+
 
 @pytest.mark.parametrize("val", range(1, 4))
 @pytest.mark.parametrize("solver", SOLVERS)
