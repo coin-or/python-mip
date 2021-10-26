@@ -70,8 +70,8 @@ try:
     else:
         if "linux" in platform.lower():
             if os_is_64_bit:
-                pathlibe = os.path.join(pathlib, "lin64")
-                libfile = os.path.join(pathlibe, "libCbcSolver.so")
+                pathlibe = pathlib
+                libfile = os.path.join(pathlib, "cbc-c-linux-x86-64.so")
                 if not exists(libfile):
                     pathlibe = pathlib
                     libfile = os.path.join(pathlib, "cbc-c-linux-x86-64.so")

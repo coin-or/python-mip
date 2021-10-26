@@ -134,10 +134,10 @@ def test_mip_file(solver: str, instance: str):
 
     m.read(instance)
     if bas_file:
-        m.verbose = True
-        m.read(bas_file)
-        m.optimize(relax=True)
-        print("Basis loaded!!! Obj value: %f" % m.objective_value)
+       m.verbose = True
+       m.read(bas_file)
+       m.optimize(relax=True)
+       print("Basis loaded!!! Obj value: %f" % m.objective_value)
     m.optimize(max_nodes=MAX_NODES)
     if m.status in [OptimizationStatus.OPTIMAL, OptimizationStatus.FEASIBLE]:
         assert m.num_solutions >= 1
