@@ -81,7 +81,7 @@ try:
         elif platform.lower().startswith("win"):
             if os_is_64_bit:
                 pathlibe = os.path.join(pathlib, "win64")
-                libfile = os.path.join(pathlibe, "libCbcSolver-0.dll")
+                libfile = os.path.join(pathlibe, "cbc-c-windows-x86-64.dll")
                 if exists(libfile):
                     if pathlibe not in os.environ["PATH"]:
                         os.environ["PATH"] = pathlibe + ";" + os.environ["PATH"]
