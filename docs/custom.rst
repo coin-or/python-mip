@@ -16,7 +16,7 @@ Cutting Planes
 In many applications there are `strong formulations <https://www.researchgate.net/publication/227062257_Strong_formulations_for_mixed_integer_programming_A_survey>`_ 
 that may include an exponential number of constraints. These formulations cannot be direct handled by the MIP Solver: entering all these constraints at once is usually not practical, except for very small instances. In the `Cutting Planes <https://en.wikipedia.org/wiki/Cutting-plane_method>`_ [Dantz54]_ method the LP relaxation is solved and only constraints which are *violated* are inserted. The model is re-optimized and at each iteration a stronger formulation is obtained until no more violated inequalities are found. The problem of discovering which are the missing violated constraints is also an optimization problem (finding *the most* violated inequality) and it is called the *Separation Problem*.
 
-As an example, consider the Traveling Salesman Problem. The compact formulation (:numref:`tsp-label`) is a *weak* formulation: dual bounds produced
+As an example, consider the Traveling Salesman Problem. The :ref:`compact formulation <tsp-label>` is a *weak* formulation: dual bounds produced
 at the root node of the search tree are distant from the optimal solution cost
 and improving these bounds requires a potentially intractable number of
 branchings. In this case, the culprit are the sub-tour elimination constraints
