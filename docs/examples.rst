@@ -453,7 +453,7 @@ Note in the code above that argument :code:`obj` was employed to create the vari
 Two-Dimensional Level Packing
 -----------------------------
 
-In some industries, raw material must be cut in several pieces of specified size. Here we consider the case where these pieces are *rectangular* [LMM02]_. Also, due to machine operation constraints, pieces should be grouped horizontally such that firstly, horizontal layers are cut with the height of the largest item in the group and secondly, these horizontal layers are then cut according to items widths. Raw material is provided in rolls with large height. To minimize waste, a given batch of items must be cut using the minimum possible total height to minimize waste.
+In some industries, raw material must be cut in several pieces of specified size. Here we consider the case where these pieces are *rectangular* [LMM02]_. Also, due to machine operation constraints, pieces should be grouped horizontally such that firstly, horizontal layers are cut with the height of the largest item in the group and secondly, these horizontal layers are then cut according to items widths. Raw material is provided in rolls with large height. To minimize waste, a given batch of items must be cut using the minimum possible total height.
 
 Formally, the following input data defines an instance of the Two Dimensional Level Packing Problem (TDLPP):
 
