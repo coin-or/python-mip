@@ -3,7 +3,7 @@ from itertools import product
 import pytest
 import networkx as nx
 from mip import Model, xsum, OptimizationStatus, MAXIMIZE, BINARY, INTEGER
-from mip import ConstrsGenerator, CutPool, maximize, CBC, GUROBI, Column
+from mip import ConstrsGenerator, CutPool, maximize, CBC, GUROBI, Column, Constr
 from os import environ
 import math
 
@@ -653,3 +653,37 @@ def test_float(solver: str, val: int):
     assert y.x == float(y)
     # test linear expressions.
     assert float(x + y) == (x + y).x
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_empty_useless_constraint_is_considered(solver: str):
+    m = Model("empty_constraint", solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    m.add_constr(xsum([]) <= 1, name="c_empty")  # useless, empty constraint
+    m.add_constr(x + y <= 5, name="c1")
+    m.add_constr(2 * x + y <= 6, name="c2")
+    m.objective = maximize(x + 2 * y)
+    m.optimize()
+    # check objective
+    assert m.status == OptimizationStatus.OPTIMAL
+    assert abs(m.objective.x - 10) < TOL
+    # check that all names of constraints could be queried
+    assert {c.name for c in m.constrs} == {"c1", "c2", "c_empty"}
+    assert all(isinstance(m.constr_by_name(c_name), Constr) for c_name in ("c1", "c2", "c_empty"))
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_empty_contradictory_constraint_is_considered(solver: str):
+    m = Model("empty_constraint", solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    m.add_constr(xsum([]) <= -1, name="c_contra")  # contradictory empty constraint
+    m.add_constr(x + y <= 5, name="c1")
+    m.objective = maximize(x + 2 * y)
+    m.optimize()
+    # assert infeasibility of problem
+    assert m.status in (OptimizationStatus.INF_OR_UNBD, OptimizationStatus.INFEASIBLE)
+    # check that all names of constraints could be queried
+    assert {c.name for c in m.constrs} == {"c1", "c_contra"}
+    assert all(isinstance(m.constr_by_name(c_name), Constr) for c_name in ("c1", "c_contra"))

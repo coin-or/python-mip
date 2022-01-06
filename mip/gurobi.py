@@ -775,7 +775,14 @@ class SolverGurobi(Solver):
         if status == 3:  # INFEASIBLE
             return OptimizationStatus.INFEASIBLE
         if status == 4:  # INF_OR_UNBD
-            return OptimizationStatus.UNBOUNDED
+            # Special case by gurobi, where an additional run has to be made
+            # to determine infeasibility or unbounded problem
+            # For this run dual reductions must be disabled
+            # See gurobi support article online - How do I resolve the error "Model is infeasible or unbounded"?
+            # self.set_int_param("DualReductions", 0)
+            # GRBoptimize(self._model)
+            # return OptimizationStatus.INFEASIBLE if self.get_int_attr("Status") == 3 else OptimizationStatus.UNBOUNDED
+            return OptimizationStatus.INF_OR_UNBD
         if status == 5:  # UNBOUNDED
             return OptimizationStatus.UNBOUNDED
         if status == 6:  # CUTOFF
