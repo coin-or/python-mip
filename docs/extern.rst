@@ -21,3 +21,4 @@ other Python tools.
    :width: 40%
    :align: center
 
+- `Formulation for the Vehicle Routing Problem with Time Windows (VRPTW) <https://github.com/Bang2018/VRPTW>`__, by Krishnendu Mukherjee, includes a model for the VRPTW coded in Python-MIP.
