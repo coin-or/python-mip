@@ -616,8 +616,11 @@ class Model:
         )
 
         self._status = self.solver.optimize(relax)
-        # has a solution and is a MIP
-        if self.num_solutions and self.num_int > 0:
+        # has a solution
+        if self._status in (
+            mip.OptimizationStatus.OPTIMAL,
+            mip.OptimizationStatus.FEASIBLE,
+        ) and self.num_int > 0:
             best = self.objective_value
             lb = self.objective_bound
             if abs(best) <= 1e-10:
