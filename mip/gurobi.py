@@ -262,6 +262,7 @@ else:
     GRBsetdblattrelement = grblib.GRBsetdblattrelement
     GRBsetintattr = grblib.GRBsetintattr
     GRBsetintattrelement = grblib.GRBsetintattrelement
+    GRBgetintattrelement = grblib.GRBgetintattrelement
     GRBsetdblattr = grblib.GRBsetdblattr
     GRBgetintattr = grblib.GRBgetintattr
     GRBgetintparam = grblib.GRBgetintparam
@@ -1240,6 +1241,15 @@ class SolverGurobi(Solver):
                     name, index, value
                 )
             )
+
+    def get_int_attr_element(self, name: str, index: int) -> float:
+        res = ffi.new("int *")
+        error = GRBgetintattrelement(self._model, name.encode("utf-8"), index, res)
+        if error != 0:
+            raise ParameterNotAvailable(
+                "Error get grb double attr element {} index {}".format(name, index)
+            )
+        return res[0]
 
     def set_int_attr_element(self, name: str, index: int, value: int):
         error = GRBsetintattrelement(self._model, name.encode("utf-8"), index, value)
