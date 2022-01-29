@@ -634,44 +634,42 @@ class Var:
     ) -> Union["mip.Var", LinExpr]:
         if isinstance(other, Var):
             return LinExpr([self, other], [1, -1])
-        elif isinstance(other, LinExpr):
+        if isinstance(other, LinExpr):
             return (-other).__add__(self)
-        elif isinstance(other, numbers.Real):
+        if isinstance(other, numbers.Real):
             if fabs(other) < mip.EPS:
                 return self
             return LinExpr([self], [1], -other)
-        else:
-            raise TypeError("type {} not supported".format(type(other)))
+
+        raise TypeError("type {} not supported".format(type(other)))
 
     def __rsub__(
         self, other: Union["mip.Var", LinExpr, numbers.Real]
     ) -> Union["mip.Var", LinExpr]:
         if isinstance(other, Var):
             return LinExpr([self, other], [-1, 1])
-        elif isinstance(other, LinExpr):
+        if isinstance(other, LinExpr):
             return other.__sub__(self)
-        elif isinstance(other, numbers.Real):
+        if isinstance(other, numbers.Real):
             return LinExpr([self], [-1], other)
-        else:
-            raise TypeError("type {} not supported".format(type(other)))
 
-    def __mul__(self, other: numbers.Real) -> Union["mip.Var", numbers.Real, LinExpr]:
+        raise TypeError("type {} not supported".format(type(other)))
+
+    def __mul__(self, other: numbers.Real) -> LinExpr:
         if not isinstance(other, numbers.Real):
             raise TypeError("Can not multiply with type {}".format(type(other)))
-        if fabs(other) < mip.EPS:
-            return other
-        if fabs(other - 1) < mip.EPS:
-            return self
         return LinExpr([self], [other])
 
-    def __rmul__(self, other: numbers.Real) -> Union["mip.Var", numbers.Real, LinExpr]:
+    def __rmul__(self, other: numbers.Real) -> LinExpr:
         return self.__mul__(other)
 
     def __truediv__(
         self, other: numbers.Real
-    ) -> Union["mip.Var", numbers.Real, LinExpr]:
+    ) -> LinExpr:
         if not isinstance(other, numbers.Real):
             raise TypeError("Can not divide with type {}".format(type(other)))
+        if isinstance(other, numbers.Real) and abs(other) < mip.EPS:
+            raise ZeroDivisionError("Variable division by zero")
         return self.__mul__(1.0 / other)
 
     def __neg__(self) -> LinExpr:
@@ -680,38 +678,32 @@ class Var:
     def __eq__(self, other) -> LinExpr:
         if isinstance(other, Var):
             return LinExpr([self, other], [1, -1], sense="=")
-        elif isinstance(other, LinExpr):
-            return other == self
-        elif isinstance(other, numbers.Real):
-            if other != 0:
-                return LinExpr([self], [1], -1 * other, sense="=")
-            return LinExpr([self], [1], sense="=")
-        else:
-            raise TypeError("type {} not supported".format(type(other)))
+        if isinstance(other, LinExpr):
+            return LinExpr([self], [1]) == other
+        if isinstance(other, numbers.Real):
+            return LinExpr([self], [1], -1 * other, sense="=")
+
+        raise TypeError("type {} not supported".format(type(other)))
 
     def __le__(self, other: Union["mip.Var", LinExpr, numbers.Real]) -> LinExpr:
         if isinstance(other, Var):
             return LinExpr([self, other], [1, -1], sense="<")
-        elif isinstance(other, LinExpr):
-            return other >= self
-        elif isinstance(other, numbers.Real):
-            if other != 0:
-                return LinExpr([self], [1], -1 * other, sense="<")
-            return LinExpr([self], [1], sense="<")
-        else:
-            raise TypeError("type {} not supported".format(type(other)))
+        if isinstance(other, LinExpr):
+            return LinExpr([self], [1]) <= other
+        if isinstance(other, numbers.Real):
+            return LinExpr([self], [1], -1 * other, sense="<")
+
+        raise TypeError("type {} not supported".format(type(other)))
 
     def __ge__(self, other: Union["mip.Var", LinExpr, numbers.Real]) -> LinExpr:
         if isinstance(other, Var):
             return LinExpr([self, other], [1, -1], sense=">")
-        elif isinstance(other, LinExpr):
-            return other <= self
-        elif isinstance(other, numbers.Real):
-            if other != 0:
-                return LinExpr([self], [1], -1 * other, sense=">")
-            return LinExpr([self], [1], sense=">")
-        else:
-            raise TypeError("type {} not supported".format(type(other)))
+        if isinstance(other, LinExpr):
+            return LinExpr([self], [1]) >= other
+        if isinstance(other, numbers.Real):
+            return LinExpr([self], [1], -1 * other, sense=">")
+
+        raise TypeError("type {} not supported".format(type(other)))
 
     @property
     def name(self) -> str:
