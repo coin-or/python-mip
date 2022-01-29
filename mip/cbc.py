@@ -1358,6 +1358,9 @@ class SolverCbc(Solver):
     def var_get_index(self, name: str) -> int:
         return cbclib.Cbc_getColNameIndex(self._model, name.encode("utf-8"))
 
+    def var_get_branch_priority(self, var: "Var") -> numbers.Real:
+        return 0  # todo: modify branch priority in CBC
+
     def constr_get_index(self, name: str) -> int:
         return cbclib.Cbc_getRowNameIndex(self._model, name.encode("utf-8"))
 
@@ -1382,6 +1385,9 @@ class SolverCbc(Solver):
 
         return CONTINUOUS
 
+    def var_set_column(self, var: "Var", value: Column):
+        raise NotImplementedError("Cbc functionality currently unavailable")
+
     def var_get_column(self, var: "Var") -> Column:
         numnz = cbclib.Cbc_getColNz(self._model, var.idx)
         if numnz == 0:
@@ -1393,7 +1399,7 @@ class SolverCbc(Solver):
         ccoef = cbclib.Cbc_getColCoeffs(self._model, var.idx)
 
         return Column(
-            [Constr(self.model, cidx[i]) for i in range(numnz)],
+            [self.model.constrs[cidx[i]] for i in range(numnz)],
             [ccoef[i] for i in range(numnz)],
         )
 

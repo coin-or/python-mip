@@ -601,14 +601,14 @@ class Var:
     """Decision variable of the :class:`~mip.Model`. The creation of
     variables is performed calling the :meth:`~mip.Model.add_var`."""
 
-    __slots__ = ["__model", "idx"]
+    __slots__ = ["_model", "_idx"]
 
     def __init__(self, model: "mip.Model", idx: int):
-        self.__model = model
-        self.idx = idx
+        self._model = model
+        self._idx = idx
 
     def __hash__(self) -> int:
-        return self.idx
+        return self._idx
 
     def __add__(
         self, other: Union["mip.Var", LinExpr, numbers.Real]
@@ -634,44 +634,40 @@ class Var:
     ) -> Union["mip.Var", LinExpr]:
         if isinstance(other, Var):
             return LinExpr([self, other], [1, -1])
-        elif isinstance(other, LinExpr):
+        if isinstance(other, LinExpr):
             return (-other).__add__(self)
-        elif isinstance(other, numbers.Real):
+        if isinstance(other, numbers.Real):
             if fabs(other) < mip.EPS:
                 return self
             return LinExpr([self], [1], -other)
-        else:
-            raise TypeError("type {} not supported".format(type(other)))
+
+        raise TypeError("type {} not supported".format(type(other)))
 
     def __rsub__(
         self, other: Union["mip.Var", LinExpr, numbers.Real]
     ) -> Union["mip.Var", LinExpr]:
         if isinstance(other, Var):
             return LinExpr([self, other], [-1, 1])
-        elif isinstance(other, LinExpr):
+        if isinstance(other, LinExpr):
             return other.__sub__(self)
-        elif isinstance(other, numbers.Real):
+        if isinstance(other, numbers.Real):
             return LinExpr([self], [-1], other)
-        else:
-            raise TypeError("type {} not supported".format(type(other)))
 
-    def __mul__(self, other: numbers.Real) -> Union["mip.Var", numbers.Real, LinExpr]:
+        raise TypeError("type {} not supported".format(type(other)))
+
+    def __mul__(self, other: numbers.Real) -> LinExpr:
         if not isinstance(other, numbers.Real):
             raise TypeError("Can not multiply with type {}".format(type(other)))
-        if fabs(other) < mip.EPS:
-            return other
-        if fabs(other - 1) < mip.EPS:
-            return self
         return LinExpr([self], [other])
 
-    def __rmul__(self, other: numbers.Real) -> Union["mip.Var", numbers.Real, LinExpr]:
+    def __rmul__(self, other: numbers.Real) -> LinExpr:
         return self.__mul__(other)
 
-    def __truediv__(
-        self, other: numbers.Real
-    ) -> Union["mip.Var", numbers.Real, LinExpr]:
+    def __truediv__(self, other: numbers.Real) -> LinExpr:
         if not isinstance(other, numbers.Real):
             raise TypeError("Can not divide with type {}".format(type(other)))
+        if isinstance(other, numbers.Real) and abs(other) < mip.EPS:
+            raise ZeroDivisionError("Variable division by zero")
         return self.__mul__(1.0 / other)
 
     def __neg__(self) -> LinExpr:
@@ -680,43 +676,37 @@ class Var:
     def __eq__(self, other) -> LinExpr:
         if isinstance(other, Var):
             return LinExpr([self, other], [1, -1], sense="=")
-        elif isinstance(other, LinExpr):
-            return other == self
-        elif isinstance(other, numbers.Real):
-            if other != 0:
-                return LinExpr([self], [1], -1 * other, sense="=")
-            return LinExpr([self], [1], sense="=")
-        else:
-            raise TypeError("type {} not supported".format(type(other)))
+        if isinstance(other, LinExpr):
+            return LinExpr([self], [1]) == other
+        if isinstance(other, numbers.Real):
+            return LinExpr([self], [1], -1 * other, sense="=")
+
+        raise TypeError("type {} not supported".format(type(other)))
 
     def __le__(self, other: Union["mip.Var", LinExpr, numbers.Real]) -> LinExpr:
         if isinstance(other, Var):
             return LinExpr([self, other], [1, -1], sense="<")
-        elif isinstance(other, LinExpr):
-            return other >= self
-        elif isinstance(other, numbers.Real):
-            if other != 0:
-                return LinExpr([self], [1], -1 * other, sense="<")
-            return LinExpr([self], [1], sense="<")
-        else:
-            raise TypeError("type {} not supported".format(type(other)))
+        if isinstance(other, LinExpr):
+            return LinExpr([self], [1]) <= other
+        if isinstance(other, numbers.Real):
+            return LinExpr([self], [1], -1 * other, sense="<")
+
+        raise TypeError("type {} not supported".format(type(other)))
 
     def __ge__(self, other: Union["mip.Var", LinExpr, numbers.Real]) -> LinExpr:
         if isinstance(other, Var):
             return LinExpr([self, other], [1, -1], sense=">")
-        elif isinstance(other, LinExpr):
-            return other <= self
-        elif isinstance(other, numbers.Real):
-            if other != 0:
-                return LinExpr([self], [1], -1 * other, sense=">")
-            return LinExpr([self], [1], sense=">")
-        else:
-            raise TypeError("type {} not supported".format(type(other)))
+        if isinstance(other, LinExpr):
+            return LinExpr([self], [1]) >= other
+        if isinstance(other, numbers.Real):
+            return LinExpr([self], [1], -1 * other, sense=">")
+
+        raise TypeError("type {} not supported".format(type(other)))
 
     @property
     def name(self) -> str:
         """Variable name."""
-        return self.__model.solver.var_get_name(self.idx)
+        return self._model.solver.var_get_name(self.idx)
 
     def __str__(self) -> str:
         return self.name
@@ -724,29 +714,29 @@ class Var:
     @property
     def lb(self) -> numbers.Real:
         """Variable lower bound."""
-        return self.__model.solver.var_get_lb(self)
+        return self._model.solver.var_get_lb(self)
 
     @lb.setter
     def lb(self, value: numbers.Real):
-        self.__model.solver.var_set_lb(self, value)
+        self._model.solver.var_set_lb(self, value)
 
     @property
     def ub(self) -> numbers.Real:
         """Variable upper bound."""
-        return self.__model.solver.var_get_ub(self)
+        return self._model.solver.var_get_ub(self)
 
     @ub.setter
     def ub(self, value: numbers.Real):
-        self.__model.solver.var_set_ub(self, value)
+        self._model.solver.var_set_ub(self, value)
 
     @property
     def obj(self) -> numbers.Real:
         """Coefficient of variable in the objective function."""
-        return self.__model.solver.var_get_obj(self)
+        return self._model.solver.var_get_obj(self)
 
     @obj.setter
     def obj(self, value: numbers.Real):
-        self.__model.solver.var_set_obj(self, value)
+        self._model.solver.var_set_obj(self, value)
 
     @property
     def branch_priority(self) -> numbers.Real:
@@ -754,16 +744,16 @@ class Var:
         Variable's branching priority in the branch and bound process.
         Note: variables with higher priority are selected first. Default value is zero.
         """
-        return self.__model.solver.var_get_branch_priority(self)
+        return self._model.solver.var_get_branch_priority(self)
 
     @branch_priority.setter
     def branch_priority(self, value: numbers.Real):
-        self.__model.solver.var_set_branch_priority(self, value)
+        self._model.solver.var_set_branch_priority(self, value)
 
     @property
     def var_type(self) -> str:
         """Variable type, ('B') BINARY, ('C') CONTINUOUS and ('I') INTEGER."""
-        return self.__model.solver.var_get_var_type(self)
+        return self._model.solver.var_get_var_type(self)
 
     @var_type.setter
     def var_type(self, value: str):
@@ -773,7 +763,7 @@ class Var:
                     (mip.BINARY, mip.CONTINUOUS, mip.INTEGER), value
                 )
             )
-        self.__model.solver.var_set_var_type(self, value)
+        self._model.solver.var_set_var_type(self, value)
 
     @property
     def column(self) -> Column:
@@ -781,11 +771,11 @@ class Var:
 
         :rtype: mip.Column
         """
-        return self.__model.solver.var_get_column(self)
+        return self._model.solver.var_get_column(self)
 
     @column.setter
     def column(self, value: Column):
-        self.__model.solver.var_set_column(self, value)
+        self._model.solver.var_set_column(self, value)
 
     @property
     def rc(self) -> Optional[numbers.Real]:
@@ -793,22 +783,22 @@ class Var:
         continuous variables) is optimized. Note that None is returned if no
         optimum solution is available"""
 
-        return self.__model.solver.var_get_rc(self)
+        return self._model.solver.var_get_rc(self)
 
     @property
     def x(self) -> Optional[numbers.Real]:
         """Value of this variable in the solution. Note that None is returned
         if no solution is not available."""
-        return self.__model.solver.var_get_x(self)
+        return self._model.solver.var_get_x(self)
 
     def xi(self, i: int) -> Optional[numbers.Real]:
         """Value for this variable in the :math:`i`-th solution from the solution
         pool. Note that None is returned if the solution is not available."""
-        if self.__model.status in [
+        if self._model.status in [
             mip.OptimizationStatus.OPTIMAL,
             mip.OptimizationStatus.FEASIBLE,
         ]:
-            return self.__model.solver.var_get_xi(self, i)
+            return self._model.solver.var_get_xi(self, i)
         return None
 
     def __float__(self):
@@ -821,7 +811,15 @@ class Var:
 
         :rtype: mip.Model
         """
-        return self.__model
+        return self._model
+
+    @property
+    def idx(self) -> int:
+        """Internal index of the variable to the model.
+
+        :rtype: int
+        """
+        return self._idx
 
 
 class ConflictGraph:
