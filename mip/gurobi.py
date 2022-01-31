@@ -523,7 +523,7 @@ class SolverGurobi(Solver):
         obj_expr = xsum(
             obj[i] * self.model.vars[i]
             for i in range(self.num_cols())
-            if abs(obj[i] > 1e-20)
+            if abs(obj[i]) > 1e-20
         )
         obj_expr.sense = self.get_objective_sense
         return obj_expr
