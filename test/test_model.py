@@ -640,3 +640,61 @@ def test_setting_variable_attributes(solver):
     # Check that optimization result considered changes correctly
     assert abs(m.objective_value - 10.0) <= TOL
     assert abs(x.x - 5) < TOL
+
+
+# LinExpr Arithmetic
+
+@pytest.mark.parametrize("solver", SOLVERS)
+@pytest.mark.parametrize("constant", (-1, 0, 1.5, 2))
+def test_addition_of_lin_expr_with_constant(solver, constant):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    term = x + y
+
+    term_right = term + constant
+    assert type(term_right) == LinExpr
+    assert term_right.const == constant
+    assert term_right.expr == {x: 1, y: 1}
+
+    term_left = constant + term
+    assert type(term_left) == LinExpr
+    assert term_left.const == constant
+    assert term_left.expr == {x: 1, y: 1}
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_addition_of_lin_expr_with_var(solver):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    z = m.add_var(name="z")
+    term = x + y
+
+    term_right = term + z
+    assert type(term_right) == LinExpr
+    assert term_right.const == 0
+    assert term_right.expr == {x: 1, y: 1, z: 1}
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_addition_of_lin_expr_with_lin_expr(solver):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    a = m.add_var(name="a")
+    b = m.add_var(name="b")
+    term = x + y
+
+    term_to_add = a + b
+
+    term_right = term + term_to_add
+    assert type(term_right) == LinExpr
+    assert term_right.const == 0
+    assert term_right.expr == {x: 1, y: 1, a: 1, b: 1}
+
+
+
+
+
+
