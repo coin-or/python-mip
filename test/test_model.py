@@ -426,7 +426,7 @@ def test_divide_var_with_illegal_coefficient(solver):
     x = m.add_var(name="x")
 
     with pytest.raises(TypeError):
-        y = x / "1"
+        x / "1"
 
 
 @pytest.mark.parametrize("solver", SOLVERS)
@@ -642,7 +642,7 @@ def test_setting_variable_attributes(solver):
     assert abs(x.x - 5) < TOL
 
 
-# LinExpr Arithmetic
+# LinExpr Tests
 
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize("constant", (-1, 0, 1.5, 2))
@@ -688,13 +688,473 @@ def test_addition_of_lin_expr_with_lin_expr(solver):
 
     term_to_add = a + b
 
-    term_right = term + term_to_add
+    added_term = term + term_to_add
+    assert type(added_term) == LinExpr
+    assert added_term.const == 0
+    assert added_term.expr == {x: 1, y: 1, a: 1, b: 1}
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_addition_of_lin_expr_with_illegal_type(solver):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    term = x + y
+
+    with pytest.raises(TypeError):
+        term + "1"
+
+    with pytest.raises(TypeError):
+        "1" + term
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+@pytest.mark.parametrize("constant", (-1, 0, 1.5, 2))
+def test_inplace_addition_of_lin_expr_with_constant(solver, constant):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    term = x + y
+
+    term += constant
+
+    assert type(term) == LinExpr
+    assert term.const == constant
+    assert term.expr == {x: 1, y: 1}
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_inplace_addition_of_lin_expr_with_var(solver):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    z = m.add_var(name="z")
+    term = x + y
+
+    term += z
+    assert type(term) == LinExpr
+    assert term.const == 0
+    assert term.expr == {x: 1, y: 1, z: 1}
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_inplace_addition_of_lin_expr_with_lin_expr(solver):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    a = m.add_var(name="a")
+    b = m.add_var(name="b")
+    term = x + y
+
+    term_to_add = a + b
+
+    term += term_to_add
+    assert type(term) == LinExpr
+    assert term.const == 0
+    assert term.expr == {x: 1, y: 1, a: 1, b: 1}
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_inplace_addition_of_lin_expr_with_illegal_type(solver):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    term = x + y
+
+    with pytest.raises(TypeError):
+        term += "1"
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+@pytest.mark.parametrize("constant", (-1, 0, 1.5, 2))
+def test_subtraction_of_lin_expr_and_constant(solver, constant):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    term = x + y
+
+    term_right = term - constant
+    assert type(term_right) == LinExpr
+    assert term_right.const == -constant
+    assert term_right.expr == {x: 1, y: 1}
+
+    term_left = constant - term
+    assert type(term_left) == LinExpr
+    assert term_left.const == constant
+    assert term_left.expr == {x: -1, y: -1}
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_subtraction_of_lin_expr_and_var(solver):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    z = m.add_var(name="z")
+    term = x + y
+
+    term_right = term - z
     assert type(term_right) == LinExpr
     assert term_right.const == 0
-    assert term_right.expr == {x: 1, y: 1, a: 1, b: 1}
+    assert term_right.expr == {x: 1, y: 1, z: -1}
 
 
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_subtraction_of_lin_expr_with_lin_expr(solver):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    a = m.add_var(name="a")
+    b = m.add_var(name="b")
+    term = x + y
+
+    term_to_sub = a + b
+
+    sub_term = term - term_to_sub
+    assert type(sub_term) == LinExpr
+    assert sub_term.const == 0
+    assert sub_term.expr == {x: 1, y: 1, a: -1, b: -1}
 
 
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_subtraction_of_lin_expr_and_illegal_type(solver):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    term = x + y
+
+    with pytest.raises(TypeError):
+        term - "1"
+
+    with pytest.raises(TypeError):
+        "1" - term
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+@pytest.mark.parametrize("constant", (-1, 0, 1.5, 2))
+def test_inplace_subtraction_of_lin_expr_and_constant(solver, constant):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    term = x + y
+
+    term -= constant
+
+    assert type(term) == LinExpr
+    assert term.const == -constant
+    assert term.expr == {x: 1, y: 1}
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_inplace_subtraction_of_lin_expr_and_var(solver):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    z = m.add_var(name="z")
+    term = x + y
+
+    term -= z
+    assert type(term) == LinExpr
+    assert term.const == 0
+    assert term.expr == {x: 1, y: 1, z: -1}
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_inplace_subtraction_of_lin_expr_and_lin_expr(solver):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    a = m.add_var(name="a")
+    b = m.add_var(name="b")
+    term = x + y
+
+    term_to_sub = a + b
+
+    term -= term_to_sub
+    assert type(term) == LinExpr
+    assert term.const == 0
+    assert term.expr == {x: 1, y: 1, a: -1, b: -1}
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_inplace_subtraction_of_lin_expr_and_illegal_type(solver):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    term = x + y
+
+    with pytest.raises(TypeError):
+        term -= "1"
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+@pytest.mark.parametrize("coefficient", (-1, 0, 1.2, 2))
+def test_multiply_lin_expr_with_coefficient(solver, coefficient):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    term = x + y
+
+    right = coefficient * term
+    assert type(right) == LinExpr
+    assert right.const == 0.0
+    assert right.expr == {x: coefficient, y: coefficient}
+
+    left = term * coefficient
+    assert type(left) == LinExpr
+    assert left.const == 0.0
+    assert left.expr == {x: coefficient, y: coefficient}
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_multiply_lin_expr_with_illegal_coefficient(solver):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    term = x + y
+
+    with pytest.raises(TypeError):
+        "1" * term
+
+    with pytest.raises(TypeError):
+        term * "1"
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+@pytest.mark.parametrize("coefficient", (-1, 0, 1.2, 2))
+def test_inplace_multiplication_lin_expr_with_coefficient(solver, coefficient):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    term = x + y
+
+    term *= coefficient
+    assert type(term) == LinExpr
+    assert term.const == 0.0
+    assert term.expr == {x: coefficient, y: coefficient}
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_inplace_multiplication_lin_expr_with_illegal_coefficient(solver):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    term = x + y
+
+    with pytest.raises(TypeError):
+        term *= "1"
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+@pytest.mark.parametrize("coefficient", (-1, 1.2, 2))
+def test_division_lin_expr_non_zero_coefficient(solver, coefficient):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    term = x + y
+
+    right = term / coefficient
+    assert type(right) == LinExpr
+    assert right.const == 0.0
+    assert right.expr == {x: 1 / coefficient, y: 1 / coefficient}
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_divide_lin_expr_with_illegal_coefficient(solver):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    term = x + y
+
+    with pytest.raises(TypeError):
+        term / "1"
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_divide_lin_expr_by_zero(solver):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    term = x + y
+
+    with pytest.raises(ZeroDivisionError):
+        term / 0
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+@pytest.mark.parametrize("coefficient", (-1, 1.2, 2))
+def test_inplace_division_lin_expr_non_zero_coefficient(solver, coefficient):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    term = x + y
+
+    term /= coefficient
+    assert type(term) == LinExpr
+    assert term.const == 0.0
+    assert term.expr == {x: 1 / coefficient, y: 1 / coefficient}
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_inplace_division_lin_expr_by_zero(solver):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    term = x + y
+
+    with pytest.raises(ZeroDivisionError):
+        term /= 0
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_inplace_division_lin_expr_with_illegal_coefficient(solver):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    term = x + y
+
+    with pytest.raises(TypeError):
+        term /= "1"
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+@pytest.mark.parametrize("coefficient", (-1, 1.2, 2))
+def test_negating_lin_expr_non_zero_coefficient(solver, coefficient):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    term = x + y
+
+    neg = - term
+    assert type(neg) == LinExpr
+    assert neg.const == 0.0
+    assert neg.expr == {x: -1, y: -1}
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_len_of_lin_expr(solver):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+
+    assert len(LinExpr()) == 0
+    assert len(x + y) == 2
+    assert len(x + y + 1) == 2
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+@pytest.mark.parametrize("coefficient", (-2, 0, 1.1, 3))
+def test_add_term_with_valid_input(solver, coefficient):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    a = m.add_var(name="a")
+    b = m.add_var(name="b")
+
+    # Test constant
+    term = x + y
+    add_term = 1
+    term.add_term(add_term, coefficient)
+    assert term.expr == {x: 1, y: 1}
+    assert term.const == coefficient
+
+    # Test variable
+    term = x + y
+    add_term = a
+    term.add_term(add_term, coefficient)
+    assert term.expr == {x: 1, y: 1, a: coefficient}
+    assert term.const == 0.0
+
+    # Test expression
+    term = x + y
+    add_term = a + b + 1
+    term.add_term(add_term, coefficient)
+    assert term.expr == {x: 1, y: 1, a: coefficient, b: coefficient}
+    assert term.const == coefficient
+
+    # Test illegal
+    term = x + y
+    add_term = "1"
+    with pytest.raises(TypeError):
+        term.add_term(add_term, coefficient)
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_hash(solver):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    term = x + 2*y + 3
+
+    assert type(hash(term)) == int
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_copy(solver):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+
+    term = x + y + 1
+    term_copy = term.copy()
+
+    assert term.const == term_copy.const
+    assert term.sense == term_copy.sense
+    assert term.expr == term_copy.expr
+    assert id(term.expr) != id(term_copy.expr)
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_constraint_with_lin_expr_and_lin_expr(solver):
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    a = m.add_var(name="a")
+    b = m.add_var(name="b")
+
+    term = x + y
+    other_term = a + b + 1
+
+    constr = term <= other_term
+    assert type(constr) == LinExpr
+    assert constr.const == -1
+    assert constr.expr == {x: 1, y: 1, a: -1, b: -1}
+    assert constr.sense == "<"
+
+    constr = term == other_term
+    assert type(constr) == LinExpr
+    assert constr.const == -1
+    assert constr.expr == {x: 1, y: 1, a: -1, b: -1}
+    assert constr.sense == "="
+
+    constr = term >= other_term
+    assert type(constr) == LinExpr
+    assert constr.const == -1
+    assert constr.expr == {x: 1, y: 1, a: -1, b: -1}
+    assert constr.sense == ">"
+
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_query_attributes_of_lin_expr(solver):
+    m = Model(solver_name=solver, sense=MAXIMIZE)
+    x = m.add_var(name="x", ub=5)
+    y = m.add_var(name="y", ub=2)
+
+    term = x + y - 1
+
+    # Before optimization and set as constraint
+    assert term.sense == ""
+    assert term.x is None
+    assert term.model == m
+    assert term.violation is None
+
+    constr_expr = term <= 5
+    m.add_constr(constr_expr, name="a_constraint")
+
+    # Before optimization
+    assert constr_expr.sense == "<"
+    assert constr_expr.x is None
+    assert constr_expr.violation is None
+
+    m.optimize()
 
 

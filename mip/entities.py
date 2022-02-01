@@ -167,13 +167,11 @@ class LinExpr:
             raise TypeError("type {} not supported".format(type(other)))
         return self
 
-    def __mul__(self, other: numbers.Real) -> Union["mip.LinExpr", numbers.Real]:
+    def __mul__(self, other: numbers.Real) -> "mip.LinExpr":
         if not isinstance(other, numbers.Real):
             raise TypeError("Can not multiply with type {}".format(type(other)))
 
-        if fabs(other) < mip.EPS:
-            return other
-        elif fabs(other - 1) < mip.EPS:
+        if fabs(other - 1) < mip.EPS:
             return self
 
         result = self.copy()
@@ -189,11 +187,7 @@ class LinExpr:
         if not isinstance(other, numbers.Real):
             raise TypeError("Can not multiply with type {}".format(type(other)))
 
-        if fabs(other) < mip.EPS:
-            self.__const = 0.0
-            self.__expr = {}  # type: Dict[mip.Var, numbers.Real]
-            return self
-        elif fabs(other - 1) < mip.EPS:
+        if fabs(other - 1) < mip.EPS:
             return self
 
         self.__const *= other
@@ -204,31 +198,16 @@ class LinExpr:
     def __truediv__(self, other: numbers.Real) -> "mip.LinExpr":
         if not isinstance(other, numbers.Real):
             raise TypeError("Can not divide with type {}".format(type(other)))
-
         if fabs(other) < mip.EPS:
-            raise ZeroDivisionError()
-        elif fabs(other - 1) < mip.EPS:
-            return self
-
-        result = self.copy()
-        result.__const /= other
-        for var in result.__expr.keys():
-            result.__expr[var] /= other
-        return result
+            raise ZeroDivisionError("Expression division by zero")
+        return self.__mul__(1.0 / other)
 
     def __itruediv__(self, other: numbers.Real) -> "mip.LinExpr":
         if not isinstance(other, numbers.Real):
             raise TypeError("Can not divide with type {}".format(type(other)))
-
         if fabs(other) < mip.EPS:
-            raise ZeroDivisionError()
-        elif fabs(other - 1) < mip.EPS:
-            return self
-
-        self.__const /= other
-        for var in self.__expr.keys():
-            self.__expr[var] /= other
-        return self
+            raise ZeroDivisionError("Expression division by zero")
+        return self.__imul__(1.0 / other)
 
     def __neg__(self) -> "LinExpr":
         return self.__mul__(-1)
@@ -295,7 +274,7 @@ class LinExpr:
 
     def add_const(self, val: numbers.Real):
         """adds a constant value to the linear expression, in the case of
-        a constraint this correspond to the right-hand-side
+        a constraint this corresponds to the right-hand-side
 
         Args:
             val(numbers.Real): a real number
@@ -334,7 +313,7 @@ class LinExpr:
         elif isinstance(term, LinExpr):
             self.add_expr(term, coeff)
         elif isinstance(term, numbers.Real):
-            self.add_const(term)
+            self.add_const(term * coeff)
         else:
             raise TypeError("type {} not supported".format(type(term)))
 
@@ -345,13 +324,8 @@ class LinExpr:
             var (mip.Var) : a variable
             coeff (numbers.Real) : coefficient which the variable will be added
         """
-        if var in self.__expr:
-            if -mip.EPS <= self.__expr[var] + coeff <= mip.EPS:
-                del self.__expr[var]
-            else:
-                self.__expr[var] += coeff
-        else:
-            self.__expr[var] = coeff
+        self.__expr.setdefault(var, 0)
+        self.__expr[var] += coeff
 
     def set_expr(self: "LinExpr", expr: Dict["mip.Var", numbers.Real]):
         """Sets terms of the linear expression
@@ -364,11 +338,7 @@ class LinExpr:
         self.__expr = expr
 
     def copy(self) -> "mip.LinExpr":
-        copy = LinExpr()
-        copy.__const = self.__const
-        copy.__expr = self.__expr.copy()
-        copy.__sense = self.__sense
-        return copy
+        return LinExpr(const=self.__const, sense=self.__sense, expr=self.__expr)
 
     def equals(self, other: "mip.LinExpr") -> bool:
         """returns true if a linear expression equals to another,
@@ -439,9 +409,14 @@ class LinExpr:
         If a solution is available, than this property indicates how much
         the current solution violates this constraint.
         """
+        # No violation can be computed for something that isn't a constraint
+        # or has no solution yet
+        if self.sense == "" or self.x is None:
+            return None
+
         lhs = sum(coef * var.x for (var, coef) in self.__expr.items())
         rhs = -self.const
-        viol = None
+
         if self.sense == "=":
             viol = abs(lhs - rhs)
         elif self.sense == "<":
@@ -668,7 +643,7 @@ class Var:
     ) -> LinExpr:
         if not isinstance(other, numbers.Real):
             raise TypeError("Can not divide with type {}".format(type(other)))
-        if isinstance(other, numbers.Real) and abs(other) < mip.EPS:
+        if abs(other) < mip.EPS:
             raise ZeroDivisionError("Variable division by zero")
         return self.__mul__(1.0 / other)
 
