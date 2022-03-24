@@ -45,7 +45,7 @@ warningMessages = 0
 
 ffi = FFI()
 has_cbc = False
-os_is_64_bit = maxsize > 2 ** 32
+os_is_64_bit = maxsize > 2**32
 INF = float("inf")
 cut_idx = 0
 
