@@ -68,7 +68,6 @@ try:
         def __eq__(self, other):
             return np.equal(self, other, dtype=object)
 
-
 except ImportError:
     logger.debug("Unable to import numpy", exc_info=True)
 
