@@ -1500,10 +1500,25 @@ class SolverCbc(Solver):
             )
 
     def set_start(self, start: List[Tuple[Var, numbers.Real]]) -> None:
-        n = len(start)
-        dv = ffi.new("double[]", [start[i][1] for i in range(n)])
+        # Augment start list with default zero values for absent non-continuous variables
+        start_vars_set = set(var for var, _ in start)
+
+        default_start_noncont_vars = [
+            (v, 0)
+            for v in self.model.vars
+            if v.var_type != "C" and v not in start_vars_set
+        ]
+
+        logger.info(
+            f"Adding default start values for {len(default_start_noncont_vars)} noncontinuous variables"
+        )
+        augmented_start = start + default_start_noncont_vars
+
+        # Set starts
+        n = len(augmented_start)
+        dv = ffi.new("double[]", [augmented_start[i][1] for i in range(n)])
         keep_alive_str = [
-            ffi.new("char[]", str.encode(start[i][0].name)) for i in range(n)
+            ffi.new("char[]", str.encode(augmented_start[i][0].name)) for i in range(n)
         ]
         var_names = ffi.new("char *[]", keep_alive_str)
         mdl = self._model
