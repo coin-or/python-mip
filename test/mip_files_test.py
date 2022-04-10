@@ -123,6 +123,8 @@ def test_mip_file(solver: str, instance: str):
                 bas_file = ""
             iname = basename(instance.replace(ext, ""))
             break
+    if iname == "windows-instability":
+        pytest.skip()
     assert iname in BOUNDS.keys()
 
     lb = BOUNDS[iname][0]
