@@ -1,13 +1,12 @@
 from ctypes.util import find_library
 import logging
 from sys import maxsize, platform
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from os.path import isfile
 import os.path
 from glob import glob
 import re
 from os import environ
-import numbers
 from cffi import FFI
 import importlib.util
 import pathlib
@@ -50,7 +49,7 @@ os_is_64_bit = maxsize > 2**32
 INF = float("inf")
 MAX_NAME_SIZE = 512  # for variables and constraints
 
-lib_path = None
+lib_path = ""
 
 if "GUROBI_HOME" in environ:
     if platform.lower().startswith("win"):
@@ -411,13 +410,13 @@ class SolverGurobi(Solver):
         self.__n_modified_rows = 0
         self.__updated = True
         self.__name_space = ffi.new("char[{}]".format(MAX_NAME_SIZE))
-        self.__log = []
+        self.__log: List[Tuple[float, Tuple[float, float]]] = []
 
         # where solution will be stored
         self.__x = EmptyVarSol(model)
         self.__rc = EmptyVarSol(model)
         self.__pi = EmptyRowSol(model)
-        self.__obj_val = None
+        self.__obj_val: Optional[float] = None
 
     def __clear_sol(self):
         model = self.model
@@ -436,12 +435,12 @@ class SolverGurobi(Solver):
 
     def add_var(
         self,
+        name: str = "",
         obj: float = 0,
         lb: float = 0,
         ub: float = INF,
         var_type: str = CONTINUOUS,
         column: Column = None,
-        name: str = "",
     ):
         # collecting column data
         nz = 0 if column is None else len(column.constrs)
@@ -501,7 +500,7 @@ class SolverGurobi(Solver):
             )
         self.__n_rows_buffer += 1
 
-    def add_lazy_constr(self: "Solver", lin_expr: "LinExpr"):
+    def add_lazy_constr(self, lin_expr: "LinExpr"):
         self.flush_rows()
         self.set_int_param("LazyConstraints", 1)
         self._nlazy += 1
@@ -531,6 +530,7 @@ class SolverGurobi(Solver):
         st = GRBgetdblattrarray(self._model, attr, 0, self.num_cols(), obj)
         if st != 0:
             raise ParameterNotAvailable("Error getting objective function")
+
         obj_expr = xsum(
             obj[i] * self.model.vars[i]
             for i in range(self.num_cols())
@@ -538,6 +538,7 @@ class SolverGurobi(Solver):
         )
         obj_expr.add_const(self.get_objective_const())
         obj_expr.sense = self.get_objective_sense()
+
         return obj_expr
 
     def get_objective_const(self) -> float:
@@ -841,15 +842,15 @@ class SolverGurobi(Solver):
         self.set_int_param("SolutionNumber", i)
         return self.get_dbl_attr("PoolObjVal")
 
-    def get_objective_value(self) -> float:
+    def get_objective_value(self) -> Optional[float]:
         return self.__obj_val
 
     def get_log(self) -> List[Tuple[float, Tuple[float, float]]]:
         return self.__log
 
     def set_processing_limits(
-        self: "Solver",
-        max_time: numbers.Real = mip.INF,
+        self,
+        max_time: float = mip.INF,
         max_nodes: int = mip.INT_MAX,
         max_sol: int = mip.INT_MAX,
         max_seconds_same_incumbent: float = mip.INF,
@@ -1087,11 +1088,11 @@ class SolverGurobi(Solver):
 
     # Variable-related getters/setters\
 
-    def var_get_branch_priority(self: "Solver", var: "mip.Var") -> numbers.Real:
+    def var_get_branch_priority(self, var: "mip.Var") -> int:
         self.flush_cols()
         return self.get_int_attr_element("BranchPriority", var.idx)
 
-    def var_set_branch_priority(self: "Solver", var: "mip.Var", value: numbers.Real):
+    def var_set_branch_priority(self, var: "mip.Var", value: int):
         self.set_int_attr_element("BranchPriority", var.idx, value)
 
     def var_get_lb(self, var: Var) -> float:
@@ -1194,7 +1195,7 @@ class SolverGurobi(Solver):
         if fc in (2, 3):
             return SearchEmphasis.OPTIMALITY
 
-        return 0
+        return SearchEmphasis.DEFAULT
 
     def set_emphasis(self, emph: SearchEmphasis):
         if emph == SearchEmphasis.FEASIBILITY:
@@ -1566,7 +1567,12 @@ class ModelGurobiCB(Model):
         self.__store_search_progress_log = False
         self.where = where
 
-    def add_constr(self, lin_expr: LinExpr, name: str = "") -> "Constr":
+    def add_constr(
+        self,
+        lin_expr: LinExpr,
+        name: str = "",
+        priority: "mip.constants.ConstraintPriority" = None,
+    ) -> "Constr":
         if self.where == GRB_CB_MIPNODE:
             self.add_cut(lin_expr)
             return None

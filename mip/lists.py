@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from typing import List
-import numbers
+
 import mip
 
 
@@ -30,9 +30,9 @@ class VarList(Sequence):
     def add(
         self,
         name: str = "",
-        lb: numbers.Real = 0.0,
-        ub: numbers.Real = mip.INF,
-        obj: numbers.Real = 0.0,
+        lb: float = 0.0,
+        ub: float = mip.INF,
+        obj: float = 0.0,
         var_type: str = mip.CONTINUOUS,
         column: "mip.Column" = None,
     ) -> "mip.Var":
@@ -44,7 +44,7 @@ class VarList(Sequence):
             if not (-mip.EPS <= lb <= 1.0 + mip.EPS and -mip.EPS <= ub <= 1.0 + mip.EPS):
                 raise ValueError("Invalid bounds for binary variable")
         new_var = mip.Var(self.__model, len(self.__vars))
-        self.__model.solver.add_var(obj, lb, ub, var_type, column, name)
+        self.__model.solver.add_var(name, obj, lb, ub, var_type, column)
         self.__vars.append(new_var)
         return new_var
 
@@ -75,13 +75,17 @@ class VarList(Sequence):
                 i += 1
         self.__vars = [v for v in self.__vars if v.idx != -1]
 
+    @property
+    def vars(self) -> List["mip.Var"]:
+        return self.__vars
+
 
 # same as VarList but does not stores
 # references for variables, used in
 # callbacks
-class VVarList(Sequence):
+class VVarList(VarList):
     def __init__(self: "VVarList", model: "mip.Model", start: int = -1, end: int = -1):
-        self.__model = model
+        super().__init__(model)
         if start == -1:
             self.__start = 0
             self.__end = model.solver.num_cols()
@@ -92,9 +96,9 @@ class VVarList(Sequence):
     def add(
         self: "VVarList",
         name: str = "",
-        lb: numbers.Real = 0.0,
-        ub: numbers.Real = mip.INF,
-        obj: numbers.Real = 0.0,
+        lb: float = 0.0,
+        ub: float = mip.INF,
+        obj: float = 0.0,
         var_type: str = mip.CONTINUOUS,
         column: "mip.Column" = None,
     ) -> "mip.Var":
@@ -107,14 +111,14 @@ class VVarList(Sequence):
             if not (-mip.EPS <= lb <= 1.0 + mip.EPS and -mip.EPS <= ub <= 1.0 + mip.EPS):
                 raise ValueError("Invalid bounds for binary variable")
         new_var = mip.Var(self.__model, solver.num_cols())
-        solver.add_var(obj, lb, ub, var_type, column, name)
+        solver.add_var(name, obj, lb, ub, var_type, column)
         return new_var
 
     def __getitem__(self: "VVarList", key):
         if isinstance(key, str):
             return self.__model.var_by_name(key)
         if isinstance(key, slice):
-            return VVarList(self.__model, key.start, key.end)
+            return VVarList(self.__model, key.start, key.stop)
         if isinstance(key, int):
             if key < 0:
                 key = self.__end - key
@@ -180,9 +184,9 @@ class ConstrList(Sequence):
 # same as previous class, but does not stores
 # anything and does not allows modification,
 # used in callbacks
-class VConstrList(Sequence):
+class VConstrList(ConstrList):
     def __init__(self: "VConstrList", model: "mip.Model"):
-        self.__model = model
+        super().__init__(model)
 
     def __getitem__(self: "VConstrList", key):
         if isinstance(key, str):
@@ -213,7 +217,7 @@ class EmptyVarSol(Sequence):
 
 
 class EmptyRowSol(Sequence):
-    """A list that always returns None when acessed, just to be used
+    """A list that always returns None when accessed, just to be used
     when no solution is available."""
 
     def __init__(self: "EmptyRowSol", model: "mip.Model"):
