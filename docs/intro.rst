@@ -40,6 +40,17 @@ performance of application specific solvers. Finally, the detailed
 reference information for the main classes is included in :ref:`Chapter
 6 <chapClasses>`.
 
+Releases and Source Code
+------------------------
+
+Python-MIP's source code is available at GitHub on (`github.com/coin-or/python-mip <https://github.com/coin-or/python-mip>`_). 
+Releases may be downloaded/installed via PIP (see :ref:`next Chapter <chapInstall>`) or from our GitHub `Releases <https://github.com/coin-or/python-mip/releases>`_ page.
+
+Getting help
+------------
+
+Questions, suggestions and feature request can be posted in our GitHub `Discussions <https://github.com/coin-or/python-mip/discussions>`_ page.
+
 Acknowledgments
 ---------------
 
