@@ -8,6 +8,8 @@ from glob import glob
 from os import environ
 import numbers
 from cffi import FFI
+import importlib.util
+import pathlib
 from mip.exceptions import (
     ParameterNotAvailable,
     SolutionNotAvailable,
@@ -83,6 +85,18 @@ if lib_path is None:
                 break
         if lib_path is not None:
             break
+
+# Check for gurobi 9.5 through pip installation
+if lib_path is None:
+    gurobipy_spec = importlib.util.find_spec("gurobipy")
+    if gurobipy_spec:
+        parent_path = pathlib.Path(gurobipy_spec.origin).parent
+        if platform.lower().startswith("win"):
+            extension = ".dll"
+        else:
+            extension = ".so"
+        lib_path = str(next(parent_path.glob(f"*{extension}")))
+
 
 if lib_path is None:
     found = False
