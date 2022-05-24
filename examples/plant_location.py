@@ -22,7 +22,7 @@ if hasattr(sys, '_called_from_test') and sys._called_from_test is True:
 # by using a different backend.
 if sys.platform == "darwin":  # OS X
     import matplotlib as mpl
-    mpl.use('TkAgg')
+    mpl.use('Agg')
     del mpl
 
 import matplotlib.pyplot as plt
