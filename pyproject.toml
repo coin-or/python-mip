@@ -1,0 +1,22 @@
+[build-system]
+requires = [
+  'setuptools',
+  'wheel',
+  'Cython < 3',
+  # https://numpy.org/devdocs/user/depending_on_numpy.html#build-time-dependency
+  'oldest-supported-numpy'
+]
+build-backend = "setuptools.build_meta"
+
+[tool.cibuildwheel]
+# Use --no-third-party to avoid linking in GLPK.
+# The resulting binary would not be distributable.
+before-all = """
+  apt-get install --yes wget || yum install -y wget || brew install bash coreutils
+  wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
+  sed -i.bak '/invoke_make/s/install/-j1 install/' coinbrew
+  chmod +x coinbrew
+  ./coinbrew build Cbc@2.10.7 --no-third-party --parallel-jobs 16 --prefix=$(pwd)/local --verbosity 4 || echo ignoring errors
+"""
+environment = { PATH="$(pwd)/local/bin:$PATH", LD_LIBRARY_PATH="$(pwd)/local/lib:$LD_LIBRARY_PATH", PKG_CONFIG_PATH="$(pwd)/local/lib/pkgconfig:$PKG_CONFIG_PATH" }
+skip = ["pp*-macosx*", "*-musllinux*"]
