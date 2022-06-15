@@ -83,9 +83,9 @@ class VarList(Sequence):
 # same as VarList but does not stores
 # references for variables, used in
 # callbacks
-class VVarList(VarList):
+class VVarList(Sequence):
     def __init__(self: "VVarList", model: "mip.Model", start: int = -1, end: int = -1):
-        super().__init__(model)
+        self.__model = model
         if start == -1:
             self.__start = 0
             self.__end = model.solver.num_cols()
@@ -184,9 +184,9 @@ class ConstrList(Sequence):
 # same as previous class, but does not stores
 # anything and does not allows modification,
 # used in callbacks
-class VConstrList(ConstrList):
+class VConstrList(Sequence):
     def __init__(self: "VConstrList", model: "mip.Model"):
-        super().__init__(model)
+        self.__model = model
 
     def __getitem__(self: "VConstrList", key):
         if isinstance(key, str):
