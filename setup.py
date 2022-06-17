@@ -6,9 +6,8 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="mip",
-    python_requires=">3.6.0",
+    python_requires=">3.7.0",
     author="Santos, H.G. and Toffolo, T.A.M.",
-    author_email="haroldo@ufop.edu.br",
     description="Python tools for Modeling and Solving Mixed-Integer Linear \
     Programs (MIPs)",
     long_description=long_descr,
