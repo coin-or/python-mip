@@ -1,2 +1,3 @@
 rm dist/*
-python3 setup.py sdist bdist_wheel
+python -m pip install build
+python -m build

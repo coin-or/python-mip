@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mip"
+description = "Python tools for Modeling and Solving Mixed-Integer Linear Programs (MIPs)"
+readme = "README.md"
+requires-python = ">=3.7"
+license = {file = "LICENSE"}
+authors = [
+    {name="T.A.M. Toffolo", email="haroldo.santos@gmail.com"},
+    {name="H.G. Santos", email="tulio@toffolo.com.br"}
+]
+maintainers = [
+    {name="S. Heger", email="heger@m2p.net"}
+]
+keywords = [
+    "Optimization",
+    "Linear Programming",
+    "Integer Programming",
+    "Operations Research",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: Eclipse Public License 2.0 (EPL-2.0)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Topic :: Scientific/Engineering :: Mathematics"
+]
+dynamic = ["version"]
+
+dependencies = ["cffi==1.15.0"]
+
+[project.optional-dependencies]
+numpy = ["numpy==1.22.4"]
+gurobi = ["gurobipy>=8.*"]
+
+[project.urls]
+"Homepage" = "https://www.python-mip.com"
+"Repository" = "https://github.com/coin-or/python-mip"
+
+[tool.setuptools]
+packages = ["mip"]
+
+[tool.setuptools.package-data]
+"mip.libraries" = ["*.so", "*.dylib", "*.dll"]
+
+[tool.setuptools_scm]
+write_to = "mip/_version.py"

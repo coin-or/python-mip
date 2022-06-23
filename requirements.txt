@@ -1,0 +1,4 @@
+cffi==1.15.0
+networkx==2.6.3
+numpy==1.21.6
+pytest==7.1.2
