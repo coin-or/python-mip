@@ -1427,8 +1427,7 @@ class Model:
         else:
             raise TypeError(
                 "Cannot handle removal of object of type "
-                + type(objects)
-                + " from model."
+                "{} from model".format(type(objects))
             )
 
     def translate(self: "Model", ref) -> Union[List[Any], Dict[Any, Any], "mip.Var"]:
