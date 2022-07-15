@@ -535,14 +535,13 @@ class SolverGurobi(Solver):
         st = GRBgetdblattrarray(self._model, attr, 0, self.num_cols(), obj)
         if st != 0:
             raise ParameterNotAvailable("Error getting objective function")
-        obj_expr = LinExpr(
-            variables=[
-                self.model.vars[i] for i in range(self.num_cols()) if abs(obj[i]) > 1e-20
-            ],
-            coeffs=[obj[i] for i in range(self.num_cols()) if abs(obj[i]) > 1e-20],
-            const=self.get_objective_const(),
-            sense=self.get_objective_sense(),
+        obj_expr = xsum(
+            obj[i] * self.model.vars[i]
+            for i in range(self.num_cols())
+            if abs(obj[i]) > 1e-20
         )
+        obj_expr.add_const(self.get_objective_const())
+        obj_expr.sense = self.get_objective_sense()
         return obj_expr
 
     def get_objective_const(self) -> float:

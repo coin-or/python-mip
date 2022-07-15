@@ -1269,6 +1269,7 @@ def test_objective(solver):
 
     m.objective = x - y + 0.5
     assert m.objective.x is None
+    #TODO: assert m.objective.sense == MAXIMIZE
 
     # Make sure that we can access the objective and it's correct
     assert len(m.objective.expr) == 2
@@ -1285,6 +1286,7 @@ def test_objective(solver):
     # Test changing the objective
     m.objective = x + y + 1.5
     m.sense = MINIMIZE
+    # TODO: assert m.objective.sense == MINIMIZE
 
     assert len(m.objective.expr) == 2
     assert m.objective.expr[x] == 1
