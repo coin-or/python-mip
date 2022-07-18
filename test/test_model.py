@@ -1313,4 +1313,4 @@ def test_remove(solver):
         m.remove([None])
 
     m.remove(constr)
-    # TODO: Test the removal of variables (currently failing, see https://github.com/coin-or/python-mip/pull/288#discussion_r919215654)
+    m.remove(x)

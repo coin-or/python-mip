@@ -69,9 +69,9 @@ class VarList(Sequence):
         i = 0
         for v in self.__vars:
             if iv[v.idx] == 0:
-                v.idx = -1
+                v._idx = -1
             else:
-                v.idx = i
+                v._idx = i
                 i += 1
         self.__vars = [v for v in self.__vars if v.idx != -1]
 
