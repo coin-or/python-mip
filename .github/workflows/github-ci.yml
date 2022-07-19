@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: 3.7.12
 
@@ -37,21 +37,24 @@ jobs:
       fail-fast: false
       matrix:
         # temporarily downgraded to 3.7.9 and 3.8.10 due to a bug https://github.com/actions/setup-python/issues/402
-        python-version: ["3.7.9", "3.8.10", "3.9.13", "3.10.4", "pypy-3.9"]
-        os: [macos-10.15, macos-11, ubuntu-18.04, ubuntu-20.04, windows-2019, windows-2022]
+        python-version: ["3.7.9", "3.8.10", "3.9.13", "3.10.4", "pypy3.9-v7.3.9"]
+        os: [macos-11, macos-12, ubuntu-18.04, ubuntu-20.04, windows-2019, windows-2022]
         exclude:
           # temporarily exclude pypy3 on mac-os as there failing tests caused by bug on cbc side
-          - os: macos-10.15
-            python-version: "pypy-3.9"
           - os: macos-11
-            python-version: "pypy-3.9"
+            python-version: "pypy3.9-v7.3.9"
+          - os: macos-12
+            python-version: "pypy3.9-v7.3.9"
+          # temporarily exclude pypy3 on ubuntu-18.04 as there an issue with installing numpy
+          - os: ubuntu-18.04
+            python-version: "pypy3.9-v7.3.9"
 
     steps:
 
     - uses: actions/checkout@v3
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
         architecture: x64
@@ -77,7 +80,7 @@ jobs:
       run: python -m pip install -r requirements.txt
 
     - name: Install additional requirements (CPython)
-      if: ${{ matrix.python-version != 'pypy-3.9' }}
+      if: ${{ matrix.python-version != 'pypy3.9-v7.3.9' }}
       run: python -m pip install "matplotlib==3.5.2" "gurobipy==9.5.1"
 
     - name: Install mip
@@ -87,13 +90,13 @@ jobs:
       run: python -m pip list
 
     - name: Run tests PyPy
-      if: ${{ matrix.python-version == 'pypy-3.9'}}
+      if: ${{ matrix.python-version == 'pypy3.9-v7.3.9'}}
       run: |
         python -m pytest test --verbose --color=yes --doctest-modules --ignore="test/test_gurobi.py"
         python -m pytest mip --verbose --color=yes --doctest-modules --ignore="mip/gurobi.py"
 
     - name: Run tests
-      if: ${{ matrix.python-version != 'pypy-3.9'}}
+      if: ${{ matrix.python-version != 'pypy3.9-v7.3.9'}}
       run: |
         python -m pytest test --verbose --color=yes --doctest-modules
         python -m pytest mip --verbose --color=yes --doctest-modules --ignore="mip/gurobi.py"

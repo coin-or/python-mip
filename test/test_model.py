@@ -1,4 +1,5 @@
 import os
+import re
 
 import pytest
 
@@ -1297,3 +1298,19 @@ def test_objective(solver):
     assert status == OptimizationStatus.OPTIMAL
     assert m.objective_value == 1.5
     assert m.objective_value == m.objective.x
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_remove(solver):
+    m = Model(solver_name=solver)
+    x = m.add_var("x")
+    constr = m.add_constr(x >= 0)
+    m.objective = x
+
+    with pytest.raises(TypeError, match=re.escape("Cannot handle removal of object of type <class 'NoneType'> from model")):
+        m.remove(None)
+
+    with pytest.raises(TypeError, match=re.escape("Cannot handle removal of object of type <class 'NoneType'> from model")):
+        m.remove([None])
+
+    m.remove(constr)
+    # TODO: Test the removal of variables (currently failing, see https://github.com/coin-or/python-mip/pull/288#discussion_r919215654)
