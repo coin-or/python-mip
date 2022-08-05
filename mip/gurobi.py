@@ -540,8 +540,8 @@ class SolverGurobi(Solver):
             for i in range(self.num_cols())
             if abs(obj[i]) > 1e-20
         )
-        obj_expr.const = self.get_objective_const()
-        obj_expr.sense = self.get_objective_sense
+        obj_expr.add_const(self.get_objective_const())
+        obj_expr.sense = self.get_objective_sense()
         return obj_expr
 
     def get_objective_const(self) -> float:

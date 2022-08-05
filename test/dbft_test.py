@@ -495,3 +495,4 @@ def test_dbft_mip(solver, pdata):
         m.check_optimization_results()
         if m.status == OptimizationStatus.OPTIMAL:
             assert abs(m.objective_value - opt) <= TOL
+        assert abs(m.objective.x - m.objective_value) <= TOL

@@ -1262,6 +1262,42 @@ def test_query_attributes_of_lin_expr(solver):
 
     m.optimize()
 
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_objective(solver):
+    m = Model(solver_name=solver, sense=MAXIMIZE)
+    x = m.add_var(name="x", lb=0, ub=1)
+    y = m.add_var(name="y", lb=0, ub=1)
+
+    m.objective = x - y + 0.5
+    assert m.objective.x is None
+    #TODO: assert m.objective.sense == MAXIMIZE
+
+    # Make sure that we can access the objective and it's correct
+    assert len(m.objective.expr) == 2
+    assert m.objective.expr[x] == 1
+    assert m.objective.expr[y] == -1
+    assert m.objective.const == 0.5
+
+    status = m.optimize()
+    assert status == OptimizationStatus.OPTIMAL
+    assert m.objective_value == 1.5
+    assert m.objective_value == m.objective.x
+
+
+    # Test changing the objective
+    m.objective = x + y + 1.5
+    m.sense = MINIMIZE
+    # TODO: assert m.objective.sense == MINIMIZE
+
+    assert len(m.objective.expr) == 2
+    assert m.objective.expr[x] == 1
+    assert m.objective.expr[y] == 1
+    assert m.objective.const == 1.5
+
+    status = m.optimize()
+    assert status == OptimizationStatus.OPTIMAL
+    assert m.objective_value == 1.5
+    assert m.objective_value == m.objective.x
 
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_remove(solver):
