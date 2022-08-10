@@ -1,4 +1,5 @@
 cffi==1.15.0
 networkx==2.6.3
-numpy==1.21.6
+numpy==1.21.6; python_version == '3.7'
+numpy==1.23.1; python_version >= '3.8'
 pytest==7.1.2
