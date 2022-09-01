@@ -1170,8 +1170,8 @@ class SolverCbc(Solver):
             cbc_set_parameter(self, "lift", "ifmove")
 
         if self.__threads >= 1:
-            cbc_set_parameter(self, "timeM", "{}".format("elapsed"))
-            Cbc_setIntParam(self._model, INT_PARAM_THREADS, self.__threads)
+            cbc_set_parameter(self, "timeMode", "{}".format("elapsed"))
+            cbc_set_parameter(self, "threads", "{}".format(self.__threads))
         elif self.__threads == -1:
             cbc_set_parameter(self, "threads", "{}".format(multip.cpu_count()))
 
