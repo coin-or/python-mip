@@ -281,7 +281,7 @@ def test_tsp(solver: str):
 class SubTourCutGenerator(ConstrsGenerator):
     """Class to generate cutting planes for the TSP"""
 
-    def generate_constrs(self, model: Model):
+    def generate_constrs(self, model: Model, depth: int = 0, npass: int = 0):
         G = nx.DiGraph()
         r = [(v, v.x) for v in model.vars if v.name.startswith("x(")]
         U = [v.name.split("(")[1].split(",")[0] for v, f in r]
