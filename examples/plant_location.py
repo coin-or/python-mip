@@ -1,4 +1,4 @@
-"""Example with Special Ordered Sets (SOS) type 1 and 2.
+r"""Example with Special Ordered Sets (SOS) type 1 and 2.
 Plant location: one industry plans to install two plants in two different
 regions, one to the west and another to the east. It must decide also the
 production capacity of each plant and allocate clients to plants

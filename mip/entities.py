@@ -752,7 +752,7 @@ class Var:
 
 class ConflictGraph:
 
-    """A conflict graph stores conflicts between incompatible assignments in
+    r"""A conflict graph stores conflicts between incompatible assignments in
     binary variables.
 
     For example, if there is a constraint :math:`x_1 + x_2 \leq 1` then
