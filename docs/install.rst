@@ -76,3 +76,62 @@ Please note that CBC uses multiple libraries which are installed in the same dir
     export LD_LIBRARY_PATH="/home/haroldo/prog/lib/":$LD_LIBRARY_PATH
 
 In Linux, to make these changes persistent, you may also want to add the :code:`export` lines to your :code:`.bashrc`.
+
+Docker installation (optional)
+------------------------------
+
+It is also possible to containerize the above build process using Docker. The following dockerfile shows how to build CBC for Python-MIP for an linux/arm/v6 platform (i.e., a Raspberry Pi 2 B). The dockerfile starts from Alpine Linux, which requires slightly different libraries than the Debian libraries above. Depending on your :code:`requirements.txt`, you may need to install additional libraries in the :code:`apk add` command. The dockerfile does not include the optional dependencies of CBC (:code:`libamd2 libcholmod3 libmetis-dev libsuitesparse-dev libnauty2-dev`).
+
+.. code-block:: sh
+
+    # syntax=docker/dockerfile:1
+    FROM arm32v6/python:3.7-alpine3.15 AS builder
+    RUN apk add --no-cache \
+        bash \
+        gcc \ 
+        gfortran \
+        git \
+        g++ \  
+        libffi-dev \ 
+        libgfortran \
+        lapack-dev \
+        make \ 
+        patch
+    RUN wget https://raw.githubusercontent.com/coin-or/coinbrew/master/coinbrew
+    RUN chmod u+x coinbrew
+    RUN ./coinbrew fetch Cbc@master
+    RUN ./coinbrew build Cbc@master --prefix=/home/haroldo/prog/ --tests=none --enable-cbc-parallel --enable-relocatable
+    COPY requirements.txt requirements.txt
+    RUN mkdir /pip-install && pip3 install --prefix=/pip-install -r requirements.txt
+
+    FROM arm32v6/python:3.7-alpine3.15
+    RUN apk add --no-cache \
+        libffi-dev \ 
+        libgfortran \
+        lapack-dev \
+        libstdc++6
+    COPY --from=builder /home/haroldo/prog /home/haroldo/prog/
+    COPY --from=builder /pip-install /usr/local
+    COPY . .
+    ENV PMIP_CBC_LIBRARY="/home/haroldo/prog/lib/libCbc.so"
+    ENV PATH=$PATH:/home/haroldo/prog/bin
+    RUN chmod u+x ./entrypoint.sh
+    ENTRYPOINT ["./entrypoint.sh"]
+    
+There are two ways to build this dockerfile. The first option is to build on the same device as where your run the code. In case of the Raspberry Pi, you need a lot of patience (more than 12 hours) to build using the following command:
+
+.. code-block:: sh
+
+    docker build -t <tag> . 
+
+The second option is to build on a fast device and deploy on another. Most likely, your development machine does not have the linux/arm/v6 architecture, and you require cross-compilation with :code:`buildx`. This option requires an account at `Docker Hub <https://hub.docker.com/>`_. You can run the following to build the code:
+
+.. code-block:: sh
+
+    docker buildx create --name mybuilder
+    docker buildx use mybuilder
+    docker buildx inspect --bootstrap
+    docker login
+    docker buildx build --platform linux/arm/v6 -t <your-docker-hub-username>/<reponame> . --push
+    
+
