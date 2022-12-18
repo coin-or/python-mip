@@ -36,7 +36,7 @@ dependencies = ["cffi==1.15.0"]
 
 [project.optional-dependencies]
 numpy = ["numpy==1.23.1; python_version >= '3.8'", "numpy==1.21.6; python_version == '3.7'"]
-gurobi = ["gurobipy>=8.*"]
+gurobi = ["gurobipy>=8"]
 
 [project.urls]
 "Homepage" = "https://www.python-mip.com"
