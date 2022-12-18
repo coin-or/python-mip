@@ -6,7 +6,7 @@ jobs:
 
   pre-commit:
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
 
@@ -15,7 +15,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.7.12
+          python-version: 3.7.14
 
       - name: Upgrade pip
         run: python -m pip install --upgrade pip
@@ -41,17 +41,19 @@ jobs:
       fail-fast: false
       matrix:
         # temporarily downgraded to 3.7.9 and 3.8.10 due to a bug https://github.com/actions/setup-python/issues/402
-        python-version: ["3.7.9", "3.8.10", "3.9.13", "3.10.4", "pypy3.9-v7.3.9"]
-        os: [macos-11, macos-12, ubuntu-18.04, ubuntu-20.04, windows-2019, windows-2022]
+        python-version: ["3.7.9", "3.8.10", "3.9.13", "3.10.9", "pypy3.9-v7.3.9"]
+        os: [macos-11, macos-12, ubuntu-20.04, ubuntu-22.04, windows-2019, windows-2022]
         exclude:
           # temporarily exclude pypy3 on mac-os as there failing tests caused by bug on cbc side
           - os: macos-11
             python-version: "pypy3.9-v7.3.9"
           - os: macos-12
             python-version: "pypy3.9-v7.3.9"
-          # temporarily exclude pypy3 on ubuntu-18.04 as there an issue with installing numpy
-          - os: ubuntu-18.04
-            python-version: "pypy3.9-v7.3.9"
+          # several version (3.7.9 and 3.8.10) at not available at ubuntu-22.04
+          - os: ubuntu-22.04
+            python-version: "3.7.9"
+          - os: ubuntu-22.04
+            python-version: "3.8.10"
 
     steps:
 
