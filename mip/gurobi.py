@@ -54,17 +54,17 @@ lib_path = None
 if "GUROBI_HOME" in environ:
     if platform.lower().startswith("win"):
         libfile = glob(
-            os.path.join(os.environ["GUROBI_HOME"], "bin\\gurobi[0-9][0-9].dll")
+            os.path.join(os.environ["GUROBI_HOME"], "bin\\gurobi[0-9][0-9][0-9].dll")
         )
     else:
         libfile = glob(
-            os.path.join(os.environ["GUROBI_HOME"], "lib/libgurobi[0-9][0-9].*")
+            os.path.join(os.environ["GUROBI_HOME"], "lib/libgurobi[0-9][0-9][0-9].*")
         )
         if not libfile:
             libfile = glob(
                 os.path.join(
                     os.environ["GUROBI_HOME"],
-                    "lib/libgurobi.so.[0-9].[0-9].*",
+                    "lib/libgurobi.so.[0-9].[0-9].[0-9].*",
                 )
             )
 
@@ -78,7 +78,7 @@ if "GUROBI_HOME" in environ:
     minor_ver = vs[1]
 
 if lib_path is None:
-    for major_ver in reversed(range(6, 10)):
+    for major_ver in reversed(range(6, 11)):
         for minor_ver in reversed(range(0, 11)):
             lib_path = find_library("gurobi{}{}".format(major_ver, minor_ver))
             if lib_path is not None:
@@ -86,7 +86,7 @@ if lib_path is None:
         if lib_path is not None:
             break
 
-# Check for gurobi 9.5 through pip installation
+# Check for gurobi through pip installation
 if lib_path is None:
     gurobipy_spec = importlib.util.find_spec("gurobipy")
     if gurobipy_spec:
