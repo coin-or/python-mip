@@ -5,6 +5,7 @@ from typing import List, Tuple
 from os.path import isfile
 import os.path
 from glob import glob
+import re
 from os import environ
 import numbers
 from cffi import FFI
@@ -53,29 +54,22 @@ lib_path = None
 
 if "GUROBI_HOME" in environ:
     if platform.lower().startswith("win"):
-        libfile = glob(
-            os.path.join(os.environ["GUROBI_HOME"], "bin\\gurobi[0-9][0-9][0-9].dll")
-        )
+        lib_path_dir = os.path.join(os.environ["GUROBI_HOME"], "bin", "*")
+        pattern = r'gurobi([0-9]{2,3}).dll'
+
     else:
-        libfile = glob(
-            os.path.join(os.environ["GUROBI_HOME"], "lib/libgurobi[0-9][0-9][0-9].*")
-        )
-        if not libfile:
-            libfile = glob(
-                os.path.join(
-                    os.environ["GUROBI_HOME"],
-                    "lib/libgurobi.so.[0-9].[0-9].[0-9].*",
-                )
-            )
+        lib_path_dir = os.path.join(os.environ["GUROBI_HOME"], "lib", "*")
+        pattern = r'libgurobi([0-9]{2,3})[.].*'
 
-    if libfile:
-        lib_path = libfile[0]
+    for libfile in glob(lib_path_dir):
+        match = re.match(pattern, os.path.basename(libfile))
+        if match:
+            lib_path = libfile
 
-    # checking gurobi version
-    s1 = lib_path.split('"')[-1].split("/")[-1]
-    vs = [c for c in s1 if c.isdigit()]
-    major_ver = vs[0]
-    minor_ver = vs[1]
+            # checking gurobi version
+            major_ver = match.group(1)[:-1]
+            minor_ver = match.group(1)[-1]
+            break
 
 if lib_path is None:
     for major_ver in reversed(range(6, 11)):
