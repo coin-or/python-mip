@@ -55,11 +55,11 @@ lib_path = None
 if "GUROBI_HOME" in environ:
     if platform.lower().startswith("win"):
         lib_path_dir = os.path.join(os.environ["GUROBI_HOME"], "bin", "*")
-        pattern = r'gurobi([0-9]{2,3}).dll'
+        pattern = r"gurobi([0-9]{2,3}).dll"
 
     else:
         lib_path_dir = os.path.join(os.environ["GUROBI_HOME"], "lib", "*")
-        pattern = r'libgurobi([0-9]{2,3})[.].*'
+        pattern = r"libgurobi([0-9]{2,3})[.].*"
 
     for libfile in glob(lib_path_dir):
         match = re.match(pattern, os.path.basename(libfile))
