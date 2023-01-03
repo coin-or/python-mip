@@ -98,11 +98,11 @@ jobs:
     - name: Run tests PyPy
       if: ${{ matrix.python-version == 'pypy3.9-v7.3.9'}}
       run: |
-        python -m pytest test --verbose --color=yes --doctest-modules --ignore="test/test_gurobi.py"
+        python -m pytest test --verbose --color=yes --doctest-modules --ignore="test/test_gurobi.py" -Werror
         python -m pytest mip --verbose --color=yes --doctest-modules --ignore="mip/gurobi.py"
 
     - name: Run tests
       if: ${{ matrix.python-version != 'pypy3.9-v7.3.9'}}
       run: |
-        python -m pytest test --verbose --color=yes --doctest-modules
+        python -m pytest test --verbose --color=yes --doctest-modules -Werror
         python -m pytest mip --verbose --color=yes --doctest-modules --ignore="mip/gurobi.py"
