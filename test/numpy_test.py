@@ -9,7 +9,6 @@ import time
 import sys
 
 
-@pytest.mark.skipif(sys.version_info < (3, 8), reason="requires python3.8 or higher")
 def test_numpy():
     model = Model()
     N = 1000
@@ -33,7 +32,6 @@ def test_numpy():
     assert result == OptimizationStatus.OPTIMAL
 
 
-@pytest.mark.skipif(sys.version_info < (3, 8), reason="requires python3.8 or higher")
 def test_LinExprTensor():
     model = Model()
     x = model.add_var_tensor(shape=(3,), name="x")
