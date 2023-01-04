@@ -356,6 +356,7 @@ class SolverGurobi(Solver):
         self._model = ffi.NULL
         self._callback = None
         self._ownsModel = True
+        self._venv_loaded = False
         self._nlazy = 0
 
         if modelp == ffi.NULL:
@@ -397,6 +398,7 @@ class SolverGurobi(Solver):
             self._model = modelp
             self._env = GRBgetenv(self._model)
 
+        self._venv_loaded = True
         # default number of threads
         self.__threads = 0
 
@@ -429,7 +431,7 @@ class SolverGurobi(Solver):
         if self._ownsModel:
             if self._model:
                 GRBfreemodel(self._model)
-            if self._env:
+            if self._env and self._venv_loaded:
                 GRBfreeenv(self._env)
 
     def add_var(

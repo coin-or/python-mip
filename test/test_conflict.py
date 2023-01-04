@@ -1,5 +1,6 @@
 import pytest
 import mip
+import mip.constants
 from mip.conflict import ConflictFinder, IISFinderAlgorithm, ConflictRelaxer
 import random
 import numpy as np
