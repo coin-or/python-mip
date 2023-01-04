@@ -11,13 +11,6 @@ model the cost of installing each one of the plants.
 
 import sys
 
-# If running as a unit test, then skip if under pypy
-if hasattr(sys, '_called_from_test') and sys._called_from_test is True:
-    import platform
-    if 'pypy' in platform.python_implementation().lower():
-        import pytest
-        pytest.skip("Matplotlib installation not working under pypy")
-
 # Workaround for issues with python not being installed as a framework on mac
 # by using a different backend.
 if sys.platform == "darwin":  # OS X
