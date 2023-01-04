@@ -2,6 +2,7 @@ import logging
 from enum import Enum
 
 import mip
+import mip.constants
 
 logger = logging.getLogger("conflict")
 
