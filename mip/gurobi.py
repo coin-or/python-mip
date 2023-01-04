@@ -49,7 +49,7 @@ os_is_64_bit = maxsize > 2**32
 INF = float("inf")
 MAX_NAME_SIZE = 512  # for variables and constraints
 
-lib_path = ""
+lib_path = None
 
 if "GUROBI_HOME" in environ:
     if platform.lower().startswith("win"):
