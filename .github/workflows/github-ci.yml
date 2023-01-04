@@ -87,7 +87,7 @@ jobs:
       run: python -m pip install "matplotlib==3.5.2" "gurobipy==9.5.1"
 
     - name: Install mip
-      run: python -m pip install .[test]
+      run: python -m pip install .[test,numpy]
 
     - name: list installed packages
       run: python -m pip list
