@@ -516,12 +516,12 @@ class Constr:
         return self.__model.solver.constr_get_name(self.idx)
 
     @property
-    def priority(self) -> mip.constants.ConstraintPriority:
+    def priority(self) -> "mip.constants.ConstraintPriority":
         """priority value"""
         return self.__priority
 
     @priority.setter
-    def priority(self, priority: mip.constants.ConstraintPriority):
+    def priority(self, priority: "mip.constants.ConstraintPriority"):
         self.__priority = priority
 
 
