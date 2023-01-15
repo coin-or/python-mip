@@ -80,6 +80,9 @@ HighsInt Highs_getRowsByRange(
 );
 HighsInt Highs_getNumCol(const void* highs);
 HighsInt Highs_getNumRow(const void* highs);
+HighsInt Highs_getDoubleInfoValue(
+    const void* highs, const char* info, double* value
+);
 """
 
 if has_highs:
@@ -182,7 +185,10 @@ class SolverHighs(mip.Solver):
         raise NotImplementedError()
 
     def get_objective_bound(self: "SolverHighs") -> numbers.Real:
-        pass
+        info = "mip_dual_bound".encode("utf-8")
+        value = ffi.new("double*")
+        status = self._lib.Highs_getDoubleInfoValue(self._model, info, value)
+        return value[0]
 
     def get_objective(self: "SolverHighs") -> "mip.LinExpr":
         pass
