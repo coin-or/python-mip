@@ -47,6 +47,12 @@ except Exception as e:
 HEADER = """
 typedef int HighsInt;
 
+const HighsInt kHighsObjSenseMinimize = 1;
+const HighsInt kHighsObjSenseMaximize = -1;
+
+const HighsInt kHighsVarTypeContinuous = 0;
+const HighsInt kHighsVarTypeInteger = 1;
+
 void* Highs_create(void);
 void Highs_destroy(void* highs);
 HighsInt Highs_readModel(void* highs, const char* filename);
@@ -59,6 +65,7 @@ HighsInt Highs_addRow(
     void* highs, const double lower, const double upper, const HighsInt num_new_nz,
     const HighsInt* index, const double* value
 );
+HighsInt Highs_changeObjectiveSense(void* highs, const HighsInt sense);
 HighsInt Highs_changeColIntegrality(
     void* highs, const HighsInt col, const HighsInt integrality
 );
@@ -71,6 +78,7 @@ HighsInt Highs_getRowsByRange(
     HighsInt* num_row, double* lower, double* upper, HighsInt* num_nz,
     HighsInt* matrix_start, HighsInt* matrix_index, double* matrix_value
 );
+HighsInt Highs_getNumCol(const void* highs);
 """
 
 if has_highs:
@@ -79,13 +87,31 @@ if has_highs:
 
 class SolverHighs(mip.Solver):
     def __init__(self, model: mip.Model, name: str, sense: str):
-        super().__init__(model, name, sense)
+        if not has_highs:
+            raise FileNotFoundError(
+                "HiGHS not found."
+                "Please install the `highspy` package, or"
+                "set the `PMIP_HIGHS_LIBRARY` environment variable."
+            )
 
         # Store reference to library so that it's not garbage-collected (when we
         # just use highslib in __del__, it had already become None)?!
         self._lib = highslib
 
+        super().__init__(model, name, sense)
+
+        # Model creation and initialization.
         self._model = highslib.Highs_create()
+
+        sense_map = {
+            mip.MAXIMIZE: self._lib.kHighsObjSenseMaximize,
+            mip.MINIMIZE: self._lib.kHighsObjSenseMinimize,
+        }
+        status = self._lib.Highs_changeObjectiveSense(self._model, sense_map[sense])
+        # TODO: handle status (everywhere)
+
+        # Store additional data here, if HiGHS can't do it.
+        self.__name = name
 
     def __del__(self):
         self._lib.Highs_destroy(self._model)
@@ -99,7 +125,15 @@ class SolverHighs(mip.Solver):
         column: "Column" = None,
         name: str = "",
     ):
-        pass
+        # TODO: store variable name (HiGHS doesn't?)
+        # TODO: handle column data
+        col: int = self._lib.Highs_getNumCol(self._model)
+        status = self._lib.Highs_addVar(self._model, lb, ub)
+        status = self._lib.Highs_changeColCost(self._model, col, obj)
+        if var_type != mip.CONTINUOUS:
+            status = self._lib.Highs_changeColIntegrality(
+                self._model, col, self._lib.kHighsVarTypeInteger
+            )
 
     def add_constr(self: "SolverHighs", lin_expr: "mip.LinExpr", name: str = ""):
         pass
@@ -353,10 +387,10 @@ class SolverHighs(mip.Solver):
         pass
 
     def get_problem_name(self: "SolverHighs") -> str:
-        pass
+        return self.__name
 
     def set_problem_name(self: "SolverHighs", name: str):
-        pass
+        self.__name = name
 
     def get_status(self: "SolverHighs") -> mip.OptimizationStatus:
         pass
