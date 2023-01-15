@@ -139,17 +139,17 @@ class SolverHighs(mip.Solver):
         pass
 
     def add_lazy_constr(self: "SolverHighs", lin_expr: "mip.LinExpr"):
-        pass
+        raise NotImplementedError()
 
     def add_sos(
         self: "SolverHighs",
         sos: List[Tuple["mip.Var", numbers.Real]],
         sos_type: int,
     ):
-        pass
+        raise NotImplementedError()
 
     def add_cut(self: "SolverHighs", lin_expr: "mip.LinExpr"):
-        pass
+        raise NotImplementedError()
 
     def get_objective_bound(self: "SolverHighs") -> numbers.Real:
         pass
@@ -171,10 +171,10 @@ class SolverHighs(mip.Solver):
         max_cuts: int = mip.INT_MAX,
         min_viol: numbers.Real = 1e-4,
     ) -> "mip.CutPool":
-        pass
+        raise NotImplementedError()
 
     def clique_merge(self, constrs: Optional[List["mip.Constr"]] = None):
-        pass
+        raise NotImplementedError()
 
     def optimize(
         self: "SolverHighs",
@@ -203,7 +203,7 @@ class SolverHighs(mip.Solver):
         pass
 
     def set_start(self: "SolverHighs", start: List[Tuple["mip.Var", numbers.Real]]):
-        pass
+        raise NotImplementedError()
 
     def set_objective(self: "SolverHighs", lin_expr: "mip.LinExpr", sense: str = ""):
         pass
@@ -234,10 +234,10 @@ class SolverHighs(mip.Solver):
         pass
 
     def get_pump_passes(self: "SolverHighs") -> int:
-        pass
+        raise NotImplementedError()
 
     def set_pump_passes(self: "SolverHighs", passes: int):
-        pass
+        raise NotImplementedError()
 
     def get_max_nodes(self: "SolverHighs") -> int:
         pass
@@ -330,12 +330,12 @@ class SolverHighs(mip.Solver):
     # Variable-related getters/setters
 
     def var_get_branch_priority(self: "SolverHighs", var: "mip.Var") -> numbers.Real:
-        pass
+        raise NotImplementedError()
 
     def var_set_branch_priority(
         self: "SolverHighs", var: "mip.Var", value: numbers.Real
     ):
-        pass
+        raise NotImplementedError()
 
     def var_get_lb(self: "SolverHighs", var: "mip.Var") -> numbers.Real:
         pass
@@ -397,7 +397,7 @@ class SolverHighs(mip.Solver):
 
     def cgraph_density(self: "SolverHighs") -> float:
         """Density of the conflict graph"""
-        pass
+        raise NotImplementedError()
 
     def conflicting(
         self: "SolverHighs",
@@ -406,7 +406,7 @@ class SolverHighs(mip.Solver):
     ) -> bool:
         """Checks if two assignment to binary variables are in conflict,
         returns none if no conflict graph is available"""
-        pass
+        raise NotImplementedError()
 
     def conflicting_nodes(
         self: "SolverHighs", v1: Union["mip.Var", "mip.LinExpr"]
@@ -414,10 +414,10 @@ class SolverHighs(mip.Solver):
         """Returns all assignment conflicting with the assignment in v1 in the
         conflict graph.
         """
-        pass
+        raise NotImplementedError()
 
     def feature_values(self: "SolverHighs") -> List[float]:
-        pass
+        raise NotImplementedError()
 
     def feature_names(self: "SolverHighs") -> List[str]:
-        pass
+        raise NotImplementedError()
