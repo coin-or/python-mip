@@ -79,6 +79,7 @@ HighsInt Highs_getRowsByRange(
     HighsInt* matrix_start, HighsInt* matrix_index, double* matrix_value
 );
 HighsInt Highs_getNumCol(const void* highs);
+HighsInt Highs_getNumRow(const void* highs);
 """
 
 if has_highs:
@@ -114,6 +115,8 @@ class SolverHighs(mip.Solver):
         self._name = name
         self._var_name: List[str] = []
         self._var_col: Dict[str, int] = {}
+        self._cons_name: List[str] = []
+        self._cons_col: Dict[str, int] = {}
 
     def __del__(self):
         self._lib.Highs_destroy(self._model)
@@ -141,7 +144,29 @@ class SolverHighs(mip.Solver):
         self._var_col[name] = col
 
     def add_constr(self: "SolverHighs", lin_expr: "mip.LinExpr", name: str = ""):
-        pass
+        row: int = self._lib.Highs_getNumRow(self._model)
+
+        # equation expressed as two-sided inequality
+        lower = -lin_expr.const
+        upper = -lin_expr.const
+        if lin_expr.sense == mip.LESS_OR_EQUAL:
+            lower = -mip.INF
+        elif lin_expr.sense == mip.GREATER_OR_EQUAL:
+            upper = mip.INF
+        else:
+            assert lin_expr.sense == mip.EQUAL
+
+        num_new_nz = len(lin_expr.expr)
+        index = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
+        value = ffi.new("double[]", [coef for coef in lin_expr.expr.values()])
+
+        status = self._lib.Highs_addRow(
+            self._model, lower, upper, num_new_nz, index, value
+        )
+
+        # store name
+        self._cons_name.append(name)
+        self._cons_col[name] = row
 
     def add_lazy_constr(self: "SolverHighs", lin_expr: "mip.LinExpr"):
         raise NotImplementedError()

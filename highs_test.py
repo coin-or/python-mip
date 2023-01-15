@@ -6,9 +6,14 @@ x = model.add_var(name="x")
 y = model.add_var(name="y", lb=5, ub=23, var_type=mip.INTEGER)
 z = model.add_var(name="z", var_type=mip.BINARY)
 
+model += x + y == 99
+model += x <= 99 * z
+model += x + y + z >= 1
 
 # internals
 solver = model.solver
 print(f"Solver: {solver}")
 print(f"Var names: {solver._var_name}")
 print(f"Var cols: {solver._var_col}")
+print(f"Cons names: {solver._cons_name}")
+print(f"Cons cols: {solver._cons_col}")
