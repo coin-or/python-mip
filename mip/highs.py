@@ -111,7 +111,9 @@ class SolverHighs(mip.Solver):
         # TODO: handle status (everywhere)
 
         # Store additional data here, if HiGHS can't do it.
-        self.__name = name
+        self._name = name
+        self._var_name: List[str] = []
+        self._var_col: Dict[str, int] = {}
 
     def __del__(self):
         self._lib.Highs_destroy(self._model)
@@ -125,7 +127,6 @@ class SolverHighs(mip.Solver):
         column: "Column" = None,
         name: str = "",
     ):
-        # TODO: store variable name (HiGHS doesn't?)
         # TODO: handle column data
         col: int = self._lib.Highs_getNumCol(self._model)
         status = self._lib.Highs_addVar(self._model, lb, ub)
@@ -134,6 +135,10 @@ class SolverHighs(mip.Solver):
             status = self._lib.Highs_changeColIntegrality(
                 self._model, col, self._lib.kHighsVarTypeInteger
             )
+
+        # store name
+        self._var_name.append(name)
+        self._var_col[name] = col
 
     def add_constr(self: "SolverHighs", lin_expr: "mip.LinExpr", name: str = ""):
         pass
@@ -387,10 +392,10 @@ class SolverHighs(mip.Solver):
         pass
 
     def get_problem_name(self: "SolverHighs") -> str:
-        return self.__name
+        return self._name
 
     def set_problem_name(self: "SolverHighs", name: str):
-        self.__name = name
+        self._name = name
 
     def get_status(self: "SolverHighs") -> mip.OptimizationStatus:
         pass
