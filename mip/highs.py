@@ -92,12 +92,12 @@ class SolverHighs(mip.Solver):
 
     def add_var(
         self: "SolverHighs",
-        name: str = "",
         obj: numbers.Real = 0,
         lb: numbers.Real = 0,
         ub: numbers.Real = mip.INF,
         var_type: str = mip.CONTINUOUS,
         column: "Column" = None,
+        name: str = "",
     ):
         pass
 
