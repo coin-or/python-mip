@@ -6,6 +6,7 @@ import logging
 import os
 import os.path
 import sys
+from typing import List, Optional, Tuple, Union
 
 import cffi
 
@@ -90,7 +91,7 @@ class SolverHighs(mip.Solver):
         self._lib.Highs_destroy(self._model)
 
     def add_var(
-        self,
+        self: "SolverHighs",
         name: str = "",
         obj: numbers.Real = 0,
         lb: numbers.Real = 0,
@@ -98,6 +99,293 @@ class SolverHighs(mip.Solver):
         var_type: str = mip.CONTINUOUS,
         column: "Column" = None,
     ):
+        pass
+
+    def add_constr(self: "SolverHighs", lin_expr: "mip.LinExpr", name: str = ""):
+        pass
+
+    def add_lazy_constr(self: "SolverHighs", lin_expr: "mip.LinExpr"):
+        pass
+
+    def add_sos(
+        self: "SolverHighs",
+        sos: List[Tuple["mip.Var", numbers.Real]],
+        sos_type: int,
+    ):
+        pass
+
+    def add_cut(self: "SolverHighs", lin_expr: "mip.LinExpr"):
+        pass
+
+    def get_objective_bound(self: "SolverHighs") -> numbers.Real:
+        pass
+
+    def get_objective(self: "SolverHighs") -> "mip.LinExpr":
+        pass
+
+    def get_objective_const(self: "SolverHighs") -> numbers.Real:
+        pass
+
+    def relax(self: "SolverHighs"):
+        pass
+
+    def generate_cuts(
+        self,
+        cut_types: Optional[List[mip.CutType]] = None,
+        depth: int = 0,
+        npass: int = 0,
+        max_cuts: int = mip.INT_MAX,
+        min_viol: numbers.Real = 1e-4,
+    ) -> "mip.CutPool":
+        pass
+
+    def clique_merge(self, constrs: Optional[List["mip.Constr"]] = None):
+        pass
+
+    def optimize(
+        self: "SolverHighs",
+        relax: bool = False,
+    ) -> "mip.OptimizationStatus":
+        pass
+
+    def get_objective_value(self: "SolverHighs") -> numbers.Real:
+        pass
+
+    def get_log(
+        self: "SolverHighs",
+    ) -> List[Tuple[numbers.Real, Tuple[numbers.Real, numbers.Real]]]:
+        return []
+
+    def get_objective_value_i(self: "SolverHighs", i: int) -> numbers.Real:
+        pass
+
+    def get_num_solutions(self: "SolverHighs") -> int:
+        pass
+
+    def get_objective_sense(self: "SolverHighs") -> str:
+        pass
+
+    def set_objective_sense(self: "SolverHighs", sense: str):
+        pass
+
+    def set_start(self: "SolverHighs", start: List[Tuple["mip.Var", numbers.Real]]):
+        pass
+
+    def set_objective(self: "SolverHighs", lin_expr: "mip.LinExpr", sense: str = ""):
+        pass
+
+    def set_objective_const(self: "SolverHighs", const: numbers.Real):
+        pass
+
+    def set_processing_limits(
+        self: "SolverHighs",
+        max_time: numbers.Real = mip.INF,
+        max_nodes: int = mip.INT_MAX,
+        max_sol: int = mip.INT_MAX,
+        max_seconds_same_incumbent: float = mip.INF,
+        max_nodes_same_incumbent: int = mip.INT_MAX,
+    ):
+        pass
+
+    def get_max_seconds(self: "SolverHighs") -> numbers.Real:
+        pass
+
+    def set_max_seconds(self: "SolverHighs", max_seconds: numbers.Real):
+        pass
+
+    def get_max_solutions(self: "SolverHighs") -> int:
+        pass
+
+    def set_max_solutions(self: "SolverHighs", max_solutions: int):
+        pass
+
+    def get_pump_passes(self: "SolverHighs") -> int:
+        pass
+
+    def set_pump_passes(self: "SolverHighs", passes: int):
+        pass
+
+    def get_max_nodes(self: "SolverHighs") -> int:
+        pass
+
+    def set_max_nodes(self: "SolverHighs", max_nodes: int):
+        pass
+
+    def set_num_threads(self: "SolverHighs", threads: int):
+        pass
+
+    def write(self: "SolverHighs", file_path: str):
+        pass
+
+    def read(self: "SolverHighs", file_path: str):
+        pass
+
+    def num_cols(self: "SolverHighs") -> int:
+        pass
+
+    def num_rows(self: "SolverHighs") -> int:
+        pass
+
+    def num_nz(self: "SolverHighs") -> int:
+        pass
+
+    def num_int(self: "SolverHighs") -> int:
+        pass
+
+    def get_emphasis(self: "SolverHighs") -> mip.SearchEmphasis:
+        pass
+
+    def set_emphasis(self: "SolverHighs", emph: mip.SearchEmphasis):
+        pass
+
+    def get_cutoff(self: "SolverHighs") -> numbers.Real:
+        pass
+
+    def set_cutoff(self: "SolverHighs", cutoff: numbers.Real):
+        pass
+
+    def get_mip_gap_abs(self: "SolverHighs") -> numbers.Real:
+        pass
+
+    def set_mip_gap_abs(self: "SolverHighs", mip_gap_abs: numbers.Real):
+        pass
+
+    def get_mip_gap(self: "SolverHighs") -> numbers.Real:
+        pass
+
+    def set_mip_gap(self: "SolverHighs", mip_gap: numbers.Real):
+        pass
+
+    def get_verbose(self: "SolverHighs") -> int:
+        pass
+
+    def set_verbose(self: "SolverHighs", verbose: int):
+        pass
+
+    # Constraint-related getters/setters
+
+    def constr_get_expr(self: "SolverHighs", constr: "mip.Constr") -> "mip.LinExpr":
+        pass
+
+    def constr_set_expr(
+        self: "SolverHighs", constr: "mip.Constr", value: "mip.LinExpr"
+    ) -> "mip.LinExpr":
+        pass
+
+    def constr_get_rhs(self: "SolverHighs", idx: int) -> numbers.Real:
+        pass
+
+    def constr_set_rhs(self: "SolverHighs", idx: int, rhs: numbers.Real):
+        pass
+
+    def constr_get_name(self: "SolverHighs", idx: int) -> str:
+        pass
+
+    def constr_get_pi(self: "SolverHighs", constr: "mip.Constr") -> numbers.Real:
+        pass
+
+    def constr_get_slack(self: "SolverHighs", constr: "mip.Constr") -> numbers.Real:
+        pass
+
+    def remove_constrs(self: "SolverHighs", constrsList: List[int]):
+        pass
+
+    def constr_get_index(self: "SolverHighs", name: str) -> int:
+        pass
+
+    # Variable-related getters/setters
+
+    def var_get_branch_priority(self: "SolverHighs", var: "mip.Var") -> numbers.Real:
+        pass
+
+    def var_set_branch_priority(
+        self: "SolverHighs", var: "mip.Var", value: numbers.Real
+    ):
+        pass
+
+    def var_get_lb(self: "SolverHighs", var: "mip.Var") -> numbers.Real:
+        pass
+
+    def var_set_lb(self: "SolverHighs", var: "mip.Var", value: numbers.Real):
+        pass
+
+    def var_get_ub(self: "SolverHighs", var: "mip.Var") -> numbers.Real:
+        pass
+
+    def var_set_ub(self: "SolverHighs", var: "mip.Var", value: numbers.Real):
+        pass
+
+    def var_get_obj(self: "SolverHighs", var: "mip.Var") -> numbers.Real:
+        pass
+
+    def var_set_obj(self: "SolverHighs", var: "mip.Var", value: numbers.Real):
+        pass
+
+    def var_get_var_type(self: "SolverHighs", var: "mip.Var") -> str:
+        pass
+
+    def var_set_var_type(self: "SolverHighs", var: "mip.Var", value: str):
+        pass
+
+    def var_get_column(self: "SolverHighs", var: "mip.Var") -> "Column":
+        pass
+
+    def var_set_column(self: "SolverHighs", var: "mip.Var", value: "Column"):
+        pass
+
+    def var_get_rc(self: "SolverHighs", var: "mip.Var") -> numbers.Real:
+        pass
+
+    def var_get_x(self: "SolverHighs", var: "mip.Var") -> numbers.Real:
+        """Assumes that the solution is available (should be checked
+        before calling it"""
+
+    def var_get_xi(self: "SolverHighs", var: "mip.Var", i: int) -> numbers.Real:
+        pass
+
+    def var_get_name(self: "SolverHighs", idx: int) -> str:
+        pass
+
+    def remove_vars(self: "SolverHighs", varsList: List[int]):
+        pass
+
+    def var_get_index(self: "SolverHighs", name: str) -> int:
+        pass
+
+    def get_problem_name(self: "SolverHighs") -> str:
+        pass
+
+    def set_problem_name(self: "SolverHighs", name: str):
+        pass
+
+    def get_status(self: "SolverHighs") -> mip.OptimizationStatus:
+        pass
+
+    def cgraph_density(self: "SolverHighs") -> float:
+        """Density of the conflict graph"""
+        pass
+
+    def conflicting(
+        self: "SolverHighs",
+        e1: Union["mip.LinExpr", "mip.Var"],
+        e2: Union["mip.LinExpr", "mip.Var"],
+    ) -> bool:
+        """Checks if two assignment to binary variables are in conflict,
+        returns none if no conflict graph is available"""
+        pass
+
+    def conflicting_nodes(
+        self: "SolverHighs", v1: Union["mip.Var", "mip.LinExpr"]
+    ) -> Tuple[List["mip.Var"], List["mip.Var"]]:
+        """Returns all assignment conflicting with the assignment in v1 in the
+        conflict graph.
+        """
+        pass
+
+    def feature_values(self: "SolverHighs") -> List[float]:
+        pass
+
+    def feature_names(self: "SolverHighs") -> List[str]:
         pass
 
 
