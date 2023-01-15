@@ -387,12 +387,3 @@ class SolverHighs(mip.Solver):
 
     def feature_names(self: "SolverHighs") -> List[str]:
         pass
-
-
-# create solver for testing
-if has_highs:
-    print("have highs")
-    model = None
-    solver = SolverHighs(None, "foo_name", mip.MINIMIZE)
-else:
-    print("don't have highs")
