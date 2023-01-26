@@ -65,6 +65,7 @@ HighsInt Highs_addRow(
     void* highs, const double lower, const double upper, const HighsInt num_new_nz,
     const HighsInt* index, const double* value
 );
+HighsInt Highs_changeObjectiveOffset(void* highs, const double offset);
 HighsInt Highs_changeObjectiveSense(void* highs, const HighsInt sense);
 HighsInt Highs_changeColIntegrality(
     void* highs, const HighsInt col, const HighsInt integrality
@@ -78,6 +79,14 @@ HighsInt Highs_getRowsByRange(
     HighsInt* num_row, double* lower, double* upper, HighsInt* num_nz,
     HighsInt* matrix_start, HighsInt* matrix_index, double* matrix_value
 );
+HighsInt Highs_getColsByRange(
+    const void* highs, const HighsInt from_col, const HighsInt to_col,
+    HighsInt* num_col, double* costs, double* lower, double* upper,
+    HighsInt* num_nz, HighsInt* matrix_start, HighsInt* matrix_index,
+    double* matrix_value
+);
+HighsInt Highs_getObjectiveOffset(const void* highs, double* offset);
+HighsInt Highs_getObjectiveSense(const void* highs, HighsInt* sense);
 HighsInt Highs_getNumCol(const void* highs);
 HighsInt Highs_getNumRow(const void* highs);
 HighsInt Highs_getDoubleInfoValue(
@@ -106,13 +115,7 @@ class SolverHighs(mip.Solver):
 
         # Model creation and initialization.
         self._model = highslib.Highs_create()
-
-        sense_map = {
-            mip.MAXIMIZE: self._lib.kHighsObjSenseMaximize,
-            mip.MINIMIZE: self._lib.kHighsObjSenseMinimize,
-        }
-        status = self._lib.Highs_changeObjectiveSense(self._model, sense_map[sense])
-        # TODO: handle status (everywhere)
+        self.set_objective_sense(sense)
 
         # Store additional data here, if HiGHS can't do it.
         self._name = name
@@ -134,7 +137,8 @@ class SolverHighs(mip.Solver):
         name: str = "",
     ):
         # TODO: handle column data
-        col: int = self._lib.Highs_getNumCol(self._model)
+        col: int = self.num_cols()
+        # TODO: handle status (everywhere)
         status = self._lib.Highs_addVar(self._model, lb, ub)
         status = self._lib.Highs_changeColCost(self._model, col, obj)
         if var_type != mip.CONTINUOUS:
@@ -147,7 +151,7 @@ class SolverHighs(mip.Solver):
         self._var_col[name] = col
 
     def add_constr(self: "SolverHighs", lin_expr: "mip.LinExpr", name: str = ""):
-        row: int = self._lib.Highs_getNumRow(self._model)
+        row: int = self.num_rows()
 
         # equation expressed as two-sided inequality
         lower = -lin_expr.const
@@ -191,10 +195,36 @@ class SolverHighs(mip.Solver):
         return value[0]
 
     def get_objective(self: "SolverHighs") -> "mip.LinExpr":
-        pass
+        n = self.num_cols()
+        num_col = ffi.new("int*")
+        costs = ffi.new("double[]", n)
+        lower = ffi.new("double[]", n)
+        upper = ffi.new("double[]", n)
+        num_nz = ffi.new("int*")
+        status = self._lib.Highs_getColsByRange(
+            self._model,
+            0,  # from_col
+            n - 1,  # to_col
+            num_col,
+            costs,
+            lower,
+            upper,
+            num_nz,
+            ffi.NULL,  # matrix_start
+            ffi.NULL,  # matrix_index
+            ffi.NULL,  # matrix_value
+        )
+        obj_expr = mip.xsum(
+            costs[i] * self.model.vars[i] for i in range(n) if costs[i] != 0.0
+        )
+        obj_expr.add_const(self.get_objective_const())
+        obj_expr.sense = self.get_objective_sense()
+        return obj_expr
 
     def get_objective_const(self: "SolverHighs") -> numbers.Real:
-        pass
+        offset = ffi.new("double*")
+        status = self._lib.Highs_getObjectiveOffset(self._model, offset)
+        return offset[0]
 
     def relax(self: "SolverHighs"):
         pass
@@ -233,19 +263,34 @@ class SolverHighs(mip.Solver):
         pass
 
     def get_objective_sense(self: "SolverHighs") -> str:
-        pass
+        sense = ffi.new("int*")
+        status = self._lib.Highs_getObjectiveSense(self._model, sense)
+        sense_map = {
+            self._lib.kHighsObjSenseMaximize: mip.MAXIMIZE,
+            self._lib.kHighsObjSenseMinimize: mip.MINIMIZE,
+        }
+        return sense_map[sense[0]]
 
     def set_objective_sense(self: "SolverHighs", sense: str):
-        pass
+        sense_map = {
+            mip.MAXIMIZE: self._lib.kHighsObjSenseMaximize,
+            mip.MINIMIZE: self._lib.kHighsObjSenseMinimize,
+        }
+        status = self._lib.Highs_changeObjectiveSense(self._model, sense_map[sense])
 
     def set_start(self: "SolverHighs", start: List[Tuple["mip.Var", numbers.Real]]):
         raise NotImplementedError()
 
     def set_objective(self: "SolverHighs", lin_expr: "mip.LinExpr", sense: str = ""):
-        pass
+        # set coefficients
+        for var, coef in lin_expr.expr.items():
+            status = self._lib.Highs_changeColCost(self._model, var.idx, coef)
+
+        self.set_objective_const(lin_expr.const)
+        self.set_objective_sense(lin_expr.sense)
 
     def set_objective_const(self: "SolverHighs", const: numbers.Real):
-        pass
+        status = self._lib.Highs_changeObjectiveOffset(self._model, const)
 
     def set_processing_limits(
         self: "SolverHighs",
@@ -291,10 +336,10 @@ class SolverHighs(mip.Solver):
         pass
 
     def num_cols(self: "SolverHighs") -> int:
-        pass
+        return self._lib.Highs_getNumCol(self._model)
 
     def num_rows(self: "SolverHighs") -> int:
-        pass
+        return self._lib.Highs_getNumRow(self._model)
 
     def num_nz(self: "SolverHighs") -> int:
         pass
@@ -407,20 +452,19 @@ class SolverHighs(mip.Solver):
         pass
 
     def var_get_x(self: "SolverHighs", var: "mip.Var") -> numbers.Real:
-        """Assumes that the solution is available (should be checked
-        before calling it"""
+        pass
 
     def var_get_xi(self: "SolverHighs", var: "mip.Var", i: int) -> numbers.Real:
         pass
 
     def var_get_name(self: "SolverHighs", idx: int) -> str:
-        pass
+        return self._var_name[idx]
 
     def remove_vars(self: "SolverHighs", varsList: List[int]):
         pass
 
     def var_get_index(self: "SolverHighs", name: str) -> int:
-        pass
+        return self._var_col[name]
 
     def get_problem_name(self: "SolverHighs") -> str:
         return self._name

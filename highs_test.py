@@ -11,12 +11,18 @@ model += x + y == 99
 model += x <= 99 * z
 model += x + y + z >= 1
 
+model.objective = mip.minimize(2*x - 3*y + 23)
+
 # methods
+print()
 print(f"objective bound: {model.objective_bound}, {solver.get_objective_bound()}")
+print(f"obj expr: {model.objective}, {solver.get_objective()}")
 
 # internals
+print()
 print(f"Solver: {solver}")
 print(f"Var names: {solver._var_name}")
 print(f"Var cols: {solver._var_col}")
 print(f"Cons names: {solver._cons_name}")
 print(f"Cons cols: {solver._cons_col}")
+
