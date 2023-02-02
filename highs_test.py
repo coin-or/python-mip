@@ -21,6 +21,7 @@ print(f"obj expr: {model.objective}, {solver.get_objective()}")
 # internals
 print()
 print(f"Solver: {solver}")
+print(f"cols: {solver.num_cols()}, rows: {solver.num_rows()}, nz: {solver.num_nz()}, int: {solver.num_int()},")
 print(f"Var names: {solver._var_name}")
 print(f"Var cols: {solver._var_col}")
 print(f"Cons names: {solver._cons_name}")

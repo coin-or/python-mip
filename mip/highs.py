@@ -115,6 +115,7 @@ HighsInt Highs_getObjectiveOffset(const void* highs, double* offset);
 HighsInt Highs_getObjectiveSense(const void* highs, HighsInt* sense);
 HighsInt Highs_getNumCol(const void* highs);
 HighsInt Highs_getNumRow(const void* highs);
+HighsInt Highs_getNumNz(const void* highs);
 HighsInt Highs_getDoubleInfoValue(
     const void* highs, const char* info, double* value
 );
@@ -147,11 +148,12 @@ class SolverHighs(mip.Solver):
         self.set_objective_sense(sense)
 
         # Store additional data here, if HiGHS can't do it.
-        self._name = name
+        self._name: str = name
         self._var_name: List[str] = []
         self._var_col: Dict[str, int] = {}
         self._cons_name: List[str] = []
         self._cons_col: Dict[str, int] = {}
+        self._num_int: int = 0
 
     def __del__(self):
         self._lib.Highs_destroy(self._model)
@@ -188,6 +190,7 @@ class SolverHighs(mip.Solver):
             status = self._lib.Highs_changeColIntegrality(
                 self._model, col, self._lib.kHighsVarTypeInteger
             )
+            self._num_int += 1
 
         # store name
         self._var_name.append(name)
@@ -275,6 +278,7 @@ class SolverHighs(mip.Solver):
         status = self._lib.Highs_changeColsIntegralityByRange(
             self._model, 0, n - 1, integrality
         )
+        self._num_int = 0
 
     def generate_cuts(
         self,
@@ -393,16 +397,17 @@ class SolverHighs(mip.Solver):
         return self._lib.Highs_getNumRow(self._model)
 
     def num_nz(self: "SolverHighs") -> int:
-        pass
+        return self._lib.Highs_getNumNz(self._model)
 
     def num_int(self: "SolverHighs") -> int:
-        pass
+        # Can't be queried easily from C API, so we do our own book keeping :-/
+        return self._num_int
 
     def get_emphasis(self: "SolverHighs") -> mip.SearchEmphasis:
-        pass
+        raise NotImplementedError()
 
     def set_emphasis(self: "SolverHighs", emph: mip.SearchEmphasis):
-        pass
+        raise NotImplementedError()
 
     def get_cutoff(self: "SolverHighs") -> numbers.Real:
         pass
