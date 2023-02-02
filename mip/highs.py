@@ -455,10 +455,10 @@ class SolverHighs(mip.Solver):
         self._set_int_option_value("threads", threads)
 
     def write(self: "SolverHighs", file_path: str):
-        pass
+        status = self._lib.Highs_writeModel(self._model, file_path.encode("utf-8"))
 
     def read(self: "SolverHighs", file_path: str):
-        pass
+        status = self._lib.Highs_readModel(self._model, file_path.encode("utf-8"))
 
     def num_cols(self: "SolverHighs") -> int:
         return self._lib.Highs_getNumCol(self._model)

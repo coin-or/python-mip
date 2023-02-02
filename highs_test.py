@@ -22,6 +22,7 @@ print(f"objective value: {model.objective_value}")
 print()
 print(f"objective bound: {model.objective_bound}, {solver.get_objective_bound()}")
 print(f"obj expr: {model.objective}, {solver.get_objective()}")
+model.write("test.lp")
 
 # internals
 print()
