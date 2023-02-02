@@ -13,6 +13,10 @@ model += x + y + z >= 1
 
 model.objective = mip.minimize(2*x - 3*y + 23)
 
+status = model.optimize()
+print(f"status: {status}")
+print(f"objective value: {model.objective_value}")
+
 # methods
 print()
 print(f"objective bound: {model.objective_bound}, {solver.get_objective_bound()}")

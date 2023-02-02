@@ -304,7 +304,7 @@ class SolverHighs(mip.Solver):
         return self.get_status()
 
     def get_objective_value(self: "SolverHighs") -> numbers.Real:
-        pass
+        return self._lib.Highs_getObjectiveValue(self._model)
 
     def get_log(
         self: "SolverHighs",
