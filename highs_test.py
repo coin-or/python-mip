@@ -32,7 +32,12 @@ print(f"Var names: {solver._var_name}")
 print(f"Var cols: {solver._var_col}")
 print(f"Cons names: {solver._cons_name}")
 print(f"Cons cols: {solver._cons_col}")
+print(f"Sols: {solver._x}, {solver._rc}, {solver._pi}")
 
 # changes
 solver.relax()
 
+# try again
+status = model.optimize()
+print()
+print(f"Sols: {solver._x}, {solver._rc}, {solver._pi}")

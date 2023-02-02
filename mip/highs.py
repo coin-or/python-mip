@@ -140,6 +140,16 @@ HighsInt Highs_setDoubleOptionValue(
 HighsInt Highs_setBoolOptionValue(
     void* highs, const char* option, const bool value
 );
+HighsInt Highs_getSolution(
+    const void* highs, double* col_value, double* col_dual,
+    double* row_value, double* row_dual
+);
+HighsInt Highs_deleteRowsBySet(
+    void* highs, const HighsInt num_set_entries, const HighsInt* set
+);
+HighsInt Highs_deleteColsBySet(
+    void* highs, const HighsInt num_set_entries, const HighsInt* set
+);
 """
 
 if has_highs:
@@ -172,6 +182,11 @@ class SolverHighs(mip.Solver):
         self._cons_name: List[str] = []
         self._cons_col: Dict[str, int] = {}
         self._num_int: int = 0
+
+        # Also store solution (when available)
+        self._x = []
+        self._rc = []
+        self._pi = []
 
     def __del__(self):
         self._lib.Highs_destroy(self._model)
@@ -355,6 +370,24 @@ class SolverHighs(mip.Solver):
             # TODO: handle relax (need to remember and reset integrality?!
             raise NotImplementedError()
         status = self._lib.Highs_run(self._model)
+
+        # store solution values for later access
+        if self._has_primal_solution():
+            # TODO: also handle primal/dual rays?
+            n, m = self.num_cols(), self.num_rows()
+            col_value = ffi.new("double[]", n)
+            col_dual = ffi.new("double[]", n)
+            row_value = ffi.new("double[]", m)
+            row_dual = ffi.new("double[]", m)
+            status = self._lib.Highs_getSolution(
+                self._model, col_value, col_dual, row_value, row_dual
+            )
+            self._x = [col_value[j] for j in range(n)]
+            self._rc = [col_dual[j] for j in range(n)]
+
+            if self._has_dual_solution():
+                self._pi = [row_dual[i] for i in range(m)]
+
         return self.get_status()
 
     def get_objective_value(self: "SolverHighs") -> numbers.Real:
@@ -506,33 +539,96 @@ class SolverHighs(mip.Solver):
     # Constraint-related getters/setters
 
     def constr_get_expr(self: "SolverHighs", constr: "mip.Constr") -> "mip.LinExpr":
-        pass
+        row = constr.idx
+        # Call method twice:
+        #  - first, to get the sizes for coefficients,
+        num_row = ffi.new("int*")
+        lower = ffi.new("double[]", 1)
+        upper = ffi.new("double[]", 1)
+        num_nz = ffi.new("int*")
+        status = self._lib.Highs_getRowsByRange(
+            self._model, row, row, lower, upper, num_nz, ffi.NULL, ffi.NULL, ffi.NULL
+        )
+
+        #  - second, to get the coefficients in pre-allocated arrays.
+        matrix_start = ffi.new("int[]", 1)
+        matrix_index = ffi.new("int[]", num_nz[0])
+        matrix_value = ffi.new("double[]", num_nz[0])
+        status = self._lib.Highs_getRowsByRange(
+            self._model,
+            row,
+            row,
+            lower,
+            upper,
+            num_nz,
+            matrix_start,
+            matrix_index,
+            matrix_value,
+        )
+        assert matrix[0] == 0
+
+        return mip.xsum(matrix_value[i] * self.model.vars[i] for i in range(num_nz))
 
     def constr_set_expr(
         self: "SolverHighs", constr: "mip.Constr", value: "mip.LinExpr"
     ) -> "mip.LinExpr":
-        pass
+        raise NotImplementedError()
 
     def constr_get_rhs(self: "SolverHighs", idx: int) -> numbers.Real:
-        pass
+        # fetch both lower and upper bound
+        row = constr.idx
+        num_row = ffi.new("int*")
+        lower = ffi.new("double[]", 1)
+        upper = ffi.new("double[]", 1)
+        num_nz = ffi.new("int*")
+        status = self._lib.Highs_getRowsByRange(
+            self._model, row, row, lower, upper, num_nz, ffi.NULL, ffi.NULL, ffi.NULL
+        )
+
+        # case distinction for sense
+        if lower[0] == -mip.INF:
+            return -upper[0]
+        if upper[0] == mip.INF:
+            return -lower[0]
+        assert lower[0] == upper[0]
+        return -lower[0]
 
     def constr_set_rhs(self: "SolverHighs", idx: int, rhs: numbers.Real):
-        pass
+        # first need to figure out which bound to change (lower or upper)
+        num_row = ffi.new("int*")
+        lower = ffi.new("double[]", 1)
+        upper = ffi.new("double[]", 1)
+        num_nz = ffi.new("int*")
+        status = self._lib.Highs_getRowsByRange(
+            self._model, idx, idx, lower, upper, num_nz, ffi.NULL, ffi.NULL, ffi.NULL
+        )
+
+        # update bounds as needed
+        lb, ub = lower[0], upper[0]
+        if lb != -mip.INF:
+            lb = -rhs
+        if ub != mip.INF:
+            ub = -rhs
+
+        # set new bounds
+        status = self._lib.Highs_changeRowBounds(self._model, idx, lb, ub)
 
     def constr_get_name(self: "SolverHighs", idx: int) -> str:
-        pass
+        return self._cons_name(idx)
 
     def constr_get_pi(self: "SolverHighs", constr: "mip.Constr") -> numbers.Real:
-        pass
+        if self._pi:
+            return self._pi[constr.idx]
 
     def constr_get_slack(self: "SolverHighs", constr: "mip.Constr") -> numbers.Real:
-        pass
+        raise NotImplementedError()
 
     def remove_constrs(self: "SolverHighs", constrsList: List[int]):
-        pass
+        set_ = ffi.new("int[]", constrsList)
+        status = self._lib.Highs_deleteRowsBySet(self._model, len(constrsList), set_)
 
     def constr_get_index(self: "SolverHighs", name: str) -> int:
-        pass
+        return self._cons_col(name)
 
     # Variable-related getters/setters
 
@@ -545,49 +641,115 @@ class SolverHighs(mip.Solver):
         raise NotImplementedError()
 
     def var_get_lb(self: "SolverHighs", var: "mip.Var") -> numbers.Real:
-        pass
+        num_col = ffi.new("int*")
+        costs = ffi.new("double[]", 1)
+        lower = ffi.new("double[]", 1)
+        upper = ffi.new("double[]", 1)
+        num_nz = ffi.new("int*")
+        status = self._lib.Highs_getColsByRange(
+            self._model,
+            var.idx,  # from_col
+            var.idx,  # to_col
+            num_col,
+            costs,
+            lower,
+            upper,
+            num_nz,
+            ffi.NULL,  # matrix_start
+            ffi.NULL,  # matrix_index
+            ffi.NULL,  # matrix_value
+        )
+        return lower[0]
 
     def var_set_lb(self: "SolverHighs", var: "mip.Var", value: numbers.Real):
-        pass
+        # can only set both bounds, so we just set the old upper bound
+        old_upper = self.var_get_ub(var)
+        status = self._lib.Highs_changeColBounds(self._model, var.idx, value, old_upper)
 
     def var_get_ub(self: "SolverHighs", var: "mip.Var") -> numbers.Real:
-        pass
+        num_col = ffi.new("int*")
+        costs = ffi.new("double[]", 1)
+        lower = ffi.new("double[]", 1)
+        upper = ffi.new("double[]", 1)
+        num_nz = ffi.new("int*")
+        status = self._lib.Highs_getColsByRange(
+            self._model,
+            var.idx,  # from_col
+            var.idx,  # to_col
+            num_col,
+            costs,
+            lower,
+            upper,
+            num_nz,
+            ffi.NULL,  # matrix_start
+            ffi.NULL,  # matrix_index
+            ffi.NULL,  # matrix_value
+        )
+        return upper[0]
 
     def var_set_ub(self: "SolverHighs", var: "mip.Var", value: numbers.Real):
-        pass
+        # can only set both bounds, so we just set the old lower bound
+        old_lower = self.var_get_lb(var)
+        status = self._lib.Highs_changeColBounds(self._model, var.idx, old_lower, value)
 
     def var_get_obj(self: "SolverHighs", var: "mip.Var") -> numbers.Real:
-        pass
+        num_col = ffi.new("int*")
+        costs = ffi.new("double[]", 1)
+        lower = ffi.new("double[]", 1)
+        upper = ffi.new("double[]", 1)
+        num_nz = ffi.new("int*")
+        status = self._lib.Highs_getColsByRange(
+            self._model,
+            var.idx,  # from_col
+            var.idx,  # to_col
+            num_col,
+            costs,
+            lower,
+            upper,
+            num_nz,
+            ffi.NULL,  # matrix_start
+            ffi.NULL,  # matrix_index
+            ffi.NULL,  # matrix_value
+        )
+        return costs[0]
 
     def var_set_obj(self: "SolverHighs", var: "mip.Var", value: numbers.Real):
-        pass
+        status = self._lib.Highs_changeColCost(self._model, var.idx, value)
 
     def var_get_var_type(self: "SolverHighs", var: "mip.Var") -> str:
-        pass
+        # TODO: store var type separately?
+        raise NotImplementedError()
 
     def var_set_var_type(self: "SolverHighs", var: "mip.Var", value: str):
-        pass
+        # TODO: store var type separately?
+        raise NotImplementedError()
 
     def var_get_column(self: "SolverHighs", var: "mip.Var") -> "Column":
-        pass
+        # TODO
+        raise NotImplementedError()
 
     def var_set_column(self: "SolverHighs", var: "mip.Var", value: "Column"):
-        pass
+        # TODO
+        raise NotImplementedError()
 
     def var_get_rc(self: "SolverHighs", var: "mip.Var") -> numbers.Real:
-        pass
+        # TODO: double-check this!
+        if self._rc:
+            self._rc[var.idx]
 
     def var_get_x(self: "SolverHighs", var: "mip.Var") -> numbers.Real:
-        pass
+        if self._x:
+            return self._x[var.idx]
 
     def var_get_xi(self: "SolverHighs", var: "mip.Var", i: int) -> numbers.Real:
-        pass
+        raise NotImplementedError()
 
     def var_get_name(self: "SolverHighs", idx: int) -> str:
         return self._var_name[idx]
 
     def remove_vars(self: "SolverHighs", varsList: List[int]):
-        pass
+        set_ = ffi.new("int[]", varsList)
+        status = self._lib.Highs_deleteColsBySet(self._model, len(varsList), set_)
 
     def var_get_index(self: "SolverHighs", name: str) -> int:
         return self._var_col[name]
@@ -599,16 +761,18 @@ class SolverHighs(mip.Solver):
         self._name = name
 
     def _get_primal_solution_status(self: "SolverHighs"):
-        sol_status = ffi.new("int*")
-        status = self._lib.Highs_getIntInfoValue(
-            self._model, "primal_solution_status", sol_status
-        )
-        return sol_status[0]
+        return self._get_int_info_value("primal_solution_status")
 
     def _has_primal_solution(self: "SolverHighs"):
         return (
             self._get_primal_solution_status() == self._lib.kHighsSolutionStatusFeasible
         )
+
+    def _get_dual_solution_status(self: "SolverHighs"):
+        return self._get_int_info_value("dual_solution_status")
+
+    def _has_dual_solution(self: "SolverHighs"):
+        return self._get_dual_solution_status() == self._lib.kHighsSolutionStatusFeasible
 
     def get_status(self: "SolverHighs") -> mip.OptimizationStatus:
         OS = mip.OptimizationStatus
