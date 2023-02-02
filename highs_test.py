@@ -26,3 +26,6 @@ print(f"Var cols: {solver._var_col}")
 print(f"Cons names: {solver._cons_name}")
 print(f"Cons cols: {solver._cons_col}")
 
+# changes
+solver.relax()
+

@@ -70,6 +70,10 @@ HighsInt Highs_changeObjectiveSense(void* highs, const HighsInt sense);
 HighsInt Highs_changeColIntegrality(
     void* highs, const HighsInt col, const HighsInt integrality
 );
+HighsInt Highs_changeColsIntegralityByRange(
+    void* highs, const HighsInt from_col, const HighsInt to_col,
+    const HighsInt* integrality
+);
 HighsInt Highs_changeColCost(void* highs, const HighsInt col, const double cost);
 HighsInt Highs_changeColBounds(
     void* highs, const HighsInt col, const double lower, const double upper
@@ -91,6 +95,9 @@ HighsInt Highs_getNumCol(const void* highs);
 HighsInt Highs_getNumRow(const void* highs);
 HighsInt Highs_getDoubleInfoValue(
     const void* highs, const char* info, double* value
+);
+HighsInt Highs_getIntInfoValue(
+    const void* highs, const char* info, int* value
 );
 """
 
@@ -126,6 +133,20 @@ class SolverHighs(mip.Solver):
 
     def __del__(self):
         self._lib.Highs_destroy(self._model)
+
+    def _get_int_info_value(self: "SolverHighs", name: str) -> int:
+        value = ffi.new("int*")
+        status = self._lib.Highs_getIntInfoValue(
+            self._model, name.encode("UTF-8"), value
+        )
+        return value[0]
+
+    def _get_double_info_value(self: "SolverHighs", name: str) -> float:
+        value = ffi.new("double*")
+        status = self._lib.Highs_getDoubleInfoValue(
+            self._model, name.encode("UTF-8"), value
+        )
+        return value[0]
 
     def add_var(
         self: "SolverHighs",
@@ -189,10 +210,7 @@ class SolverHighs(mip.Solver):
         raise NotImplementedError()
 
     def get_objective_bound(self: "SolverHighs") -> numbers.Real:
-        info = "mip_dual_bound".encode("utf-8")
-        value = ffi.new("double*")
-        status = self._lib.Highs_getDoubleInfoValue(self._model, info, value)
-        return value[0]
+        return self._get_double_info_value("mip_dual_bound")
 
     def get_objective(self: "SolverHighs") -> "mip.LinExpr":
         n = self.num_cols()
@@ -227,7 +245,14 @@ class SolverHighs(mip.Solver):
         return offset[0]
 
     def relax(self: "SolverHighs"):
-        pass
+        # change integrality of all columns
+        n = self.num_cols()
+        integrality = ffi.new(
+            "int[]", [self._lib.kHighsVarTypeContinuous for i in range(n)]
+        )
+        status = self._lib.Highs_changeColsIntegralityByRange(
+            self._model, 0, n - 1, integrality
+        )
 
     def generate_cuts(
         self,
