@@ -122,6 +122,24 @@ HighsInt Highs_getDoubleInfoValue(
 HighsInt Highs_getIntInfoValue(
     const void* highs, const char* info, int* value
 );
+HighsInt Highs_getIntOptionValue(
+    const void* highs, const char* option, HighsInt* value
+);
+HighsInt Highs_getDoubleOptionValue(
+    const void* highs, const char* option, double* value
+);
+HighsInt Highs_getBoolOptionValue(
+    const void* highs, const char* option, bool* value
+);
+HighsInt Highs_setIntOptionValue(
+    void* highs, const char* option, const HighsInt value
+);
+HighsInt Highs_setDoubleOptionValue(
+    void* highs, const char* option, const double value
+);
+HighsInt Highs_setBoolOptionValue(
+    void* highs, const char* option, const bool value
+);
 """
 
 if has_highs:
@@ -171,6 +189,42 @@ class SolverHighs(mip.Solver):
             self._model, name.encode("UTF-8"), value
         )
         return value[0]
+
+    def _get_int_option_value(self: "SolverHighs", name: str) -> int:
+        value = ffi.new("int*")
+        status = self._lib.Highs_getIntOptionValue(
+            self._model, name.encode("UTF-8"), value
+        )
+        return value[0]
+
+    def _get_double_option_value(self: "SolverHighs", name: str) -> float:
+        value = ffi.new("double*")
+        status = self._lib.Highs_getDoubleOptionValue(
+            self._model, name.encode("UTF-8"), value
+        )
+        return value[0]
+
+    def _get_bool_option_value(self: "SolverHighs", name: str) -> float:
+        value = ffi.new("bool*")
+        status = self._lib.Highs_getBoolOptionValue(
+            self._model, name.encode("UTF-8"), value
+        )
+        return value[0]
+
+    def _set_int_option_value(self: "SolverHighs", name: str, value: int):
+        status = self._lib.Highs_setIntOptionValue(
+            self._model, name.encode("UTF-8"), value
+        )
+
+    def _set_double_option_value(self: "SolverHighs", name: str, value: float):
+        status = self._lib.Highs_setDoubleOptionValue(
+            self._model, name.encode("UTF-8"), value
+        )
+
+    def _set_bool_option_value(self: "SolverHighs", name: str, value: float):
+        status = self._lib.Highs_setBoolOptionValue(
+            self._model, name.encode("UTF-8"), value
+        )
 
     def add_var(
         self: "SolverHighs",
@@ -315,7 +369,8 @@ class SolverHighs(mip.Solver):
         raise NotImplementedError()
 
     def get_num_solutions(self: "SolverHighs") -> int:
-        pass
+        # Multiple solutions are not supported (through C API?).
+        return 1 if self._has_primal_solution() else 0
 
     def get_objective_sense(self: "SolverHighs") -> str:
         sense = ffi.new("int*")
@@ -355,19 +410,28 @@ class SolverHighs(mip.Solver):
         max_seconds_same_incumbent: float = mip.INF,
         max_nodes_same_incumbent: int = mip.INT_MAX,
     ):
-        pass
+        if max_time != mip.INF:
+            self.set_max_seconds(max_time)
+        if max_nodes != mip.INT_MAX:
+            self.set_max_nodes(max_nodes)
+        if max_sol != mip.INT_MAX:
+            self.set_max_solutions(max_sol)
+        if max_seconds_same_incumbent != mip.INF:
+            raise NotImplementedError("Can't set max_seconds_same_incumbent!")
+        if max_nodes_same_incumbent != mip.INT_MAX:
+            self.set_max_nodes_same_incumbent(max_nodes_same_incumbent)
 
     def get_max_seconds(self: "SolverHighs") -> numbers.Real:
-        pass
+        return self._get_double_option_value("time_limit")
 
     def set_max_seconds(self: "SolverHighs", max_seconds: numbers.Real):
-        pass
+        self._set_double_option_value("time_limit", max_seconds)
 
     def get_max_solutions(self: "SolverHighs") -> int:
-        pass
+        return self._get_int_option_value("mip_max_improving_sols")
 
     def set_max_solutions(self: "SolverHighs", max_solutions: int):
-        pass
+        self._get_int_option_value("mip_max_improving_sols", max_solutions)
 
     def get_pump_passes(self: "SolverHighs") -> int:
         raise NotImplementedError()
@@ -376,13 +440,19 @@ class SolverHighs(mip.Solver):
         raise NotImplementedError()
 
     def get_max_nodes(self: "SolverHighs") -> int:
-        pass
+        return self._get_int_option_value("mip_max_nodes")
 
     def set_max_nodes(self: "SolverHighs", max_nodes: int):
-        pass
+        self._set_int_option_value("mip_max_nodes", max_nodes)
+
+    def get_max_nodes_same_incumbent(self: "SolverHighs") -> int:
+        return self._get_int_option_value("mip_max_stall_nodes")
+
+    def set_max_nodes_same_incumbent(self: "SolverHighs", max_nodes_same_incumbent: int):
+        self._set_int_option_value("mip_max_stall_nodes", max_nodes_same_incumbent)
 
     def set_num_threads(self: "SolverHighs", threads: int):
-        pass
+        self._set_int_option_value("threads", threads)
 
     def write(self: "SolverHighs", file_path: str):
         pass
@@ -410,28 +480,28 @@ class SolverHighs(mip.Solver):
         raise NotImplementedError()
 
     def get_cutoff(self: "SolverHighs") -> numbers.Real:
-        pass
+        return self._get_double_option_value("objective_bound")
 
     def set_cutoff(self: "SolverHighs", cutoff: numbers.Real):
-        pass
+        self._set_double_option_value("objective_bound", cutoff)
 
     def get_mip_gap_abs(self: "SolverHighs") -> numbers.Real:
-        pass
+        return self._get_double_option_value("mip_abs_gap")
 
     def set_mip_gap_abs(self: "SolverHighs", mip_gap_abs: numbers.Real):
-        pass
+        self._set_double_option_value("mip_abs_gap", mip_gap_abs)
 
     def get_mip_gap(self: "SolverHighs") -> numbers.Real:
-        pass
+        return self._get_double_option_value("mip_rel_gap")
 
     def set_mip_gap(self: "SolverHighs", mip_gap: numbers.Real):
-        pass
+        self._set_double_option_value("mip_rel_gap", mip_gap)
 
     def get_verbose(self: "SolverHighs") -> int:
-        pass
+        return self._get_bool_option_value("output_flag")
 
     def set_verbose(self: "SolverHighs", verbose: int):
-        pass
+        self._set_bool_option_value("output_flag", verbose)
 
     # Constraint-related getters/setters
 

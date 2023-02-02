@@ -1,6 +1,7 @@
 import mip
 
 model = mip.Model(solver_name=mip.HIGHS)
+model.verbose = 0
 solver = model.solver
 
 x = model.add_var(name="x")
