@@ -53,6 +53,28 @@ const HighsInt kHighsObjSenseMaximize = -1;
 const HighsInt kHighsVarTypeContinuous = 0;
 const HighsInt kHighsVarTypeInteger = 1;
 
+const HighsInt kHighsSolutionStatusNone = 0;
+const HighsInt kHighsSolutionStatusInfeasible = 1;
+const HighsInt kHighsSolutionStatusFeasible = 2;
+
+const HighsInt kHighsModelStatusNotset = 0;
+const HighsInt kHighsModelStatusLoadError = 1;
+const HighsInt kHighsModelStatusModelError = 2;
+const HighsInt kHighsModelStatusPresolveError = 3;
+const HighsInt kHighsModelStatusSolveError = 4;
+const HighsInt kHighsModelStatusPostsolveError = 5;
+const HighsInt kHighsModelStatusModelEmpty = 6;
+const HighsInt kHighsModelStatusOptimal = 7;
+const HighsInt kHighsModelStatusInfeasible = 8;
+const HighsInt kHighsModelStatusUnboundedOrInfeasible = 9;
+const HighsInt kHighsModelStatusUnbounded = 10;
+const HighsInt kHighsModelStatusObjectiveBound = 11;
+const HighsInt kHighsModelStatusObjectiveTarget = 12;
+const HighsInt kHighsModelStatusTimeLimit = 13;
+const HighsInt kHighsModelStatusIterationLimit = 14;
+const HighsInt kHighsModelStatusUnknown = 15;
+const HighsInt kHighsModelStatusSolutionLimit = 16;
+
 void* Highs_create(void);
 void Highs_destroy(void* highs);
 HighsInt Highs_readModel(void* highs, const char* filename);
@@ -271,7 +293,11 @@ class SolverHighs(mip.Solver):
         self: "SolverHighs",
         relax: bool = False,
     ) -> "mip.OptimizationStatus":
-        pass
+        if relax:
+            # TODO: handle relax (need to remember and reset integrality?!
+            raise NotImplementedError()
+        status = self._lib.Highs_run(self._model)
+        return self.get_status()
 
     def get_objective_value(self: "SolverHighs") -> numbers.Real:
         pass
@@ -497,8 +523,45 @@ class SolverHighs(mip.Solver):
     def set_problem_name(self: "SolverHighs", name: str):
         self._name = name
 
+    def _get_primal_solution_status(self: "SolverHighs"):
+        sol_status = ffi.new("int*")
+        status = self._lib.Highs_getIntInfoValue(
+            self._model, "primal_solution_status", sol_status
+        )
+        return sol_status[0]
+
+    def _has_primal_solution(self: "SolverHighs"):
+        return (
+            self._get_primal_solution_status() == self._lib.kHighsSolutionStatusFeasible
+        )
+
     def get_status(self: "SolverHighs") -> mip.OptimizationStatus:
-        pass
+        OS = mip.OptimizationStatus
+        status_map = {
+            self._lib.kHighsModelStatusNotset: OS.OTHER,
+            self._lib.kHighsModelStatusLoadError: OS.ERROR,
+            self._lib.kHighsModelStatusModelError: OS.ERROR,
+            self._lib.kHighsModelStatusPresolveError: OS.ERROR,
+            self._lib.kHighsModelStatusSolveError: OS.ERROR,
+            self._lib.kHighsModelStatusPostsolveError: OS.ERROR,
+            self._lib.kHighsModelStatusModelEmpty: OS.OTHER,
+            self._lib.kHighsModelStatusOptimal: OS.OPTIMAL,
+            self._lib.kHighsModelStatusInfeasible: OS.INFEASIBLE,
+            self._lib.kHighsModelStatusUnboundedOrInfeasible: OS.INFEASIBLE,
+            self._lib.kHighsModelStatusUnbounded: OS.UNBOUNDED,
+            self._lib.kHighsModelStatusObjectiveBound: None,
+            self._lib.kHighsModelStatusObjectiveTarget: None,
+            self._lib.kHighsModelStatusTimeLimit: None,
+            self._lib.kHighsModelStatusIterationLimit: None,
+            self._lib.kHighsModelStatusUnknown: OS.OTHER,
+            self._lib.kHighsModelStatusSolutionLimit: None,
+        }
+        highs_status = self._lib.Highs_getModelStatus(self._model)
+        status = status_map[highs_status]
+        if status is None:
+            # depends on solution status
+            status = OS.FEASIBLE if self._has_primal_solution() else OS.NO_SOLUTION_FOUND
+        return status
 
     def cgraph_density(self: "SolverHighs") -> float:
         """Density of the conflict graph"""
