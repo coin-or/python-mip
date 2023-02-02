@@ -279,10 +279,10 @@ class SolverHighs(mip.Solver):
     def get_log(
         self: "SolverHighs",
     ) -> List[Tuple[numbers.Real, Tuple[numbers.Real, numbers.Real]]]:
-        return []
+        raise NotImplementedError()
 
     def get_objective_value_i(self: "SolverHighs", i: int) -> numbers.Real:
-        pass
+        raise NotImplementedError()
 
     def get_num_solutions(self: "SolverHighs") -> int:
         pass
