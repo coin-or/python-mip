@@ -7,6 +7,7 @@ from mip import (
     CBC,
     Column,
     GUROBI,
+    HIGHS,
     LinExpr,
     Model,
     MAXIMIZE,
@@ -19,7 +20,7 @@ from mip import (
 )
 
 TOL = 1e-4
-SOLVERS = [CBC]
+SOLVERS = [CBC, HIGHS]
 if "GUROBI_HOME" in os.environ:
     SOLVERS += [GUROBI]
 
