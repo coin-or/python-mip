@@ -109,6 +109,9 @@ HighsInt Highs_changeColCost(void* highs, const HighsInt col, const double cost)
 HighsInt Highs_changeColBounds(
     void* highs, const HighsInt col, const double lower, const double upper
 );
+HighsInt Highs_changeCoeff(
+    void* highs, const HighsInt row, const HighsInt col, const double value
+);
 HighsInt Highs_getRowsByRange(
     const void* highs, const HighsInt from_row, const HighsInt to_row,
     HighsInt* num_row, double* lower, double* upper, HighsInt* num_nz,
@@ -260,6 +263,23 @@ class SolverHighs(mip.Solver):
             self._lib.Highs_setBoolOptionValue(self._model, name.encode("UTF-8"), value)
         )
 
+    def _change_coef(self: "SolverHighs", row: int, col: int, value: float):
+        "Overwrite a single coefficient in the matrix."
+        check(self._lib.Highs_changeCoeff(self._model, row, col, value))
+
+    def _set_column(self: "SolverHighs", col: int, column: "mip.Column"):
+        "Overwrite coefficients of one column."
+        # We also have to set to 0 all coefficients of the old column, so we
+        # fetch that first.
+        var = self.model.vars[col]
+        old_column = self.var_get_column(var)
+        coeffs = {cons.idx: 0.0 for cons in old_column.constrs}
+        coeffs.update(
+            {cons.idx: coef for cons, coef in zip(column.constrs, column.coeffs)}
+        )
+        for row, coef in coeffs.items():
+            self._change_coef(row, col, coef)
+
     def add_var(
         self: "SolverHighs",
         obj: numbers.Real = 0,
@@ -269,7 +289,6 @@ class SolverHighs(mip.Solver):
         column: "mip.Column" = None,
         name: str = "",
     ):
-        # TODO: handle column data
         col: int = self.num_cols()
         check(self._lib.Highs_addVar(self._model, lb, ub))
         check(self._lib.Highs_changeColCost(self._model, col, obj))
@@ -279,6 +298,9 @@ class SolverHighs(mip.Solver):
                     self._model, col, self._lib.kHighsVarTypeInteger
                 )
             )
+
+        if column:
+            self._set_column(col, column)
 
         # store name & type
         self._var_name.append(name)
@@ -852,8 +874,7 @@ class SolverHighs(mip.Solver):
         )
 
     def var_set_column(self: "SolverHighs", var: "mip.Var", value: "mip.Column"):
-        # TODO
-        raise NotImplementedError()
+        self._set_column(var.idx, value)
 
     def var_get_rc(self: "SolverHighs", var: "mip.Var") -> numbers.Real:
         if self._rc:

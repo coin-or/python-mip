@@ -679,8 +679,12 @@ def test_setting_variable_attributes(solver):
     y = m.add_var("y", obj=1)
     c = m.add_constr(y <= x, "some_constraint")
     # TODO: Remove Not implemented error when implemented
-    with pytest.raises(NotImplementedError):
-        x.column = Column([c], [-2])  # new column based on constraint (y <= 2*x)
+    column = Column([c], [-2])  # new column based on constraint (y <= 2*x)
+    if solver == HIGHS:
+        x.column = column
+    else:
+        with pytest.raises(NotImplementedError):
+            x.column = column
 
     # Check before optimization
     assert x.lb == -1.0
@@ -693,15 +697,24 @@ def test_setting_variable_attributes(solver):
     if solver == CBC:
         assert x.branch_priority == 0
     # TODO: Check when implemented
-    # column = x.column
-    # assert column.coeffs == [-2]
-    # assert column.constrs == [c]
+    if solver == HIGHS:
+        column = x.column
+        assert column.coeffs == [-2]
+        assert column.constrs == [c]
 
     m.optimize()
 
     # Check that optimization result considered changes correctly
-    assert abs(m.objective_value - 10.0) <= TOL
-    assert abs(x.x - 5) < TOL
+    if solver == HIGHS:
+        # column was changed, so y == 2*x
+        assert abs(m.objective_value - 15.0) <= TOL
+        assert abs(x.x - 5) < TOL
+        assert abs(y.x - 10) < TOL
+    else:
+        # column was not changed, so y == x
+        assert abs(m.objective_value - 10.0) <= TOL
+        assert abs(x.x - 5) < TOL
+        assert abs(y.x - 5) < TOL
 
 
 @pytest.mark.parametrize("solver", SOLVERS)
