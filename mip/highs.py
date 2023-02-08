@@ -735,8 +735,48 @@ class SolverHighs(mip.Solver):
         self._var_type[var.idx] = value
 
     def var_get_column(self: "SolverHighs", var: "mip.Var") -> "Column":
-        # TODO
-        raise NotImplementedError()
+        # Call method twice:
+        #  - first, to get the sizes for coefficients,
+        num_col = ffi.new("int*")
+        costs = ffi.new("double[]", 1)
+        lower = ffi.new("double[]", 1)
+        upper = ffi.new("double[]", 1)
+        num_nz = ffi.new("int*")
+        status = self._lib.Highs_getColsByRange(
+            self._model,
+            var.idx,  # from_col
+            var.idx,  # to_col
+            num_col,
+            costs,
+            lower,
+            upper,
+            num_nz,
+            ffi.NULL,  # matrix_start
+            ffi.NULL,  # matrix_index
+            ffi.NULL,  # matrix_value
+        )
+        #  - second, to get the coefficients in pre-allocated arrays.
+        matrix_start = ffi.new("int[]", 1)
+        matrix_index = ffi.new("int[]", num_nz[0])
+        matrix_value = ffi.new("double[]", num_nz[0])
+        status = self._lib.Highs_getColsByRange(
+            self._model,
+            var.idx,  # from_col
+            var.idx,  # to_col
+            num_col,
+            costs,
+            lower,
+            upper,
+            num_nz,
+            matrix_start,
+            matrix_index,
+            matrix_value,
+        )
+
+        return mip.Column(
+            constrs=[self.model.constrs[matrix_index[i]] for i in range(num_nz[0])],
+            coeffs=[matrix_value[i] for i in range(num_nz[0])],
+        )
 
     def var_set_column(self: "SolverHighs", var: "mip.Var", value: "Column"):
         # TODO
