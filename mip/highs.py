@@ -29,7 +29,12 @@ try:
         pkg_path = os.path.dirname(highspy.__file__)
 
         # need library matching operating system
-        if "linux" in sys.platform.lower():
+        platform = sys.platform.lower()
+        if "linux" in platform:
+            pattern = "highs_bindings.*.so"
+        elif platform.startswith("win"):
+            pattern = "highs_bindings.*.pyd"
+        elif any(platform.startswith(p) for p in ("darwin", "macos")):
             pattern = "highs_bindings.*.so"
         else:
             raise NotImplementedError(f"{sys.platform} not supported!")
