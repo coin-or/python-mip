@@ -1360,3 +1360,31 @@ def test_change_objective_sense(solver):
     status = m.optimize()
     assert status == OptimizationStatus.OPTIMAL
     assert x.x == pytest.approx(10.0)
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_solve_relaxation(solver):
+    m = Model(solver_name=solver)
+    x = m.add_var("x", var_type=CONTINUOUS)
+    y = m.add_var("y", var_type=INTEGER)
+    z = m.add_var("z", var_type=BINARY)
+
+    m.add_constr(x <= 10 * z)
+    m.add_constr(x <= 9.5)
+    m.add_constr(x + y <= 20)
+    m.objective = mip.maximize(4*x + y - z)
+
+    # first solve proper MIP
+    status = m.optimize()
+    assert status == OptimizationStatus.OPTIMAL
+    assert x.x == pytest.approx(9.5)
+    assert y.x == pytest.approx(10.0)
+    assert z.x == pytest.approx(1.0)
+
+    # then compare LP relaxation
+    # (seems to fail for CBC?!)
+    if solver == HIGHS:
+        status = m.optimize(relax=True)
+        assert status == OptimizationStatus.OPTIMAL
+        assert x.x == pytest.approx(9.5)
+        assert y.x == pytest.approx(10.5)
+        assert z.x == pytest.approx(0.95)

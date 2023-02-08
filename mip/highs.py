@@ -382,8 +382,7 @@ class SolverHighs(mip.Solver):
         check(self._lib.Highs_getObjectiveOffset(self._model, offset))
         return offset[0]
 
-    def relax(self: "SolverHighs"):
-        # change integrality of all columns
+    def _all_cols_continuous(self: "SolverHighs"):
         n = self.num_cols()
         integrality = ffi.new(
             "int[]", [self._lib.kHighsVarTypeContinuous for i in range(n)]
@@ -393,6 +392,24 @@ class SolverHighs(mip.Solver):
                 self._model, 0, n - 1, integrality
             )
         )
+
+    def _reset_var_types(self: "SolverHighs"):
+        var_type_map = {
+            mip.CONTINUOUS: self._lib.kHighsVarTypeContinuous,
+            mip.BINARY: self._lib.kHighsVarTypeInteger,
+            mip.INTEGER: self._lib.kHighsVarTypeInteger,
+        }
+        integrality = ffi.new("int[]", [var_type_map[vt] for vt in self._var_type])
+        n = self.num_cols()
+        check(
+            self._lib.Highs_changeColsIntegralityByRange(
+                self._model, 0, n - 1, integrality
+            )
+        )
+
+    def relax(self: "SolverHighs"):
+        # change integrality of all columns
+        self._all_cols_continuous()
         self._var_type = [mip.CONTINUOUS] * len(self._var_type)
 
     def generate_cuts(
@@ -413,8 +430,10 @@ class SolverHighs(mip.Solver):
         relax: bool = False,
     ) -> "mip.OptimizationStatus":
         if relax:
-            # TODO: handle relax (need to remember and reset integrality?!
-            raise NotImplementedError()
+            # Temporarily change variable types. Original types are still stored
+            # in self._var_type.
+            self._all_cols_continuous()
+
         check(self._lib.Highs_run(self._model))
 
         # store solution values for later access
@@ -439,6 +458,10 @@ class SolverHighs(mip.Solver):
 
             if self._has_dual_solution():
                 self._pi = [row_dual[i] for i in range(m)]
+
+        if relax:
+            # Undo the temporary changes.
+            self._reset_var_types()
 
         return opt_status
 
