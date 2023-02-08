@@ -785,7 +785,7 @@ class SolverHighs(mip.Solver):
     def var_get_rc(self: "SolverHighs", var: "mip.Var") -> numbers.Real:
         # TODO: double-check this!
         if self._rc:
-            self._rc[var.idx]
+            return self._rc[var.idx]
 
     def var_get_x(self: "SolverHighs", var: "mip.Var") -> numbers.Real:
         if self._x:
