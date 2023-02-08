@@ -333,17 +333,17 @@ class SolverHighs(mip.Solver):
         self._cons_col[name] = row
 
     def add_lazy_constr(self: "SolverHighs", lin_expr: "mip.LinExpr"):
-        raise NotImplementedError()
+        raise NotImplementedError("HiGHS doesn't support lazy constraints!")
 
     def add_sos(
         self: "SolverHighs",
         sos: List[Tuple["mip.Var", numbers.Real]],
         sos_type: int,
     ):
-        raise NotImplementedError()
+        raise NotImplementedError("HiGHS doesn't support SOS!")
 
     def add_cut(self: "SolverHighs", lin_expr: "mip.LinExpr"):
-        raise NotImplementedError()
+        raise NotImplementedError("HiGHS doesn't support cut callbacks!")
 
     def get_objective_bound(self: "SolverHighs") -> numbers.Real:
         return self._get_double_info_value("mip_dual_bound")
@@ -420,10 +420,10 @@ class SolverHighs(mip.Solver):
         max_cuts: int = mip.INT_MAX,
         min_viol: numbers.Real = 1e-4,
     ) -> "mip.CutPool":
-        raise NotImplementedError()
+        raise NotImplementedError("HiGHS doesn't support manual cut generation.")
 
     def clique_merge(self, constrs: Optional[List["mip.Constr"]] = None):
-        raise NotImplementedError()
+        raise NotImplementedError("HiGHS doesn't support clique merging!")
 
     def optimize(
         self: "SolverHighs",
@@ -442,7 +442,6 @@ class SolverHighs(mip.Solver):
             mip.OptimizationStatus.OPTIMAL,
             mip.OptimizationStatus.FEASIBLE,
         ):
-            # TODO: also handle primal/dual rays?
             n, m = self.num_cols(), self.num_rows()
             col_value = ffi.new("double[]", n)
             col_dual = ffi.new("double[]", n)
@@ -473,10 +472,10 @@ class SolverHighs(mip.Solver):
     def get_log(
         self: "SolverHighs",
     ) -> List[Tuple[numbers.Real, Tuple[numbers.Real, numbers.Real]]]:
-        raise NotImplementedError()
+        raise NotImplementedError("HiGHS doesn't give access to a progress log.")
 
     def get_objective_value_i(self: "SolverHighs", i: int) -> numbers.Real:
-        raise NotImplementedError()
+        raise NotImplementedError("HiGHS doesn't store multiple solutions.")
 
     def get_num_solutions(self: "SolverHighs") -> int:
         # Multiple solutions are not supported (through C API?).
@@ -499,7 +498,7 @@ class SolverHighs(mip.Solver):
         check(self._lib.Highs_changeObjectiveSense(self._model, sense_map[sense]))
 
     def set_start(self: "SolverHighs", start: List[Tuple["mip.Var", numbers.Real]]):
-        raise NotImplementedError()
+        raise NotImplementedError("HiGHS doesn't support a start solution.")
 
     def set_objective(self: "SolverHighs", lin_expr: "mip.LinExpr", sense: str = ""):
         # set coefficients
@@ -545,10 +544,10 @@ class SolverHighs(mip.Solver):
         self._get_int_option_value("mip_max_improving_sols", max_solutions)
 
     def get_pump_passes(self: "SolverHighs") -> int:
-        raise NotImplementedError()
+        raise NotImplementedError("HiGHS doesn't support pump passes.")
 
     def set_pump_passes(self: "SolverHighs", passes: int):
-        raise NotImplementedError()
+        raise NotImplementedError("HiGHS doesn't support pump passes.")
 
     def get_max_nodes(self: "SolverHighs") -> int:
         return self._get_int_option_value("mip_max_nodes")
@@ -584,10 +583,10 @@ class SolverHighs(mip.Solver):
         return sum(vt != mip.CONTINUOUS for vt in self._var_type)
 
     def get_emphasis(self: "SolverHighs") -> mip.SearchEmphasis:
-        raise NotImplementedError()
+        raise NotImplementedError("HiGHS doesn't support search emphasis.")
 
     def set_emphasis(self: "SolverHighs", emph: mip.SearchEmphasis):
-        raise NotImplementedError()
+        raise NotImplementedError("HiGHS doesn't support search emphasis.")
 
     def get_cutoff(self: "SolverHighs") -> numbers.Real:
         return self._get_double_option_value("objective_bound")
@@ -908,7 +907,7 @@ class SolverHighs(mip.Solver):
             return self._x[var.idx]
 
     def var_get_xi(self: "SolverHighs", var: "mip.Var", i: int) -> numbers.Real:
-        raise NotImplementedError()
+        raise NotImplementedError("HiGHS doesn't store multiple solutions.")
 
     def var_get_name(self: "SolverHighs", idx: int) -> str:
         return self._var_name[idx]
@@ -971,7 +970,7 @@ class SolverHighs(mip.Solver):
 
     def cgraph_density(self: "SolverHighs") -> float:
         """Density of the conflict graph"""
-        raise NotImplementedError()
+        raise NotImplementedError("HiGHS doesn't support conflict graph.")
 
     def conflicting(
         self: "SolverHighs",
@@ -980,7 +979,7 @@ class SolverHighs(mip.Solver):
     ) -> bool:
         """Checks if two assignment to binary variables are in conflict,
         returns none if no conflict graph is available"""
-        raise NotImplementedError()
+        raise NotImplementedError("HiGHS doesn't support conflict graph.")
 
     def conflicting_nodes(
         self: "SolverHighs", v1: Union["mip.Var", "mip.LinExpr"]
@@ -988,10 +987,10 @@ class SolverHighs(mip.Solver):
         """Returns all assignment conflicting with the assignment in v1 in the
         conflict graph.
         """
-        raise NotImplementedError()
+        raise NotImplementedError("HiGHS doesn't support conflict graph.")
 
     def feature_values(self: "SolverHighs") -> List[float]:
-        raise NotImplementedError()
+        raise NotImplementedError("HiGHS doesn't support feature extraction.")
 
     def feature_names(self: "SolverHighs") -> List[str]:
-        raise NotImplementedError()
+        raise NotImplementedError("HiGHS doesn't support feature extraction.")
