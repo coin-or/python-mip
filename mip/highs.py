@@ -179,9 +179,9 @@ class SolverHighs(mip.Solver):
         self._name: str = name
         self._var_name: List[str] = []
         self._var_col: Dict[str, int] = {}
+        self._var_type: List[str] = []
         self._cons_name: List[str] = []
         self._cons_col: Dict[str, int] = {}
-        self._num_int: int = 0
 
         # Also store solution (when available)
         self._x = []
@@ -259,11 +259,11 @@ class SolverHighs(mip.Solver):
             status = self._lib.Highs_changeColIntegrality(
                 self._model, col, self._lib.kHighsVarTypeInteger
             )
-            self._num_int += 1
 
-        # store name
+        # store name & type
         self._var_name.append(name)
         self._var_col[name] = col
+        self._var_type.append(var_type)
 
     def add_constr(self: "SolverHighs", lin_expr: "mip.LinExpr", name: str = ""):
         row: int = self.num_rows()
@@ -347,7 +347,7 @@ class SolverHighs(mip.Solver):
         status = self._lib.Highs_changeColsIntegralityByRange(
             self._model, 0, n - 1, integrality
         )
-        self._num_int = 0
+        self._var_type = [mip.CONTINUOUS] * len(self._var_type)
 
     def generate_cuts(
         self,
@@ -509,8 +509,7 @@ class SolverHighs(mip.Solver):
         return self._lib.Highs_getNumNz(self._model)
 
     def num_int(self: "SolverHighs") -> int:
-        # Can't be queried easily from C API, so we do our own book keeping :-/
-        return self._num_int
+        return sum(vt != mip.CONTINUOUS for vt in self._var_type)
 
     def get_emphasis(self: "SolverHighs") -> mip.SearchEmphasis:
         raise NotImplementedError()
@@ -723,12 +722,14 @@ class SolverHighs(mip.Solver):
         status = self._lib.Highs_changeColCost(self._model, var.idx, value)
 
     def var_get_var_type(self: "SolverHighs", var: "mip.Var") -> str:
-        # TODO: store var type separately?
-        raise NotImplementedError()
+        return self._var_type[var.idx]
 
     def var_set_var_type(self: "SolverHighs", var: "mip.Var", value: str):
-        # TODO: store var type separately?
-        raise NotImplementedError()
+        if value != mip.CONTINUOUS:
+            status = self._lib.Highs_changeColIntegrality(
+                self._model, var.idx, self._lib.kHighsVarTypeInteger
+            )
+        self._var_type[var.idx] = value
 
     def var_get_column(self: "SolverHighs", var: "mip.Var") -> "Column":
         # TODO
