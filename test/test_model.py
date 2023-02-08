@@ -4,6 +4,7 @@ import re
 import pytest
 
 import mip
+import mip.highs
 from mip import (
     CBC,
     Column,
@@ -21,9 +22,11 @@ from mip import (
 )
 
 TOL = 1e-4
-SOLVERS = [CBC, HIGHS]
+SOLVERS = [CBC]
 if "GUROBI_HOME" in os.environ:
     SOLVERS += [GUROBI]
+if mip.highs.has_highs:
+    SOLVERS += [HIGHS]
 
 # Overall Optimization Tests
 
