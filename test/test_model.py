@@ -3,6 +3,7 @@ import re
 
 import pytest
 
+import mip
 from mip import (
     CBC,
     Column,
@@ -1315,3 +1316,31 @@ def test_remove(solver):
 
     m.remove(constr)
     m.remove(x)
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_add_equation(solver):
+    m = Model(solver_name=solver)
+    x = m.add_var("x")
+    constr = m.add_constr(x == 23.5)
+
+    status = m.optimize()
+    assert status == OptimizationStatus.OPTIMAL
+
+    assert x.x == pytest.approx(23.5)
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_change_objective_sense(solver):
+    m = Model(solver_name=solver)
+    x = m.add_var("x", lb=10.0, ub=20.0)
+
+    # first maximize
+    m.objective = mip.maximize(x)
+    status = m.optimize()
+    assert status == OptimizationStatus.OPTIMAL
+    assert x.x == pytest.approx(20.0)
+
+    # then minimize
+    m.objective = mip.minimize(x)
+    status = m.optimize()
+    assert status == OptimizationStatus.OPTIMAL
+    assert x.x == pytest.approx(10.0)
