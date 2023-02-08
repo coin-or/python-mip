@@ -372,7 +372,11 @@ class SolverHighs(mip.Solver):
         status = self._lib.Highs_run(self._model)
 
         # store solution values for later access
-        if self._has_primal_solution():
+        opt_status = self.get_status()
+        if opt_status in (
+            mip.OptimizationStatus.OPTIMAL,
+            mip.OptimizationStatus.FEASIBLE,
+        ):
             # TODO: also handle primal/dual rays?
             n, m = self.num_cols(), self.num_rows()
             col_value = ffi.new("double[]", n)
@@ -388,10 +392,12 @@ class SolverHighs(mip.Solver):
             if self._has_dual_solution():
                 self._pi = [row_dual[i] for i in range(m)]
 
-        return self.get_status()
+        return opt_status
 
     def get_objective_value(self: "SolverHighs") -> numbers.Real:
-        return self._lib.Highs_getObjectiveValue(self._model)
+        # only give value if we have stored a solution
+        if self._x:
+            return self._lib.Highs_getObjectiveValue(self._model)
 
     def get_log(
         self: "SolverHighs",
