@@ -638,12 +638,15 @@ class SolverHighs(mip.Solver):
     # Variable-related getters/setters
 
     def var_get_branch_priority(self: "SolverHighs", var: "mip.Var") -> numbers.Real:
-        raise NotImplementedError()
+        # TODO: Is actually not supported by HiGHS, but we mimic the behavior of
+        # CBC and simply pretend that it's always 0.
+        return 0
 
     def var_set_branch_priority(
         self: "SolverHighs", var: "mip.Var", value: numbers.Real
     ):
-        raise NotImplementedError()
+        # TODO: better raise warning/error instead?
+        pass
 
     def var_get_lb(self: "SolverHighs", var: "mip.Var") -> numbers.Real:
         num_col = ffi.new("int*")
