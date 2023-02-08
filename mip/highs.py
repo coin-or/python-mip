@@ -436,7 +436,8 @@ class SolverHighs(mip.Solver):
             status = self._lib.Highs_changeColCost(self._model, var.idx, coef)
 
         self.set_objective_const(lin_expr.const)
-        self.set_objective_sense(lin_expr.sense)
+        if lin_expr.sense:
+            self.set_objective_sense(lin_expr.sense)
 
     def set_objective_const(self: "SolverHighs", const: numbers.Real):
         status = self._lib.Highs_changeObjectiveOffset(self._model, const)
