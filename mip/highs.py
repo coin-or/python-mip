@@ -638,30 +638,61 @@ class SolverHighs(mip.Solver):
         )
 
         #  - second, to get the coefficients in pre-allocated arrays.
-        matrix_start = ffi.new("int[]", 1)
-        matrix_index = ffi.new("int[]", num_nz[0])
-        matrix_value = ffi.new("double[]", num_nz[0])
-        check(
-            self._lib.Highs_getRowsByRange(
-                self._model,
-                row,
-                row,
-                num_row,
-                lower,
-                upper,
-                num_nz,
-                matrix_start,
-                matrix_index,
-                matrix_value,
+        if num_nz[0] == 0:
+            # early exit for empty expressions
+            expr = mip.xsum([])
+        else:
+            matrix_start = ffi.new("int[]", 1)
+            matrix_index = ffi.new("int[]", num_nz[0])
+            matrix_value = ffi.new("double[]", num_nz[0])
+            check(
+                self._lib.Highs_getRowsByRange(
+                    self._model,
+                    row,
+                    row,
+                    num_row,
+                    lower,
+                    upper,
+                    num_nz,
+                    matrix_start,
+                    matrix_index,
+                    matrix_value,
+                )
             )
-        )
+            expr = mip.xsum(
+                matrix_value[i] * self.model.vars[i] for i in range(num_nz[0])
+            )
 
-        return mip.xsum(matrix_value[i] * self.model.vars[i] for i in range(num_nz))
+        # Also set sense and constant
+        lhs, rhs = lower[0], upper[0]
+        if rhs < mip.INF:
+            expr -= rhs
+            if lhs > -mip.INF:
+                assert lhs == rhs
+                expr.sense = mip.EQUAL
+            else:
+                expr.sense = mip.LESS_OR_EQUAL
+        else:
+            if lhs > -mip.INF:
+                expr -= lhs
+                expr.sense = mip.GREATER_OR_EQUAL
+            else:
+                raise ValueError("Unbounded constraint?!")
+        return expr
 
     def constr_set_expr(
         self: "SolverHighs", constr: "mip.Constr", value: "mip.LinExpr"
     ) -> "mip.LinExpr":
-        raise NotImplementedError()
+        # We also have to set to 0 all coefficients of the old row, so we
+        # fetch that first.
+        coeffs = {var: 0.0 for var in constr.expr}
+
+        # Then we fetch the new coefficients and overwrite.
+        coeffs.update(value.expr.items())
+
+        # Finally, we change the coeffs in HiGHS' matrix one-by-one.
+        for var, coef in coeffs.items():
+            self._change_coef(constr.idx, var.idx, coef)
 
     def constr_get_rhs(self: "SolverHighs", idx: int) -> numbers.Real:
         # fetch both lower and upper bound
@@ -731,7 +762,19 @@ class SolverHighs(mip.Solver):
             return self._pi[constr.idx]
 
     def constr_get_slack(self: "SolverHighs", constr: "mip.Constr") -> numbers.Real:
-        raise NotImplementedError()
+        expr = constr.expr
+        activity = sum(coef * var.x for var, coef in expr.expr.items())
+        rhs = -expr.const
+        slack = rhs - activity
+        assert False
+        if expr.sense == mip.LESS_OR_EQUAL:
+            return slack
+        elif expr.sense == mip.GREATER_OR_EQUAL:
+            return -slack
+        elif expr.sense == mip.EQUAL:
+            return -abs(slack)
+        else:
+            raise ValueError(f"Invalid constraint sense: {expr.sense}")
 
     def remove_constrs(self: "SolverHighs", constrsList: List[int]):
         set_ = ffi.new("int[]", constrsList)

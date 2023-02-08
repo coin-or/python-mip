@@ -1368,10 +1368,17 @@ def test_solve_relaxation(solver):
     y = m.add_var("y", var_type=INTEGER)
     z = m.add_var("z", var_type=BINARY)
 
-    m.add_constr(x <= 10 * z)
-    m.add_constr(x <= 9.5)
-    m.add_constr(x + y <= 20)
+    c1 = m.add_constr(x <= 10 * z)
+    c2 = m.add_constr(x <= 9.5)
+    c3 = m.add_constr(x + y <= 20)
     m.objective = mip.maximize(4*x + y - z)
+
+    # double-check constraint expressions
+    assert c1.idx == 0
+    expr1 = c1.expr
+    assert expr1.expr == pytest.approx({x: 1.0, z: -10.0})
+    assert expr1.const == pytest.approx(0.0)
+    assert expr1.sense == mip.LESS_OR_EQUAL
 
     # first solve proper MIP
     status = m.optimize()
@@ -1379,6 +1386,10 @@ def test_solve_relaxation(solver):
     assert x.x == pytest.approx(9.5)
     assert y.x == pytest.approx(10.0)
     assert z.x == pytest.approx(1.0)
+
+    assert c1.slack == pytest.approx(0.5)
+    assert c2.slack == pytest.approx(0.0)
+    assert c3.slack == pytest.approx(0.0)
 
     # then compare LP relaxation
     # (seems to fail for CBC?!)
@@ -1388,3 +1399,7 @@ def test_solve_relaxation(solver):
         assert x.x == pytest.approx(9.5)
         assert y.x == pytest.approx(10.5)
         assert z.x == pytest.approx(0.95)
+
+        assert c1.slack == pytest.approx(0.0)
+        assert c2.slack == pytest.approx(0.0)
+        assert c3.slack == pytest.approx(0.0)
