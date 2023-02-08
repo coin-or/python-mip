@@ -792,7 +792,7 @@ class SolverHighs(mip.Solver):
             self._lib.kHighsModelStatusModelEmpty: OS.OTHER,
             self._lib.kHighsModelStatusOptimal: OS.OPTIMAL,
             self._lib.kHighsModelStatusInfeasible: OS.INFEASIBLE,
-            self._lib.kHighsModelStatusUnboundedOrInfeasible: OS.INFEASIBLE,
+            self._lib.kHighsModelStatusUnboundedOrInfeasible: OS.UNBOUNDED,  # or INFEASIBLE?
             self._lib.kHighsModelStatusUnbounded: OS.UNBOUNDED,
             self._lib.kHighsModelStatusObjectiveBound: None,
             self._lib.kHighsModelStatusObjectiveTarget: None,
