@@ -6,7 +6,7 @@ import logging
 import os
 import os.path
 import sys
-from typing import List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import cffi
 
@@ -247,7 +247,7 @@ class SolverHighs(mip.Solver):
         lb: numbers.Real = 0,
         ub: numbers.Real = mip.INF,
         var_type: str = mip.CONTINUOUS,
-        column: "Column" = None,
+        column: "mip.Column" = None,
         name: str = "",
     ):
         # TODO: handle column data
@@ -553,7 +553,16 @@ class SolverHighs(mip.Solver):
         upper = ffi.new("double[]", 1)
         num_nz = ffi.new("int*")
         status = self._lib.Highs_getRowsByRange(
-            self._model, row, row, lower, upper, num_nz, ffi.NULL, ffi.NULL, ffi.NULL
+            self._model,
+            row,
+            row,
+            num_row,
+            lower,
+            upper,
+            num_nz,
+            ffi.NULL,
+            ffi.NULL,
+            ffi.NULL,
         )
 
         #  - second, to get the coefficients in pre-allocated arrays.
@@ -564,6 +573,7 @@ class SolverHighs(mip.Solver):
             self._model,
             row,
             row,
+            num_row,
             lower,
             upper,
             num_nz,
@@ -571,7 +581,6 @@ class SolverHighs(mip.Solver):
             matrix_index,
             matrix_value,
         )
-        assert matrix[0] == 0
 
         return mip.xsum(matrix_value[i] * self.model.vars[i] for i in range(num_nz))
 
@@ -582,13 +591,21 @@ class SolverHighs(mip.Solver):
 
     def constr_get_rhs(self: "SolverHighs", idx: int) -> numbers.Real:
         # fetch both lower and upper bound
-        row = constr.idx
         num_row = ffi.new("int*")
         lower = ffi.new("double[]", 1)
         upper = ffi.new("double[]", 1)
         num_nz = ffi.new("int*")
         status = self._lib.Highs_getRowsByRange(
-            self._model, row, row, lower, upper, num_nz, ffi.NULL, ffi.NULL, ffi.NULL
+            self._model,
+            idx,
+            idx,
+            num_row,
+            lower,
+            upper,
+            num_nz,
+            ffi.NULL,
+            ffi.NULL,
+            ffi.NULL,
         )
 
         # case distinction for sense
@@ -606,7 +623,16 @@ class SolverHighs(mip.Solver):
         upper = ffi.new("double[]", 1)
         num_nz = ffi.new("int*")
         status = self._lib.Highs_getRowsByRange(
-            self._model, idx, idx, lower, upper, num_nz, ffi.NULL, ffi.NULL, ffi.NULL
+            self._model,
+            idx,
+            idx,
+            num_row,
+            lower,
+            upper,
+            num_nz,
+            ffi.NULL,
+            ffi.NULL,
+            ffi.NULL,
         )
 
         # update bounds as needed
@@ -735,7 +761,7 @@ class SolverHighs(mip.Solver):
             )
         self._var_type[var.idx] = value
 
-    def var_get_column(self: "SolverHighs", var: "mip.Var") -> "Column":
+    def var_get_column(self: "SolverHighs", var: "mip.Var") -> "mip.Column":
         # Call method twice:
         #  - first, to get the sizes for coefficients,
         num_col = ffi.new("int*")
@@ -779,7 +805,7 @@ class SolverHighs(mip.Solver):
             coeffs=[matrix_value[i] for i in range(num_nz[0])],
         )
 
-    def var_set_column(self: "SolverHighs", var: "mip.Var", value: "Column"):
+    def var_set_column(self: "SolverHighs", var: "mip.Var", value: "mip.Column"):
         # TODO
         raise NotImplementedError()
 
@@ -837,7 +863,8 @@ class SolverHighs(mip.Solver):
             self._lib.kHighsModelStatusModelEmpty: OS.OTHER,
             self._lib.kHighsModelStatusOptimal: OS.OPTIMAL,
             self._lib.kHighsModelStatusInfeasible: OS.INFEASIBLE,
-            self._lib.kHighsModelStatusUnboundedOrInfeasible: OS.UNBOUNDED,  # or INFEASIBLE?
+            self._lib.kHighsModelStatusUnboundedOrInfeasible: OS.UNBOUNDED,
+            # ... or should it be INFEASIBLE?
             self._lib.kHighsModelStatusUnbounded: OS.UNBOUNDED,
             self._lib.kHighsModelStatusObjectiveBound: None,
             self._lib.kHighsModelStatusObjectiveTarget: None,
