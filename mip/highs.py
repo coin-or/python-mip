@@ -167,13 +167,12 @@ HighsInt Highs_deleteColsBySet(
 if has_highs:
     ffi.cdef(HEADER)
 
-STATUS_ERROR = highslib.kHighsStatusError
+    STATUS_ERROR = highslib.kHighsStatusError
 
-
-def check(status):
-    "Check return status and raise error if not OK."
-    if status == STATUS_ERROR:
-        raise mip.InterfacingError("Unknown error in call to HiGHS.")
+    def check(status):
+        "Check return status and raise error if not OK."
+        if status == STATUS_ERROR:
+            raise mip.InterfacingError("Unknown error in call to HiGHS.")
 
 
 class SolverHighs(mip.Solver):
