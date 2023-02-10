@@ -765,7 +765,6 @@ class SolverHighs(mip.Solver):
         activity = sum(coef * var.x for var, coef in expr.expr.items())
         rhs = -expr.const
         slack = rhs - activity
-        assert False
         if expr.sense == mip.LESS_OR_EQUAL:
             return slack
         elif expr.sense == mip.GREATER_OR_EQUAL:
