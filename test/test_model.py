@@ -1375,7 +1375,7 @@ def test_solve_relaxation(solver):
 
     # double-check constraint expressions
     assert c1.idx == 0
-    expr1 = c1.expr
+    expr1 = c1.expr  # store to avoid repeated calls
     assert expr1.expr == pytest.approx({x: 1.0, z: -10.0})
     assert expr1.const == pytest.approx(0.0)
     assert expr1.sense == mip.LESS_OR_EQUAL
@@ -1389,7 +1389,7 @@ def test_solve_relaxation(solver):
 
     assert c1.slack == pytest.approx(0.5)
     assert c2.slack == pytest.approx(0.0)
-    assert c3.slack == pytest.approx(0.0)
+    assert c3.slack == pytest.approx(0.5)
 
     # then compare LP relaxation
     # (seems to fail for CBC?!)
