@@ -621,6 +621,9 @@ class SolverHighs(mip.Solver):
         lower = ffi.new("double[]", 1)
         upper = ffi.new("double[]", 1)
         num_nz = ffi.new("int*")
+        # TODO: We also pass a non-NULL matrix_start, which should not be
+        # needed, but works around a known bug in HiGHS' C API.
+        _tmp_matrix_start = ffi.new("int[]", 1)
         check(
             self._lib.Highs_getRowsByRange(
                 self._model,
@@ -630,7 +633,7 @@ class SolverHighs(mip.Solver):
                 lower,
                 upper,
                 num_nz,
-                ffi.NULL,
+                _tmp_matrix_start,
                 ffi.NULL,
                 ffi.NULL,
             )
