@@ -659,7 +659,8 @@ class SolverHighs(mip.Solver):
                 )
             )
             expr = mip.xsum(
-                matrix_value[i] * self.model.vars[i] for i in range(num_nz[0])
+                matrix_value[i] * self.model.vars[matrix_index[i]]
+                for i in range(num_nz[0])
             )
 
         # Also set sense and constant
