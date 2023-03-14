@@ -612,7 +612,7 @@ def test_linexpr_x(solver: str, val: int):
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_add_column(solver: str):
     """Simple test which add columns in a specific way"""
-    m = Model()
+    m = Model(solver_name=solver)
     x = m.add_var()
 
     example_constr1 = m.add_constr(x >= 1, "constr1")
