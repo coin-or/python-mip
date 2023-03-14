@@ -762,7 +762,7 @@ class SolverHighs(mip.Solver):
         check(self._lib.Highs_changeRowBounds(self._model, idx, lb, ub))
 
     def constr_get_name(self: "SolverHighs", idx: int) -> str:
-        return self._cons_name(idx)
+        return self._cons_name[idx]
 
     def constr_get_pi(self: "SolverHighs", constr: "mip.Constr") -> numbers.Real:
         if self._pi:
@@ -787,7 +787,7 @@ class SolverHighs(mip.Solver):
         check(self._lib.Highs_deleteRowsBySet(self._model, len(constrsList), set_))
 
     def constr_get_index(self: "SolverHighs", name: str) -> int:
-        return self._cons_col(name)
+        return self._cons_col[name]
 
     # Variable-related getters/setters
 
