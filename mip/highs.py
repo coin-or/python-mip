@@ -112,6 +112,9 @@ HighsInt Highs_changeColBounds(
 HighsInt Highs_changeCoeff(
     void* highs, const HighsInt row, const HighsInt col, const double value
 );
+HighsInt Highs_changeRowBounds(
+    void* highs, const HighsInt row, const double lower, const double upper
+);
 HighsInt Highs_getRowsByRange(
     const void* highs, const HighsInt from_row, const HighsInt to_row,
     HighsInt* num_row, double* lower, double* upper, HighsInt* num_nz,
