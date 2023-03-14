@@ -8,12 +8,16 @@ import types
 import importlib.machinery
 import pytest
 
+import mip.highs
+
 
 EXAMPLES = glob(join("..", "examples", "*.py")) + glob(join(".", "examples", "*.py"))
 
 SOLVERS = ["cbc"]
 if "GUROBI_HOME" in environ:
     SOLVERS += ["gurobi"]
+if mip.highs.has_highs:
+    SOLVERS += ["HiGHS"]
 
 
 @pytest.mark.parametrize("solver, example", product(SOLVERS, EXAMPLES))

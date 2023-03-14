@@ -5,7 +5,8 @@ from os import environ
 import json
 from itertools import product
 import pytest
-from mip import CBC, GUROBI, OptimizationStatus
+import mip.highs
+from mip import CBC, GUROBI, HIGHS, OptimizationStatus
 from mip_2d_pack import create_mip
 
 INSTS = glob("./data/two_dim_pack_p*.json") + glob(
@@ -17,6 +18,8 @@ TOL = 1e-4
 SOLVERS = [CBC]
 if "GUROBI_HOME" in environ:
     SOLVERS += [GUROBI]
+if mip.highs.has_highs:
+    SOLVERS += [HIGHS]
 
 
 @pytest.mark.parametrize("solver, instance", product(SOLVERS, INSTS))

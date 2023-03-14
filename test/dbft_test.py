@@ -4,6 +4,7 @@ more details at https://github.com/NeoResearch/milp_bft_failures_attacks"""
 from os import environ
 from itertools import product
 import pytest
+import mip.highs
 from mip import (
     Model,
     BINARY,
@@ -13,6 +14,7 @@ from mip import (
     maximize,
     CBC,
     GUROBI,
+    HIGHS,
 )
 
 TOL = 1e-4
@@ -20,6 +22,8 @@ TOL = 1e-4
 SOLVERS = [CBC]
 if "GUROBI_HOME" in environ:
     SOLVERS += [GUROBI]
+if mip.highs.has_highs:
+    SOLVERS += [HIGHS]
 
 # for each pair o N, tMax, the expected: (optimal, columns, rows, non-zeros)
 PDATA = {

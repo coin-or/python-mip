@@ -7,7 +7,8 @@ from os.path import basename, dirname, join, exists
 from itertools import product
 import pytest
 import mip
-from mip import Model, OptimizationStatus, GUROBI, CBC
+import mip.highs
+from mip import Model, OptimizationStatus, GUROBI, CBC, HIGHS
 
 # for each MIP in test/data, best lower and upper bounds
 # to be used when checking optimization results
@@ -89,6 +90,8 @@ MAX_NODES = 10
 SOLVERS = [CBC]
 if "GUROBI_HOME" in environ:
     SOLVERS += [GUROBI]
+if mip.highs.has_highs:
+    SOLVERS += [HIGHS]
 
 # check availability of test data
 DATA_DIR = join(join(dirname(mip.__file__)[0:-3], "test"), "data")

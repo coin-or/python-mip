@@ -2,8 +2,9 @@
 from itertools import product
 import pytest
 import networkx as nx
+import mip.highs
 from mip import Model, xsum, OptimizationStatus, MAXIMIZE, BINARY, INTEGER
-from mip import ConstrsGenerator, CutPool, maximize, CBC, GUROBI, Column
+from mip import ConstrsGenerator, CutPool, maximize, CBC, GUROBI, HIGHS, Column
 from os import environ
 import math
 
@@ -12,6 +13,8 @@ TOL = 1e-4
 SOLVERS = [CBC]
 if "GUROBI_HOME" in environ:
     SOLVERS += [GUROBI]
+if mip.highs.has_highs:
+    SOLVERS += [HIGHS]
 
 
 @pytest.mark.parametrize("solver", SOLVERS)
