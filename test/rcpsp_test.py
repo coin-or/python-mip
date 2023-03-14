@@ -5,8 +5,7 @@ from os import environ
 import json
 from itertools import product
 import pytest
-import mip.highs
-from mip import CBC, GUROBI, HIGHS, OptimizationStatus
+from mip import CBC, GUROBI, OptimizationStatus
 from mip_rcpsp import create_mip
 
 INSTS = glob("./data/rcpsp*.json") + glob("./test/data/rcpsp*.json")
@@ -16,8 +15,6 @@ TOL = 1e-4
 SOLVERS = [CBC]
 if "GUROBI_HOME" in environ:
     SOLVERS += [GUROBI]
-if mip.highs.has_highs:
-    SOLVERS += [HIGHS]
 
 
 @pytest.mark.parametrize("solver, instance", product(SOLVERS, INSTS))

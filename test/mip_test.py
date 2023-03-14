@@ -383,7 +383,9 @@ def test_tsp_cuts(solver: str):
     assert abs(m.objective_value - 262) <= TOL  # "mip model objective"
 
 
-@pytest.mark.parametrize("solver", SOLVERS)
+# Exclude HiGHS solver, which doesn't support MIP start.
+SOLVERS_WITH_MIPSTART = [s for s in SOLVERS if s != HIGHS]
+@pytest.mark.parametrize("solver", SOLVERS_WITH_MIPSTART)
 def test_tsp_mipstart(solver: str):
     """tsp related tests"""
     N = ["a", "b", "c", "d", "e", "f", "g"]
