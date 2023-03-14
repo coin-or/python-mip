@@ -87,7 +87,7 @@ jobs:
 
     - name: Install mip for testing (CPython)
       if: ${{ matrix.python-version != 'pypy3.9-v7.3.9' }}
-      run: python -m pip install .[test,numpy,gurobi]
+      run: python -m pip install .[test,numpy,gurobi,highs]
 
     - name: list installed packages
       run: python -m pip list
