@@ -727,11 +727,11 @@ class SolverHighs(mip.Solver):
 
         # case distinction for sense
         if lower[0] == -mip.INF:
-            return -upper[0]
+            return upper[0]
         if upper[0] == mip.INF:
-            return -lower[0]
+            return lower[0]
         assert lower[0] == upper[0]
-        return -lower[0]
+        return lower[0]
 
     def constr_set_rhs(self: "SolverHighs", idx: int, rhs: numbers.Real):
         # first need to figure out which bound to change (lower or upper)
@@ -757,9 +757,9 @@ class SolverHighs(mip.Solver):
         # update bounds as needed
         lb, ub = lower[0], upper[0]
         if lb != -mip.INF:
-            lb = -rhs
+            lb = rhs
         if ub != mip.INF:
-            ub = -rhs
+            ub = rhs
 
         # set new bounds
         check(self._lib.Highs_changeRowBounds(self._model, idx, lb, ub))
