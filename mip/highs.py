@@ -299,7 +299,11 @@ class SolverHighs(mip.Solver):
             )
 
         if column:
-            self._set_column(col, column)
+            # Can't use _set_column here, because the variable is not added to
+            # the mip.Model yet.
+            # self._set_column(col, column)
+            for cons, coef in zip(column.constrs, column.coeffs):
+                self._change_coef(cons.idx, col, coef)
 
         # store name & type
         self._var_name.append(name)
