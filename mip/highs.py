@@ -547,7 +547,7 @@ class SolverHighs(mip.Solver):
         return self._get_int_option_value("mip_max_improving_sols")
 
     def set_max_solutions(self: "SolverHighs", max_solutions: int):
-        self._get_int_option_value("mip_max_improving_sols", max_solutions)
+        self._set_int_option_value("mip_max_improving_sols", max_solutions)
 
     def get_pump_passes(self: "SolverHighs") -> int:
         raise NotImplementedError("HiGHS doesn't support pump passes.")
