@@ -296,6 +296,13 @@ for RCPSP is included below:
     :linenos:
     :lines: 3-43
 
+An alternative example that is more pythonic:
+
+.. literalinclude:: ../examples/rcpsp2.py
+    :caption: Solves the Resource Constrained Project Scheduling Problem: rcpsp2.py
+    :linenos:
+    :lines: 5-191
+
 One optimum solution is shown bellow, from the viewpoint of resource consumption.
 
 .. image:: ./images/rcpsp-opt.*
@@ -529,7 +536,14 @@ installing each one of the plants in auxiliary variables :math:`y`.
 .. literalinclude:: ../examples/plant_location.py
     :caption: Plant location problem with non-linear costs handled with Special Ordered Sets
     :linenos:
-    :lines: 28-125
+    :lines: 26-118
+
+An alternative example that is more Pythonic:
+
+.. literalinclude:: ../examples/plant_location.py
+    :caption: Plant location problem with non-linear costs handled with Special Ordered Sets
+    :linenos:
+    :lines: 23-207
 
 The allocation of clients and plants in the optimal solution is shown bellow. This example uses 
 `Matplotlib <https://matplotlib.org/>`_ to draw the Figures.
