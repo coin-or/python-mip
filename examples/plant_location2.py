@@ -27,19 +27,18 @@ from typing import TYPE_CHECKING
 import mip
 
 if TYPE_CHECKING:
-    from typing import Callable
-    from collections.abc import Sequence
+    from typing import Callable, Sequence, Tuple
 
 
 @dataclass(frozen=True)
 class CandidateSite:
     """Potential factory locations."""
-    location: tuple[float, float]
+    location: Tuple[float, float]
     max_capacity: float
 
 @dataclass(frozen=True)
 class Customer:
-    location: tuple[float, float]
+    location: Tuple[float, float]
     demand: float
 
 sites = (
@@ -64,7 +63,7 @@ customers = (
     Customer( location = (51,  1), demand = 309 ),
 )
 
-def _distance(a: tuple[float, float], b: tuple[float, float]) -> float:
+def _distance(a: Tuple[float, float], b: Tuple[float, float]) -> float:
     ax, ay = a
     bx, by = b
     return round(math.sqrt((ax-bx)**2 + (ay-by)**2), 1)
@@ -107,7 +106,7 @@ class LinearApprox:
         model.add_constr(mip.xsum(w * x for w, x in zip(w_vars, x_pts)) == x_expr)
         return mip.xsum(w * y for w, y in zip(w_vars, y_pts))
 
-def _linspace(minv: float, maxv: float, pts: int) -> list[float]:
+def _linspace(minv: float, maxv: float, pts: int) -> Sequence[float]:
     return [ minv + (maxv - minv)*(n / (pts-1)) for n in range(pts) ]
 
 class Factory:

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 import mip
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Collection, Mapping
+    from typing import Iterator, Collection, Mapping
 
 @dataclass(frozen=True)
 class Resource:
