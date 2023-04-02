@@ -1108,9 +1108,13 @@ class SolverCbc(Solver):
 
                 return OptimizationStatus.OPTIMAL
             if res == 2:
-                return OptimizationStatus.UNBOUNDED
-            if res == 3:
                 return OptimizationStatus.INFEASIBLE
+            if res == 3:
+                # Dual is infeasible. Primal can be infeasible or unbounded.
+                if cbclib.Cbc_isProvenInfeasible(self._model):
+                    return OptimizationStatus.INFEASIBLE
+                else:
+                    return OptimizationStatus.UNBOUNDED
             return OptimizationStatus.ERROR
 
         # adding cut generators
