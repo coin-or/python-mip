@@ -3,7 +3,7 @@ from itertools import product
 import pytest
 import networkx as nx
 from mip import Model, xsum, OptimizationStatus, MAXIMIZE, BINARY, INTEGER
-from mip import ConstrsGenerator, CutPool, maximize, CBC, GUROBI, Column
+from mip import ConstrsGenerator, CutPool, maximize, minimize, CBC, GUROBI, Column
 from os import environ
 import math
 
@@ -653,3 +653,51 @@ def test_float(solver: str, val: int):
     assert y.x == float(y)
     # test linear expressions.
     assert float(x + y) == (x + y).x
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_relaxed_model_infeasible(solver: str):
+    """Tests for infeasible relaxed models"""
+    m = Model(solver_name=solver)
+    x = m.add_var(lb=0, ub=math.inf, var_type=INTEGER)
+    m += x >= 1
+    m += x <= -1
+    m.objective = maximize(x)
+    assert m.optimize(relax=True) == OptimizationStatus.INFEASIBLE
+
+    m = Model(solver_name=solver)
+    x = m.add_var(lb=0, ub=math.inf, var_type=INTEGER)
+    m += x >= 1
+    m += x <= -1
+    m.objective = minimize(x)
+    assert m.optimize(relax=True) == OptimizationStatus.INFEASIBLE
+
+    m = Model(solver_name=solver)
+    x = m.add_var(lb=0, ub=math.inf, var_type=INTEGER)
+    y = m.add_var(lb=0, ub=math.inf, var_type=INTEGER)
+    m += x + y <= 1
+    m += x + y >= 2
+    m.objective = maximize(x)
+    assert m.optimize(relax=True) == OptimizationStatus.INFEASIBLE
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_relaxed_model_unbounded(solver: str):
+    """Tests for unbounded relaxed models"""
+    m = Model(solver_name=solver)
+    x = m.add_var(lb=-math.inf, ub=math.inf, var_type=INTEGER)
+    m.objective = minimize(x)
+    assert m.optimize(relax=True) == OptimizationStatus.UNBOUNDED
+
+    m = Model(solver_name=solver)
+    x = m.add_var(lb=0, ub=math.inf, var_type=INTEGER)
+    m += x >= 10
+    m.objective = maximize(x)
+    assert m.optimize(relax=True) == OptimizationStatus.UNBOUNDED
+
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_relaxed_model_optimal(solver: str):
+    """Tests for optimal relaxed models"""
+    m = Model(solver_name=solver)
+    x = m.add_var(lb=0, ub=math.inf, var_type=INTEGER)
+    m += x >= 2
+    m.objective = minimize(x)
+    assert m.optimize(relax=True) == OptimizationStatus.OPTIMAL
