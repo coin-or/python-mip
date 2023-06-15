@@ -83,7 +83,7 @@ jobs:
 
     - name: Install mip for testing (PyPy)
       if: ${{ matrix.python-version == 'pypy3.9-v7.3.9' }}
-      run: python -m pip install .[test,numpy]
+      run: python -m pip install .[test,numpy,highs]
 
     - name: Install mip for testing (CPython)
       if: ${{ matrix.python-version != 'pypy3.9-v7.3.9' }}
