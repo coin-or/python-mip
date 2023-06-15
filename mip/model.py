@@ -87,6 +87,10 @@ class Model:
                 import mip.cbc
 
                 self.solver = mip.cbc.SolverCbc(self, name, sense)
+            elif self.solver_name.upper() == "COPT":
+                import mip.copt
+
+                self.solver = mip.copt.SolverCopt(self, name, sense)
             else:
                 import mip.gurobi
 
@@ -394,6 +398,10 @@ class Model:
             import mip.cbc
 
             self.solver = mip.cbc.SolverCbc(self, self.name, sense)
+        elif self.solver_name.upper() == "COPT":
+            import mip.copt
+
+            self.solver = mip.copt.SolverCopt(self, self.name, sense)
         else:
             # checking which solvers are available
             import mip.gurobi

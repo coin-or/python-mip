@@ -6,6 +6,7 @@ import pytest
 from mip import (
     CBC,
     Column,
+    COPT,
     GUROBI,
     LinExpr,
     Model,
@@ -22,6 +23,8 @@ TOL = 1e-4
 SOLVERS = [CBC]
 if "GUROBI_HOME" in os.environ:
     SOLVERS += [GUROBI]
+if "COPT_HOME" in os.environ:
+    SOLVERS += [COPT]
 
 # Overall Optimization Tests
 
