@@ -440,6 +440,9 @@ class SolverHighs(mip.Solver):
             # in self._var_type.
             self._all_cols_continuous()
 
+        self.set_mip_gap(self.model.max_mip_gap)
+        self.set_mip_gap_abs(self.model.max_mip_gap_abs)
+        
         check(self._lib.Highs_run(self._model))
 
         # store solution values for later access
