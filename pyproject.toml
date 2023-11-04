@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "mip"
 description = "Python tools for Modeling and Solving Mixed-Integer Linear Programs (MIPs)"
 readme = "README.md"
-requires-python = ">=3.7,<3.12"
+requires-python = ">=3.8,<3.13"
 license = {file = "LICENSE"}
 authors = [
     {name="T.A.M. Toffolo", email="haroldo.santos@gmail.com"},
@@ -35,9 +35,9 @@ dynamic = ["version"]
 dependencies = ["cffi==1.15.*"]
 
 [project.optional-dependencies]
-numpy = ["numpy==1.24.*; python_version >= '3.8'", "numpy==1.21.6; python_version == '3.7'"]
+numpy = ["numpy==1.24.*; python_version >= '3.8'", "numpy==1.21.6; python_version == '3.8'"]
 gurobi = ["gurobipy>=8"]
-test = ["pytest==7.2.0", "networkx==2.8.8; python_version >= '3.8'", "networkx==2.6.3; python_version == '3.7'", "matplotlib==3.6.2; python_version >= '3.8'", "matplotlib==3.5.3; python_version == '3.7'"]
+test = ["pytest==7.2.0", "networkx==2.8.8; python_version >= '3.8'", "networkx==2.6.3; python_version == '3.8'", "matplotlib==3.6.2; python_version >= '3.8'", "matplotlib==3.5.3; python_version == '3.8'"]
 
 [project.urls]
 "Homepage" = "https://www.python-mip.com"
