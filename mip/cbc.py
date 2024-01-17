@@ -4,6 +4,7 @@ import logging
 from typing import Dict, List, Tuple, Optional, Union
 from sys import platform, maxsize
 from os.path import dirname, isfile, exists
+from platform import machine as platform_machine
 import os
 import multiprocessing as multip
 import numbers
@@ -97,7 +98,9 @@ try:
         elif platform.lower().startswith("darwin") or platform.lower().startswith(
             "macos"
         ):
-            if os_is_64_bit:
+            if platform_machine().lower().startswith("arm64"):
+                libfile = os.path.join(pathlib, "cbc-c-darwin-arm64.dylib")
+            elif os_is_64_bit:
                 libfile = os.path.join(pathlib, "cbc-c-darwin-x86-64.dylib")
         if not libfile:
             raise NotImplementedError("You operating system/platform is not supported")
