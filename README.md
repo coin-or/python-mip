@@ -41,7 +41,7 @@ Some of the main features of MIP are:
   different solvers are handled by Python-MIP and you write only one
   solver independent code;
 
-* written in modern [typed](https://docs.python.org/3/library/typing.html) Python 3 (requires Python 3.6 or newer).
+* written in modern [typed](https://docs.python.org/3/library/typing.html) Python 3 (requires Python 3.8 or newer).
 
 ## Examples
 
