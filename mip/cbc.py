@@ -1405,7 +1405,10 @@ class SolverCbc(Solver):
 
     def add_constr(self, lin_expr: LinExpr, name: str = ""):
         # collecting linear expression data
-        numnz = len(lin_expr.expr)
+
+        # In case of empty linear expression add dummy row
+        # by setting first index of row explicitly with 0
+        numnz = len(lin_expr.expr) or 1
 
         if numnz > self.iidx_space:
             self.iidx_space = max(numnz, self.iidx_space * 2)
@@ -1413,12 +1416,12 @@ class SolverCbc(Solver):
             self.dvec = ffi.new("double[%d]" % self.iidx_space)
 
         # cind = self.iidx
-        self.iidx = [var.idx for var in lin_expr.expr.keys()]
+        self.iidx = [var.idx for var in lin_expr.expr.keys()] or [0]
 
         # cind = ffi.new("int[]", [var.idx for var in lin_expr.expr.keys()])
         # cval = ffi.new("double[]", [coef for coef in lin_expr.expr.values()])
         # cval = self.dvec
-        self.dvec = [coef for coef in lin_expr.expr.values()]
+        self.dvec = [coef for coef in lin_expr.expr.values()] or [0]
 
         # constraint sense and rhs
         sense = lin_expr.sense.encode("utf-8")
