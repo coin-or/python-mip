@@ -448,6 +448,12 @@ class SolverHighs(mip.Solver):
         
         check(self._lib.Highs_run(self._model))
 
+        # check whether unsupported callbacks were set
+        if self.model.lazy_constrs_generator:
+            raise NotImplementedError("HiGHS doesn't support lazy constraints at the moment")
+        if self.model.cuts_generator:
+            raise NotImplementedError("HiGHS doesn't support cuts generator at the moment")
+
         # store solution values for later access
         opt_status = self.get_status()
         if opt_status in (

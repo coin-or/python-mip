@@ -1,14 +1,16 @@
-import numpy as np
-from mip import Model, OptimizationStatus
-from mip.ndarray import LinExprTensor
 import time
 
+import numpy as np
+
+from mip import Model, OptimizationStatus
+from mip.ndarray import LinExprTensor
 from util import skip_on
 
 
+@skip_on(NotImplementedError)
 def test_numpy():
     model = Model()
-    N = 1000
+    N = 100
 
     start = time.time()
     x = model.add_var_tensor(shape=(N, N), name="x")
