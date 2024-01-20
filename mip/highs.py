@@ -3,7 +3,6 @@
 import glob
 import numbers
 import logging
-import os
 import os.path
 import sys
 from typing import Dict, List, Optional, Tuple, Union
@@ -158,6 +157,10 @@ HighsInt Highs_setBoolOptionValue(
 HighsInt Highs_getSolution(
     const void* highs, double* col_value, double* col_dual,
     double* row_value, double* row_dual
+);
+HighsInt Highs_setSolution(
+    const void* highs, double* col_value, double* row_value, 
+    double* col_dual, double* row_dual
 );
 HighsInt Highs_deleteRowsBySet(
     void* highs, const HighsInt num_set_entries, const HighsInt* set
@@ -507,7 +510,13 @@ class SolverHighs(mip.Solver):
         check(self._lib.Highs_changeObjectiveSense(self._model, sense_map[sense]))
 
     def set_start(self: "SolverHighs", start: List[Tuple["mip.Var", numbers.Real]]):
-        raise NotImplementedError("HiGHS doesn't support a start solution.")
+        # using zeros for unset variables
+        nvars = len(self.model.vars)
+        cval = ffi.new("double[]", [0.0 for _ in range(nvars)])
+        for col in start:
+            cval[col[0].idx] = col[1]
+
+        self._lib.Highs_setSolution(self._model, cval, ffi.NULL, ffi.NULL, ffi.NULL)
 
     def set_objective(self: "SolverHighs", lin_expr: "mip.LinExpr", sense: str = ""):
         # set coefficients
