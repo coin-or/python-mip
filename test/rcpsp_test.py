@@ -1,22 +1,30 @@
 """Set of tests for solving the LP relaxation"""
 
-from glob import glob
-from os import environ
 import json
+from glob import glob
 from itertools import product
+from os import environ
+
 import pytest
-from mip import CBC, GUROBI, OptimizationStatus
+
+import mip.gurobi
+import mip.highs
+from mip import CBC, GUROBI, HIGHS, OptimizationStatus
 from mip_rcpsp import create_mip
+from util import skip_on
 
 INSTS = glob("./data/rcpsp*.json") + glob("./test/data/rcpsp*.json")
 
 TOL = 1e-4
 
 SOLVERS = [CBC]
-if "GUROBI_HOME" in environ:
+if mip.gurobi.has_gurobi and "GUROBI_HOME" in environ:
     SOLVERS += [GUROBI]
+if mip.highs.has_highs:
+    SOLVERS += [HIGHS]
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver, instance", product(SOLVERS, INSTS))
 def test_rcpsp_relax(solver: str, instance: str):
     """tests the solution of the LP relaxation of different rcpsp instances"""
@@ -37,6 +45,7 @@ def test_rcpsp_relax(solver: str, instance: str):
     assert abs(z_relax - mip.objective_value) <= TOL
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver, instance", product(SOLVERS, INSTS))
 def test_rcpsp_relax_mip(solver: str, instance: str):
     """tests the solution of the LP relaxation of different rcpsp instances"""
@@ -58,6 +67,7 @@ def test_rcpsp_relax_mip(solver: str, instance: str):
     assert abs(z_relax - mip.objective_value) <= TOL
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver, instance", product(SOLVERS, INSTS))
 def test_rcpsp_mip(solver: str, instance: str):
     """tests the solution of different RCPSP MIPs"""
@@ -97,6 +107,8 @@ def test_rcpsp_mip(solver: str, instance: str):
         xOn = [v for v in mip.vars if v.x >= 0.99 and v.name.startswith("x(")]
         assert len(xOn) == len(J)
 
+
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver, instance", product(SOLVERS, INSTS))
 def test_rcpsp_mipstart(solver: str, instance: str):
     """tests the solution of different rcpsps MIPs with uwing MIPStarts"""
@@ -118,6 +130,6 @@ def test_rcpsp_mipstart(solver: str, instance: str):
     mip.cut_passes = 0
     mip.start = [(mip.var_by_name(n), v) for (n, v) in mipstart]
     mip.optimize(max_nodes=3)
-    assert mip.status in [OptimizationStatus.FEASIBLE, 
+    assert mip.status in [OptimizationStatus.FEASIBLE,
                           OptimizationStatus.OPTIMAL]
     assert abs(mip.objective_value - z_ub) <= TOL

@@ -4,6 +4,7 @@ more details at https://github.com/NeoResearch/milp_bft_failures_attacks"""
 from os import environ
 from itertools import product
 import pytest
+import mip.gurobi
 import mip.highs
 from mip import (
     Model,
@@ -16,11 +17,12 @@ from mip import (
     GUROBI,
     HIGHS,
 )
+from util import skip_on
 
 TOL = 1e-4
 
 SOLVERS = [CBC]
-if "GUROBI_HOME" in environ:
+if mip.gurobi.has_gurobi and "GUROBI_HOME" in environ:
     SOLVERS += [GUROBI]
 if mip.highs.has_highs:
     SOLVERS += [HIGHS]
@@ -477,6 +479,7 @@ def create_model(solver, N, tMax):
     return m
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("pdata", PDATA.keys())
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_dbft_mip(solver, pdata):

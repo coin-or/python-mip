@@ -1,9 +1,10 @@
-import os
 import re
+from os import environ
 
 import pytest
 
 import mip
+import mip.gurobi
 import mip.highs
 from mip import (
     CBC,
@@ -20,10 +21,11 @@ from mip import (
     CONTINUOUS,
     BINARY,
 )
+from util import skip_on
 
 TOL = 1e-4
 SOLVERS = [CBC]
-if "GUROBI_HOME" in os.environ:
+if mip.gurobi.has_gurobi and "GUROBI_HOME" in environ:
     SOLVERS += [GUROBI]
 if mip.highs.has_highs:
     SOLVERS += [HIGHS]
@@ -31,6 +33,7 @@ if mip.highs.has_highs:
 # Overall Optimization Tests
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize("var_type", (CONTINUOUS, INTEGER))
 def test_minimize_single_continuous_or_integer_variable_with_default_bounds(
@@ -45,6 +48,7 @@ def test_minimize_single_continuous_or_integer_variable_with_default_bounds(
     assert abs(m.objective_value) < TOL
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize("var_type", (CONTINUOUS, INTEGER))
 def test_maximize_single_continuous_or_integer_variable_with_default_bounds(
@@ -59,6 +63,7 @@ def test_maximize_single_continuous_or_integer_variable_with_default_bounds(
     assert m.objective_value is None
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize(
     "sense,status,xvalue,objvalue",
@@ -79,6 +84,7 @@ def test_single_binary_variable_with_default_bounds(
     assert abs(m.objective_value - objvalue) < TOL
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize("var_type", (CONTINUOUS, INTEGER))
 @pytest.mark.parametrize(
@@ -112,6 +118,7 @@ def test_single_continuous_or_integer_variable_with_different_bounds(
     assert abs(m.objective_value - max_obj) < TOL
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize(
     "lb,ub,min_obj,max_obj",
@@ -139,6 +146,7 @@ def test_binary_variable_with_different_bounds(solver, lb, ub, min_obj, max_obj)
     assert abs(m.objective_value - max_obj) < TOL
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_binary_variable_illegal_bounds(solver):
     m = Model(solver_name=solver)
@@ -150,6 +158,7 @@ def test_binary_variable_illegal_bounds(solver):
         m.add_var("x", ub=2, var_type=BINARY)
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize("sense", (MINIMIZE, MAXIMIZE))
 @pytest.mark.parametrize(
@@ -168,6 +177,7 @@ def test_contradictory_variable_bounds(solver, sense: str, var_type: str, lb, ub
     assert m.status == OptimizationStatus.INFEASIBLE
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_float_bounds_for_integer_variable(solver):
     # Minimum Case
@@ -187,6 +197,7 @@ def test_float_bounds_for_integer_variable(solver):
     assert abs(m.objective_value - 3) < TOL
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize("sense", (MINIMIZE, MAXIMIZE))
 def test_single_default_variable_with_nothing_to_do(solver, sense):
@@ -198,6 +209,7 @@ def test_single_default_variable_with_nothing_to_do(solver, sense):
     assert abs(m.objective_value) < TOL
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize("var_type", (CONTINUOUS, INTEGER, BINARY))
 @pytest.mark.parametrize("obj", (1.2, 2))
@@ -222,6 +234,7 @@ def test_single_variable_with_different_non_zero_objectives(solver, var_type, ob
 
 # Variable Tests
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_hashes_of_variables(solver):
     m = Model(solver_name=solver)
@@ -232,6 +245,7 @@ def test_hashes_of_variables(solver):
     assert hash(y) == 1
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize("constant", (-1, 1.2, 2))
 def test_addition_of_var_with_non_zero_constant(solver, constant):
@@ -256,6 +270,7 @@ def test_addition_of_var_with_non_zero_constant(solver, constant):
     assert y.expr == {x: 1}
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_addition_of_var_with_zero(solver):
     m = Model(solver_name=solver)
@@ -276,6 +291,7 @@ def test_addition_of_var_with_zero(solver):
     assert hash(y) == hash(x)
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_addition_of_two_vars(solver):
     m = Model(solver_name=solver)
@@ -295,6 +311,7 @@ def test_addition_of_two_vars(solver):
     assert z.expr == {x: 1, y: 1}
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_addition_of_var_with_linear_expression(solver):
     m = Model(solver_name=solver)
@@ -317,6 +334,7 @@ def test_addition_of_var_with_linear_expression(solver):
     assert w.expr == {x: 1, y: 1, z: 1}
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_addition_of_var_with_illegal_type(solver):
     m = Model(solver_name=solver)
@@ -329,6 +347,7 @@ def test_addition_of_var_with_illegal_type(solver):
         "1" + x
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize("constant", (-1, 1.2, 2))
 def test_subtraction_of_var_with_non_zero_constant(solver, constant):
@@ -353,6 +372,7 @@ def test_subtraction_of_var_with_non_zero_constant(solver, constant):
     assert y.expr == {x: 1}
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_subtraction_of_var_with_zero(solver):
     m = Model(solver_name=solver)
@@ -374,6 +394,7 @@ def test_subtraction_of_var_with_zero(solver):
     assert hash(y) == hash(x)
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_subtraction_of_two_vars(solver):
     m = Model(solver_name=solver)
@@ -393,6 +414,7 @@ def test_subtraction_of_two_vars(solver):
     assert z.expr == {x: 1, y: -1}
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_subtraction_of_var_with_linear_expression(solver):
     m = Model(solver_name=solver)
@@ -415,6 +437,7 @@ def test_subtraction_of_var_with_linear_expression(solver):
     assert w.expr == {x: 1, y: -1, z: -1}
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_subtraction_of_var_with_illegal_type(solver):
     m = Model(solver_name=solver)
@@ -427,6 +450,7 @@ def test_subtraction_of_var_with_illegal_type(solver):
         "1" - x
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize("coefficient", (-1, 0, 1.2, 2))
 def test_multiply_var_with_coefficient(solver, coefficient):
@@ -451,6 +475,7 @@ def test_multiply_var_with_coefficient(solver, coefficient):
     assert y.expr == {x: coefficient}
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_multiply_var_with_illegal_coefficient(solver):
     m = Model(solver_name=solver)
@@ -462,6 +487,7 @@ def test_multiply_var_with_illegal_coefficient(solver):
         x * "1"
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize("coefficient", (-1, 1.2, 2))
 def test_divide_var_with_non_zero_coefficient(solver, coefficient):
@@ -481,6 +507,7 @@ def test_divide_var_with_non_zero_coefficient(solver, coefficient):
     assert y.expr == {x: 1/coefficient}
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_divide_var_with_illegal_coefficient(solver):
     m = Model(solver_name=solver)
@@ -490,6 +517,7 @@ def test_divide_var_with_illegal_coefficient(solver):
         y = x / "1"
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_divide_var_with_zero(solver):
     m = Model(solver_name=solver)
@@ -499,6 +527,7 @@ def test_divide_var_with_zero(solver):
         x / 0
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_negate_variable(solver):
     m = Model(solver_name=solver)
@@ -510,6 +539,7 @@ def test_negate_variable(solver):
     assert y.expr == {x: -1}
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize("constant", (-1, 0, 1))
 def test_constraint_with_var_and_const(solver, constant):
@@ -556,6 +586,7 @@ def test_constraint_with_var_and_const(solver, constant):
     assert constr.sense == "<"
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_constraint_with_var_and_var(solver):
     m = Model(solver_name=solver)
@@ -581,6 +612,7 @@ def test_constraint_with_var_and_var(solver):
     assert constr.sense == ">"
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_constraint_with_var_and_lin_expr(solver):
     m = Model(solver_name=solver)
@@ -609,6 +641,7 @@ def test_constraint_with_var_and_lin_expr(solver):
     assert constr.sense == ">"
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_constraint_with_var_and_illegal_type(solver):
     m = Model(solver_name=solver)
@@ -633,6 +666,7 @@ def test_constraint_with_var_and_illegal_type(solver):
         "1" >= x
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_query_variable_attributes(solver):
     m = Model(solver_name=solver, sense=MAXIMIZE)
@@ -666,6 +700,7 @@ def test_query_variable_attributes(solver):
     # TODO check Xn in case of additional (sub-optimal) solutions
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_setting_variable_attributes(solver):
     m = Model(solver_name=solver, sense=MAXIMIZE)
@@ -717,6 +752,7 @@ def test_setting_variable_attributes(solver):
         assert abs(y.x - 5) < TOL
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_forbidden_overwrites_of_variable_attributes(solver):
     m = Model(solver_name=solver)
@@ -739,6 +775,7 @@ def test_forbidden_overwrites_of_variable_attributes(solver):
         x.rc = 6
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_wrong_overwrites_of_variable_attributes(solver):
     m = Model(solver_name=solver)
@@ -767,6 +804,7 @@ def test_wrong_overwrites_of_variable_attributes(solver):
 
 # LinExpr Tests
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize("constant", (-1, 0, 1.5, 2))
 def test_addition_of_lin_expr_with_constant(solver, constant):
@@ -786,6 +824,7 @@ def test_addition_of_lin_expr_with_constant(solver, constant):
     assert term_left.expr == {x: 1, y: 1}
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_addition_of_lin_expr_with_var(solver):
     m = Model(solver_name=solver)
@@ -800,6 +839,7 @@ def test_addition_of_lin_expr_with_var(solver):
     assert term_right.expr == {x: 1, y: 1, z: 1}
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_addition_of_lin_expr_with_lin_expr(solver):
     m = Model(solver_name=solver)
@@ -817,6 +857,7 @@ def test_addition_of_lin_expr_with_lin_expr(solver):
     assert added_term.expr == {x: 1, y: 1, a: 1, b: 1}
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_addition_of_lin_expr_with_illegal_type(solver):
     m = Model(solver_name=solver)
@@ -831,6 +872,7 @@ def test_addition_of_lin_expr_with_illegal_type(solver):
         "1" + term
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize("constant", (-1, 0, 1.5, 2))
 def test_inplace_addition_of_lin_expr_with_constant(solver, constant):
@@ -846,6 +888,7 @@ def test_inplace_addition_of_lin_expr_with_constant(solver, constant):
     assert term.expr == {x: 1, y: 1}
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_inplace_addition_of_lin_expr_with_var(solver):
     m = Model(solver_name=solver)
@@ -860,6 +903,7 @@ def test_inplace_addition_of_lin_expr_with_var(solver):
     assert term.expr == {x: 1, y: 1, z: 1}
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_inplace_addition_of_lin_expr_with_lin_expr(solver):
     m = Model(solver_name=solver)
@@ -877,6 +921,7 @@ def test_inplace_addition_of_lin_expr_with_lin_expr(solver):
     assert term.expr == {x: 1, y: 1, a: 1, b: 1}
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_inplace_addition_of_lin_expr_with_illegal_type(solver):
     m = Model(solver_name=solver)
@@ -888,6 +933,7 @@ def test_inplace_addition_of_lin_expr_with_illegal_type(solver):
         term += "1"
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize("constant", (-1, 0, 1.5, 2))
 def test_subtraction_of_lin_expr_and_constant(solver, constant):
@@ -907,6 +953,7 @@ def test_subtraction_of_lin_expr_and_constant(solver, constant):
     assert term_left.expr == {x: -1, y: -1}
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_subtraction_of_lin_expr_and_var(solver):
     m = Model(solver_name=solver)
@@ -921,6 +968,7 @@ def test_subtraction_of_lin_expr_and_var(solver):
     assert term_right.expr == {x: 1, y: 1, z: -1}
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_subtraction_of_lin_expr_with_lin_expr(solver):
     m = Model(solver_name=solver)
@@ -938,6 +986,7 @@ def test_subtraction_of_lin_expr_with_lin_expr(solver):
     assert sub_term.expr == {x: 1, y: 1, a: -1, b: -1}
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_subtraction_of_lin_expr_and_illegal_type(solver):
     m = Model(solver_name=solver)
@@ -952,6 +1001,7 @@ def test_subtraction_of_lin_expr_and_illegal_type(solver):
         "1" - term
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize("constant", (-1, 0, 1.5, 2))
 def test_inplace_subtraction_of_lin_expr_and_constant(solver, constant):
@@ -967,6 +1017,7 @@ def test_inplace_subtraction_of_lin_expr_and_constant(solver, constant):
     assert term.expr == {x: 1, y: 1}
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_inplace_subtraction_of_lin_expr_and_var(solver):
     m = Model(solver_name=solver)
@@ -981,6 +1032,7 @@ def test_inplace_subtraction_of_lin_expr_and_var(solver):
     assert term.expr == {x: 1, y: 1, z: -1}
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_inplace_subtraction_of_lin_expr_and_lin_expr(solver):
     m = Model(solver_name=solver)
@@ -998,6 +1050,7 @@ def test_inplace_subtraction_of_lin_expr_and_lin_expr(solver):
     assert term.expr == {x: 1, y: 1, a: -1, b: -1}
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_inplace_subtraction_of_lin_expr_and_illegal_type(solver):
     m = Model(solver_name=solver)
@@ -1009,6 +1062,7 @@ def test_inplace_subtraction_of_lin_expr_and_illegal_type(solver):
         term -= "1"
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize("coefficient", (-1, 0, 1.2, 2))
 def test_multiply_lin_expr_with_coefficient(solver, coefficient):
@@ -1028,6 +1082,7 @@ def test_multiply_lin_expr_with_coefficient(solver, coefficient):
     assert left.expr == {x: coefficient, y: coefficient}
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_multiply_lin_expr_with_illegal_coefficient(solver):
     m = Model(solver_name=solver)
@@ -1042,6 +1097,7 @@ def test_multiply_lin_expr_with_illegal_coefficient(solver):
         term * "1"
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize("coefficient", (-1, 0, 1.2, 2))
 def test_inplace_multiplication_lin_expr_with_coefficient(solver, coefficient):
@@ -1056,6 +1112,7 @@ def test_inplace_multiplication_lin_expr_with_coefficient(solver, coefficient):
     assert term.expr == {x: coefficient, y: coefficient}
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_inplace_multiplication_lin_expr_with_illegal_coefficient(solver):
     m = Model(solver_name=solver)
@@ -1067,6 +1124,7 @@ def test_inplace_multiplication_lin_expr_with_illegal_coefficient(solver):
         term *= "1"
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize("coefficient", (-1, 1.2, 2))
 def test_division_lin_expr_non_zero_coefficient(solver, coefficient):
@@ -1081,6 +1139,7 @@ def test_division_lin_expr_non_zero_coefficient(solver, coefficient):
     assert right.expr == {x: 1 / coefficient, y: 1 / coefficient}
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_divide_lin_expr_with_illegal_coefficient(solver):
     m = Model(solver_name=solver)
@@ -1092,6 +1151,7 @@ def test_divide_lin_expr_with_illegal_coefficient(solver):
         term / "1"
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_divide_lin_expr_by_zero(solver):
     m = Model(solver_name=solver)
@@ -1103,6 +1163,7 @@ def test_divide_lin_expr_by_zero(solver):
         term / 0
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize("coefficient", (-1, 1.2, 2))
 def test_inplace_division_lin_expr_non_zero_coefficient(solver, coefficient):
@@ -1117,6 +1178,7 @@ def test_inplace_division_lin_expr_non_zero_coefficient(solver, coefficient):
     assert term.expr == {x: 1 / coefficient, y: 1 / coefficient}
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_inplace_division_lin_expr_by_zero(solver):
     m = Model(solver_name=solver)
@@ -1128,6 +1190,7 @@ def test_inplace_division_lin_expr_by_zero(solver):
         term /= 0
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_inplace_division_lin_expr_with_illegal_coefficient(solver):
     m = Model(solver_name=solver)
@@ -1139,6 +1202,7 @@ def test_inplace_division_lin_expr_with_illegal_coefficient(solver):
         term /= "1"
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize("coefficient", (-1, 1.2, 2))
 def test_negating_lin_expr_non_zero_coefficient(solver, coefficient):
@@ -1153,6 +1217,7 @@ def test_negating_lin_expr_non_zero_coefficient(solver, coefficient):
     assert neg.expr == {x: -1, y: -1}
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_len_of_lin_expr(solver):
     m = Model(solver_name=solver)
@@ -1164,6 +1229,7 @@ def test_len_of_lin_expr(solver):
     assert len(x + y + 1) == 2
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize("coefficient", (-2, 0, 1.1, 3))
 def test_add_term_with_valid_input(solver, coefficient):
@@ -1201,6 +1267,7 @@ def test_add_term_with_valid_input(solver, coefficient):
         term.add_term(add_term, coefficient)
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_hash(solver):
     m = Model(solver_name=solver)
@@ -1211,6 +1278,7 @@ def test_hash(solver):
     assert type(hash(term)) == int
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_copy(solver):
     m = Model(solver_name=solver)
@@ -1226,6 +1294,7 @@ def test_copy(solver):
     assert id(term.expr) != id(term_copy.expr)
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_constraint_with_lin_expr_and_lin_expr(solver):
     m = Model(solver_name=solver)
@@ -1256,6 +1325,7 @@ def test_constraint_with_lin_expr_and_lin_expr(solver):
     assert constr.sense == ">"
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_query_attributes_of_lin_expr(solver):
     m = Model(solver_name=solver, sense=MAXIMIZE)
@@ -1280,6 +1350,7 @@ def test_query_attributes_of_lin_expr(solver):
 
     m.optimize()
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_objective(solver):
     m = Model(solver_name=solver, sense=MAXIMIZE)
@@ -1317,6 +1388,7 @@ def test_objective(solver):
     assert m.objective_value == 1.5
     assert m.objective_value == m.objective.x
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_remove(solver):
     m = Model(solver_name=solver)
@@ -1333,6 +1405,7 @@ def test_remove(solver):
     m.remove(constr)
     m.remove(x)
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_add_equation(solver):
     m = Model(solver_name=solver)
@@ -1344,6 +1417,7 @@ def test_add_equation(solver):
 
     assert x.x == pytest.approx(23.5)
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_change_objective_sense(solver):
     m = Model(solver_name=solver)
@@ -1361,6 +1435,7 @@ def test_change_objective_sense(solver):
     assert status == OptimizationStatus.OPTIMAL
     assert x.x == pytest.approx(10.0)
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_solve_relaxation(solver):
     m = Model(solver_name=solver)

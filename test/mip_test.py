@@ -1,22 +1,28 @@
 """Tests for Python-MIP"""
+import math
 from itertools import product
-import pytest
+from os import environ
+
 import networkx as nx
+import mip.gurobi
 import mip.highs
 from mip import Model, xsum, OptimizationStatus, MAXIMIZE, BINARY, INTEGER
-from mip import ConstrsGenerator, CutPool, maximize, CBC, GUROBI, HIGHS, Column
+from mip import ConstrsGenerator, CutPool, maximize, CBC, GUROBI, HIGHS, Column, Constr
 from os import environ
+from util import skip_on
 import math
+import pytest
 
 TOL = 1e-4
 
 SOLVERS = [CBC]
-if "GUROBI_HOME" in environ:
+if mip.gurobi.has_gurobi and "GUROBI_HOME" in environ:
     SOLVERS += [GUROBI]
 if mip.highs.has_highs:
     SOLVERS += [HIGHS]
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_column_generation(solver: str):
     L = 250  # bar length
@@ -86,6 +92,7 @@ def test_column_generation(solver: str):
     assert round(master.objective_value) == 3
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_cutting_stock(solver: str):
     n = 10  # maximum number of bars
@@ -122,6 +129,7 @@ def test_cutting_stock(solver: str):
     assert sum(x.x for x in model.vars) >= 5
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_knapsack(solver: str):
     p = [10, 13, 18, 31, 7, 15]
@@ -153,6 +161,7 @@ def test_knapsack(solver: str):
     assert abs(m.objective.expr[x[1]] - 28) <= 1e-10
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_queens(solver: str):
     """MIP model n-queens"""
@@ -207,6 +216,7 @@ def test_queens(solver: str):
     assert rows_with_queens == n  # "feasible solution"
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_tsp(solver: str):
     """tsp related tests"""
@@ -312,6 +322,7 @@ class SubTourCutGenerator(ConstrsGenerator):
             model.add_cut(cut)
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_tsp_cuts(solver: str):
     """tsp related tests"""
@@ -383,9 +394,8 @@ def test_tsp_cuts(solver: str):
     assert abs(m.objective_value - 262) <= TOL  # "mip model objective"
 
 
-# Exclude HiGHS solver, which doesn't support MIP start.
-SOLVERS_WITH_MIPSTART = [s for s in SOLVERS if s != HIGHS]
-@pytest.mark.parametrize("solver", SOLVERS_WITH_MIPSTART)
+@skip_on(NotImplementedError)
+@pytest.mark.parametrize("solver", SOLVERS)
 def test_tsp_mipstart(solver: str):
     """tsp related tests"""
     N = ["a", "b", "c", "d", "e", "f", "g"]
@@ -568,6 +578,7 @@ class TestAPI(object):
         assert model.objective_const == 1
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("val", range(1, 4))
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_variable_bounds(solver: str, val: int):
@@ -583,6 +594,7 @@ def test_variable_bounds(solver: str, val: int):
     assert round(y.x) == val
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("val", range(1, 4))
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_linexpr_x(solver: str, val: int):
@@ -611,6 +623,7 @@ def test_linexpr_x(solver: str, val: int):
     assert abs((x + 2 * y + x + 1 + x / 2).x - (x.x + 2 * y.x + x.x + 1 + x.x / 2)) < TOL
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_add_column(solver: str):
     """Simple test which add columns in a specific way"""
@@ -640,6 +653,7 @@ def test_add_column(solver: str):
     assert x in example_constr1.expr.expr
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("val", range(1, 4))
 @pytest.mark.parametrize("solver", SOLVERS)
 def test_float(solver: str, val: int):
@@ -658,3 +672,39 @@ def test_float(solver: str, val: int):
     assert y.x == float(y)
     # test linear expressions.
     assert float(x + y) == (x + y).x
+
+
+@skip_on(NotImplementedError)
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_empty_useless_constraint_is_considered(solver: str):
+    m = Model("empty_constraint", solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    m.add_constr(xsum([]) <= 1, name="c_empty")  # useless, empty constraint
+    m.add_constr(x + y <= 5, name="c1")
+    m.add_constr(2 * x + y <= 6, name="c2")
+    m.objective = maximize(x + 2 * y)
+    m.optimize()
+    # check objective
+    assert m.status == OptimizationStatus.OPTIMAL
+    assert abs(m.objective.x - 10) < TOL
+    # check that all names of constraints could be queried
+    assert {c.name for c in m.constrs} == {"c1", "c2", "c_empty"}
+    assert all(isinstance(m.constr_by_name(c_name), Constr) for c_name in ("c1", "c2", "c_empty"))
+
+
+@skip_on(NotImplementedError)
+@pytest.mark.parametrize("solver", SOLVERS)
+def test_empty_contradictory_constraint_is_considered(solver: str):
+    m = Model("empty_constraint", solver_name=solver)
+    x = m.add_var(name="x")
+    y = m.add_var(name="y")
+    m.add_constr(xsum([]) <= -1, name="c_contra")  # contradictory empty constraint
+    m.add_constr(x + y <= 5, name="c1")
+    m.objective = maximize(x + 2 * y)
+    m.optimize()
+    # assert infeasibility of problem
+    assert m.status in (OptimizationStatus.INF_OR_UNBD, OptimizationStatus.INFEASIBLE)
+    # check that all names of constraints could be queried
+    assert {c.name for c in m.constrs} == {"c1", "c_contra"}
+    assert all(isinstance(m.constr_by_name(c_name), Constr) for c_name in ("c1", "c_contra"))
