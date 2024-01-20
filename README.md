@@ -63,7 +63,7 @@ Questions, suggestions and feature request can be posted at [Discussions](https:
  
 ## Build status
 
-[![Github Actions Status](https://github.com/coin-or/python-mip/workflows/CI/badge.svg?branch=master)](https://github.com/coin-or/python-mip/actions)
+[![CI](https://github.com/coin-or/python-mip/actions/workflows/github-ci.yml/badge.svg)](https://github.com/coin-or/python-mip/actions/workflows/github-ci.yml)
 [![Current version](https://badge.fury.io/gh/coin-or%2Fpython-mip.svg)](https://github.com/coin-or/python-mip/releases)
 [![Current total of lines](https://tokei.rs/b1/github/coin-or/python-mip?category=lines)](https://github.com/coin-or/python-mip)
 [![License](https://img.shields.io/badge/license-EPL-blue.svg)](https://github.com/coin-or/python-mip/blob/master/LICENSE)
