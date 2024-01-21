@@ -5,7 +5,7 @@ import numbers
 import logging
 import os.path
 import sys
-from typing import Dict, List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import cffi
 
@@ -48,137 +48,640 @@ except Exception as e:
     logger.error(f"An error occurred while loading the HiGHS library:\n{e}")
     has_highs = False
 
-HEADER = """
-typedef int HighsInt;
-
-const HighsInt kHighsStatusError = -1;
-const HighsInt kHighsStatusOk = 0;
-const HighsInt kHighsStatusWarning = 1;
-
-const HighsInt kHighsObjSenseMinimize = 1;
-const HighsInt kHighsObjSenseMaximize = -1;
-
-const HighsInt kHighsVarTypeContinuous = 0;
-const HighsInt kHighsVarTypeInteger = 1;
-
-const HighsInt kHighsSolutionStatusNone = 0;
-const HighsInt kHighsSolutionStatusInfeasible = 1;
-const HighsInt kHighsSolutionStatusFeasible = 2;
-
-const HighsInt kHighsModelStatusNotset = 0;
-const HighsInt kHighsModelStatusLoadError = 1;
-const HighsInt kHighsModelStatusModelError = 2;
-const HighsInt kHighsModelStatusPresolveError = 3;
-const HighsInt kHighsModelStatusSolveError = 4;
-const HighsInt kHighsModelStatusPostsolveError = 5;
-const HighsInt kHighsModelStatusModelEmpty = 6;
-const HighsInt kHighsModelStatusOptimal = 7;
-const HighsInt kHighsModelStatusInfeasible = 8;
-const HighsInt kHighsModelStatusUnboundedOrInfeasible = 9;
-const HighsInt kHighsModelStatusUnbounded = 10;
-const HighsInt kHighsModelStatusObjectiveBound = 11;
-const HighsInt kHighsModelStatusObjectiveTarget = 12;
-const HighsInt kHighsModelStatusTimeLimit = 13;
-const HighsInt kHighsModelStatusIterationLimit = 14;
-const HighsInt kHighsModelStatusUnknown = 15;
-const HighsInt kHighsModelStatusSolutionLimit = 16;
-
-void* Highs_create(void);
-void Highs_destroy(void* highs);
-HighsInt Highs_readModel(void* highs, const char* filename);
-HighsInt Highs_writeModel(void* highs, const char* filename);
-HighsInt Highs_run(void* highs);
-HighsInt Highs_getModelStatus(const void* highs);
-double Highs_getObjectiveValue(const void* highs);
-HighsInt Highs_addVar(void* highs, const double lower, const double upper);
-HighsInt Highs_addRow(
-    void* highs, const double lower, const double upper, const HighsInt num_new_nz,
-    const HighsInt* index, const double* value
-);
-HighsInt Highs_changeObjectiveOffset(void* highs, const double offset);
-HighsInt Highs_changeObjectiveSense(void* highs, const HighsInt sense);
-HighsInt Highs_changeColIntegrality(
-    void* highs, const HighsInt col, const HighsInt integrality
-);
-HighsInt Highs_changeColsIntegralityByRange(
-    void* highs, const HighsInt from_col, const HighsInt to_col,
-    const HighsInt* integrality
-);
-HighsInt Highs_changeColCost(void* highs, const HighsInt col, const double cost);
-HighsInt Highs_changeColBounds(
-    void* highs, const HighsInt col, const double lower, const double upper
-);
-HighsInt Highs_changeCoeff(
-    void* highs, const HighsInt row, const HighsInt col, const double value
-);
-HighsInt Highs_changeRowBounds(
-    void* highs, const HighsInt row, const double lower, const double upper
-);
-HighsInt Highs_getRowsByRange(
-    const void* highs, const HighsInt from_row, const HighsInt to_row,
-    HighsInt* num_row, double* lower, double* upper, HighsInt* num_nz,
-    HighsInt* matrix_start, HighsInt* matrix_index, double* matrix_value
-);
-HighsInt Highs_getColsByRange(
-    const void* highs, const HighsInt from_col, const HighsInt to_col,
-    HighsInt* num_col, double* costs, double* lower, double* upper,
-    HighsInt* num_nz, HighsInt* matrix_start, HighsInt* matrix_index,
-    double* matrix_value
-);
-HighsInt Highs_getObjectiveOffset(const void* highs, double* offset);
-HighsInt Highs_getObjectiveSense(const void* highs, HighsInt* sense);
-HighsInt Highs_getNumCol(const void* highs);
-HighsInt Highs_getNumRow(const void* highs);
-HighsInt Highs_getNumNz(const void* highs);
-HighsInt Highs_getDoubleInfoValue(
-    const void* highs, const char* info, double* value
-);
-HighsInt Highs_getIntInfoValue(
-    const void* highs, const char* info, int* value
-);
-HighsInt Highs_getIntOptionValue(
-    const void* highs, const char* option, HighsInt* value
-);
-HighsInt Highs_getDoubleOptionValue(
-    const void* highs, const char* option, double* value
-);
-HighsInt Highs_getBoolOptionValue(
-    const void* highs, const char* option, bool* value
-);
-HighsInt Highs_setIntOptionValue(
-    void* highs, const char* option, const HighsInt value
-);
-HighsInt Highs_setDoubleOptionValue(
-    void* highs, const char* option, const double value
-);
-HighsInt Highs_setBoolOptionValue(
-    void* highs, const char* option, const bool value
-);
-HighsInt Highs_getSolution(
-    const void* highs, double* col_value, double* col_dual,
-    double* row_value, double* row_dual
-);
-HighsInt Highs_setSolution(
-    const void* highs, double* col_value, double* row_value, 
-    double* col_dual, double* row_dual
-);
-HighsInt Highs_deleteRowsBySet(
-    void* highs, const HighsInt num_set_entries, const HighsInt* set
-);
-HighsInt Highs_deleteColsBySet(
-    void* highs, const HighsInt num_set_entries, const HighsInt* set
-);
-"""
-
 if has_highs:
-    ffi.cdef(HEADER)
+    ffi.cdef(
+        """
+        /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+        /*                                                                       */
+        /*    This file is part of the HiGHS linear optimization suite           */
+        /*                                                                       */
+        /*    Written and engineered 2008-2024 by Julian Hall, Ivet Galabova,    */
+        /*    Leona Gottwald and Michael Feldmeier                               */
+        /*                                                                       */
+        /*    Available as open-source under the MIT License                     */
+        /*                                                                       */
+        /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+        typedef int HighsInt;
+        
+        typedef struct {
+          int log_type;  // cast of HighsLogType
+          double running_time;
+          HighsInt simplex_iteration_count;
+          HighsInt ipm_iteration_count;
+          double objective_function_value;
+          int64_t mip_node_count;
+          double mip_primal_bound;
+          double mip_dual_bound;
+          double mip_gap;
+          double* mip_solution;
+        } HighsCallbackDataOut;
+        
+        typedef struct {
+          int user_interrupt;
+        } HighsCallbackDataIn;
+        
+        typedef void (*HighsCCallbackType)(int, const char*,
+                                           const HighsCallbackDataOut*,
+                                           HighsCallbackDataIn*, void*);
+
+        const HighsInt kHighsMaximumStringLength = 512;
+        
+        const HighsInt kHighsStatusError = -1;
+        const HighsInt kHighsStatusOk = 0;
+        const HighsInt kHighsStatusWarning = 1;
+        
+        const HighsInt kHighsVarTypeContinuous = 0;
+        const HighsInt kHighsVarTypeInteger = 1;
+        const HighsInt kHighsVarTypeSemiContinuous = 2;
+        const HighsInt kHighsVarTypeSemiInteger = 3;
+        const HighsInt kHighsVarTypeImplicitInteger = 4;
+        
+        const HighsInt kHighsOptionTypeBool = 0;
+        const HighsInt kHighsOptionTypeInt = 1;
+        const HighsInt kHighsOptionTypeDouble = 2;
+        const HighsInt kHighsOptionTypeString = 3;
+        
+        const HighsInt kHighsInfoTypeInt64 = -1;
+        const HighsInt kHighsInfoTypeInt = 1;
+        const HighsInt kHighsInfoTypeDouble = 2;
+        
+        const HighsInt kHighsObjSenseMinimize = 1;
+        const HighsInt kHighsObjSenseMaximize = -1;
+        
+        const HighsInt kHighsMatrixFormatColwise = 1;
+        const HighsInt kHighsMatrixFormatRowwise = 2;
+        
+        const HighsInt kHighsHessianFormatTriangular = 1;
+        const HighsInt kHighsHessianFormatSquare = 2;
+        
+        const HighsInt kHighsSolutionStatusNone = 0;
+        const HighsInt kHighsSolutionStatusInfeasible = 1;
+        const HighsInt kHighsSolutionStatusFeasible = 2;
+        
+        const HighsInt kHighsBasisValidityInvalid = 0;
+        const HighsInt kHighsBasisValidityValid = 1;
+        
+        const HighsInt kHighsPresolveStatusNotPresolved = -1;
+        const HighsInt kHighsPresolveStatusNotReduced = 0;
+        const HighsInt kHighsPresolveStatusInfeasible = 1;
+        const HighsInt kHighsPresolveStatusUnboundedOrInfeasible = 2;
+        const HighsInt kHighsPresolveStatusReduced = 3;
+        const HighsInt kHighsPresolveStatusReducedToEmpty = 4;
+        const HighsInt kHighsPresolveStatusTimeout = 5;
+        const HighsInt kHighsPresolveStatusNullError = 6;
+        const HighsInt kHighsPresolveStatusOptionsError = 7;
+        
+        const HighsInt kHighsModelStatusNotset = 0;
+        const HighsInt kHighsModelStatusLoadError = 1;
+        const HighsInt kHighsModelStatusModelError = 2;
+        const HighsInt kHighsModelStatusPresolveError = 3;
+        const HighsInt kHighsModelStatusSolveError = 4;
+        const HighsInt kHighsModelStatusPostsolveError = 5;
+        const HighsInt kHighsModelStatusModelEmpty = 6;
+        const HighsInt kHighsModelStatusOptimal = 7;
+        const HighsInt kHighsModelStatusInfeasible = 8;
+        const HighsInt kHighsModelStatusUnboundedOrInfeasible = 9;
+        const HighsInt kHighsModelStatusUnbounded = 10;
+        const HighsInt kHighsModelStatusObjectiveBound = 11;
+        const HighsInt kHighsModelStatusObjectiveTarget = 12;
+        const HighsInt kHighsModelStatusTimeLimit = 13;
+        const HighsInt kHighsModelStatusIterationLimit = 14;
+        const HighsInt kHighsModelStatusUnknown = 15;
+        const HighsInt kHighsModelStatusSolutionLimit = 16;
+        const HighsInt kHighsModelStatusInterrupt = 17;
+        
+        const HighsInt kHighsBasisStatusLower = 0;
+        const HighsInt kHighsBasisStatusBasic = 1;
+        const HighsInt kHighsBasisStatusUpper = 2;
+        const HighsInt kHighsBasisStatusZero = 3;
+        const HighsInt kHighsBasisStatusNonbasic = 4;
+        
+        const HighsInt kHighsCallbackLogging = 0;
+        const HighsInt kHighsCallbackSimplexInterrupt = 1;
+        const HighsInt kHighsCallbackIpmInterrupt = 2;
+        const HighsInt kHighsCallbackMipSolution = 3;
+        const HighsInt kHighsCallbackMipImprovingSolution = 4;
+        const HighsInt kHighsCallbackMipLogging = 5;
+        const HighsInt kHighsCallbackMipInterrupt = 6;
+        
+        HighsInt Highs_lpCall(const HighsInt num_col, const HighsInt num_row,
+                              const HighsInt num_nz, const HighsInt a_format,
+                              const HighsInt sense, const double offset,
+                              const double* col_cost, const double* col_lower,
+                              const double* col_upper, const double* row_lower,
+                              const double* row_upper, const HighsInt* a_start,
+                              const HighsInt* a_index, const double* a_value,
+                              double* col_value, double* col_dual, double* row_value,
+                              double* row_dual, HighsInt* col_basis_status,
+                              HighsInt* row_basis_status, HighsInt* model_status);
+        
+        HighsInt Highs_mipCall(const HighsInt num_col, const HighsInt num_row,
+                               const HighsInt num_nz, const HighsInt a_format,
+                               const HighsInt sense, const double offset,
+                               const double* col_cost, const double* col_lower,
+                               const double* col_upper, const double* row_lower,
+                               const double* row_upper, const HighsInt* a_start,
+                               const HighsInt* a_index, const double* a_value,
+                               const HighsInt* integrality, double* col_value,
+                               double* row_value, HighsInt* model_status);
+        
+        HighsInt Highs_qpCall(
+            const HighsInt num_col, const HighsInt num_row, const HighsInt num_nz,
+            const HighsInt q_num_nz, const HighsInt a_format, const HighsInt q_format,
+            const HighsInt sense, const double offset, const double* col_cost,
+            const double* col_lower, const double* col_upper, const double* row_lower,
+            const double* row_upper, const HighsInt* a_start, const HighsInt* a_index,
+            const double* a_value, const HighsInt* q_start, const HighsInt* q_index,
+            const double* q_value, double* col_value, double* col_dual,
+            double* row_value, double* row_dual, HighsInt* col_basis_status,
+            HighsInt* row_basis_status, HighsInt* model_status);
+        
+        void* Highs_create(void);
+        
+        void Highs_destroy(void* highs);
+        
+        const char* Highs_version(void);
+        
+        HighsInt Highs_versionMajor(void);
+        
+        HighsInt Highs_versionMinor(void);
+        
+        HighsInt Highs_versionPatch(void);
+        
+        const char* Highs_githash(void);
+        
+        const char* Highs_compilationDate(void);
+        
+        HighsInt Highs_readModel(void* highs, const char* filename);
+        
+        HighsInt Highs_writeModel(void* highs, const char* filename);
+        
+        HighsInt Highs_clear(void* highs);
+        
+        HighsInt Highs_clearModel(void* highs);
+        
+        HighsInt Highs_clearSolver(void* highs);
+        
+        HighsInt Highs_run(void* highs);
+        
+        HighsInt Highs_writeSolution(const void* highs, const char* filename);
+        
+        HighsInt Highs_writeSolutionPretty(const void* highs, const char* filename);
+        
+        HighsInt Highs_passLp(void* highs, const HighsInt num_col,
+                              const HighsInt num_row, const HighsInt num_nz,
+                              const HighsInt a_format, const HighsInt sense,
+                              const double offset, const double* col_cost,
+                              const double* col_lower, const double* col_upper,
+                              const double* row_lower, const double* row_upper,
+                              const HighsInt* a_start, const HighsInt* a_index,
+                              const double* a_value);
+        
+        HighsInt Highs_passMip(void* highs, const HighsInt num_col,
+                               const HighsInt num_row, const HighsInt num_nz,
+                               const HighsInt a_format, const HighsInt sense,
+                               const double offset, const double* col_cost,
+                               const double* col_lower, const double* col_upper,
+                               const double* row_lower, const double* row_upper,
+                               const HighsInt* a_start, const HighsInt* a_index,
+                               const double* a_value, const HighsInt* integrality);
+        
+        HighsInt Highs_passModel(void* highs, const HighsInt num_col,
+                                 const HighsInt num_row, const HighsInt num_nz,
+                                 const HighsInt q_num_nz, const HighsInt a_format,
+                                 const HighsInt q_format, const HighsInt sense,
+                                 const double offset, const double* col_cost,
+                                 const double* col_lower, const double* col_upper,
+                                 const double* row_lower, const double* row_upper,
+                                 const HighsInt* a_start, const HighsInt* a_index,
+                                 const double* a_value, const HighsInt* q_start,
+                                 const HighsInt* q_index, const double* q_value,
+                                 const HighsInt* integrality);
+        
+        HighsInt Highs_passHessian(void* highs, const HighsInt dim,
+                                   const HighsInt num_nz, const HighsInt format,
+                                   const HighsInt* start, const HighsInt* index,
+                                   const double* value);
+        
+        HighsInt Highs_passRowName(const void* highs, const HighsInt row,
+                                   const char* name);
+        
+        HighsInt Highs_passColName(const void* highs, const HighsInt col,
+                                   const char* name);
+        
+        HighsInt Highs_readOptions(const void* highs, const char* filename);
+        
+        HighsInt Highs_setBoolOptionValue(void* highs, const char* option,
+                                          const HighsInt value);
+        
+        HighsInt Highs_setIntOptionValue(void* highs, const char* option,
+                                         const HighsInt value);
+        
+        HighsInt Highs_setDoubleOptionValue(void* highs, const char* option,
+                                            const double value);
+        
+        HighsInt Highs_setStringOptionValue(void* highs, const char* option,
+                                            const char* value);
+        
+        HighsInt Highs_getBoolOptionValue(const void* highs, const char* option,
+                                          HighsInt* value);
+        
+        HighsInt Highs_getIntOptionValue(const void* highs, const char* option,
+                                         HighsInt* value);
+        
+        HighsInt Highs_getDoubleOptionValue(const void* highs, const char* option,
+                                            double* value);
+        
+        HighsInt Highs_getStringOptionValue(const void* highs, const char* option,
+                                            char* value);
+        
+        HighsInt Highs_getOptionType(const void* highs, const char* option,
+                                     HighsInt* type);
+        
+        HighsInt Highs_resetOptions(void* highs);
+        
+        HighsInt Highs_writeOptions(const void* highs, const char* filename);
+        
+        HighsInt Highs_writeOptionsDeviations(const void* highs, const char* filename);
+        
+        HighsInt Highs_getNumOptions(const void* highs);
+        
+        HighsInt Highs_getOptionName(const void* highs, const HighsInt index,
+                                     char** name);
+        
+        HighsInt Highs_getBoolOptionValues(const void* highs, const char* option,
+                                           HighsInt* current_value,
+                                           HighsInt* default_value);
+        HighsInt Highs_getIntOptionValues(const void* highs, const char* option,
+                                          HighsInt* current_value, HighsInt* min_value,
+                                          HighsInt* max_value, HighsInt* default_value);
+        
+        HighsInt Highs_getDoubleOptionValues(const void* highs, const char* option,
+                                             double* current_value, double* min_value,
+                                             double* max_value, double* default_value);
+        
+        HighsInt Highs_getStringOptionValues(const void* highs, const char* option,
+                                             char* current_value, char* default_value);
+        
+        HighsInt Highs_getIntInfoValue(const void* highs, const char* info,
+                                       HighsInt* value);
+        
+        HighsInt Highs_getDoubleInfoValue(const void* highs, const char* info,
+                                          double* value);
+        
+        HighsInt Highs_getInt64InfoValue(const void* highs, const char* info,
+                                         int64_t* value);
+        
+        HighsInt Highs_getInfoType(const void* highs, const char* info, HighsInt* type);
+        
+        HighsInt Highs_getSolution(const void* highs, double* col_value,
+                                   double* col_dual, double* row_value,
+                                   double* row_dual);
+        
+        HighsInt Highs_getBasis(const void* highs, HighsInt* col_status,
+                                HighsInt* row_status);
+        
+        HighsInt Highs_getModelStatus(const void* highs);
+        
+        HighsInt Highs_getDualRay(const void* highs, HighsInt* has_dual_ray,
+                                  double* dual_ray_value);
+        
+        HighsInt Highs_getPrimalRay(const void* highs, HighsInt* has_primal_ray,
+                                    double* primal_ray_value);
+        
+        double Highs_getObjectiveValue(const void* highs);
+        
+        HighsInt Highs_getBasicVariables(const void* highs, HighsInt* basic_variables);
+        
+        HighsInt Highs_getBasisInverseRow(const void* highs, const HighsInt row,
+                                          double* row_vector, HighsInt* row_num_nz,
+                                          HighsInt* row_index);
+                                          
+        HighsInt Highs_getBasisInverseCol(const void* highs, const HighsInt col,
+                                          double* col_vector, HighsInt* col_num_nz,
+                                          HighsInt* col_index);
+        
+        HighsInt Highs_getBasisSolve(const void* highs, const double* rhs,
+                                     double* solution_vector, HighsInt* solution_num_nz,
+                                     HighsInt* solution_index);
+                                     
+        HighsInt Highs_getBasisTransposeSolve(const void* highs, const double* rhs,
+                                              double* solution_vector,
+                                              HighsInt* solution_nz,
+                                              HighsInt* solution_index);
+                                              
+        HighsInt Highs_getReducedRow(const void* highs, const HighsInt row,
+                                     double* row_vector, HighsInt* row_num_nz,
+                                     HighsInt* row_index);
+                                     
+        HighsInt Highs_getReducedColumn(const void* highs, const HighsInt col,
+                                        double* col_vector, HighsInt* col_num_nz,
+                                        HighsInt* col_index);
+        
+        HighsInt Highs_setBasis(void* highs, const HighsInt* col_status,
+                                const HighsInt* row_status);
+        
+        HighsInt Highs_setLogicalBasis(void* highs);
+        
+        HighsInt Highs_setSolution(void* highs, const double* col_value,
+                                   const double* row_value, const double* col_dual,
+                                   const double* row_dual);
+        
+        HighsInt Highs_setCallback(void* highs, HighsCCallbackType user_callback,
+                                   void* user_callback_data);
+        
+        HighsInt Highs_startCallback(void* highs, const int callback_type);
+        
+        HighsInt Highs_stopCallback(void* highs, const int callback_type);
+        
+        double Highs_getRunTime(const void* highs);
+        
+        HighsInt Highs_zeroAllClocks(const void* highs);
+        
+        HighsInt Highs_addCol(void* highs, const double cost, const double lower,
+                              const double upper, const HighsInt num_new_nz,
+                              const HighsInt* index, const double* value);
+        
+        HighsInt Highs_addCols(void* highs, const HighsInt num_new_col,
+                               const double* costs, const double* lower,
+                               const double* upper, const HighsInt num_new_nz,
+                               const HighsInt* starts, const HighsInt* index,
+                               const double* value);
+        
+        HighsInt Highs_addVar(void* highs, const double lower, const double upper);
+        
+        HighsInt Highs_addVars(void* highs, const HighsInt num_new_var,
+                               const double* lower, const double* upper);
+        
+        HighsInt Highs_addRow(void* highs, const double lower, const double upper,
+                              const HighsInt num_new_nz, const HighsInt* index,
+                              const double* value);
+        
+        HighsInt Highs_addRows(void* highs, const HighsInt num_new_row,
+                               const double* lower, const double* upper,
+                               const HighsInt num_new_nz, const HighsInt* starts,
+                               const HighsInt* index, const double* value);
+        
+        HighsInt Highs_changeObjectiveSense(void* highs, const HighsInt sense);
+        
+        HighsInt Highs_changeObjectiveOffset(void* highs, const double offset);
+        
+        HighsInt Highs_changeColIntegrality(void* highs, const HighsInt col,
+                                            const HighsInt integrality);
+        
+        HighsInt Highs_changeColsIntegralityByRange(void* highs,
+                                                    const HighsInt from_col,
+                                                    const HighsInt to_col,
+                                                    const HighsInt* integrality);
+        
+        HighsInt Highs_changeColsIntegralityBySet(void* highs,
+                                                  const HighsInt num_set_entries,
+                                                  const HighsInt* set,
+                                                  const HighsInt* integrality);
+        
+        HighsInt Highs_changeColsIntegralityByMask(void* highs, const HighsInt* mask,
+                                                   const HighsInt* integrality);
+        
+        HighsInt Highs_changeColCost(void* highs, const HighsInt col,
+                                     const double cost);
+        
+        HighsInt Highs_changeColsCostByRange(void* highs, const HighsInt from_col,
+                                             const HighsInt to_col, const double* cost);
+        
+        HighsInt Highs_changeColsCostBySet(void* highs, const HighsInt num_set_entries,
+                                           const HighsInt* set, const double* cost);
+        
+        HighsInt Highs_changeColsCostByMask(void* highs, const HighsInt* mask,
+                                            const double* cost);
+        
+        HighsInt Highs_changeColBounds(void* highs, const HighsInt col,
+                                       const double lower, const double upper);
+        
+        HighsInt Highs_changeColsBoundsByRange(void* highs, const HighsInt from_col,
+                                               const HighsInt to_col,
+                                               const double* lower,
+                                               const double* upper);
+        
+        HighsInt Highs_changeColsBoundsBySet(void* highs,
+                                             const HighsInt num_set_entries,
+                                             const HighsInt* set, const double* lower,
+                                             const double* upper);
+        
+        HighsInt Highs_changeColsBoundsByMask(void* highs, const HighsInt* mask,
+                                              const double* lower, const double* upper);
+        
+        HighsInt Highs_changeRowBounds(void* highs, const HighsInt row,
+                                       const double lower, const double upper);
+        
+        HighsInt Highs_changeRowsBoundsBySet(void* highs,
+                                             const HighsInt num_set_entries,
+                                             const HighsInt* set, const double* lower,
+                                             const double* upper);
+        
+        HighsInt Highs_changeRowsBoundsByMask(void* highs, const HighsInt* mask,
+                                              const double* lower, const double* upper);
+        
+        HighsInt Highs_changeCoeff(void* highs, const HighsInt row, const HighsInt col,
+                                   const double value);
+        
+        HighsInt Highs_getObjectiveSense(const void* highs, HighsInt* sense);
+        
+        HighsInt Highs_getObjectiveOffset(const void* highs, double* offset);
+        
+        HighsInt Highs_getColsByRange(const void* highs, const HighsInt from_col,
+                                      const HighsInt to_col, HighsInt* num_col,
+                                      double* costs, double* lower, double* upper,
+                                      HighsInt* num_nz, HighsInt* matrix_start,
+                                      HighsInt* matrix_index, double* matrix_value);
+        
+        HighsInt Highs_getColsBySet(const void* highs, const HighsInt num_set_entries,
+                                    const HighsInt* set, HighsInt* num_col,
+                                    double* costs, double* lower, double* upper,
+                                    HighsInt* num_nz, HighsInt* matrix_start,
+                                    HighsInt* matrix_index, double* matrix_value);
+        
+        HighsInt Highs_getColsByMask(const void* highs, const HighsInt* mask,
+                                     HighsInt* num_col, double* costs, double* lower,
+                                     double* upper, HighsInt* num_nz,
+                                     HighsInt* matrix_start, HighsInt* matrix_index,
+                                     double* matrix_value);
+        
+        HighsInt Highs_getRowsByRange(const void* highs, const HighsInt from_row,
+                                      const HighsInt to_row, HighsInt* num_row,
+                                      double* lower, double* upper, HighsInt* num_nz,
+                                      HighsInt* matrix_start, HighsInt* matrix_index,
+                                      double* matrix_value);
+        
+        HighsInt Highs_getRowsBySet(const void* highs, const HighsInt num_set_entries,
+                                    const HighsInt* set, HighsInt* num_row,
+                                    double* lower, double* upper, HighsInt* num_nz,
+                                    HighsInt* matrix_start, HighsInt* matrix_index,
+                                    double* matrix_value);
+        
+        HighsInt Highs_getRowsByMask(const void* highs, const HighsInt* mask,
+                                     HighsInt* num_row, double* lower, double* upper,
+                                     HighsInt* num_nz, HighsInt* matrix_start,
+                                     HighsInt* matrix_index, double* matrix_value);
+        HighsInt Highs_getRowName(const void* highs, const HighsInt row, char* name);
+        
+        HighsInt Highs_getRowByName(const void* highs, const char* name, HighsInt* row);
+        
+        HighsInt Highs_getColName(const void* highs, const HighsInt col, char* name);
+        
+        HighsInt Highs_getColByName(const void* highs, const char* name, HighsInt* col);
+        
+        HighsInt Highs_getColIntegrality(const void* highs, const HighsInt col,
+                                         HighsInt* integrality);
+        
+        HighsInt Highs_deleteColsByRange(void* highs, const HighsInt from_col,
+                                         const HighsInt to_col);
+        
+        HighsInt Highs_deleteColsBySet(void* highs, const HighsInt num_set_entries,
+                                       const HighsInt* set);
+        
+        HighsInt Highs_deleteColsByMask(void* highs, HighsInt* mask);
+        
+        HighsInt Highs_deleteRowsByRange(void* highs, const int from_row,
+                                         const HighsInt to_row);
+        
+        HighsInt Highs_deleteRowsBySet(void* highs, const HighsInt num_set_entries,
+                                       const HighsInt* set);
+        
+        HighsInt Highs_deleteRowsByMask(void* highs, HighsInt* mask);
+        
+        HighsInt Highs_scaleCol(void* highs, const HighsInt col, const double scaleval);
+        
+        HighsInt Highs_scaleRow(void* highs, const HighsInt row, const double scaleval);
+        
+        double Highs_getInfinity(const void* highs);
+        
+        HighsInt Highs_getSizeofHighsInt(const void* highs);
+        
+        HighsInt Highs_getNumCol(const void* highs);
+        
+        HighsInt Highs_getNumRow(const void* highs);
+        
+        HighsInt Highs_getNumNz(const void* highs);
+        
+        HighsInt Highs_getHessianNumNz(const void* highs);
+        
+        HighsInt Highs_getModel(const void* highs, const HighsInt a_format,
+                                const HighsInt q_format, HighsInt* num_col,
+                                HighsInt* num_row, HighsInt* num_nz,
+                                HighsInt* hessian_num_nz, HighsInt* sense,
+                                double* offset, double* col_cost, double* col_lower,
+                                double* col_upper, double* row_lower, double* row_upper,
+                                HighsInt* a_start, HighsInt* a_index, double* a_value,
+                                HighsInt* q_start, HighsInt* q_index, double* q_value,
+                                HighsInt* integrality);
+        
+        HighsInt Highs_crossover(void* highs, const int num_col, const int num_row,
+                                 const double* col_value, const double* col_dual,
+                                 const double* row_dual);
+        
+        HighsInt Highs_getRanging(void* highs,
+            double* col_cost_up_value, double* col_cost_up_objective,
+            HighsInt* col_cost_up_in_var, HighsInt* col_cost_up_ou_var,
+            double* col_cost_dn_value, double* col_cost_dn_objective,
+            HighsInt* col_cost_dn_in_var, HighsInt* col_cost_dn_ou_var,
+            double* col_bound_up_value, double* col_bound_up_objective,
+            HighsInt* col_bound_up_in_var, HighsInt* col_bound_up_ou_var,
+            double* col_bound_dn_value, double* col_bound_dn_objective,
+            HighsInt* col_bound_dn_in_var, HighsInt* col_bound_dn_ou_var,
+            double* row_bound_up_value, double* row_bound_up_objective,
+            HighsInt* row_bound_up_in_var, HighsInt* row_bound_up_ou_var,
+            double* row_bound_dn_value, double* row_bound_dn_objective,
+            HighsInt* row_bound_dn_in_var, HighsInt* row_bound_dn_ou_var);
+        
+        void Highs_resetGlobalScheduler(const HighsInt blocking);
+        
+        // *********************
+        // * Deprecated methods*
+        // *********************
+
+        const HighsInt HighsStatuskError = -1;
+        const HighsInt HighsStatuskOk = 0;
+        const HighsInt HighsStatuskWarning = 1;
+        
+        HighsInt Highs_call(const HighsInt num_col, const HighsInt num_row,
+                            const HighsInt num_nz, const double* col_cost,
+                            const double* col_lower, const double* col_upper,
+                            const double* row_lower, const double* row_upper,
+                            const HighsInt* a_start, const HighsInt* a_index,
+                            const double* a_value, double* col_value, double* col_dual,
+                            double* row_value, double* row_dual,
+                            HighsInt* col_basis_status, HighsInt* row_basis_status,
+                            HighsInt* model_status);
+        
+        HighsInt Highs_runQuiet(void* highs);
+        
+        HighsInt Highs_setHighsLogfile(void* highs, const void* logfile);
+        
+        HighsInt Highs_setHighsOutput(void* highs, const void* outputfile);
+        
+        HighsInt Highs_getIterationCount(const void* highs);
+        
+        HighsInt Highs_getSimplexIterationCount(const void* highs);
+        
+        HighsInt Highs_setHighsBoolOptionValue(void* highs, const char* option,
+                                               const HighsInt value);
+        
+        HighsInt Highs_setHighsIntOptionValue(void* highs, const char* option,
+                                              const HighsInt value);
+        
+        HighsInt Highs_setHighsDoubleOptionValue(void* highs, const char* option,
+                                                 const double value);
+        
+        HighsInt Highs_setHighsStringOptionValue(void* highs, const char* option,
+                                                 const char* value);
+        
+        HighsInt Highs_setHighsOptionValue(void* highs, const char* option,
+                                           const char* value);
+        
+        HighsInt Highs_getHighsBoolOptionValue(const void* highs, const char* option,
+                                               HighsInt* value);
+        
+        HighsInt Highs_getHighsIntOptionValue(const void* highs, const char* option,
+                                              HighsInt* value);
+        
+        HighsInt Highs_getHighsDoubleOptionValue(const void* highs, const char* option,
+                                                 double* value);
+        
+        HighsInt Highs_getHighsStringOptionValue(const void* highs, const char* option,
+                                                 char* value);
+        
+        HighsInt Highs_getHighsOptionType(const void* highs, const char* option,
+                                          HighsInt* type);
+        
+        HighsInt Highs_resetHighsOptions(void* highs);
+        
+        HighsInt Highs_getHighsIntInfoValue(const void* highs, const char* info,
+                                            HighsInt* value);
+        
+        HighsInt Highs_getHighsDoubleInfoValue(const void* highs, const char* info,
+                                               double* value);
+        
+        HighsInt Highs_getNumCols(const void* highs);
+        
+        HighsInt Highs_getNumRows(const void* highs);
+        
+        double Highs_getHighsInfinity(const void* highs);
+        
+        double Highs_getHighsRunTime(const void* highs);
+        
+        HighsInt Highs_setOptionValue(void* highs, const char* option,
+                                      const char* value);
+        
+        HighsInt Highs_getScaledModelStatus(const void* highs);
+    """
+    )
 
     STATUS_ERROR = highslib.kHighsStatusError
 
-    def check(status):
-        "Check return status and raise error if not OK."
-        if status == STATUS_ERROR:
-            raise mip.InterfacingError("Unknown error in call to HiGHS.")
+
+def check(status):
+    if status == STATUS_ERROR:
+        raise mip.InterfacingError("Unknown error in call to HiGHS.")
 
 
 class SolverHighs(mip.Solver):
@@ -202,18 +705,26 @@ class SolverHighs(mip.Solver):
 
         # Store additional data here, if HiGHS can't do it.
         self._name: str = name
-        self._var_name: List[str] = []
-        self._var_col: Dict[str, int] = {}
-        self._var_type: List[str] = []
-        self._cons_name: List[str] = []
-        self._cons_col: Dict[str, int] = {}
+        self._num_int_vars = 0
 
         # Also store solution (when available)
         self._x = []
         self._rc = []
         self._pi = []
 
+        # Buffer string for storing names
+        self._name_buffer = ffi.new(f"char[{self._lib.kHighsMaximumStringLength}]")
+
+        # type conversion maps
+        self._var_type_map = {
+            mip.CONTINUOUS: self._lib.kHighsVarTypeContinuous,
+            mip.BINARY: self._lib.kHighsVarTypeInteger,
+            mip.INTEGER: self._lib.kHighsVarTypeInteger,
+        }
+        self._highs_type_map = {value: key for key, value in self._var_type_map.items()}
+
     def __del__(self):
+        self._name_buffer = None
         self._lib.Highs_destroy(self._model)
 
     def _get_int_info_value(self: "SolverHighs", name: str) -> int:
@@ -295,9 +806,11 @@ class SolverHighs(mip.Solver):
         name: str = "",
     ):
         col: int = self.num_cols()
-        check(self._lib.Highs_addVar(self._model, lb, ub))
-        check(self._lib.Highs_changeColCost(self._model, col, obj))
+        check(self._lib.Highs_addCol(self._model, obj, lb, ub, 0, ffi.NULL, ffi.NULL))
+        if name:
+            check(self._lib.Highs_passColName(self._model, col, name.encode("utf-8")))
         if var_type != mip.CONTINUOUS:
+            self._num_int_vars += 1
             check(
                 self._lib.Highs_changeColIntegrality(
                     self._model, col, self._lib.kHighsVarTypeInteger
@@ -310,11 +823,6 @@ class SolverHighs(mip.Solver):
             # self._set_column(col, column)
             for cons, coef in zip(column.constrs, column.coeffs):
                 self._change_coef(cons.idx, col, coef)
-
-        # store name & type
-        self._var_name.append(name)
-        self._var_col[name] = col
-        self._var_type.append(var_type)
 
     def add_constr(self: "SolverHighs", lin_expr: "mip.LinExpr", name: str = ""):
         row: int = self.num_rows()
@@ -336,10 +844,8 @@ class SolverHighs(mip.Solver):
         check(
             self._lib.Highs_addRow(self._model, lower, upper, num_new_nz, index, value)
         )
-
-        # store name
-        self._cons_name.append(name)
-        self._cons_col[name] = row
+        if name:
+            self._lib.Highs_passRowName(self._model, row, name.encode("utf-8"))
 
     def add_lazy_constr(self: "SolverHighs", lin_expr: "mip.LinExpr"):
         raise NotImplementedError("HiGHS doesn't support lazy constraints!")
@@ -393,33 +899,27 @@ class SolverHighs(mip.Solver):
 
     def _all_cols_continuous(self: "SolverHighs"):
         n = self.num_cols()
-        integrality = ffi.new(
-            "int[]", [self._lib.kHighsVarTypeContinuous for i in range(n)]
-        )
+        self._num_int_vars = 0
+        integrality = ffi.new("int[]", [self._lib.kHighsVarTypeContinuous] * n)
         check(
             self._lib.Highs_changeColsIntegralityByRange(
                 self._model, 0, n - 1, integrality
             )
         )
 
-    def _reset_var_types(self: "SolverHighs"):
-        var_type_map = {
-            mip.CONTINUOUS: self._lib.kHighsVarTypeContinuous,
-            mip.BINARY: self._lib.kHighsVarTypeInteger,
-            mip.INTEGER: self._lib.kHighsVarTypeInteger,
-        }
-        integrality = ffi.new("int[]", [var_type_map[vt] for vt in self._var_type])
+    def _reset_var_types(self: "SolverHighs", var_types: List[str]):
+        integrality = ffi.new("int[]", [self._var_type_map[vt] for vt in var_types])
         n = self.num_cols()
         check(
             self._lib.Highs_changeColsIntegralityByRange(
                 self._model, 0, n - 1, integrality
             )
         )
+        self._num_int_vars = sum(1 for vt in var_types if vt != mip.CONTINUOUS)
 
     def relax(self: "SolverHighs"):
         # change integrality of all columns
         self._all_cols_continuous()
-        self._var_type = [mip.CONTINUOUS] * len(self._var_type)
 
     def generate_cuts(
         self,
@@ -439,20 +939,25 @@ class SolverHighs(mip.Solver):
         relax: bool = False,
     ) -> "mip.OptimizationStatus":
         if relax:
-            # Temporarily change variable types. Original types are still stored
-            # in self._var_type.
+            # Temporarily change variable types.
+            # Original types are stored in list var_type.
+            var_types: List[str] = [var.var_type for var in self.model.vars]
             self._all_cols_continuous()
 
         self.set_mip_gap(self.model.max_mip_gap)
         self.set_mip_gap_abs(self.model.max_mip_gap_abs)
-        
+
         check(self._lib.Highs_run(self._model))
 
         # check whether unsupported callbacks were set
         if self.model.lazy_constrs_generator:
-            raise NotImplementedError("HiGHS doesn't support lazy constraints at the moment")
+            raise NotImplementedError(
+                "HiGHS doesn't support lazy constraints at the moment"
+            )
         if self.model.cuts_generator:
-            raise NotImplementedError("HiGHS doesn't support cuts generator at the moment")
+            raise NotImplementedError(
+                "HiGHS doesn't support cuts generator at the moment"
+            )
 
         # store solution values for later access
         opt_status = self.get_status()
@@ -478,7 +983,7 @@ class SolverHighs(mip.Solver):
 
         if relax:
             # Undo the temporary changes.
-            self._reset_var_types()
+            self._reset_var_types(var_types)
 
         return opt_status
 
@@ -592,6 +1097,8 @@ class SolverHighs(mip.Solver):
         check(self._lib.Highs_writeModel(self._model, file_path.encode("utf-8")))
 
     def read(self: "SolverHighs", file_path: str):
+        if file_path.lower().endswith(".bas"):
+            raise NotImplementedError("HiGHS does not support bas files")
         check(self._lib.Highs_readModel(self._model, file_path.encode("utf-8")))
 
     def num_cols(self: "SolverHighs") -> int:
@@ -604,7 +1111,7 @@ class SolverHighs(mip.Solver):
         return self._lib.Highs_getNumNz(self._model)
 
     def num_int(self: "SolverHighs") -> int:
-        return sum(vt != mip.CONTINUOUS for vt in self._var_type)
+        return self._num_int_vars
 
     def get_emphasis(self: "SolverHighs") -> mip.SearchEmphasis:
         raise NotImplementedError("HiGHS doesn't support search emphasis.")
@@ -783,7 +1290,9 @@ class SolverHighs(mip.Solver):
         check(self._lib.Highs_changeRowBounds(self._model, idx, lb, ub))
 
     def constr_get_name(self: "SolverHighs", idx: int) -> str:
-        return self._cons_name[idx]
+        name = self._name_buffer
+        check(self._lib.Highs_getRowName(self._model, idx, name))
+        return ffi.string(name).decode("utf-8")
 
     def constr_get_pi(self: "SolverHighs", constr: "mip.Constr") -> numbers.Real:
         if self._pi:
@@ -808,7 +1317,9 @@ class SolverHighs(mip.Solver):
         check(self._lib.Highs_deleteRowsBySet(self._model, len(constrsList), set_))
 
     def constr_get_index(self: "SolverHighs", name: str) -> int:
-        return self._cons_col[name]
+        idx = ffi.new("int *")
+        self._lib.Highs_getRowByName(self._model, name.encode("utf-8"), idx)
+        return idx[0]
 
     # Variable-related getters/setters
 
@@ -906,16 +1417,28 @@ class SolverHighs(mip.Solver):
         check(self._lib.Highs_changeColCost(self._model, var.idx, value))
 
     def var_get_var_type(self: "SolverHighs", var: "mip.Var") -> str:
-        return self._var_type[var.idx]
+        var_type = ffi.new("int*")
+        ret = self._lib.Highs_getColIntegrality(self._model, var.idx, var_type)
+        if var_type[0] not in self._highs_type_map:
+            raise ValueError(
+                f"Invalid variable type returned by HiGHS: {var_type[0]} (ret={ret})"
+            )
+        return self._highs_type_map[var_type[0]]
 
     def var_set_var_type(self: "SolverHighs", var: "mip.Var", value: str):
-        if value != mip.CONTINUOUS:
+        if value not in self._var_type_map:
+            raise ValueError(f"Invalid variable type: {value}")
+        prev_var_type = var.var_type
+        if value != prev_var_type:
             check(
                 self._lib.Highs_changeColIntegrality(
-                    self._model, var.idx, self._lib.kHighsVarTypeInteger
+                    self._model, var.idx, self._var_type_map[value]
                 )
             )
-        self._var_type[var.idx] = value
+            if prev_var_type != mip.CONTINUOUS and value == mip.CONTINUOUS:
+                self._num_int_vars -= 1
+            elif prev_var_type == mip.CONTINUOUS and value != mip.CONTINUOUS:
+                self._num_int_vars += 1
 
     def var_get_column(self: "SolverHighs", var: "mip.Var") -> "mip.Column":
         # Call method twice:
@@ -980,14 +1503,18 @@ class SolverHighs(mip.Solver):
         raise NotImplementedError("HiGHS doesn't store multiple solutions.")
 
     def var_get_name(self: "SolverHighs", idx: int) -> str:
-        return self._var_name[idx]
+        name = self._name_buffer
+        check(self._lib.Highs_getColName(self._model, idx, name))
+        return ffi.string(name).decode("utf-8")
 
     def remove_vars(self: "SolverHighs", varsList: List[int]):
         set_ = ffi.new("int[]", varsList)
         check(self._lib.Highs_deleteColsBySet(self._model, len(varsList), set_))
 
     def var_get_index(self: "SolverHighs", name: str) -> int:
-        return self._var_col[name]
+        idx = ffi.new("int *")
+        self._lib.Highs_getColByName(self._model, name.encode("utf-8"), idx)
+        return idx[0]
 
     def get_problem_name(self: "SolverHighs") -> str:
         return self._name
