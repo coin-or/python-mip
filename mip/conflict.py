@@ -15,7 +15,7 @@ class IISFinderAlgorithm(Enum):
 class ConflictFinder:
     """This class groups some IIS (Irreducible Infeasible Set) search algorithms"""
 
-    def __init__(self, model: mip.Model):
+    def __init__(self, model: "mip.Model"):
         if model.status == mip.OptimizationStatus.LOADED:
             logger.debug("model not runned yet, checking if feasible or not")
             model.emphasis = 1  # feasibility
@@ -43,6 +43,8 @@ class ConflictFinder:
             return self.deletion_filter()
         if method == IISFinderAlgorithm.ADDITIVE_ALGORITHM:
             return self.additive_algorithm()
+
+        return []
 
     def deletion_filter(self) -> mip.ConstrList:
         """deletion filter algorithm for search an IIS
