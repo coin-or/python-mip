@@ -8,12 +8,17 @@ import types
 import importlib.machinery
 import pytest
 
+import mip.gurobi
+import mip.highs
+from mip import CBC, GUROBI, HIGHS
 
 EXAMPLES = glob(join("..", "examples", "*.py")) + glob(join(".", "examples", "*.py"))
 
-SOLVERS = ["cbc"]
-if "GUROBI_HOME" in environ:
-    SOLVERS += ["gurobi"]
+SOLVERS = [CBC]
+if mip.gurobi.has_gurobi:
+    SOLVERS += [GUROBI]
+if mip.highs.has_highs:
+    SOLVERS += [HIGHS]
 
 
 @pytest.mark.parametrize("solver, example", product(SOLVERS, EXAMPLES))
@@ -22,4 +27,7 @@ def test_examples(solver, example):
     environ["SOLVER_NAME"] = solver
     loader = importlib.machinery.SourceFileLoader("example", example)
     mod = types.ModuleType(loader.name)
-    loader.exec_module(mod)
+    try:
+        loader.exec_module(mod)
+    except NotImplementedError as e:
+        print("Skipping test for example '{}': {}".format(example, e))

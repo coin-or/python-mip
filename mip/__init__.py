@@ -7,6 +7,10 @@ from mip.exceptions import *
 from mip.ndarray import LinExprTensor
 from mip.entities import Column, Constr, LinExpr, Var, ConflictGraph
 from mip.model import *
-from mip._version import __version__
+
+try:
+    from ._version import __version__
+except ImportError:
+    __version__ = "unknown"
 
 name = "mip"
