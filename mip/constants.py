@@ -29,6 +29,7 @@ CPX = "CPX"  # we plan to support CPLEX in the future
 CPLEX = "CPX"  # we plan to support CPLEX in the future
 GRB = "GRB"
 GUROBI = "GRB"
+COPT = "COPT"
 SCIP = "SCIP"  # we plan to support SCIP in the future
 
 # variable types
