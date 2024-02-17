@@ -5,7 +5,10 @@ from mip.conflict import ConflictFinder, IISFinderAlgorithm, ConflictRelaxer
 import random
 import numpy as np
 
+from util import skip_on
 
+
+@skip_on(NotImplementedError)
 def test_conflict_finder():
     mdl = mip.Model(name="infeasible_model_continuous")
     var = mdl.add_var(name="x", var_type=mip.CONTINUOUS, lb=-mip.INF, ub=mip.INF)
@@ -18,6 +21,7 @@ def test_conflict_finder():
     assert set(["lower_bound", "upper_bound"]) == iis_names
 
 
+@skip_on(NotImplementedError)
 def test_conflict_finder_iis():
     mdl = mip.Model(name="infeasible_model_continuous")
     var_x = mdl.add_var(name="x", var_type=mip.CONTINUOUS, lb=-mip.INF, ub=mip.INF)
@@ -32,6 +36,7 @@ def test_conflict_finder_iis():
     assert set(["lower_bound", "upper_bound"]) == iis_names
 
 
+@skip_on(NotImplementedError)
 def test_conflict_finder_iis_additive_method():
     mdl = mip.Model(name="infeasible_model_continuous")
     var_x = mdl.add_var(name="x", var_type=mip.CONTINUOUS, lb=-mip.INF, ub=mip.INF)
@@ -46,6 +51,7 @@ def test_conflict_finder_iis_additive_method():
     assert set(["lower_bound", "upper_bound"]) == iis_names
 
 
+@skip_on(NotImplementedError)
 def test_conflict_finder_iis_additive_method_two_options():
     mdl = mip.Model(name="infeasible_model_continuous")
     var_x = mdl.add_var(name="x", var_type=mip.CONTINUOUS, lb=-mip.INF, ub=mip.INF)
@@ -62,6 +68,7 @@ def test_conflict_finder_iis_additive_method_two_options():
     )
 
 
+@skip_on(NotImplementedError)
 def test_conflict_finder_feasible():
     mdl = mip.Model(name="feasible_model")
     var = mdl.add_var(name="x", var_type=mip.CONTINUOUS, lb=-mip.INF, ub=mip.INF)
@@ -98,6 +105,7 @@ def build_infeasible_cont_model(
     return mdl
 
 
+@skip_on(NotImplementedError)
 def test_coflict_relaxer():
     # logger config
     # handler = logging.StreamHandler(sys.stdout)

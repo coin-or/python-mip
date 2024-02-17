@@ -4,7 +4,11 @@ from os.path import isfile
 from typing import List, Tuple, Optional, Union, Dict, Any
 import numbers
 import mip
-from ._version import __version__
+
+try:
+    from ._version import __version__
+except ImportError:
+    __version__ = "unknown"
 
 logger = logging.getLogger(__name__)
 
@@ -87,11 +91,14 @@ class Model:
                 import mip.cbc
 
                 self.solver = mip.cbc.SolverCbc(self, name, sense)
+            elif self.solver_name.upper() == "HIGHS":
+                import mip.highs
+
+                self.solver = mip.highs.SolverHighs(self, name, sense)
             else:
                 import mip.gurobi
 
-                if mip.gurobi.found:
-
+                if mip.gurobi.has_gurobi:
                     self.solver = mip.gurobi.SolverGurobi(self, name, sense)
                     self.solver_name = mip.GUROBI
                 else:
@@ -390,11 +397,15 @@ class Model:
             import mip.cbc
 
             self.solver = mip.cbc.SolverCbc(self, self.name, sense)
+        elif self.solver_name.upper() == "HIGHS":
+            import mip.highs
+
+            self.solver = mip.highs.SolverHighs(self, self.name, sense)
         else:
             # checking which solvers are available
             import mip.gurobi
 
-            if mip.gurobi.found:
+            if mip.gurobi.has_gurobi:
                 self.solver = mip.gurobi.SolverGurobi(self, self.name, sense)
                 self.solver_name = mip.GUROBI
             else:

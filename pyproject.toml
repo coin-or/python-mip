@@ -41,6 +41,7 @@ numpy = [
     "numpy==1.21.*; python_version=='3.7'"
 ]
 gurobi = ["gurobipy>=8"]
+highs = ["highspy>=1.5.3; python_version<='3.11'"]
 test = [
     "pytest>=7.4",
     "networkx==2.8.8; python_version>='3.8'",

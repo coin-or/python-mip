@@ -10,10 +10,10 @@ jobs:
 
     steps:
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: 3.11
 
@@ -50,10 +50,10 @@ jobs:
 
     steps:
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
         architecture: x64
@@ -65,23 +65,19 @@ jobs:
     - name: Upgrade pip
       run: python -m pip install --upgrade pip
 
-    - name: Install mip for testing (PyPy)
-      if: ${{ matrix.python-version == 'pypy3.9-v7.3.15' }}
+    - name: Install test and numpy
       run: python -m pip install .[test,numpy]
 
-    - name: Install mip for testing (CPython)
+    - name: Install gurobi
       if: ${{ matrix.python-version != 'pypy3.9-v7.3.15' }}
-      run: python -m pip install .[test,numpy,gurobi]
+      run: python -m pip install .[gurobi]
+
+    - name: Install highs
+      if: ${{ !contains(matrix.os, 'windows') && !(matrix.os == 'ubuntu-22.04' && matrix.python-version == '3.9') }}
+      run: python -m pip install .[highs]
 
     - name: list installed packages
       run: python -m pip list
 
-    - name: Run tests PyPy
-      if: ${{ matrix.python-version == 'pypy3.9-v7.3.15'}}
-      run: |
-        python -m pytest test --verbose --color=yes --doctest-modules --ignore="test/test_gurobi.py"
-
     - name: Run tests
-      if: ${{ matrix.python-version != 'pypy3.9-v7.3.15'}}
-      run: |
-        python -m pytest test --verbose --color=yes --doctest-modules -Werror
+      run: python -m pytest test --verbose --color=yes --doctest-modules -Werror

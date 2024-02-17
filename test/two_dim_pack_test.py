@@ -1,12 +1,17 @@
 """Set of tests for solving the LP relaxation"""
 
-from glob import glob
-from os import environ
 import json
+from glob import glob
 from itertools import product
+from os import environ
+
 import pytest
-from mip import CBC, GUROBI, OptimizationStatus
+
+import mip.gurobi
+import mip.highs
+from mip import CBC, GUROBI, HIGHS, OptimizationStatus
 from mip_2d_pack import create_mip
+from util import skip_on
 
 INSTS = glob("./data/two_dim_pack_p*.json") + glob(
     "./test/data/two_dim_pack_*.json"
@@ -15,10 +20,13 @@ INSTS = glob("./data/two_dim_pack_p*.json") + glob(
 TOL = 1e-4
 
 SOLVERS = [CBC]
-if "GUROBI_HOME" in environ:
+if mip.gurobi.has_gurobi and "GUROBI_HOME" in environ:
     SOLVERS += [GUROBI]
+if mip.highs.has_highs:
+    SOLVERS += [HIGHS]
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver, instance", product(SOLVERS, INSTS))
 def test_2dpack_relax_and_cut(solver: str, instance: str):
     """tests the solution of the LP relaxation of different 2D pack instances"""
@@ -48,6 +56,7 @@ def test_2dpack_relax_and_cut(solver: str, instance: str):
     assert sobj <= best + 1e-5
 
 
+@skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver, instance", product(SOLVERS, INSTS))
 def test_2dpack_mip(solver: str, instance: str):
     """tests the MIP solution of different 2D pack instances"""

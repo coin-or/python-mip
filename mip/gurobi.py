@@ -51,6 +51,7 @@ INF = float("inf")
 MAX_NAME_SIZE = 512  # for variables and constraints
 
 lib_path = None
+has_gurobi = False
 
 if "GUROBI_HOME" in environ:
     if platform.lower().startswith("win"):
@@ -93,9 +94,9 @@ if lib_path is None:
 
 
 if lib_path is None:
-    found = False
+    has_gurobi = False
 else:
-    found = True
+    has_gurobi = True
     grblib = ffi.dlopen(lib_path)
 
     ffi.cdef(
@@ -339,7 +340,7 @@ class SolverGurobi(Solver):
     def __init__(self, model: Model, name: str, sense: str, modelp: CData = ffi.NULL):
         """modelp should be informed if a model should not be created,
         but only allow access to an existing one"""
-        if not found:
+        if not has_gurobi:
             raise FileNotFoundError(
                 """Gurobi not found. Plase check if the
             Gurobi dynamic loadable library is reachable or define

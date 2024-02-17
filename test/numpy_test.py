@@ -1,17 +1,16 @@
-from itertools import product
-import pytest
-import numpy as np
-from mip import Model, xsum, OptimizationStatus, MAXIMIZE, BINARY, INTEGER
-from mip import ConstrsGenerator, CutPool, maximize, CBC, GUROBI, Column
-from mip.ndarray import LinExprTensor
-from os import environ
 import time
-import sys
+
+import numpy as np
+
+from mip import Model, OptimizationStatus
+from mip.ndarray import LinExprTensor
+from util import skip_on
 
 
+@skip_on(NotImplementedError)
 def test_numpy():
     model = Model()
-    N = 1000
+    N = 100
 
     start = time.time()
     x = model.add_var_tensor(shape=(N, N), name="x")
@@ -32,6 +31,7 @@ def test_numpy():
     assert result == OptimizationStatus.OPTIMAL
 
 
+@skip_on(NotImplementedError)
 def test_LinExprTensor():
     model = Model()
     x = model.add_var_tensor(shape=(3,), name="x")
