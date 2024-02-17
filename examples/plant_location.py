@@ -11,14 +11,6 @@ model the cost of installing each one of the plants.
 
 import sys
 
-# Workaround for issues with python not being installed as a framework on mac
-# by using a different backend.
-if sys.platform == "darwin":  # OS X
-    import matplotlib as mpl
-    mpl.use('Agg')
-    del mpl
-
-import matplotlib.pyplot as plt
 from math import sqrt, log
 from itertools import product
 from mip import Model, xsum, minimize, OptimizationStatus
@@ -36,28 +28,26 @@ c = {1: 1955, 2: 1932, 3: 1987, 4: 1823, 5: 1718, 6: 1742}
 C = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 # position of clients
-pc = {1: (94, 10), 2: (57, 26), 3: (74, 44), 4: (27, 51), 5: (78, 30), 6: (23, 30), 
-      7: (20, 72), 8: (3, 27), 9: (5, 39), 10: (51, 1)}
+pc = {
+    1: (94, 10),
+    2: (57, 26),
+    3: (74, 44),
+    4: (27, 51),
+    5: (78, 30),
+    6: (23, 30),
+    7: (20, 72),
+    8: (3, 27),
+    9: (5, 39),
+    10: (51, 1),
+}
 
 # demands
 d = {1: 302, 2: 273, 3: 275, 4: 266, 5: 287, 6: 296, 7: 297, 8: 310, 9: 302, 10: 309}
 
-# plotting possible plant locations
-for i, p in pf.items():
-    plt.scatter((p[0]), (p[1]), marker="^", color="purple", s=50)
-    plt.text((p[0]), (p[1]), "$f_%d$" % i)
-
-# plotting location of clients
-for i, p in pc.items():
-    plt.scatter((p[0]), (p[1]), marker="o", color="black", s=15)
-    plt.text((p[0]), (p[1]), "$c_{%d}$" % i)
-
-plt.text((20), (78), "Region 1")
-plt.text((70), (78), "Region 2")
-plt.plot((50, 50), (0, 80))
-
-dist = {(f, c): round(sqrt((pf[f][0] - pc[c][0]) ** 2 + (pf[f][1] - pc[c][1]) ** 2), 1)
-        for (f, c) in product(F, C) }
+dist = {
+    (f, c): round(sqrt((pf[f][0] - pc[c][0]) ** 2 + (pf[f][1] - pc[c][1]) ** 2), 1)
+    for (f, c) in product(F, C)
+}
 
 m = Model()
 
@@ -82,7 +72,7 @@ for f in F:
     D = 6  # nr. of discretization points, increase for more precision
     v = [c[f] * (v / (D - 1)) for v in range(D)]  # points
     # non-linear function values for points in v
-    vn = [0 if k == 0 else 1520 * log(v[k]) for k in range(D)]  
+    vn = [0 if k == 0 else 1520 * log(v[k]) for k in range(D)]
     # w variables
     w = [m.add_var() for v in range(D)]
     m += xsum(w) == 1  # convexification
@@ -98,24 +88,15 @@ for i in F:
 
 # objective function
 m.objective = minimize(
-    xsum(dist[i, j] * x[i, j] for (i, j) in product(F, C)) + xsum(y[i] for i in F) )
+    xsum(dist[i, j] * x[i, j] for (i, j) in product(F, C)) + xsum(y[i] for i in F)
+)
 
 m.optimize()
-
-plt.savefig("location.pdf")
 
 if m.num_solutions:
     print("Solution with cost {} found.".format(m.objective_value))
     print("Facilities capacities: {} ".format([z[f].x for f in F]))
     print("Facilities cost: {}".format([y[f].x for f in F]))
-
-    # plotting allocations
-    for (i, j) in [(i, j) for (i, j) in product(F, C) if x[(i, j)].x >= 1e-6]:
-        plt.plot(
-            (pf[i][0], pc[j][0]), (pf[i][1], pc[j][1]), linestyle="--", color="darkgray"
-        )
-
-    plt.savefig("location-sol.pdf")
 
 # sanity checks
 opt = 99733.94905406

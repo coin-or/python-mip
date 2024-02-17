@@ -134,6 +134,11 @@ class OptimizationStatus(Enum):
     CUTOFF = 7
     """No feasible solution exists for the current cutoff"""
 
+    INF_OR_UNBD = 8
+    """Special state for gurobi solver. In some cases gurobi could not 
+    determine if the problem is infeasible or unbounded due to application
+    of dual reductions (when active) during presolve."""
+
     OTHER = 10000
 
 

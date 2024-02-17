@@ -338,11 +338,7 @@ class Model:
             raise mip.InvalidLinExpr(
                 "A boolean (true/false) cannot be used as a constraint."
             )
-        # TODO: some tests use empty linear constraints, which ideally should not happen
-        # if len(lin_expr) == 0:
-        #     raise mip.InvalidLinExpr(
-        #         "An empty linear expression cannot be used as a constraint."
-        #     )
+
         return self.constrs.add(lin_expr, name, priority)
 
     def add_lazy_constr(self: "Model", expr: "mip.LinExpr"):
