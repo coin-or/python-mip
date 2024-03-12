@@ -41,13 +41,11 @@ def gen_model(n):
 
     # diagonal \
     for p, k in enumerate(range(2 - n, n - 2 + 1)):
-        queens += lpSum(x[i][j] for i in range(n) for j in range(n)
-                        if i - j == k) <= 1, 'diag1({})'.format(p)
+        queens += lpSum(x[k+j][j] for j in range(n) if 0 <= k + j < n) <= 1, 'diag1({})'.format(p)
 
     # diagonal /
-    for p, k in enumerate(range(3, n + n)):
-        queens += lpSum(x[i][j] for i in range(n) for j in range(n)
-                        if i + j == k) <= 1, 'diag2({})'.format(p)
+    for p, k in enumerate(range(1, n + n - 2)):
+        queens += lpSum(x[i][k-j] for i in range(n) if 0 <= k-j < n) <= 1, 'diag2({})'.format(p)
 
     ed = time.time()
     execTime = ed-st
