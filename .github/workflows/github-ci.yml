@@ -39,7 +39,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "pypy3.9-v7.3.15"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "pypy3.9-v7.3.15"]
         os: [macos-11, macos-12, ubuntu-20.04, ubuntu-22.04, windows-2019, windows-2022]
         exclude:
           # temporarily exclude pypy3 on mac-os as there failing tests caused by bug on cbc side

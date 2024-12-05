@@ -6,7 +6,14 @@ from mip.lists import ConstrList, VarList, VConstrList, VVarList
 from mip.exceptions import *
 from mip.ndarray import LinExprTensor
 from mip.entities import Column, Constr, LinExpr, Var, ConflictGraph
-from mip.model import *
+from mip.model import (
+    Model,
+    maximize,
+    minimize,
+    xsum,
+    save_mipstart,
+    load_mipstart,
+)
 
 try:
     from ._version import __version__

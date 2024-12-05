@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "mip"
 description = "Python tools for Modeling and Solving Mixed-Integer Linear Programs (MIPs)"
 readme = "README.md"
-requires-python = ">=3.7,<3.13"
+requires-python = ">=3.7,<3.14"
 license = {file = "LICENSE"}
 authors = [
     {name="Tulio A.M. Toffolo", email="tulio@toffolo.com.br"},
@@ -38,7 +38,7 @@ numpy = [
     "numpy==1.21.*; python_version=='3.7'"
 ]
 gurobi = ["gurobipy>=8"]
-highs = ["highspy>=1.5.3; python_version<='3.11'"]
+highs = ["highspy>=1.5.3; python_version<='3.13'"]
 test = [
     "pytest>=7.4",
     "networkx==2.8.8; python_version>='3.8'",
