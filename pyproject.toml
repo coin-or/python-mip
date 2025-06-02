@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "mip"
 description = "Python tools for Modeling and Solving Mixed-Integer Linear Programs (MIPs)"
 readme = "README.md"
-requires-python = ">=3.7,<3.13"
+requires-python = ">=3.7"
 license = {file = "LICENSE"}
 authors = [
     {name="Tulio A.M. Toffolo", email="tulio@toffolo.com.br"},
