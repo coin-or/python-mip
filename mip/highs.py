@@ -30,16 +30,21 @@ try:
         # need library matching operating system
         platform = sys.platform.lower()
         if "linux" in platform:
-            pattern = "highs_bindings.*.so"
+            patterns = ["highs_bindings.*.so", "_core.*.so"]
         elif platform.startswith("win"):
-            pattern = "highs_bindings.*.pyd"
+            patterns = ["highs_bindings.*.pyd", "_core.*.pyd"]
         elif any(platform.startswith(p) for p in ("darwin", "macos")):
-            pattern = "highs_bindings.*.so"
+            patterns = ["highs_bindings.*.so", "_core.*.so"]
         else:
             raise NotImplementedError(f"{sys.platform} not supported!")
 
         # there should only be one match
-        [libfile] = glob.glob(os.path.join(pkg_path, pattern))
+        matched_files = []
+        for pattern in patterns:
+            matched_files.extend(glob.glob(os.path.join(pkg_path, pattern)))
+        if len(matched_files) != 1:
+            raise FileNotFoundError(f"Could not find HiGHS library in {pkg_path}.")
+        [libfile] = matched_files
         logger.debug("Choosing HiGHS library {libfile} via highspy package.")
 
     highslib = ffi.dlopen(libfile)

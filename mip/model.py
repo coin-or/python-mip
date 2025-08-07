@@ -471,7 +471,7 @@ class Model:
             constraint or None if not found
         """
         cidx = self.solver.constr_get_index(name)
-        if cidx < 0 or cidx > len(self.constrs):
+        if cidx < 0 or cidx >= len(self.constrs):
             return None
         return self.constrs[cidx]
 
@@ -484,7 +484,7 @@ class Model:
             Variable or None if not found
         """
         v = self.solver.var_get_index(name)
-        if v < 0 or v > len(self.vars):
+        if v < 0 or v >= len(self.vars):
             return None
         return self.vars[v]
 

@@ -49,6 +49,8 @@ class VarList(Sequence):
         return new_var
 
     def __getitem__(self: "VarList", key):
+        if key is None:
+            raise KeyError("Empty key access (e.g., varlist[]) is not allowed in Python 3.13")
         if isinstance(key, str):
             return self.__model.var_by_name(key)
         return self.__vars[key]
