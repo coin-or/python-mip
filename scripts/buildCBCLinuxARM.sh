@@ -71,5 +71,5 @@ g++ -shared -Ofast -fPIC -o ../mip/libraries/cbc-c-linux-aarch64.so \
  -DCBC_THREAD \
  ./Cbc/src/Cbc_C_Interface.cpp \
  -L/opt/gcc/lib64/ -L${IDIR}/lib/ \
- -lCbc -lpthread -lrt -lCgl -lOsiClp -lClp -lOsi -lCoinUtils \
+ -lCbc -lpthread -lrt -lCgl -lOsiClp -lClp -lOsi -lCoinUtils -lreadline \
  -lcoinlapack -lcoinblas -lgfortran -lm -static-libgcc -static-libstdc++ -static-libgfortran -lcoinglpk
