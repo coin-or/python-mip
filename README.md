@@ -61,7 +61,7 @@ https://python-mip.readthedocs.io/_/downloads/en/latest/pdf/
 
 Questions, suggestions and feature request can be posted at [Discussions](https://github.com/coin-or/python-mip/discussions).
  
-## Build status
+## Build status 
 
 [![CI](https://github.com/coin-or/python-mip/actions/workflows/github-ci.yml/badge.svg)](https://github.com/coin-or/python-mip/actions/workflows/github-ci.yml)
 [![Current version](https://badge.fury.io/gh/coin-or%2Fpython-mip.svg)](https://github.com/coin-or/python-mip/releases)
