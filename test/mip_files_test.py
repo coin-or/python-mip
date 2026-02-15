@@ -139,6 +139,9 @@ def test_mip_file(solver: str, instance: str):
 
     max_dif = max(max(abs(ub), abs(lb)) * 0.01, TOL)
 
+    if solver == HIGHS and instance.endswith(".gz"):
+        pytest.skip("HiGHS does not support .gz files.")
+
     m.read(instance)
     if bas_file:
        m.verbose = True

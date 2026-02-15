@@ -1,6 +1,5 @@
 "Python-MIP interface to the HiGHS solver."
 
-import glob
 import numbers
 import logging
 import os.path
@@ -22,30 +21,23 @@ try:
         libfile = os.environ[ENV_KEY]
         logger.debug("Choosing HiGHS library {libfile} via {ENV_KEY}.")
     else:
-        # try library shipped with highspy packaged
-        import highspy
+        # Try library from highsbox, which is optional dependency.
+        import highsbox
 
-        pkg_path = os.path.dirname(highspy.__file__)
+        root = highsbox.highs_dist_dir()
 
-        # need library matching operating system
+        # Need library matching operating system.
+        # Following: PyOptInterface/src/pyoptinterface/_src/highs.py
         platform = sys.platform.lower()
         if "linux" in platform:
-            patterns = ["highs_bindings.*.so", "_core.*.so"]
+            libfile = os.path.join(root, "lib", "libhighs.so")
         elif platform.startswith("win"):
-            patterns = ["highs_bindings.*.pyd", "_core.*.pyd"]
+            libfile = os.path.join(root, "bin", "highs.dll")
         elif any(platform.startswith(p) for p in ("darwin", "macos")):
-            patterns = ["highs_bindings.*.so", "_core.*.so"]
+            libfile = os.path.join(root, "lib", "libhighs.dylib")
         else:
             raise NotImplementedError(f"{sys.platform} not supported!")
-
-        # there should only be one match
-        matched_files = []
-        for pattern in patterns:
-            matched_files.extend(glob.glob(os.path.join(pkg_path, pattern)))
-        if len(matched_files) != 1:
-            raise FileNotFoundError(f"Could not find HiGHS library in {pkg_path}.")
-        [libfile] = matched_files
-        logger.debug("Choosing HiGHS library {libfile} via highspy package.")
+        logger.debug("Choosing HiGHS library {libfile} via highsbox package.")
 
     highslib = ffi.dlopen(libfile)
     has_highs = True
@@ -687,6 +679,7 @@ if has_highs:
 def check(status):
     if status == STATUS_ERROR:
         raise mip.InterfacingError("Unknown error in call to HiGHS.")
+    return status
 
 
 class SolverHighs(mip.Solver):
@@ -720,7 +713,7 @@ class SolverHighs(mip.Solver):
         # Buffer string for storing names
         self._name_buffer = ffi.new(f"char[{self._lib.kHighsMaximumStringLength}]")
 
-        # type conversion maps
+        # type conversion maps (can not distinguish binary from integer!)
         self._var_type_map = {
             mip.CONTINUOUS: self._lib.kHighsVarTypeContinuous,
             mip.BINARY: self._lib.kHighsVarTypeInteger,
@@ -760,8 +753,8 @@ class SolverHighs(mip.Solver):
         )
         return value[0]
 
-    def _get_bool_option_value(self: "SolverHighs", name: str) -> float:
-        value = ffi.new("bool*")
+    def _get_bool_option_value(self: "SolverHighs", name: str) -> int:
+        value = ffi.new("int*")
         check(
             self._lib.Highs_getBoolOptionValue(self._model, name.encode("UTF-8"), value)
         )
@@ -779,7 +772,7 @@ class SolverHighs(mip.Solver):
             )
         )
 
-    def _set_bool_option_value(self: "SolverHighs", name: str, value: float):
+    def _set_bool_option_value(self: "SolverHighs", name: str, value: int):
         check(
             self._lib.Highs_setBoolOptionValue(self._model, name.encode("UTF-8"), value)
         )
@@ -815,6 +808,8 @@ class SolverHighs(mip.Solver):
         if name:
             check(self._lib.Highs_passColName(self._model, col, name.encode("utf-8")))
         if var_type != mip.CONTINUOUS:
+            # Note that HiGHS doesn't distinguish binary and integer variables
+            # by type. There is only a boolean flag for "integrality".
             self._num_int_vars += 1
             check(
                 self._lib.Highs_changeColIntegrality(
@@ -1035,6 +1030,18 @@ class SolverHighs(mip.Solver):
         self._lib.Highs_setSolution(self._model, cval, ffi.NULL, ffi.NULL, ffi.NULL)
 
     def set_objective(self: "SolverHighs", lin_expr: "mip.LinExpr", sense: str = ""):
+        # first reset old objective (all 0)
+        n = self.num_cols()
+        costs = ffi.new("double[]", n)  # initialized to 0
+        check(
+            self._lib.Highs_changeColsCostByRange(
+                self._model,
+                0,  # from_col
+                n - 1,  # to_col
+                costs,
+            )
+        )
+
         # set coefficients
         for var, coef in lin_expr.expr.items():
             check(self._lib.Highs_changeColCost(self._model, var.idx, coef))
@@ -1323,7 +1330,11 @@ class SolverHighs(mip.Solver):
 
     def constr_get_index(self: "SolverHighs", name: str) -> int:
         idx = ffi.new("int *")
-        self._lib.Highs_getRowByName(self._model, name.encode("utf-8"), idx)
+        status = self._lib.Highs_getRowByName(self._model, name.encode("utf-8"), idx)
+        if status == STATUS_ERROR:
+            # This means that no constraint with that name was found. Unfortunately,
+            # Highs: getRowByName doesn't assign a value to idx in that case.
+            return -1
         return idx[0]
 
     # Variable-related getters/setters
@@ -1422,12 +1433,15 @@ class SolverHighs(mip.Solver):
         check(self._lib.Highs_changeColCost(self._model, var.idx, value))
 
     def var_get_var_type(self: "SolverHighs", var: "mip.Var") -> str:
+        # Highs_getColIntegrality only works if some variable is not continuous.
+        # Since we want this method to always work, we need to catch this case first.
+        if self._num_int_vars == 0:
+            return mip.CONTINUOUS
+
         var_type = ffi.new("int*")
-        ret = self._lib.Highs_getColIntegrality(self._model, var.idx, var_type)
+        check(self._lib.Highs_getColIntegrality(self._model, var.idx, var_type))
         if var_type[0] not in self._highs_type_map:
-            raise ValueError(
-                f"Invalid variable type returned by HiGHS: {var_type[0]} (ret={ret})"
-            )
+            raise ValueError(f"Invalid variable type returned by HiGHS: {var_type[0]}.")
         return self._highs_type_map[var_type[0]]
 
     def var_set_var_type(self: "SolverHighs", var: "mip.Var", value: str):
@@ -1518,7 +1532,11 @@ class SolverHighs(mip.Solver):
 
     def var_get_index(self: "SolverHighs", name: str) -> int:
         idx = ffi.new("int *")
-        self._lib.Highs_getColByName(self._model, name.encode("utf-8"), idx)
+        status = self._lib.Highs_getColByName(self._model, name.encode("utf-8"), idx)
+        if status == STATUS_ERROR:
+            # This means that no var with that name was found. Unfortunately,
+            # HiGHS::getColByName doesn't assign a value to idx in that case.
+            return -1
         return idx[0]
 
     def get_problem_name(self: "SolverHighs") -> str:

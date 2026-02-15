@@ -556,11 +556,21 @@ class TestAPI(object):
         assert model.constr_by_name("row0").rhs == val
 
     @pytest.mark.parametrize("solver", SOLVERS)
-    def test_var_by_name_rhs(self, solver):
+    def test_var_by_name_valid(self, solver):
         n, model = self.build_model(solver)
 
-        v = model.var_by_name("x({},{})".format(0, 0))
+        name = "x({},{})".format(0, 0)
+        v = model.var_by_name(name)
         assert v is not None
+        assert isinstance(v, mip.Var)
+        assert v.name == name
+
+    @pytest.mark.parametrize("solver", SOLVERS)
+    def test_var_by_name_invalid(self, solver):
+        n, model = self.build_model(solver)
+
+        v = model.var_by_name("xyz_invalid_name")
+        assert v is None
 
     @pytest.mark.parametrize("solver", SOLVERS)
     def test_obj_const1(self, solver: str):

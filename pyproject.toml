@@ -22,7 +22,7 @@ classifiers = [
     "Development Status :: 5 - Production/Stable",
     "License :: OSI Approved :: Eclipse Public License 2.0 (EPL-2.0)",
     "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: Scientific/Engineering :: Mathematics"
@@ -38,7 +38,7 @@ numpy = [
     "numpy==1.21.*; python_version=='3.7'"
 ]
 gurobi = ["gurobipy>=8"]
-highs = ["highspy>=1.5.3; python_version<='3.11'"]
+highs = ["highsbox>=1.10.0"]
 test = [
     "pytest>=7.4",
     "networkx==2.8.8; python_version>='3.8'",

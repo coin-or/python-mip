@@ -7,7 +7,7 @@ repos:
     - id: black
       args: [--line-length=89]
 -   repo: https://github.com/pycqa/flake8
-    rev: 4.0.1
+    rev: 7.3.0
     hooks:
     - id: flake8
       args: [--select=F401, --exclude=__init__.py]
