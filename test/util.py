@@ -1,6 +1,9 @@
+from functools import lru_cache, wraps
+
 import pytest
 
-from functools import wraps
+import mip
+import mip.gurobi
 
 
 def skip_on(exception):
@@ -21,3 +24,16 @@ def skip_on(exception):
         return wrapper
 
     return decorator_func
+
+
+@lru_cache(maxsize=1)
+def has_gurobi_license():
+    if not mip.gurobi.has_gurobi:
+        return False
+
+    try:
+        mip.Model(solver_name=mip.GUROBI)
+    except mip.InterfacingError:
+        return False
+
+    return True

@@ -11,7 +11,7 @@ import mip.gurobi
 import mip.highs
 from mip import CBC, GUROBI, HIGHS, OptimizationStatus
 from mip_2d_pack import create_mip
-from util import skip_on
+from util import skip_on, has_gurobi_license
 
 INSTS = glob("./data/two_dim_pack_p*.json") + glob(
     "./test/data/two_dim_pack_*.json"
@@ -20,7 +20,7 @@ INSTS = glob("./data/two_dim_pack_p*.json") + glob(
 TOL = 1e-4
 
 SOLVERS = [CBC]
-if mip.gurobi.has_gurobi and "GUROBI_HOME" in environ:
+if has_gurobi_license():
     SOLVERS += [GUROBI]
 if mip.highs.has_highs:
     SOLVERS += [HIGHS]

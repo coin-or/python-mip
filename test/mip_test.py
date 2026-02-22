@@ -9,14 +9,14 @@ import mip.highs
 from mip import Model, xsum, OptimizationStatus, MAXIMIZE, BINARY, INTEGER
 from mip import ConstrsGenerator, CutPool, maximize, CBC, GUROBI, HIGHS, Column, Constr
 from os import environ
-from util import skip_on
+from util import skip_on, has_gurobi_license
 import math
 import pytest
 
 TOL = 1e-4
 
 SOLVERS = [CBC]
-if mip.gurobi.has_gurobi and "GUROBI_HOME" in environ:
+if has_gurobi_license():
     SOLVERS += [GUROBI]
 if mip.highs.has_highs:
     SOLVERS += [HIGHS]

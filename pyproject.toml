@@ -29,23 +29,23 @@ classifiers = [
 ]
 dynamic = ["version"]
 
-dependencies = ["cffi>=1.15"]
+dependencies = ["cffi>=1.15,<2"]
 
 [project.optional-dependencies]
 numpy = [
-    "numpy>=1.25; python_version>='3.9'",
+    "numpy>=1.25,<3; python_version>='3.9'",
     "numpy==1.24.*; python_version=='3.8'",
     "numpy==1.21.*; python_version=='3.7'"
 ]
-gurobi = ["gurobipy>=8"]
-highs = ["highsbox>=1.10.0"]
+gurobi = ["gurobipy>=8,<13"]
+highs = ["highsbox>=1.10.0,<2"]
 test = [
-    "pytest>=7.4",
-    "networkx==2.8.8; python_version>='3.8'",
+    "pytest>=7.4,<9",
+    "networkx>=2.8.8,<4; python_version>='3.8'",
     "networkx==2.6.3; python_version=='3.7'",
-    "matplotlib>=3.7; python_version>='3.9'",
-    "matplotlib==3.6.2; python_version=='3.8'",
-    "matplotlib==3.5.3; python_version=='3.7'"
+    "matplotlib>=3.7,<4; python_version>='3.9' and (platform_system!='Windows' or implementation_name!='pypy')",
+    "matplotlib==3.6.2; python_version=='3.8' and (platform_system!='Windows' or implementation_name!='pypy')",
+    "matplotlib==3.5.3; python_version=='3.7' and (platform_system!='Windows' or implementation_name!='pypy')"
 ]
 
 [project.urls]

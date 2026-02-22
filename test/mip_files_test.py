@@ -11,7 +11,7 @@ import pytest
 import mip.gurobi
 import mip.highs
 from mip import Model, OptimizationStatus, CBC, GUROBI, HIGHS
-from util import skip_on
+from util import skip_on, has_gurobi_license
 
 # for each MIP in test/data, best lower and upper bounds
 # to be used when checking optimization results
@@ -91,7 +91,7 @@ TOL = 1e-4
 MAX_NODES = 10
 
 SOLVERS = [CBC]
-if mip.gurobi.has_gurobi and "GUROBI_HOME" in environ:
+if has_gurobi_license():
     SOLVERS += [GUROBI]
 if mip.highs.has_highs:
     SOLVERS += [HIGHS]

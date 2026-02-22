@@ -21,11 +21,11 @@ from mip import (
     CONTINUOUS,
     BINARY,
 )
-from util import skip_on
+from util import skip_on, has_gurobi_license
 
 TOL = 1e-4
 SOLVERS = [CBC]
-if mip.gurobi.has_gurobi and "GUROBI_HOME" in environ:
+if has_gurobi_license():
     SOLVERS += [GUROBI]
 if mip.highs.has_highs:
     SOLVERS += [HIGHS]

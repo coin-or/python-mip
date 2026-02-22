@@ -11,14 +11,14 @@ import mip.gurobi
 import mip.highs
 from mip import CBC, GUROBI, HIGHS, OptimizationStatus
 from mip_rcpsp import create_mip
-from util import skip_on
+from util import skip_on, has_gurobi_license
 
 INSTS = glob("./data/rcpsp*.json") + glob("./test/data/rcpsp*.json")
 
 TOL = 1e-4
 
 SOLVERS = [CBC]
-if mip.gurobi.has_gurobi and "GUROBI_HOME" in environ:
+if has_gurobi_license():
     SOLVERS += [GUROBI]
 if mip.highs.has_highs:
     SOLVERS += [HIGHS]

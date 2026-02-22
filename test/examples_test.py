@@ -11,12 +11,12 @@ import pytest
 import mip.gurobi
 import mip.highs
 from mip import CBC, GUROBI, HIGHS
-from util import skip_on
+from util import skip_on, has_gurobi_license
 
 EXAMPLES = glob(join("..", "examples", "*.py")) + glob(join(".", "examples", "*.py"))
 
 SOLVERS = [CBC]
-if mip.gurobi.has_gurobi and "GUROBI_HOME" in environ:
+if has_gurobi_license():
     SOLVERS += [GUROBI]
 if mip.highs.has_highs:
     SOLVERS += [HIGHS]
