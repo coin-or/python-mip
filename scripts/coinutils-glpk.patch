@@ -1,0 +1,12 @@
+diff -Naur prog/include/coin-or/CoinMpsIO.hpp prog.new/include/coin-or/CoinMpsIO.hpp
+--- prog/include/coin-or/CoinMpsIO.hpp	2024-10-03 05:45:57.318155954 +0000
++++ prog.new/include/coin-or/CoinMpsIO.hpp	2024-10-03 07:20:13.388096889 +0000
+@@ -19,7 +19,7 @@
+ #include "CoinFileIO.hpp"
+ 
+ #ifdef COINUTILS_HAS_GLPK
+-#include "glpk.h"
++#include "glpk/glpk.h"
+ #endif
+ 
+ class CoinModel;

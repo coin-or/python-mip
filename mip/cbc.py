@@ -71,12 +71,15 @@ try:
     else:
         if "linux" in platform.lower():
             if os_is_64_bit:
-                pathlibe = pathlib
-                libfile = os.path.join(pathlib, "cbc-c-linux-x86-64.so")
-                if not exists(libfile):
+                if platform_machine().lower().startswith("aarch64"):
+                    libfile = os.path.join(pathlib, "cbc-c-linux-aarch64.so")
+                else:
                     pathlibe = pathlib
                     libfile = os.path.join(pathlib, "cbc-c-linux-x86-64.so")
-                pathlib = pathlibe
+                    if not exists(libfile):
+                        pathlibe = pathlib
+                        libfile = os.path.join(pathlib, "cbc-c-linux-x86-64.so")
+                    pathlib = pathlibe
             else:
                 raise NotImplementedError("Linux 32 bits platform not supported.")
         elif platform.lower().startswith("win"):
