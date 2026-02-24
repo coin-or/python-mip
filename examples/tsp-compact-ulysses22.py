@@ -98,7 +98,7 @@ for (i, j) in product(V - {0}, V - {0}):
         model += y[i] - (n + 1) * x[i][j] >= y[j] - n
 
 # optimizing
-model.optimize(max_nodes_same_incumbent=1000)
+model.optimize(max_nodes=500)
 
 # checking if a solution was found
 if model.num_solutions:

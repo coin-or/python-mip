@@ -39,14 +39,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "pypy3.9-v7.3.15"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "pypy3.11"]
         os: [macos-14, macos-15, ubuntu-22.04, ubuntu-24.04, windows-2025, windows-2022]
-        exclude:
-          # temporarily exclude pypy3 on mac-os as there failing tests caused by bug on cbc side
-          - os: macos-14
-            python-version: "pypy3.9-v7.3.15"
-          - os: macos-15
-            python-version: "pypy3.9-v7.3.15"
 
     steps:
 
@@ -57,6 +51,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         architecture: x64
+        allow-prereleases: false
 
     - name: Cache pip dependencies
       uses: actions/cache@v4
@@ -77,11 +72,10 @@ jobs:
       run: python -m pip install .[test,numpy]
 
     - name: Install gurobi
-      if: ${{ matrix.python-version != 'pypy3.9-v7.3.15' }}
+      if: ${{ !startsWith(matrix.python-version, 'pypy') }}
       run: python -m pip install .[gurobi]
 
     - name: Install highs
-      if: ${{ !contains(matrix.os, 'windows') && !(contains(matrix.os, 'ubuntu') && matrix.python-version == '3.9') }}
       run: python -m pip install .[highs]
 
     - name: list installed packages

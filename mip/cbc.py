@@ -3,8 +3,7 @@
 import logging
 from typing import Dict, List, Tuple, Optional, Union
 from sys import platform, maxsize
-from os.path import dirname, isfile, exists
-from platform import machine as platform_machine
+from os.path import dirname
 import os
 import multiprocessing as multip
 import numbers
@@ -56,58 +55,43 @@ MAX_NAME_SIZE = 512
 DEF_PUMPP = 30
 
 try:
-    pathmip = dirname(mip.__file__)
-    pathlib = os.path.join(pathmip, "libraries")
     libfile = ""
-    # if user wants to force the loading of an specific CBC library
-    # (for debugging purposes, for example)
+    # if user wants to force the loading of a specific CBC library
     if "PMIP_CBC_LIBRARY" in os.environ:
         libfile = os.environ["PMIP_CBC_LIBRARY"]
         pathlib = dirname(libfile)
-
         if platform.lower().startswith("win"):
             if pathlib not in os.environ["PATH"]:
                 os.environ["PATH"] += ";" + pathlib
+        old_dir = os.getcwd()
+        os.chdir(pathlib)
+        cbclib = ffi.dlopen(libfile)
+        os.chdir(old_dir)
     else:
-        if "linux" in platform.lower():
-            if os_is_64_bit:
-                pathlibe = pathlib
-                libfile = os.path.join(pathlib, "cbc-c-linux-x86-64.so")
-                if not exists(libfile):
-                    pathlibe = pathlib
-                    libfile = os.path.join(pathlib, "cbc-c-linux-x86-64.so")
-                pathlib = pathlibe
-            else:
-                raise NotImplementedError("Linux 32 bits platform not supported.")
-        elif platform.lower().startswith("win"):
-            if os_is_64_bit:
-                pathlibe = os.path.join(pathlib, "win64")
-                libfile = os.path.join(pathlibe, "cbc-c-windows-x86-64.dll")
-                if exists(libfile):
-                    if pathlibe not in os.environ["PATH"]:
-                        os.environ["PATH"] = pathlibe + ";" + os.environ["PATH"]
-                else:
-                    pathlibe = pathlib
-                    libfile = os.path.join(pathlibe, "cbc-c-windows-x86-64.dll")
-                    if pathlibe not in os.environ["PATH"]:
-                        os.environ["PATH"] = pathlibe + ";" + os.environ["PATH"]
-                pathlib = pathlibe
+        import cbcbox as _cbcbox
 
-            else:
+        _lib_dir = _cbcbox.cbc_lib_dir()
+        if "linux" in platform.lower():
+            if not os_is_64_bit:
+                raise NotImplementedError("Linux 32 bits platform not supported.")
+            libfile = os.path.join(_lib_dir, "libCbc.so")
+        elif platform.lower().startswith("win"):
+            if not os_is_64_bit:
                 raise NotImplementedError("Win32 platform not supported.")
+            # autotools/MinGW places DLLs under bin/, not lib/
+            _bin_dir = os.path.join(_cbcbox.cbc_dist_dir(), "bin")
+            libfile = os.path.join(_bin_dir, "libCbc.dll")
+            if _bin_dir not in os.environ.get("PATH", ""):
+                os.environ["PATH"] = _bin_dir + ";" + os.environ["PATH"]
         elif platform.lower().startswith("darwin") or platform.lower().startswith(
             "macos"
         ):
-            if platform_machine().lower().startswith("arm64"):
-                libfile = os.path.join(pathlib, "cbc-c-darwin-arm64.dylib")
-            elif os_is_64_bit:
-                libfile = os.path.join(pathlib, "cbc-c-darwin-x86-64.dylib")
-        if not libfile:
-            raise NotImplementedError("You operating system/platform is not supported")
-    old_dir = os.getcwd()
-    os.chdir(pathlib)
-    cbclib = ffi.dlopen(libfile)
-    os.chdir(old_dir)
+            libfile = os.path.join(_lib_dir, "libCbc.dylib")
+        else:
+            raise NotImplementedError(
+                "Your operating system/platform is not supported"
+            )
+        cbclib = ffi.dlopen(libfile)
     has_cbc = True
 except Exception as e:
     logger.error("An error occurred while loading the CBC library:\t " "{}\n".format(e))

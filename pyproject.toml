@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "mip"
 description = "Python tools for Modeling and Solving Mixed-Integer Linear Programs (MIPs)"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 license = {file = "LICENSE"}
 authors = [
     {name="Tulio A.M. Toffolo", email="tulio@toffolo.com.br"},
@@ -21,7 +21,14 @@ keywords = [
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "License :: OSI Approved :: Eclipse Public License 2.0 (EPL-2.0)",
-    "Operating System :: OS Independent",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
@@ -29,23 +36,19 @@ classifiers = [
 ]
 dynamic = ["version"]
 
-dependencies = ["cffi>=1.15,<2"]
+dependencies = ["cffi>=1.15,<2", "cbcbox>=2.901"]
 
 [project.optional-dependencies]
 numpy = [
     "numpy>=1.25,<3; python_version>='3.9'",
     "numpy==1.24.*; python_version=='3.8'",
-    "numpy==1.21.*; python_version=='3.7'"
 ]
 gurobi = ["gurobipy>=8,<13"]
 highs = ["highsbox>=1.10.0,<2"]
 test = [
     "pytest>=7.4,<9",
-    "networkx>=2.8.8,<4; python_version>='3.8'",
-    "networkx==2.6.3; python_version=='3.7'",
-    "matplotlib>=3.7,<4; python_version>='3.9' and (platform_system!='Windows' or implementation_name!='pypy')",
-    "matplotlib==3.6.2; python_version=='3.8' and (platform_system!='Windows' or implementation_name!='pypy')",
-    "matplotlib==3.5.3; python_version=='3.7' and (platform_system!='Windows' or implementation_name!='pypy')"
+    "networkx>=2.8.8,<4",
+    "matplotlib>=3.7,<4; platform_system!='Windows' or implementation_name!='pypy'",
 ]
 
 [project.urls]
@@ -54,9 +57,6 @@ test = [
 
 [tool.setuptools]
 packages = ["mip"]
-
-[tool.setuptools.package-data]
-"mip.libraries" = ["*.so", "*.dylib", "*.dll"]
 
 [tool.setuptools_scm]
 write_to = "mip/_version.py"
