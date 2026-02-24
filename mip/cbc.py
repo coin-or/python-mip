@@ -88,9 +88,7 @@ try:
         ):
             libfile = os.path.join(_lib_dir, "libCbc.dylib")
         else:
-            raise NotImplementedError(
-                "Your operating system/platform is not supported"
-            )
+            raise NotImplementedError("Your operating system/platform is not supported")
         cbclib = ffi.dlopen(libfile)
     has_cbc = True
 except Exception as e:
@@ -98,8 +96,7 @@ except Exception as e:
     has_cbc = False
 
 if has_cbc:
-    ffi.cdef(
-        """
+    ffi.cdef("""
     typedef int(*cbc_progress_callback)(void *model,
                                         int phase,
                                         int step,
@@ -546,8 +543,7 @@ if has_cbc:
     const char *Cbc_featureName(int i);
 
     void Cbc_reset(Cbc_Model *model);
-    """
-    )
+    """)
 
 CHAR_ONE = "{}".format(chr(1)).encode("utf-8")
 CHAR_ZERO = "\0".encode("utf-8")
@@ -1008,12 +1004,10 @@ class SolverCbc(Solver):
             return nameIdx
 
         # progress callback
-        @ffi.callback(
-            """
+        @ffi.callback("""
             int (void *, int, int, const char *, double, double, double,
             int, int *, void *)
-        """
-        )
+        """)
         def cbc_progress_callback(
             model,
             phase: int,
@@ -1036,11 +1030,9 @@ class SolverCbc(Solver):
             return
 
         # cut callback
-        @ffi.callback(
-            """
+        @ffi.callback("""
             void (void *osi_solver, void *osi_cuts, void *app_data, int level, int npass)
-        """
-        )
+        """)
         def cbc_cut_callback(osi_solver, osi_cuts, app_data, depth, npass):
             if (
                 osi_solver == ffi.NULL
@@ -1452,10 +1444,8 @@ class SolverCbc(Solver):
         elif ".bas" in file_path.lower():
             cbclib.Cbc_writeBasis(self._model, fpstr, CHAR_ONE, 2)
         else:
-            raise ValueError(
-                "Enter a valid extension (.lp, .mps or .bas) \
-                to indicate the file format"
-            )
+            raise ValueError("Enter a valid extension (.lp, .mps or .bas) \
+                to indicate the file format")
 
     def read(self, file_path: str) -> None:
         if not isfile(file_path):
@@ -1484,10 +1474,8 @@ class SolverCbc(Solver):
                 logger.info("Optimal LP basis successfully loaded.")
 
         else:
-            raise ValueError(
-                "Enter a valid extension (.lp, .mps or .bas) \
-                to indicate the file format"
-            )
+            raise ValueError("Enter a valid extension (.lp, .mps or .bas) \
+                to indicate the file format")
 
     def set_start(self, start: List[Tuple[Var, numbers.Real]]) -> None:
         # Augment start list with default zero values for absent non-continuous variables
@@ -1778,7 +1766,9 @@ class SolverOsi(Solver):
             numnz = len(column.constrs)
 
         isInt = (
-            CHAR_ONE if var_type.upper() == "B" or var_type.upper() == "I" else CHAR_ZERO
+            CHAR_ONE
+            if var_type.upper() == "B" or var_type.upper() == "I"
+            else CHAR_ZERO
         )
         cbclib.Osi_addCol(
             self.osi,
