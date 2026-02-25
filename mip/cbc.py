@@ -61,7 +61,9 @@ try:
         libfile = os.environ["PMIP_CBC_LIBRARY"]
         pathlib = dirname(libfile)
         if platform.lower().startswith("win"):
-            if pathlib not in os.environ["PATH"]:
+            if hasattr(os, "add_dll_directory"):
+                os.add_dll_directory(pathlib)
+            elif pathlib not in os.environ["PATH"]:
                 os.environ["PATH"] += ";" + pathlib
         old_dir = os.getcwd()
         os.chdir(pathlib)
@@ -81,7 +83,10 @@ try:
             # autotools/MinGW places DLLs under bin/, not lib/
             _bin_dir = os.path.join(_cbcbox.cbc_dist_dir(), "bin")
             libfile = os.path.join(_bin_dir, "libCbc.dll")
-            if _bin_dir not in os.environ.get("PATH", ""):
+            # Python 3.8+ ignores PATH for DLL resolution; use add_dll_directory
+            if hasattr(os, "add_dll_directory"):
+                os.add_dll_directory(_bin_dir)
+            elif _bin_dir not in os.environ.get("PATH", ""):
                 os.environ["PATH"] = _bin_dir + ";" + os.environ["PATH"]
         elif platform.lower().startswith("darwin") or platform.lower().startswith(
             "macos"
@@ -585,34 +590,35 @@ INT_PARAM_CLIQUE_MERGING = 18
 INT_PARAM_MAX_NODES_NOT_IMPROV_FS = 19
 
 
-Osi_getNumCols = cbclib.Osi_getNumCols
-Osi_getColSolution = cbclib.Osi_getColSolution
-Osi_getIntegerTolerance = cbclib.Osi_getIntegerTolerance
-Osi_isInteger = cbclib.Osi_isInteger
-Osi_isProvenOptimal = cbclib.Osi_isProvenOptimal
-Cbc_setIntParam = cbclib.Cbc_setIntParam
-Cbc_setDblParam = cbclib.Cbc_setDblParam
-Cbc_getSolverPtr = cbclib.Cbc_getSolverPtr
+if has_cbc:
+    Osi_getNumCols = cbclib.Osi_getNumCols
+    Osi_getColSolution = cbclib.Osi_getColSolution
+    Osi_getIntegerTolerance = cbclib.Osi_getIntegerTolerance
+    Osi_isInteger = cbclib.Osi_isInteger
+    Osi_isProvenOptimal = cbclib.Osi_isProvenOptimal
+    Cbc_setIntParam = cbclib.Cbc_setIntParam
+    Cbc_setDblParam = cbclib.Cbc_setDblParam
+    Cbc_getSolverPtr = cbclib.Cbc_getSolverPtr
 
-Cbc_generateCuts = cbclib.Cbc_generateCuts
-Cbc_solveLinearProgram = cbclib.Cbc_solveLinearProgram
+    Cbc_generateCuts = cbclib.Cbc_generateCuts
+    Cbc_solveLinearProgram = cbclib.Cbc_solveLinearProgram
 
-Cbc_reset = cbclib.Cbc_reset
+    Cbc_reset = cbclib.Cbc_reset
 
-Cbc_computeFeatures = cbclib.Cbc_computeFeatures
-Cbc_nFeatures = cbclib.Cbc_nFeatures
-Cbc_featureName = cbclib.Cbc_featureName
+    Cbc_computeFeatures = cbclib.Cbc_computeFeatures
+    Cbc_nFeatures = cbclib.Cbc_nFeatures
+    Cbc_featureName = cbclib.Cbc_featureName
 
-OsiCuts_new = cbclib.OsiCuts_new
-OsiCuts_addRowCut = cbclib.OsiCuts_addRowCut
-OsiCuts_addGlobalRowCut = cbclib.OsiCuts_addGlobalRowCut
-OsiCuts_sizeRowCuts = cbclib.OsiCuts_sizeRowCuts
-OsiCuts_nzRowCut = cbclib.OsiCuts_nzRowCut
-OsiCuts_idxRowCut = cbclib.OsiCuts_idxRowCut
-OsiCuts_coefRowCut = cbclib.OsiCuts_coefRowCut
-OsiCuts_rhsRowCut = cbclib.OsiCuts_rhsRowCut
-OsiCuts_senseRowCut = cbclib.OsiCuts_senseRowCut
-OsiCuts_delete = cbclib.OsiCuts_delete
+    OsiCuts_new = cbclib.OsiCuts_new
+    OsiCuts_addRowCut = cbclib.OsiCuts_addRowCut
+    OsiCuts_addGlobalRowCut = cbclib.OsiCuts_addGlobalRowCut
+    OsiCuts_sizeRowCuts = cbclib.OsiCuts_sizeRowCuts
+    OsiCuts_nzRowCut = cbclib.OsiCuts_nzRowCut
+    OsiCuts_idxRowCut = cbclib.OsiCuts_idxRowCut
+    OsiCuts_coefRowCut = cbclib.OsiCuts_coefRowCut
+    OsiCuts_rhsRowCut = cbclib.OsiCuts_rhsRowCut
+    OsiCuts_senseRowCut = cbclib.OsiCuts_senseRowCut
+    OsiCuts_delete = cbclib.OsiCuts_delete
 
 
 def cbc_set_parameter(model: Solver, param: str, value: str):
