@@ -82,12 +82,12 @@ try:
                 raise NotImplementedError("Win32 platform not supported.")
             # autotools/MinGW places DLLs under bin/, not lib/
             _bin_dir = os.path.join(_cbcbox.cbc_dist_dir(), "bin")
-            libfile = os.path.join(_bin_dir, "libCbc.dll")
+            libfile = os.path.join(_bin_dir, "libCbc-0.dll")
             if not os.path.exists(libfile):
                 raise FileNotFoundError(
-                    "libCbc.dll not found in cbcbox Windows distribution at"
+                    "libCbc-0.dll not found in cbcbox Windows distribution at"
                     " {}. The cbcbox Windows wheel may only contain a static"
-                    " libCbc.a. A shared libCbc.dll is required.".format(_bin_dir)
+                    " libCbc.a. A shared libCbc-0.dll is required.".format(_bin_dir)
                 )
             # Python 3.8+ ignores PATH for DLL resolution; use add_dll_directory
             if hasattr(os, "add_dll_directory"):
