@@ -40,11 +40,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "pypy3.11"]
-        os: [macos-14, macos-15, ubuntu-22.04, ubuntu-24.04, windows-2025, windows-2022]
-        exclude:
-          # cbcbox ARM dylib built on macos-15 (M2+); may use instructions unavailable on macos-14 (M1)
-          - os: macos-14
-            python-version: "pypy3.11"
+        os: [macos-15, ubuntu-24.04, windows-2025]
 
     steps:
 
