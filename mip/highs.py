@@ -686,8 +686,8 @@ class SolverHighs(mip.Solver):
     def __init__(self, model: mip.Model, name: str, sense: str):
         if not has_highs:
             raise FileNotFoundError(
-                "HiGHS not found."
-                "Please install the `highspy` package, or"
+                "HiGHS not found. "
+                "Please install the `highsbox` package (pip install mip[highs]), or "
                 "set the `PMIP_HIGHS_LIBRARY` environment variable."
             )
 
