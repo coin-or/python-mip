@@ -65,6 +65,9 @@ class LinExpr:
      a = 10*x1 + 7*x4
      print(a.x)
 
+    .. warning::
+    Do not pass identical objects in the ``variables`` argument when constructing
+    a LinExpr manually.   
     """
 
     __slots__ = ["__const", "__expr", "__sense"]
@@ -542,6 +545,8 @@ class Var:
         self, other: Union["mip.Var", LinExpr, numbers.Real]
     ) -> Union["mip.Var", LinExpr]:
         if isinstance(other, Var):
+            if id(self) == id(other):
+                return LinExpr([self], [2])
             return LinExpr([self, other], [1, 1])
         if isinstance(other, LinExpr):
             return other.__add__(self)
@@ -561,6 +566,8 @@ class Var:
         self, other: Union["mip.Var", LinExpr, numbers.Real]
     ) -> Union["mip.Var", LinExpr]:
         if isinstance(other, Var):
+            if id(self) == id(other):
+                return LinExpr([self], [0])
             return LinExpr([self, other], [1, -1])
         if isinstance(other, LinExpr):
             return (-other).__add__(self)
@@ -575,6 +582,8 @@ class Var:
         self, other: Union["mip.Var", LinExpr, numbers.Real]
     ) -> Union["mip.Var", LinExpr]:
         if isinstance(other, Var):
+            if id(self) == id(other):
+                return LinExpr([self], [0])
             return LinExpr([self, other], [-1, 1])
         if isinstance(other, LinExpr):
             return other.__sub__(self)
@@ -603,6 +612,8 @@ class Var:
 
     def __eq__(self, other) -> LinExpr:
         if isinstance(other, Var):
+            if id(self) == id(other):
+                return LinExpr([self], [0], sense="=")
             return LinExpr([self, other], [1, -1], sense="=")
         if isinstance(other, LinExpr):
             return LinExpr([self], [1]) == other
@@ -613,6 +624,8 @@ class Var:
 
     def __le__(self, other: Union["mip.Var", LinExpr, numbers.Real]) -> LinExpr:
         if isinstance(other, Var):
+            if id(self) == id(other):
+                return LinExpr([self], [0], sense="<")
             return LinExpr([self, other], [1, -1], sense="<")
         if isinstance(other, LinExpr):
             return LinExpr([self], [1]) <= other
@@ -623,6 +636,8 @@ class Var:
 
     def __ge__(self, other: Union["mip.Var", LinExpr, numbers.Real]) -> LinExpr:
         if isinstance(other, Var):
+            if id(self) == id(other):
+                return LinExpr([self], [0], sense=">")
             return LinExpr([self, other], [1, -1], sense=">")
         if isinstance(other, LinExpr):
             return LinExpr([self], [1]) >= other
