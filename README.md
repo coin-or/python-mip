@@ -63,8 +63,11 @@ Questions, suggestions and feature request can be posted at [Discussions](https:
  
 ## Build status 
 
+[![PyPI version](https://img.shields.io/pypi/v/mip.svg)](https://pypi.org/project/mip/)
+[![Python versions](https://img.shields.io/pypi/pyversions/mip.svg)](https://pypi.org/project/mip/)
+[![Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://docs.python-mip.com/en/latest/)
 [![CI](https://github.com/coin-or/python-mip/actions/workflows/github-ci.yml/badge.svg)](https://github.com/coin-or/python-mip/actions/workflows/github-ci.yml)
-[![Current version](https://badge.fury.io/gh/coin-or%2Fpython-mip.svg)](https://github.com/coin-or/python-mip/releases)
+[![Publish to PyPI](https://github.com/coin-or/python-mip/actions/workflows/publish.yml/badge.svg)](https://github.com/coin-or/python-mip/actions/workflows/publish.yml)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/mip)](https://pypi.org/project/mip/)
 [![Current total of lines](https://tokei.rs/b1/github/coin-or/python-mip?category=lines)](https://github.com/coin-or/python-mip)
 [![License](https://img.shields.io/badge/license-EPL-blue.svg)](https://github.com/coin-or/python-mip/blob/master/LICENSE)
-
