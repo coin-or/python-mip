@@ -8,8 +8,8 @@ from mip import Model, BINARY
 
 n = m = 3
 
-times = [[2, 1, 2],
-         [1, 2, 2],
+times = [[1, 2, 2],
+         [2, 1, 2],
          [1, 2, 1]]
 
 M = sum(times[i][j] for i in range(n) for j in range(m))
