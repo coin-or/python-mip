@@ -16,7 +16,7 @@ Some of the main features of MIP are:
   [MathProg](https://en.wikibooks.org/wiki/GLPK/GMPL_(MathProg)): 
   operator overloading makes it easy to write linear expressions in Python;
 
-* full featured:
+* full featured: 
     - cut generators and lazy constraints: work with strong formulations with a
     large number of constraints by generating only the required inequalities
     during the branch and cut search;
