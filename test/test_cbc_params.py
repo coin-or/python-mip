@@ -177,3 +177,91 @@ def test_preprocess_sos_correct():
     status = m.optimize()
     assert status == OptimizationStatus.OPTIMAL
     assert abs(m.objective_value - AIR03_OPT) <= TOL
+
+
+# ---------------------------------------------------------------------------
+# LP time limit, LP method, LP iteration limit
+# ---------------------------------------------------------------------------
+
+import math
+import time
+from mip import LP_Method
+
+# brazil3: 14646 rows, 23968 cols — LP takes ~16 s, ideal for limit tests
+BRAZIL3 = os.path.join(INST_DIR, "brazil3.mps.gz")
+
+# sp150x300d: smaller LP that reaches optimal, used for LP method tests
+SP150 = os.path.join(INST_DIR, "sp150x300d.mps.gz")
+
+
+def _needs_brazil3():
+    if not os.path.exists(BRAZIL3):
+        pytest.skip(f"Instance not found: {BRAZIL3}")
+
+
+def _needs_sp150():
+    if not os.path.exists(SP150):
+        pytest.skip(f"Instance not found: {SP150}")
+
+
+def test_lp_time_limit_truncated():
+    """LP solve stopped by time limit must return TRUNCATED, not ERROR."""
+    _needs_brazil3()
+    m = Model(solver_name=CBC)
+    m.verbose = 0
+    m.read(BRAZIL3)
+    t0 = time.time()
+    status = m.optimize(relax=True, max_seconds=3)
+    elapsed = time.time() - t0
+    assert status == OptimizationStatus.TRUNCATED, f"Expected TRUNCATED, got {status}"
+    assert elapsed < 10, f"Solver ran too long: {elapsed:.1f}s (expected ≤10s)"
+    # A dual bound should be available (dual simplex is default for LP)
+    assert math.isfinite(m.objective_bound), "Expected a finite dual bound"
+
+
+def test_lp_iter_limit_truncated():
+    """LP solve stopped by iteration limit must return TRUNCATED."""
+    _needs_brazil3()
+    m = Model(solver_name=CBC)
+    m.verbose = 0
+    m.read(BRAZIL3)
+    m.max_iter = 500
+    t0 = time.time()
+    status = m.optimize(relax=True)
+    elapsed = time.time() - t0
+    assert status == OptimizationStatus.TRUNCATED, f"Expected TRUNCATED, got {status}"
+    # Should stop quickly (well under 16 s)
+    assert elapsed < 10, f"Took too long: {elapsed:.1f}s (expected to stop at 500 iter)"
+
+
+def test_lp_method_dual():
+    """Dual simplex must reach optimality on sp150x300d LP."""
+    _needs_sp150()
+    m = Model(solver_name=CBC)
+    m.verbose = 0
+    m.lp_method = LP_Method.DUAL
+    m.read(SP150)
+    status = m.optimize(relax=True)
+    assert status == OptimizationStatus.OPTIMAL, f"Expected OPTIMAL, got {status}"
+
+
+def test_lp_method_primal():
+    """Primal simplex must reach optimality on sp150x300d LP."""
+    _needs_sp150()
+    m = Model(solver_name=CBC)
+    m.verbose = 0
+    m.lp_method = LP_Method.PRIMAL
+    m.read(SP150)
+    status = m.optimize(relax=True)
+    assert status == OptimizationStatus.OPTIMAL, f"Expected OPTIMAL, got {status}"
+
+
+def test_lp_method_barrier():
+    """Barrier must reach optimality on sp150x300d LP."""
+    _needs_sp150()
+    m = Model(solver_name=CBC)
+    m.verbose = 0
+    m.lp_method = LP_Method.BARRIER
+    m.read(SP150)
+    status = m.optimize(relax=True)
+    assert status == OptimizationStatus.OPTIMAL, f"Expected OPTIMAL, got {status}"

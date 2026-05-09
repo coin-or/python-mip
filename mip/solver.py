@@ -142,6 +142,12 @@ class Solver:
     def set_max_nodes(self: "Solver", max_nodes: int):
         pass
 
+    def get_max_iter(self: "Solver") -> int:
+        pass
+
+    def set_max_iter(self: "Solver", max_iter: int):
+        pass
+
     def set_num_threads(self: "Solver", threads: int):
         pass
 

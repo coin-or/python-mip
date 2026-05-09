@@ -139,6 +139,10 @@ class OptimizationStatus(Enum):
     determine if the problem is infeasible or unbounded due to application
     of dual reductions (when active) during presolve."""
 
+    TRUNCATED = 9
+    """The LP solve was truncated by a time or iteration limit. A partial
+    primal solution (if primal feasible) and/or a dual bound may be available."""
+
     OTHER = 10000
 
 

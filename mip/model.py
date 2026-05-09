@@ -795,6 +795,7 @@ class Model:
             mip.OptimizationStatus.OPTIMAL,
             mip.OptimizationStatus.FEASIBLE,
             mip.OptimizationStatus.NO_SOLUTION_FOUND,
+            mip.OptimizationStatus.TRUNCATED,
         ]:
             return None
 
@@ -1326,6 +1327,15 @@ class Model:
     @max_nodes.setter
     def max_nodes(self: "Model", max_nodes: int):
         self.solver.set_max_nodes(max_nodes)
+
+    @property
+    def max_iter(self: "Model") -> int:
+        """maximum number of simplex iterations for LP solves (default: no limit)"""
+        return self.solver.get_max_iter()
+
+    @max_iter.setter
+    def max_iter(self: "Model", max_iter: int):
+        self.solver.set_max_iter(max_iter)
 
     @property
     def max_solutions(self: "Model") -> int:

@@ -276,8 +276,9 @@ if has_cbc:
       INT_PARAM_CLIQUE_MERGING          = 18, /*! Clique merging options: 0: off , 1 auto , 2 before solving LP, 3 after solving LP and pre-processing */
       INT_PARAM_MAX_NODES_NOT_IMPROV_FS = 19, /*! Maximum number of nodes processed without improving best solution, after a feasible solution is found */
       INT_PARAM_LP_FAST_PREPROCESS      = 20, /*! Fast MILP preprocessing before LP solve. 0: off (default); 1: singleton bounds; 2: milpbt; 3: fixpoint */
+      INT_PARAM_MAX_ITER                = 21, /*! Maximum number of simplex iterations for LP solves. Default INT_MAX (no limit). */
     };
-    #define N_INT_PARAMS 21
+    #define N_INT_PARAMS 22
 
     void Cbc_setIntParam(Cbc_Model *model, enum IntParam which, const int val);
 
@@ -328,6 +329,10 @@ if has_cbc:
     int Cbc_getMaximumNodes(Cbc_Model *model);
 
     void Cbc_setMaximumNodes(Cbc_Model *model, int maxNodes);
+
+    int Cbc_getMaximumIterations(Cbc_Model *model);
+
+    void Cbc_setMaximumIterations(Cbc_Model *model, int maxIterations);
 
     int Cbc_getMaximumSolutions(Cbc_Model *model);
 
@@ -597,6 +602,7 @@ INT_PARAM_CGRAPH = 17
 INT_PARAM_CLIQUE_MERGING = 18
 INT_PARAM_MAX_NODES_NOT_IMPROV_FS = 19
 INT_PARAM_LP_FAST_PREPROCESS = 20
+INT_PARAM_MAX_ITER = 21
 
 
 if has_cbc:
@@ -895,6 +901,12 @@ class SolverCbc(Solver):
     def set_max_nodes(self, max_nodes: int):
         cbclib.Cbc_setMaximumNodes(self._model, max_nodes)
 
+    def get_max_iter(self) -> int:
+        return cbclib.Cbc_getMaximumIterations(self._model)
+
+    def set_max_iter(self, max_iter: int):
+        cbclib.Cbc_setMaximumIterations(self._model, max_iter)
+
     def get_verbose(self) -> int:
         return self.__verbose
 
@@ -1110,7 +1122,19 @@ class SolverCbc(Solver):
 
                 return OptimizationStatus.OPTIMAL
             if res == 1:
-                return OptimizationStatus.NO_SOLUTION_FOUND
+                # Truncated by time or iteration limit; populate whatever is valid.
+                x_ptr = cbclib.Cbc_getColSolution(self._model)
+                if x_ptr != ffi.NULL:
+                    self.__x = x_ptr
+                    self.__rc = cbclib.Cbc_getReducedCost(self._model)
+                    self.__slack = cbclib.Cbc_getRowSlack(self._model)
+                    self.__num_solutions = 1
+                self.__pi = cbclib.Cbc_getRowPrice(self._model)
+                obj = cbclib.Cbc_getObjValue(self._model)
+                if obj < mip.INF:
+                    self.__obj_val = obj + self._objconst
+                    self.__obj_bound = self.__obj_val
+                return OptimizationStatus.TRUNCATED
             if res == 2:
                 return OptimizationStatus.INFEASIBLE
             if res == 3:
