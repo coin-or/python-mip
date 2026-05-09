@@ -75,6 +75,7 @@ class Solver:
     def optimize(
         self: "Solver",
         relax: bool = False,
+        lp_preprocess: bool = False,
     ) -> "mip.OptimizationStatus":
         pass
 

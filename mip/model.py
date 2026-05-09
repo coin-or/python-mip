@@ -569,6 +569,7 @@ class Model:
         max_seconds_same_incumbent: numbers.Real = mip.INF,
         max_nodes_same_incumbent: int = mip.INT_MAX,
         relax: bool = False,
+        lp_preprocess: bool = False,
     ) -> mip.OptimizationStatus:
         """Optimizes current model
 
@@ -592,6 +593,13 @@ class Model:
             relax (bool): if true only the linear programming relaxation will
                 be solved, i.e. integrality constraints will be temporarily
                 discarded.
+            lp_preprocess (bool): when solving the LP relaxation (relax=True),
+                apply fast combinatorial bound-tightening (knapsack-based) before
+                the LP solve. Disabled by default to preserve the pure LP
+                relaxation. When enabled, bounds may be tightened beyond the LP
+                relaxation, which is useful in custom B&B node-solving loops but
+                means the solution is no longer the unmodified LP relaxation.
+                Only supported by the CBC backend; ignored by other solvers.
 
         Returns:
             optimization status, which can be OPTIMAL(0), ERROR(-1),
@@ -622,7 +630,7 @@ class Model:
             max_nodes_same_incumbent,
         )
 
-        self._status = self.solver.optimize(relax)
+        self._status = self.solver.optimize(relax, lp_preprocess)
         # has a solution
         if (
             self._status

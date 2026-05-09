@@ -937,6 +937,7 @@ class SolverHighs(mip.Solver):
     def optimize(
         self: "SolverHighs",
         relax: bool = False,
+        lp_preprocess: bool = False,
     ) -> "mip.OptimizationStatus":
         if relax:
             # Temporarily change variable types.

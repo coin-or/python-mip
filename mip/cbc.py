@@ -275,8 +275,9 @@ if has_cbc:
       INT_PARAM_CGRAPH                  = 17, /*! Conflict graph: controls if the conflict graph is created or not. 0: off, 1: auto, 2: on 3: fast weaker clique sep */
       INT_PARAM_CLIQUE_MERGING          = 18, /*! Clique merging options: 0: off , 1 auto , 2 before solving LP, 3 after solving LP and pre-processing */
       INT_PARAM_MAX_NODES_NOT_IMPROV_FS = 19, /*! Maximum number of nodes processed without improving best solution, after a feasible solution is found */
+      INT_PARAM_LP_FAST_PREPROCESS      = 20, /*! Fast MILP preprocessing before LP solve. 0: off (default); 1: singleton bounds; 2: milpbt; 3: fixpoint */
     };
-    #define N_INT_PARAMS 20
+    #define N_INT_PARAMS 21
 
     void Cbc_setIntParam(Cbc_Model *model, enum IntParam which, const int val);
 
@@ -362,6 +363,8 @@ if has_cbc:
     int Cbc_solve(Cbc_Model *model);
 
     int Cbc_solveLinearProgram(Cbc_Model *model);
+
+    int Cbc_resolve(Cbc_Model *model);
 
     /*! Type of cutting plane */
     enum CutType {
@@ -593,6 +596,7 @@ INT_PARAM_ELAPSED_TIME = 16
 INT_PARAM_CGRAPH = 17
 INT_PARAM_CLIQUE_MERGING = 18
 INT_PARAM_MAX_NODES_NOT_IMPROV_FS = 19
+INT_PARAM_LP_FAST_PREPROCESS = 20
 
 
 if has_cbc:
@@ -607,6 +611,7 @@ if has_cbc:
 
     Cbc_generateCuts = cbclib.Cbc_generateCuts
     Cbc_solveLinearProgram = cbclib.Cbc_solveLinearProgram
+    Cbc_resolve = cbclib.Cbc_resolve
 
     Cbc_reset = cbclib.Cbc_reset
 
@@ -1004,7 +1009,7 @@ class SolverCbc(Solver):
             strengthenPacking = cbclib.Cbc_strengthenPackingRows
             strengthenPacking(self._model, nr, idxr)
 
-    def optimize(self, relax: bool = False) -> OptimizationStatus:
+    def optimize(self, relax: bool = False, lp_preprocess: bool = False) -> OptimizationStatus:
         # get name indexes from an osi problem
         def cbc_get_osi_name_indexes(osi_solver) -> Dict[str, int]:
             nameIdx = {}
@@ -1092,7 +1097,12 @@ class SolverCbc(Solver):
 
         if relax:
             self.__clear_sol()
-            res = Cbc_solveLinearProgram(self._model)
+            cbclib.Cbc_setIntParam(
+                self._model,
+                INT_PARAM_LP_FAST_PREPROCESS,
+                2 if lp_preprocess else 0,  # 2 = milpbt level
+            )
+            res = Cbc_resolve(self._model)
             if res == 0:
                 self.__x = cbclib.Cbc_getColSolution(self._model)
                 self.__rc = cbclib.Cbc_getReducedCost(self._model)
@@ -1103,10 +1113,12 @@ class SolverCbc(Solver):
                 self.__num_solutions = 1
 
                 return OptimizationStatus.OPTIMAL
+            if res == 1:
+                return OptimizationStatus.NO_SOLUTION_FOUND
             if res == 2:
-                return OptimizationStatus.UNBOUNDED
-            if res == 3:
                 return OptimizationStatus.INFEASIBLE
+            if res == 3:
+                return OptimizationStatus.UNBOUNDED
             return OptimizationStatus.ERROR
 
         # adding cut generators
