@@ -255,3 +255,41 @@ def test_lp_preprocess_tightens_bounds():
             f"lp_preprocess=True gave worse LP bound: "
             f"{m_pre.objective_value:.6f} < {obj_plain:.6f}"
         )
+
+
+def test_resolve_duals_and_slacks():
+    """Dual prices and row slacks are correctly populated after Cbc_resolve.
+
+    This tests a specific bug where Cbc_resolve was not calling
+    Cbc_updateSlack(), leaving model->rSlk stale or NULL.
+    """
+    # Simple LP: min x+y  s.t.  x+y >= 2,  x <= 3,  y <= 3,  x,y >= 0
+    m = Model(solver_name=CBC)
+    m.verbose = 0
+    x = m.add_var("x", lb=0, ub=3)
+    y = m.add_var("y", lb=0, ub=3)
+    c1 = m.add_constr(x + y >= 2, "c1")
+    m.objective = mip.minimize(x + y)
+
+    # Initial LP solve
+    assert m.optimize(relax=True) == OptimizationStatus.OPTIMAL
+    obj0 = m.objective_value
+    pi0 = c1.pi
+    slack0 = c1.slack
+    assert abs(obj0 - 2.0) < TOL
+    assert pi0 is not None and abs(abs(pi0) - 1.0) < TOL  # dual = 1 for binding constraint
+    assert abs(slack0) < TOL  # constraint is binding
+
+    # Add a tighter constraint and resolve (warm start)
+    c2 = m.add_constr(x + y >= 2.5, "c2")
+    assert m.optimize(relax=True) == OptimizationStatus.OPTIMAL
+    obj1 = m.objective_value
+    pi1_c2 = c2.pi
+    slack1_c1 = c1.slack  # c1 should now be non-binding (slack = -0.5)
+    slack1_c2 = c2.slack  # c2 is binding
+
+    assert abs(obj1 - 2.5) < TOL, f"Expected obj=2.5, got {obj1}"
+    assert pi1_c2 is not None, "Dual price is None after resolve"
+    assert abs(slack1_c2) < TOL, f"c2 slack should be 0, got {slack1_c2}"
+    # c1 (x+y>=2) is slack by 0.5 when x+y=2.5 (for >= rows: slack = activity - rhs)
+    assert slack1_c1 > TOL, f"c1 slack should be positive (non-binding), got {slack1_c1}"
