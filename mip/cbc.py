@@ -1221,12 +1221,7 @@ class SolverCbc(Solver):
         )
 
         self.__clear_sol()
-        # Cbc_reset clears previous solve state (required in newer CBC to
-        # avoid stale results when re-solving), but also resets objective
-        # sense, so we save and restore it.
-        _sense = cbclib.Cbc_getObjSense(self._model)
         Cbc_reset(self._model)
-        cbclib.Cbc_setObjSense(self._model, _sense)
         cbclib.Cbc_solve(self._model)
 
         if cbclib.Cbc_isAbandoned(self._model):
