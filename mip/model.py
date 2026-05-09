@@ -388,6 +388,7 @@ class Model:
         """
         # creating a new solver instance
         sense = self.sense
+        verbose = self.solver.get_verbose()
 
         if self.solver_name.upper() in ["GRB", "GUROBI"]:
             import mip.gurobi
@@ -417,6 +418,9 @@ class Model:
         # list of constraints and variables
         self.constrs = mip.ConstrList(self)
         self.vars = mip.VarList(self)
+
+        # restore verbose (solver is recreated above with default log level 1)
+        self.solver.set_verbose(verbose)
 
         # initializing additional control variables
         self.__cuts = 1

@@ -900,6 +900,7 @@ class SolverCbc(Solver):
 
     def set_verbose(self, verbose: int):
         self.__verbose = verbose
+        cbclib.Cbc_setLogLevel(self._model, 0 if verbose == 0 else verbose)
 
     def var_set_var_type(self, var: "Var", value: str):
         cv = var.var_type
@@ -1090,11 +1091,6 @@ class SolverCbc(Solver):
                     osi_model, depth, npass
                 )
 
-        if self.__verbose == 0:
-            cbclib.Cbc_setLogLevel(self._model, 0)
-        else:
-            cbclib.Cbc_setLogLevel(self._model, 1)
-
         if relax:
             self.__clear_sol()
             cbclib.Cbc_setIntParam(
@@ -1152,15 +1148,14 @@ class SolverCbc(Solver):
                 cbc_set_parameter(self, "preprocess", "off")
             elif self.model.preprocess == 1:
                 cbc_set_parameter(self, "preprocess", "sos")
-            if self.__pumpp != DEF_PUMPP:
-                cbc_set_parameter(self, "passf", "{}".format(self.__pumpp))
+            cbclib.Cbc_setIntParam(self._model, INT_PARAM_FPUMP_ITS, self.__pumpp)
 
         if self.emphasis == SearchEmphasis.FEASIBILITY:
-            cbc_set_parameter(self, "passf", "50")
+            cbclib.Cbc_setIntParam(self._model, INT_PARAM_FPUMP_ITS, 50)
             cbc_set_parameter(self, "proximity", "on")
         if self.emphasis == SearchEmphasis.OPTIMALITY:
-            cbc_set_parameter(self, "strong", "10")
-            cbc_set_parameter(self, "trust", "20")
+            cbclib.Cbc_setIntParam(self._model, INT_PARAM_STRONG_BRANCHING, 10)
+            cbclib.Cbc_setIntParam(self._model, INT_PARAM_NUMBER_BEFORE, 20)
             cbc_set_parameter(self, "lagomory", "endonly")
             cbc_set_parameter(self, "latwomir", "endonly")
 
@@ -1172,26 +1167,24 @@ class SolverCbc(Solver):
         if self.model.cuts >= 2:
             cbc_set_parameter(self, "lagomory", "endcleanroot")
             cbc_set_parameter(self, "latwomir", "endcleanroot")
-            cbc_set_parameter(self, "passC", "-25")
+            cbclib.Cbc_setIntParam(self._model, INT_PARAM_CUT_PASS, -25)
         if self.model.cuts >= 3:
-            cbc_set_parameter(self, "passC", "-35")
+            cbclib.Cbc_setIntParam(self._model, INT_PARAM_CUT_PASS, -35)
             cbc_set_parameter(self, "lift", "ifmove")
 
         if self.__threads >= 1:
-            cbc_set_parameter(self, "timeMode", "{}".format("elapsed"))
-            cbc_set_parameter(self, "threads", "{}".format(self.__threads))
+            cbclib.Cbc_setIntParam(self._model, INT_PARAM_THREADS, self.__threads)
         elif self.__threads == -1:
-            cbc_set_parameter(self, "threads", "{}".format(multip.cpu_count()))
+            cbclib.Cbc_setIntParam(self._model, INT_PARAM_THREADS, multip.cpu_count())
 
+        # user-specified cut passes override the cuts-level default
         if self.model.cut_passes != -1:
-            cbc_set_parameter(self, "passc", "{}".format(self.model.cut_passes))
+            cbclib.Cbc_setIntParam(self._model, INT_PARAM_CUT_PASS, self.model.cut_passes)
 
         if self.model.clique == 0:
             cbc_set_parameter(self, "clique", "off")
         elif self.model.clique == 1:
             cbc_set_parameter(self, "clique", "forceon")
-
-        cbc_set_parameter(self, "maxSavedSolutions", "10")
 
         if self.model.store_search_progress_log:
             cbclib.Cbc_addProgrCallback(self._model, cbc_progress_callback, ffi.NULL)
