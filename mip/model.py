@@ -249,6 +249,37 @@ class Model:
         """
         return self.vars.add(name, lb, ub, obj, var_type, column)
 
+    def add_vars(
+        self: "Model",
+        n: int,
+        name: str = "",
+        lb: numbers.Real = 0.0,
+        ub: numbers.Real = mip.INF,
+        obj: numbers.Real = 0.0,
+        var_type: str = mip.CONTINUOUS,
+    ) -> List["mip.Var"]:
+        """Creates *n* variables at once, returning a list of :class:`~mip.Var`.
+
+        This is a faster alternative to calling :meth:`add_var` in a loop when
+        all variables share the same bounds, objective coefficient and type.
+
+        Args:
+            n (int): number of variables to create
+            name (str): optional name prefix; variables will be named
+                ``name_0``, ``name_1``, …, ``name_{n-1}`` when provided
+            lb (numbers.Real): lower bound (default 0)
+            ub (numbers.Real): upper bound (default infinity)
+            obj (numbers.Real): objective coefficient (default 0)
+            var_type (str): CONTINUOUS, BINARY or INTEGER
+
+        Example::
+
+            x = m.add_vars(n * n, var_type=BINARY)
+
+        :rtype: List[mip.Var]
+        """
+        return self.vars.add_vars(n, name, lb, ub, obj, var_type)
+
     def add_var_tensor(
         self: "Model", shape: Tuple[int, ...], name: str, **kwargs
     ) -> mip.LinExprTensor:

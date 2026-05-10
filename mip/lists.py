@@ -36,8 +36,6 @@ class VarList(Sequence):
         var_type: str = mip.CONTINUOUS,
         column: "mip.Column" = None,
     ) -> "mip.Var":
-        if not name:
-            name = "var({})".format(len(self.__vars))
         if var_type == mip.BINARY:
             if ub == mip.INF:
                 ub = 1.0
@@ -47,6 +45,49 @@ class VarList(Sequence):
         self.__model.solver.add_var(obj, lb, ub, var_type, column, name)
         self.__vars.append(new_var)
         return new_var
+
+    def add_vars(
+        self,
+        n: int,
+        name: str = "",
+        lb: numbers.Real = 0.0,
+        ub: numbers.Real = mip.INF,
+        obj: numbers.Real = 0.0,
+        var_type: str = mip.CONTINUOUS,
+    ) -> List["mip.Var"]:
+        """Creates *n* variables at once, returning a list of :class:`~mip.Var`.
+
+        Faster than calling :meth:`add` in a loop for large *n* because it
+        avoids per-variable Python dispatch overhead.  All variables share the
+        same bounds, objective coefficient and type.
+
+        Args:
+            n (int): number of variables to create
+            name (str): optional name prefix; variables will be named
+                ``name_0``, ``name_1``, …, ``name_{n-1}`` when provided
+            lb (numbers.Real): lower bound (default 0)
+            ub (numbers.Real): upper bound (default infinity)
+            obj (numbers.Real): objective coefficient (default 0)
+            var_type (str): CONTINUOUS, BINARY or INTEGER
+
+        :rtype: List[mip.Var]
+        """
+        if var_type == mip.BINARY:
+            if ub == mip.INF:
+                ub = 1.0
+            if not (-mip.EPS <= lb <= 1.0 + mip.EPS and -mip.EPS <= ub <= 1.0 + mip.EPS):
+                raise ValueError("Invalid bounds for binary variable")
+        start = len(self.__vars)
+        solver = self.__model.solver
+        if name:
+            for i in range(n):
+                solver.add_var(obj, lb, ub, var_type, None, f"{name}_{i}")
+        else:
+            for i in range(n):
+                solver.add_var(obj, lb, ub, var_type, None, "")
+        new_vars = [mip.Var(self.__model, start + i) for i in range(n)]
+        self.__vars.extend(new_vars)
+        return new_vars
 
     def __getitem__(self: "VarList", key):
         if isinstance(key, str):
