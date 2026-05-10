@@ -55,38 +55,38 @@ Model creation times in seconds (CPython 3.14.4):
      - highspy (hl API)
      - highspy (batch numpy)
    * - 100
-     - 0.037
-     - 0.035
-     - 0.038
-     - 0.312
-     - **0.006**
+     - 0.062
+     - **0.047**
+     - 0.054
+     - 0.456
+     - 0.006
    * - 200
-     - 0.147
-     - 0.131
-     - 0.152
-     - 1.141
-     - **0.017**
+     - 0.137
+     - **0.105**
+     - 0.146
+     - 1.252
+     - **0.019**
    * - 300
-     - 0.347
-     - 0.414
-     - 0.443
-     - 3.100
-     - **0.043**
+     - **0.280**
+     - 0.257
+     - 0.315
+     - 3.048
+     - 0.041
    * - 400
-     - 0.708
-     - 0.696
-     - **0.660**
-     - 5.561
-     - 0.083
+     - **0.501**
+     - 0.531
+     - 0.551
+     - 5.549
+     - 0.075
    * - 500
-     - **1.165**
-     - 1.101
-     - 1.173
-     - 8.734
-     - 0.121
+     - **0.837**
+     - 0.789
+     - 0.927
+     - 8.773
+     - 0.117
 
-Python-MIP with any backend is **8–25× faster** than the highspy high-level
-API for model creation, and within a factor of 10–12 of the highspy batch
+Python-MIP with any backend is **10–11× faster** than the highspy high-level
+API for model creation, and within a factor of 7–8 of the highspy batch
 numpy API which requires the user to pre-build a full CSR matrix.
 
 Run: ``python benchmarks/queens_bench.py --build-only 100 200 300 400 500``
@@ -131,53 +131,53 @@ Model creation times in seconds (CPython 3.14.4):
      - highspy (hl API)
      - highspy (batch numpy)
    * - 15
-     - 0.006
+     - 0.004
+     - **0.003**
      - 0.005
-     - **0.004**
-     - 0.009
+     - 0.010
      - 0.000
    * - 20
-     - 0.005
-     - 0.005
-     - 0.007
-     - 0.024
-     - **0.001**
+     - **0.005**
+     - **0.005**
+     - 0.006
+     - 0.020
+     - 0.001
    * - 30
-     - 0.011
-     - 0.028
+     - **0.011**
+     - 0.021
      - 0.013
-     - 0.039
-     - **0.001**
+     - 0.040
+     - 0.001
    * - 50
-     - **0.032**
-     - 0.032
-     - 0.037
-     - 0.106
-     - 0.003
+     - 0.038
+     - **0.029**
+     - 0.033
+     - 0.154
+     - 0.006
    * - 75
-     - 0.076
-     - **0.071**
-     - 0.076
-     - 0.248
+     - 0.079
+     - **0.061**
+     - 0.073
+     - 0.257
      - 0.007
    * - 100
-     - 0.141
-     - **0.133**
-     - 0.145
-     - 0.475
-     - 0.011
+     - **0.142**
+     - 0.160
+     - **0.142**
+     - 0.443
+     - 0.013
    * - 150
-     - 0.349
-     - **0.299**
-     - 0.341
-     - 1.050
+     - 0.312
+     - **0.275**
+     - 0.324
+     - 1.162
      - 0.030
 
 The TSP flow model interleaves binary and continuous variables with
 variable-density rows (degree rows touch :math:`n-1` variables; capacity rows
 touch 2; flow-conservation rows touch :math:`2(n-1)`).  Python-MIP's cache
 handles this automatically — no manual CSR construction required.
-Python-MIP is roughly **3× faster** than the highspy high-level API and
+Python-MIP is roughly **3–4× faster** than the highspy high-level API and
 within **10–15×** of the highspy batch numpy API that requires the caller to
 pre-build the full CSR matrix.
 
