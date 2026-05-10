@@ -15,29 +15,34 @@ logger = logging.getLogger(__name__)
 # try loading the solver library
 ffi = cffi.FFI()
 try:
-    # first try user-defined path, if given
     ENV_KEY = "PMIP_HIGHS_LIBRARY"
     if ENV_KEY in os.environ:
+        # Explicit path takes priority.
         libfile = os.environ[ENV_KEY]
-        logger.debug("Choosing HiGHS library {libfile} via {ENV_KEY}.")
+        logger.debug(f"Choosing HiGHS library {libfile} via {ENV_KEY}.")
     else:
-        # Try library from highsbox, which is optional dependency.
-        import highsbox
+        # Prefer highspy (official HiGHS package): its _core extension module
+        # statically links the full HiGHS C API and exports all symbols.
+        try:
+            import highspy._core as _highs_core
 
-        root = highsbox.highs_dist_dir()
+            libfile = _highs_core.__file__
+            logger.debug(f"Choosing HiGHS library {libfile} via highspy package.")
+        except ImportError:
+            # Fall back to highsbox (third-party binary distribution).
+            import highsbox
 
-        # Need library matching operating system.
-        # Following: PyOptInterface/src/pyoptinterface/_src/highs.py
-        platform = sys.platform.lower()
-        if "linux" in platform:
-            libfile = os.path.join(root, "lib", "libhighs.so")
-        elif platform.startswith("win"):
-            libfile = os.path.join(root, "bin", "highs.dll")
-        elif any(platform.startswith(p) for p in ("darwin", "macos")):
-            libfile = os.path.join(root, "lib", "libhighs.dylib")
-        else:
-            raise NotImplementedError(f"{sys.platform} not supported!")
-        logger.debug("Choosing HiGHS library {libfile} via highsbox package.")
+            root = highsbox.highs_dist_dir()
+            platform = sys.platform.lower()
+            if "linux" in platform:
+                libfile = os.path.join(root, "lib", "libhighs.so")
+            elif platform.startswith("win"):
+                libfile = os.path.join(root, "bin", "highs.dll")
+            elif any(platform.startswith(p) for p in ("darwin", "macos")):
+                libfile = os.path.join(root, "lib", "libhighs.dylib")
+            else:
+                raise NotImplementedError(f"{sys.platform} not supported!")
+            logger.debug(f"Choosing HiGHS library {libfile} via highsbox package.")
 
     highslib = ffi.dlopen(libfile)
     has_highs = True
@@ -687,7 +692,7 @@ class SolverHighs(mip.Solver):
         if not has_highs:
             raise FileNotFoundError(
                 "HiGHS not found. "
-                "Please install the `highsbox` package (pip install mip[highs]), or "
+                "Please install the `highspy` package (pip install mip[highs]), or "
                 "set the `PMIP_HIGHS_LIBRARY` environment variable."
             )
 
@@ -965,6 +970,7 @@ class SolverHighs(mip.Solver):
         if opt_status in (
             mip.OptimizationStatus.OPTIMAL,
             mip.OptimizationStatus.FEASIBLE,
+            mip.OptimizationStatus.TRUNCATED,
         ):
             n, m = self.num_cols(), self.num_rows()
             col_value = ffi.new("double[]", n)
@@ -976,8 +982,10 @@ class SolverHighs(mip.Solver):
                     self._model, col_value, col_dual, row_value, row_dual
                 )
             )
-            self._x = [col_value[j] for j in range(n)]
-            self._rc = [col_dual[j] for j in range(n)]
+
+            if self._has_primal_solution():
+                self._x = [col_value[j] for j in range(n)]
+                self._rc = [col_dual[j] for j in range(n)]
 
             if self._has_dual_solution():
                 self._pi = [row_dual[i] for i in range(m)]
@@ -1096,6 +1104,12 @@ class SolverHighs(mip.Solver):
 
     def set_max_nodes(self: "SolverHighs", max_nodes: int):
         self._set_int_option_value("mip_max_nodes", max_nodes)
+
+    def get_max_iter(self: "SolverHighs") -> int:
+        return self._get_int_option_value("simplex_iteration_limit")
+
+    def set_max_iter(self: "SolverHighs", max_iter: int):
+        self._set_int_option_value("simplex_iteration_limit", max_iter)
 
     def get_max_nodes_same_incumbent(self: "SolverHighs") -> int:
         return self._get_int_option_value("mip_max_stall_nodes")
@@ -1562,27 +1576,39 @@ class SolverHighs(mip.Solver):
 
     def get_status(self: "SolverHighs") -> mip.OptimizationStatus:
         OS = mip.OptimizationStatus
+        lib = self._lib
+        highs_status = lib.Highs_getModelStatus(self._model)
+
+        # Time/iteration limit for LP (no integer variables): TRUNCATED.
+        # For MIP, fall through to FEASIBLE/NO_SOLUTION_FOUND below.
+        is_lp = self.num_int() == 0
+        truncated_statuses = (
+            lib.kHighsModelStatusTimeLimit,
+            lib.kHighsModelStatusIterationLimit,
+        )
+        if is_lp and highs_status in truncated_statuses:
+            return OS.TRUNCATED
+
         status_map = {
-            self._lib.kHighsModelStatusNotset: OS.OTHER,
-            self._lib.kHighsModelStatusLoadError: OS.ERROR,
-            self._lib.kHighsModelStatusModelError: OS.ERROR,
-            self._lib.kHighsModelStatusPresolveError: OS.ERROR,
-            self._lib.kHighsModelStatusSolveError: OS.ERROR,
-            self._lib.kHighsModelStatusPostsolveError: OS.ERROR,
-            self._lib.kHighsModelStatusModelEmpty: OS.OTHER,
-            self._lib.kHighsModelStatusOptimal: OS.OPTIMAL,
-            self._lib.kHighsModelStatusInfeasible: OS.INFEASIBLE,
-            self._lib.kHighsModelStatusUnboundedOrInfeasible: OS.UNBOUNDED,
+            lib.kHighsModelStatusNotset: OS.OTHER,
+            lib.kHighsModelStatusLoadError: OS.ERROR,
+            lib.kHighsModelStatusModelError: OS.ERROR,
+            lib.kHighsModelStatusPresolveError: OS.ERROR,
+            lib.kHighsModelStatusSolveError: OS.ERROR,
+            lib.kHighsModelStatusPostsolveError: OS.ERROR,
+            lib.kHighsModelStatusModelEmpty: OS.OTHER,
+            lib.kHighsModelStatusOptimal: OS.OPTIMAL,
+            lib.kHighsModelStatusInfeasible: OS.INFEASIBLE,
+            lib.kHighsModelStatusUnboundedOrInfeasible: OS.UNBOUNDED,
             # ... or should it be INFEASIBLE?
-            self._lib.kHighsModelStatusUnbounded: OS.UNBOUNDED,
-            self._lib.kHighsModelStatusObjectiveBound: None,
-            self._lib.kHighsModelStatusObjectiveTarget: None,
-            self._lib.kHighsModelStatusTimeLimit: None,
-            self._lib.kHighsModelStatusIterationLimit: None,
-            self._lib.kHighsModelStatusUnknown: OS.OTHER,
-            self._lib.kHighsModelStatusSolutionLimit: None,
+            lib.kHighsModelStatusUnbounded: OS.UNBOUNDED,
+            lib.kHighsModelStatusObjectiveBound: None,
+            lib.kHighsModelStatusObjectiveTarget: None,
+            lib.kHighsModelStatusTimeLimit: None,
+            lib.kHighsModelStatusIterationLimit: None,
+            lib.kHighsModelStatusUnknown: OS.OTHER,
+            lib.kHighsModelStatusSolutionLimit: None,
         }
-        highs_status = self._lib.Highs_getModelStatus(self._model)
         status = status_map[highs_status]
         if status is None:
             # depends on solution status
