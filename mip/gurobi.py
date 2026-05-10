@@ -579,6 +579,13 @@ class SolverGurobi(Solver):
     def set_max_nodes(self, max_nodes: int):
         self.set_dbl_param("NodeLimit", float(max_nodes))
 
+    def get_max_iter(self) -> int:
+        rdbl = self.get_dbl_param("IterationLimit")
+        return min(maxsize, int(rdbl))
+
+    def set_max_iter(self, max_iter: int):
+        self.set_dbl_param("IterationLimit", float(max_iter))
+
     def set_num_threads(self, threads: int):
         self.__threads = threads
 
@@ -726,7 +733,7 @@ class SolverGurobi(Solver):
         # finished before the search to be
         # concluded (time, iteration limit...)
         if (self.num_int() + self.get_int_attr("NumSOS")) and (not relax):
-            if status in [8, 9, 10, 11, 13]:
+            if status in [7, 8, 9, 10, 11, 13]:
                 nsols = self.get_int_attr("SolCount")
                 if nsols >= 1:
                     self.__x = ffi.new("double[{}]".format(self.num_cols()))
@@ -788,11 +795,21 @@ class SolverGurobi(Solver):
             return OptimizationStatus.UNBOUNDED
         if status == 6:  # CUTOFF
             return OptimizationStatus.CUTOFF
-        if status == 7:  # ITERATION_LIMIT
-            return OptimizationStatus.OTHER
+        if status in [7, 9]:  # ITERATION_LIMIT or TIME_LIMIT (LP path)
+            # LP solve truncated: populate whatever solution Gurobi has
+            nsols = self.get_int_attr("SolCount")
+            if nsols >= 1:
+                self.__obj_val = self.get_dbl_attr("ObjVal")
+                self.__x = ffi.new("double[{}]".format(self.num_cols()))
+                attr = "X".encode("utf-8")
+                st = GRBgetdblattrarray(
+                    self._model, attr, 0, self.num_cols(), self.__x
+                )
+                if st:
+                    raise ParameterNotAvailable("Error querying Gurobi solution")
+                # duals are only valid at optimality for Gurobi, skip Pi/RC
+            return OptimizationStatus.TRUNCATED
         if status == 8:  # NODE_LIMIT
-            return OptimizationStatus.OTHER
-        if status == 9:  # TIME_LIMIT
             return OptimizationStatus.OTHER
         if status == 10:  # SOLUTION_LIMIT
             return OptimizationStatus.FEASIBLE
