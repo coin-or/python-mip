@@ -757,6 +757,11 @@ class SolverHighs(mip.Solver):
         self._c_row_values  = ffi.new("double[]", _CACHE_INITIAL_NZ_CAP)
         self._row_names: list = []        # (logical_idx, encoded_bytes) pairs
 
+        # Name→index dicts for O(1) lookups without flushing pending cols/rows.
+        # Set to None after remove_vars/remove_constrs/read, which invalidate indices.
+        self._col_name_dict: Optional[dict] = {}
+        self._row_name_dict: Optional[dict] = {}
+
     def __del__(self):
         self._name_buffer = None
         self._lib.Highs_destroy(self._model)
@@ -948,6 +953,8 @@ class SolverHighs(mip.Solver):
                 check(
                     self._lib.Highs_passColName(self._model, col, name.encode("utf-8"))
                 )
+                if self._col_name_dict is not None:
+                    self._col_name_dict[name] = col
             if var_type != mip.CONTINUOUS:
                 self._num_int_vars += 1
                 check(
@@ -973,6 +980,8 @@ class SolverHighs(mip.Solver):
             self._pending_int_count += 1
         if name:
             self._col_names.append((col, name.encode("utf-8")))
+            if self._col_name_dict is not None:
+                self._col_name_dict[name] = col
 
     def add_constr(self: "SolverHighs", lin_expr: "mip.LinExpr", name: str = ""):
         row = self._row_committed + self._row_fill
@@ -1005,6 +1014,8 @@ class SolverHighs(mip.Solver):
 
         if name:
             self._row_names.append((row, name.encode("utf-8")))
+            if self._row_name_dict is not None:
+                self._row_name_dict[name] = row
 
     def add_lazy_constr(self: "SolverHighs", lin_expr: "mip.LinExpr"):
         raise NotImplementedError("HiGHS doesn't support lazy constraints!")
@@ -1308,6 +1319,8 @@ class SolverHighs(mip.Solver):
         # readModel replaces the model; resync committed counters from HiGHS.
         self._col_committed = self._lib.Highs_getNumCol(self._model)
         self._row_committed = self._lib.Highs_getNumRow(self._model)
+        self._col_name_dict = None  # model replaced; old name→index mapping is stale
+        self._row_name_dict = None
 
     def num_cols(self: "SolverHighs") -> int:
         return self._col_committed + self._col_fill
@@ -1531,8 +1544,11 @@ class SolverHighs(mip.Solver):
         set_ = ffi.new("int[]", constrsList)
         check(self._lib.Highs_deleteRowsBySet(self._model, len(constrsList), set_))
         self._row_committed = self._lib.Highs_getNumRow(self._model)
+        self._row_name_dict = None  # indices shift after deletion
 
     def constr_get_index(self: "SolverHighs", name: str) -> int:
+        if self._row_name_dict is not None:
+            return self._row_name_dict.get(name, -1)
         self._flush()
         idx = ffi.new("int *")
         status = self._lib.Highs_getRowByName(self._model, name.encode("utf-8"), idx)
@@ -1746,8 +1762,11 @@ class SolverHighs(mip.Solver):
         set_ = ffi.new("int[]", varsList)
         check(self._lib.Highs_deleteColsBySet(self._model, len(varsList), set_))
         self._col_committed = self._lib.Highs_getNumCol(self._model)
+        self._col_name_dict = None  # indices shift after deletion
 
     def var_get_index(self: "SolverHighs", name: str) -> int:
+        if self._col_name_dict is not None:
+            return self._col_name_dict.get(name, -1)
         self._flush()
         idx = ffi.new("int *")
         status = self._lib.Highs_getColByName(self._model, name.encode("utf-8"), idx)
