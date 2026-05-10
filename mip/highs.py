@@ -782,6 +782,13 @@ class SolverHighs(mip.Solver):
             self._lib.Highs_setBoolOptionValue(self._model, name.encode("UTF-8"), value)
         )
 
+    def _set_string_option_value(self: "SolverHighs", name: str, value: str):
+        check(
+            self._lib.Highs_setStringOptionValue(
+                self._model, name.encode("UTF-8"), value.encode("UTF-8")
+            )
+        )
+
     def _change_coef(self: "SolverHighs", row: int, col: int, value: float):
         "Overwrite a single coefficient in the matrix."
         check(self._lib.Highs_changeCoeff(self._model, row, col, value))
@@ -952,6 +959,22 @@ class SolverHighs(mip.Solver):
 
         self.set_mip_gap(self.model.max_mip_gap)
         self.set_mip_gap_abs(self.model.max_mip_gap_abs)
+
+        lpm = self.model.lp_method
+        if lpm == mip.LP_Method.DUAL:
+            self._set_string_option_value("solver", "simplex")
+            self._set_int_option_value("simplex_strategy", 1)
+        elif lpm == mip.LP_Method.PRIMAL:
+            self._set_string_option_value("solver", "simplex")
+            self._set_int_option_value("simplex_strategy", 4)
+        elif lpm == mip.LP_Method.BARRIER:
+            self._set_string_option_value("solver", "ipm")
+            self._set_string_option_value("run_crossover", "on")
+        elif lpm == mip.LP_Method.BARRIERNOCROSS:
+            self._set_string_option_value("solver", "ipm")
+            self._set_string_option_value("run_crossover", "off")
+        else:
+            self._set_string_option_value("solver", "choose")
 
         check(self._lib.Highs_run(self._model))
 
@@ -1606,7 +1629,7 @@ class SolverHighs(mip.Solver):
             lib.kHighsModelStatusObjectiveTarget: None,
             lib.kHighsModelStatusTimeLimit: None,
             lib.kHighsModelStatusIterationLimit: None,
-            lib.kHighsModelStatusUnknown: OS.OTHER,
+            lib.kHighsModelStatusUnknown: None,
             lib.kHighsModelStatusSolutionLimit: None,
         }
         status = status_map[highs_status]
