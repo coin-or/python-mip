@@ -1588,7 +1588,10 @@ def xsum(terms) -> "mip.LinExpr":
     """
     result = mip.LinExpr()
     for term in terms:
-        result.add_term(term)
+        if isinstance(term, mip.Var):
+            result.add_var(term)
+        else:
+            result.add_term(term)
     return result
 
 

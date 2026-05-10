@@ -277,8 +277,7 @@ class LinExpr:
             var (mip.Var) : a variable
             coeff (numbers.Real) : coefficient which the variable will be added
         """
-        self.__expr.setdefault(var, 0)
-        self.__expr[var] += coeff
+        self.__expr[var] = self.__expr.get(var, 0) + coeff
 
     def set_expr(self: "LinExpr", expr: Dict["mip.Var", numbers.Real]):
         """Sets terms of the linear expression
