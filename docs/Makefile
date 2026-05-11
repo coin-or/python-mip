@@ -6,6 +6,8 @@ SPHINXOPTS    = -n -E
 SPHINXBUILD   = sphinx-build
 SOURCEDIR     = .
 BUILDDIR      = _build
+# Pass -interaction=nonstopmode so pdflatex does not stop on errors
+LATEXMKOPTS   = -interaction=nonstopmode
 
 all:
 	make latexpdf
