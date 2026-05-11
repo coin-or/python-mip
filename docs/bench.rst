@@ -46,9 +46,12 @@ constraints, and up to 4,794 at-most-one diagonal constraints.
 
 Model creation times in seconds — **CPython 3.14.4**:
 
+.. tabularcolumns:: rrrrrrr
+
 .. list-table::
    :header-rows: 1
    :align: center
+   :class: numtable
    :widths: 8 12 12 13 11 14 16
 
    * - :math:`n`
@@ -103,9 +106,12 @@ Model creation times in seconds — **CPython 3.14.4**:
 
 Model creation times in seconds — **PyPy 3.11 (7.3.20)**:
 
+.. tabularcolumns:: rrrr
+
 .. list-table::
    :header-rows: 1
    :align: center
+   :class: numtable
    :widths: 10 16 16 16
 
    * - :math:`n`
@@ -163,9 +169,12 @@ For :math:`n` cities the model has :math:`2n(n-1)` variables and
 
 Model creation times in seconds — **CPython 3.14.4**:
 
+.. tabularcolumns:: rrrrrrr
+
 .. list-table::
    :header-rows: 1
    :align: center
+   :class: numtable
    :widths: 8 12 12 13 11 14 16
 
    * - :math:`n`
@@ -241,9 +250,12 @@ Model creation times in seconds — **CPython 3.14.4**:
 
 Model creation times in seconds — **PyPy 3.11 (7.3.20)**:
 
+.. tabularcolumns:: rrrr
+
 .. list-table::
    :header-rows: 1
    :align: center
+   :class: numtable
    :widths: 10 16 16 16
 
    * - :math:`n`
@@ -312,308 +324,244 @@ tested in four configurations combining two values for the number of
 resources (2 or 4) and two values for the number of extra precedence arcs
 among real jobs (sparse: :math:`n` arcs, dense: :math:`3n` arcs).
 
-.. rubric:: Config A — 2 resources, sparse precedences
+Model creation times in seconds — **CPython 3.14.4** (Res = number of resources,
+Prec = precedence density):
 
-Model creation times in seconds — **CPython 3.14.4**:
+.. tabularcolumns:: llrrrrr
 
 .. list-table::
    :header-rows: 1
    :align: center
-   :widths: 10 16 16 16 16
+   :class: numtable rcpsp-table
+   :widths: 6 8 6 14 14 16 14
 
-   * - :math:`n`
+   * - Res
+     - Prec
+     - :math:`n`
      - python-mip / CBC
      - python-mip / HiGHS
      - python-mip / Gurobi
      - gurobipy
-   * - 10
+   * - 2
+     - sparse
+     - 10
      - 0.084
      - **0.013**
      - 0.036
      - 0.013
-   * - 20
+   * - 2
+     - sparse
+     - 20
      - 0.046
      - 0.047
      - 0.045
      - **0.042**
-   * - 30
+   * - 2
+     - sparse
+     - 30
      - 0.108
      - 0.116
      - 0.070
      - **0.063**
-   * - 50
+   * - 2
+     - sparse
+     - 50
      - **0.207**
      - 0.237
      - 0.239
      - 0.295
-   * - 75
+   * - 2
+     - sparse
+     - 75
      - 0.667
      - 0.588
      - 0.580
      - **0.536**
-   * - 100
+   * - 2
+     - sparse
+     - 100
      - 1.222
      - 0.997
      - 1.057
      - **0.974**
-   * - 150
+   * - 2
+     - sparse
+     - 150
      - 2.329
      - 2.665
      - 2.654
      - **2.180**
-   * - 200
+   * - 2
+     - sparse
+     - 200
      - 4.945
      - 4.824
      - 4.483
      - **3.694**
-
-Model creation times in seconds — **PyPy 3.11 (7.3.20)**:
-
-.. list-table::
-   :header-rows: 1
-   :align: center
-   :widths: 10 16 16
-
-   * - :math:`n`
-     - python-mip / CBC
-     - python-mip / HiGHS
-   * - 30
-     - **0.026**
-     - 0.032
-   * - 50
-     - **0.053**
-     - 0.060
-   * - 75
-     - **0.119**
-     - 0.143
-   * - 100
-     - **0.196**
-     - 0.241
-   * - 150
-     - 0.509
-     - **0.464**
-   * - 200
-     - **0.810**
-     - 0.855
-
-.. rubric:: Config B — 2 resources, dense precedences
-
-Model creation times in seconds — **CPython 3.14.4**:
-
-.. list-table::
-   :header-rows: 1
-   :align: center
-   :widths: 10 16 16 16 16
-
-   * - :math:`n`
-     - python-mip / CBC
-     - python-mip / HiGHS
-     - python-mip / Gurobi
-     - gurobipy
-   * - 10
+   * - 2
+     - dense
+     - 10
      - 0.013
      - **0.011**
      - 0.011
      - 0.012
-   * - 20
+   * - 2
+     - dense
+     - 20
      - 0.041
      - 0.045
      - 0.046
      - **0.062**
-   * - 30
+   * - 2
+     - dense
+     - 30
      - 0.098
      - 0.120
      - **0.097**
      - 0.125
-   * - 50
+   * - 2
+     - dense
+     - 50
      - 0.283
      - 0.278
      - **0.273**
      - 0.274
-   * - 75
+   * - 2
+     - dense
+     - 75
      - 0.887
      - **0.719**
      - 0.917
      - 0.708
-   * - 100
+   * - 2
+     - dense
+     - 100
      - 1.922
      - **1.708**
      - 1.477
      - 1.843
-   * - 150
+   * - 2
+     - dense
+     - 150
      - 3.996
      - 3.687
      - **3.113**
      - 3.208
-   * - 200
+   * - 2
+     - dense
+     - 200
      - 5.621
      - 5.724
      - 7.342
      - **5.686**
-
-Model creation times in seconds — **PyPy 3.11 (7.3.20)**:
-
-.. list-table::
-   :header-rows: 1
-   :align: center
-   :widths: 10 16 16
-
-   * - :math:`n`
-     - python-mip / CBC
-     - python-mip / HiGHS
-   * - 30
-     - **0.018**
-     - 0.025
-   * - 50
-     - 0.077
-     - **0.060**
-   * - 75
-     - 0.155
-     - **0.134**
-   * - 100
-     - 0.342
-     - **0.248**
-   * - 150
-     - **0.578**
-     - 0.674
-   * - 200
-     - **1.109**
-     - 1.139
-
-.. rubric:: Config C — 4 resources, sparse precedences
-
-Model creation times in seconds — **CPython 3.14.4**:
-
-.. list-table::
-   :header-rows: 1
-   :align: center
-   :widths: 10 16 16 16 16
-
-   * - :math:`n`
-     - python-mip / CBC
-     - python-mip / HiGHS
-     - python-mip / Gurobi
-     - gurobipy
-   * - 10
+   * - 4
+     - sparse
+     - 10
      - 0.017
      - **0.017**
      - 0.018
      - 0.022
-   * - 20
+   * - 4
+     - sparse
+     - 20
      - 0.070
      - 0.070
      - 0.055
      - **0.032**
-   * - 30
+   * - 4
+     - sparse
+     - 30
      - **0.085**
      - 0.096
      - 0.162
      - 0.133
-   * - 50
+   * - 4
+     - sparse
+     - 50
      - 0.367
      - **0.279**
      - 0.440
      - 0.358
-   * - 75
+   * - 4
+     - sparse
+     - 75
      - 0.880
      - 1.030
      - 0.817
      - **0.690**
-   * - 100
+   * - 4
+     - sparse
+     - 100
      - 1.768
      - 1.630
      - 1.636
      - **1.155**
-   * - 150
+   * - 4
+     - sparse
+     - 150
      - 3.902
      - 4.047
      - 3.491
      - **2.686**
-   * - 200
+   * - 4
+     - sparse
+     - 200
      - 4.949
      - 4.955
      - 5.428
      - **3.800**
-
-Model creation times in seconds — **PyPy 3.11 (7.3.20)**:
-
-.. list-table::
-   :header-rows: 1
-   :align: center
-   :widths: 10 16 16
-
-   * - :math:`n`
-     - python-mip / CBC
-     - python-mip / HiGHS
-   * - 30
-     - 0.020
-     - **0.017**
-   * - 50
-     - 0.050
-     - **0.046**
-   * - 75
-     - **0.128**
-     - 0.241
-   * - 100
-     - **0.239**
-     - 0.269
-   * - 150
-     - 0.728
-     - **0.664**
-   * - 200
-     - 1.144
-     - **1.060**
-
-.. rubric:: Config D — 4 resources, dense precedences
-
-Model creation times in seconds — **CPython 3.14.4**:
-
-.. list-table::
-   :header-rows: 1
-   :align: center
-   :widths: 10 16 16 16 16
-
-   * - :math:`n`
-     - python-mip / CBC
-     - python-mip / HiGHS
-     - python-mip / Gurobi
-     - gurobipy
-   * - 10
+   * - 4
+     - dense
+     - 10
      - 0.011
      - **0.011**
      - 0.015
      - 0.022
-   * - 20
+   * - 4
+     - dense
+     - 20
      - 0.046
      - **0.043**
      - 0.048
      - 0.042
-   * - 30
+   * - 4
+     - dense
+     - 30
      - 0.122
      - 0.105
      - 0.114
      - **0.092**
-   * - 50
+   * - 4
+     - dense
+     - 50
      - 0.308
      - 0.326
      - 0.303
      - **0.264**
-   * - 75
+   * - 4
+     - dense
+     - 75
      - 0.762
      - 0.888
      - 0.798
      - **0.699**
-   * - 100
+   * - 4
+     - dense
+     - 100
      - 1.428
      - 1.523
      - 1.543
      - **1.171**
-   * - 150
+   * - 4
+     - dense
+     - 150
      - 3.228
      - 3.269
      - 3.092
      - **2.729**
-   * - 200
+   * - 4
+     - dense
+     - 200
      - 5.712
      - 5.640
      - 5.573
@@ -621,30 +569,137 @@ Model creation times in seconds — **CPython 3.14.4**:
 
 Model creation times in seconds — **PyPy 3.11 (7.3.20)**:
 
+.. tabularcolumns:: llrrr
+
 .. list-table::
    :header-rows: 1
    :align: center
-   :widths: 10 16 16
+   :class: numtable rcpsp-table
+   :widths: 6 8 6 16 16
 
-   * - :math:`n`
+   * - Res
+     - Prec
+     - :math:`n`
      - python-mip / CBC
      - python-mip / HiGHS
-   * - 30
+   * - 2
+     - sparse
+     - 30
+     - **0.026**
+     - 0.032
+   * - 2
+     - sparse
+     - 50
+     - **0.053**
+     - 0.060
+   * - 2
+     - sparse
+     - 75
+     - **0.119**
+     - 0.143
+   * - 2
+     - sparse
+     - 100
+     - **0.196**
+     - 0.241
+   * - 2
+     - sparse
+     - 150
+     - 0.509
+     - **0.464**
+   * - 2
+     - sparse
+     - 200
+     - **0.810**
+     - 0.855
+   * - 2
+     - dense
+     - 30
+     - **0.018**
+     - 0.025
+   * - 2
+     - dense
+     - 50
+     - 0.077
+     - **0.060**
+   * - 2
+     - dense
+     - 75
+     - 0.155
+     - **0.134**
+   * - 2
+     - dense
+     - 100
+     - 0.342
+     - **0.248**
+   * - 2
+     - dense
+     - 150
+     - **0.578**
+     - 0.674
+   * - 2
+     - dense
+     - 200
+     - **1.109**
+     - 1.139
+   * - 4
+     - sparse
+     - 30
+     - 0.020
+     - **0.017**
+   * - 4
+     - sparse
+     - 50
+     - 0.050
+     - **0.046**
+   * - 4
+     - sparse
+     - 75
+     - **0.128**
+     - 0.241
+   * - 4
+     - sparse
+     - 100
+     - **0.239**
+     - 0.269
+   * - 4
+     - sparse
+     - 150
+     - 0.728
+     - **0.664**
+   * - 4
+     - sparse
+     - 200
+     - 1.144
+     - **1.060**
+   * - 4
+     - dense
+     - 30
      - 0.021
      - **0.018**
-   * - 50
+   * - 4
+     - dense
+     - 50
      - **0.054**
      - 0.061
-   * - 75
+   * - 4
+     - dense
+     - 75
      - 0.313
      - **0.162**
-   * - 100
+   * - 4
+     - dense
+     - 100
      - **0.318**
      - 0.368
-   * - 150
+   * - 4
+     - dense
+     - 150
      - **0.705**
      - 0.793
-   * - 200
+   * - 4
+     - dense
+     - 200
      - **1.284**
      - 1.365
 

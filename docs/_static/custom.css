@@ -1,0 +1,7 @@
+/* Right-align data cells in benchmark tables */
+table.numtable td { text-align: right; }
+table.numtable th { text-align: center; }
+
+/* Left-align the first two columns in RCPSP tables (Resources, Prec) */
+table.rcpsp-table td:nth-child(1),
+table.rcpsp-table td:nth-child(2) { text-align: left; }
