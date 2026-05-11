@@ -28,13 +28,36 @@ Usage:
 import math
 import platform
 import random
+import signal
 import sys
 import time
 
-SIZES = [15, 20, 30, 50]
+SIZES = [30, 50, 75, 100, 150, 200, 300, 400, 500]
 SEED = 42
 VERIFY_N = 10        # solve to optimality and check
 MAX_SOLVE_SEC = 30.0
+BUILD_TIMEOUT_SEC = 8  # seconds; slower solvers print ">8s" and skip
+
+
+# ── build timeout helper ─────────────────────────────────────────────────────
+
+class _BuildTimeout(Exception):
+    pass
+
+
+def _timeout_handler(signum, frame):
+    raise _BuildTimeout()
+
+
+def _run_with_timeout(fn, timeout_sec=BUILD_TIMEOUT_SEC):
+    """Call fn() and return its result; raise _BuildTimeout if too slow."""
+    old = signal.signal(signal.SIGALRM, _timeout_handler)
+    signal.alarm(timeout_sec)
+    try:
+        return fn()
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, old)
 
 
 # ── instance generation ──────────────────────────────────────────────────────
@@ -384,7 +407,13 @@ if __name__ == "__main__":
 
         for solver in solvers:
             try:
-                result = _run(solver, n, build_only, MAX_SOLVE_SEC)
+                def _bench(s=solver, _n=n):
+                    return _run(s, _n, build_only, MAX_SOLVE_SEC)
+                try:
+                    result = _run_with_timeout(_bench)
+                except _BuildTimeout:
+                    print(f"  {solver:<32}  {f'>{BUILD_TIMEOUT_SEC}s':>10}")
+                    continue
                 tb = result[0]
                 if build_only:
                     print(f"  {solver:<32}  {tb:>10.3f}")

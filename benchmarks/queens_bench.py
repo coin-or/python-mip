@@ -2,8 +2,8 @@
 
 Constructs a binary integer program for the n-queens problem and measures
 model creation time across different solver backends and Python interpreters.
-The largest default instance (n=300) has 90,000 binary variables and roughly
-4,000 constraints.
+The largest default instance (n=1200) has 1,440,000 binary variables and
+roughly 4,700 constraints.
 
 Benchmarks:
   - python-mip with CBC       (CFFI C-array column/row cache)
@@ -13,16 +13,39 @@ Benchmarks:
   - highspy native batch API  (addVars/addRows with numpy CSR arrays)
 
 Usage:
-    python queens_bench.py [sizes]          # e.g. 100 200 300 400 500
+    python queens_bench.py [sizes]          # e.g. 200 400 600 800 1000 1200
     python queens_bench.py --build-only     # skip solve timing
     python queens_bench.py --solve-only     # skip build-only timing
 """
 
+import signal
 import sys
 import time
 import platform
 
-SIZES = [100, 200, 300, 400, 500]
+SIZES = [200, 400, 600, 800, 1000, 1200]
+BUILD_TIMEOUT_SEC = 8  # seconds; slower solvers print ">8s" and skip
+
+
+# ── build timeout helper ─────────────────────────────────────────────────────
+
+class _BuildTimeout(Exception):
+    pass
+
+
+def _timeout_handler(signum, frame):
+    raise _BuildTimeout()
+
+
+def _run_with_timeout(fn, timeout_sec=BUILD_TIMEOUT_SEC):
+    """Call fn() and return its result; raise _BuildTimeout if too slow."""
+    old = signal.signal(signal.SIGALRM, _timeout_handler)
+    signal.alarm(timeout_sec)
+    try:
+        return fn()
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, old)
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -68,7 +91,7 @@ def _queens_constraints(n):
 
 # ── python-mip benchmark ─────────────────────────────────────────────────────
 
-def bench_pmip(n, solver_name, max_solve_sec=10.0):
+def bench_pmip(n, solver_name, build_only=False, max_solve_sec=10.0):
     import mip
     from mip import Model, xsum, BINARY
 
@@ -93,6 +116,9 @@ def bench_pmip(n, solver_name, max_solve_sec=10.0):
 
     t_build = time.perf_counter() - t0
 
+    if build_only:
+        return t_build, 0.0, "—"
+
     m.max_seconds = max_solve_sec
     t1 = time.perf_counter()
     status = m.optimize()
@@ -103,7 +129,7 @@ def bench_pmip(n, solver_name, max_solve_sec=10.0):
 
 # ── highspy high-level benchmark ─────────────────────────────────────────────
 
-def bench_highspy_hl(n, max_solve_sec=10.0):
+def bench_highspy_hl(n, build_only=False, max_solve_sec=10.0):
     """highspy with high-level addVariable/addConstr expressions."""
     import highspy
 
@@ -134,6 +160,9 @@ def bench_highspy_hl(n, max_solve_sec=10.0):
 
     t_build = time.perf_counter() - t0
 
+    if build_only:
+        return t_build, 0.0, "—"
+
     h.setOptionValue("time_limit", max_solve_sec)
     t1 = time.perf_counter()
     h.run()
@@ -145,7 +174,7 @@ def bench_highspy_hl(n, max_solve_sec=10.0):
 
 # ── highspy batch (numpy) benchmark ──────────────────────────────────────────
 
-def bench_highspy_batch(n, max_solve_sec=10.0):
+def bench_highspy_batch(n, build_only=False, max_solve_sec=10.0):
     """highspy with batch numpy addVars/addRows API."""
     import highspy
     import numpy as np
@@ -193,6 +222,9 @@ def bench_highspy_batch(n, max_solve_sec=10.0):
     )
 
     t_build = time.perf_counter() - t0
+
+    if build_only:
+        return t_build, 0.0, "—"
 
     h.setOptionValue("time_limit", max_solve_sec)
     t1 = time.perf_counter()
@@ -274,13 +306,17 @@ if __name__ == "__main__":
 
         for solver in solvers:
             try:
-                if solver in ("CBC", "HIGHS", "GUROBI"):
-                    tb, ts, st = bench_pmip(n, solver, max_solve_sec)
-                elif solver == "highspy-hl":
-                    tb, ts, st = bench_highspy_hl(n, max_solve_sec)
-                elif solver == "highspy-batch":
-                    tb, ts, st = bench_highspy_batch(n, max_solve_sec)
-                else:
+                def _bench(s=solver, _n=n, _bo=build_only):
+                    if s in ("CBC", "HIGHS", "GUROBI"):
+                        return bench_pmip(_n, s, _bo, max_solve_sec)
+                    elif s == "highspy-hl":
+                        return bench_highspy_hl(_n, _bo, max_solve_sec)
+                    elif s == "highspy-batch":
+                        return bench_highspy_batch(_n, _bo, max_solve_sec)
+                try:
+                    tb, ts, st = _run_with_timeout(_bench)
+                except _BuildTimeout:
+                    print(f"  {solver:<28}  {f'>{BUILD_TIMEOUT_SEC}s':>10}")
                     continue
                 if build_only:
                     print(f"  {solver:<28}  {tb:>10.3f}")
