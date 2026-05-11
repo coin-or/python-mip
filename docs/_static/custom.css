@@ -2,6 +2,6 @@
 table.numtable td { text-align: right; }
 table.numtable th { text-align: center; }
 
-/* Left-align the first two columns in RCPSP tables (Resources, Prec) */
-table.rcpsp-table td:nth-child(1),
-table.rcpsp-table td:nth-child(2) { text-align: left; }
+/* Left-align the Res and Prec columns in RCPSP tables (2nd and 3rd columns) */
+table.rcpsp-table td:nth-child(2),
+table.rcpsp-table td:nth-child(3) { text-align: left; }
