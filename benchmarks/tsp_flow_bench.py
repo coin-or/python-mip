@@ -198,6 +198,56 @@ def bench_pmip(n, solver_name, build_only=False, max_solve_sec=MAX_SOLVE_SEC):
     return t_build, t_solve, str(status).split(".")[-1], obj
 
 
+
+# ── native gurobipy benchmark ─────────────────────────────────────────────────
+
+
+def bench_gurobi_native(n, build_only=False, max_solve_sec=MAX_SOLVE_SEC):
+    """Build TSP flow model with the native gurobipy API (no python-mip layer)."""
+    import gurobipy as gp
+    from gurobipy import GRB
+
+    c = make_instance(n)
+    V = range(n)
+    A = _arc_list(n)
+
+    t0 = time.perf_counter()
+    env = gp.Env(empty=True)
+    env.setParam("OutputFlag", 0)
+    env.start()
+    m = gp.Model(env=env)
+
+    x = {ij: m.addVar(vtype=GRB.BINARY) for ij in A}
+    y = {ij: m.addVar(lb=0.0, ub=n - 1) for ij in A}
+
+    m.setObjective(gp.quicksum(c[i, j] * x[i, j] for i, j in A), GRB.MINIMIZE)
+
+    for i in V:
+        m.addConstr(gp.quicksum(x[i, j] for j in V if j != i) == 1)
+        m.addConstr(gp.quicksum(x[j, i] for j in V if j != i) == 1)
+    for i, j in A:
+        m.addConstr(y[i, j] <= (n - 1) * x[i, j])
+    for i in range(1, n):
+        m.addConstr(
+            gp.quicksum(y[j, i] for j in V if j != i)
+            - gp.quicksum(y[i, j] for j in V if j != i)
+            == 1
+        )
+
+    m.update()
+    t_build = time.perf_counter() - t0
+
+    if build_only:
+        return t_build, None, "—", None
+
+    m.setParam("TimeLimit", max_solve_sec)
+    t1 = time.perf_counter()
+    m.optimize()
+    t_solve = time.perf_counter() - t1
+    obj = m.ObjVal if m.SolCount > 0 else None
+    return t_build, t_solve, str(m.Status), obj
+
+
 # ── highspy high-level benchmark ─────────────────────────────────────────────
 
 
@@ -337,6 +387,15 @@ def detect_solvers():
     except ImportError:
         pass
     try:
+        import gurobipy as gp
+        env = gp.Env(empty=True)
+        env.setParam("OutputFlag", 0)
+        env.start()
+        gp.Model(env=env)
+        solvers.append("gurobipy")
+    except Exception:
+        pass
+    try:
         import highspy  # noqa: F401
 
         solvers.append("highspy-hl")
@@ -356,6 +415,8 @@ def _model_size(n):
 def _run(solver, n, build_only, max_solve_sec):
     if solver in ("CBC", "HIGHS", "GUROBI"):
         return bench_pmip(n, solver, build_only, max_solve_sec)
+    elif solver == "gurobipy":
+        return bench_gurobi_native(n, build_only, max_solve_sec)
     elif solver == "highspy-hl":
         return bench_highspy_hl(n, build_only, max_solve_sec)
     elif solver == "highspy-batch":

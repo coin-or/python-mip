@@ -24,6 +24,8 @@
 
 .. [FGL05] M. Fischetti, F. Glover, and A. Lodi. The feasibility pump. *Mathematical Programming*, 104(1):91–104, 2005.
 
+.. [GaGr78] B. Gavish and S. Graves. The Travelling Salesman Problem and Related Problems. *Operations Research Center Working Paper GR-78-4*, MIT, 1978.
+
 .. [Fisch14] M. Fischetti, M. Monaci. Exploiting erraticism in search. *Operations Research*, 62:114--122, 2014.
 
 .. [FiSa11] M. Fischetti, and D. Salvagnin. A relax-and-cut framework for Gomory mixed-integer cuts. *Mathematical Programming Computation*, 3(2), 79-102, 2011.

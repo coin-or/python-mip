@@ -102,6 +102,8 @@ large. With a time limit, the search is truncated and the best solution found du
     :width: 60%
     :align: center
 
+.. _queens-label:
+
 n-Queens
 --------
 
@@ -213,6 +215,8 @@ Follows the example of a solver for the BMCP using the previous MIP formulation:
     :linenos:
     :lines: 5-55
 
+
+.. _rcpsp-label:
 
 Resource Constrained Project Scheduling
 ---------------------------------------
