@@ -5,7 +5,8 @@ Benchmarks
 
 This section presents computational experiments measuring **model creation
 time** — the time from an empty model to a fully built, solver-ready instance
-— across different modelling interfaces and solver backends.
+— across different modelling interfaces, solver backends, and Python
+interpreters.
 
 Python-MIP communicates every problem modification directly to the solver
 engine rather than staging a separate intermediate model.  To do this
@@ -22,13 +23,17 @@ efficiently without per-call overhead:
 - **Gurobi** provides its own internal buffering (``update`` mode) that
   python-mip relies on directly.
 
+Both CBC and HiGHS use CFFI and are fully **PyPy-compatible**.  Gurobi's
+``gurobipy`` extension is also compatible with PyPy.  The PyPy JIT compiler
+eliminates most Python overhead, yielding 4–5× faster model creation times.
+
 The ``highspy`` native batch API (``addVars`` / ``addRows`` with numpy arrays)
 represents the theoretical lower bound for HiGHS model creation: a single bulk
 call with a pre-built CSR matrix, bypassing all Python object overhead.
 The ``highspy`` high-level API (``addVariable`` / ``addConstr`` expression
 objects) is included for reference.
 
-Experiments were run on CPython 3.14.4 on a Linux workstation.
+Experiments were run on a Linux workstation.
 Reproducible benchmark scripts are in the ``benchmarks/`` directory.
 
 
@@ -41,7 +46,7 @@ Binary integer programs: place :math:`n` non-attacking queens on an
 :math:`2(2n-3)` at-most-one diagonal constraints.  The :math:`n=1200`
 instance has 1,440,000 binary variables.
 
-Model creation times in seconds (CPython 3.14.4):
+Model creation times in seconds — **CPython 3.14.4**:
 
 .. list-table::
    :header-rows: 1
@@ -91,10 +96,50 @@ Model creation times in seconds (CPython 3.14.4):
      - >8s
      - 0.826
 
-Python-MIP with any backend is **10–12× faster** than the highspy high-level
-API for model creation (highspy-hl times out above n=400 with an 8 s build
-limit), and within a factor of 6–7 of the highspy batch numpy API which
-requires the user to pre-build a full CSR matrix.
+Model creation times in seconds — **PyPy 3.11 (7.3.20)**:
+
+.. list-table::
+   :header-rows: 1
+   :align: center
+   :widths: 10 16 16 16
+
+   * - :math:`n`
+     - python-mip / CBC
+     - python-mip / HiGHS
+     - python-mip / Gurobi
+   * - 200
+     - 0.061
+     - **0.053**
+     - 0.050
+   * - 400
+     - **0.141**
+     - 0.153
+     - 0.189
+   * - 600
+     - **0.274**
+     - 0.290
+     - 0.371
+   * - 800
+     - **0.471**
+     - 0.463
+     - 0.684
+   * - 1000
+     - **0.774**
+     - 0.862
+     - 1.179
+   * - 1200
+     - **1.100**
+     - 1.117
+     - 1.620
+
+PyPy delivers a **4–5× speedup** over CPython for python-mip model building.
+The highspy batch numpy API is slower under PyPy (numpy operations are not
+JIT-compiled by PyPy) and is omitted from the PyPy table.
+
+Python-MIP (CPython) with any backend is **10–12× faster** than the highspy
+high-level API (which times out above n=400 with an 8 s build limit), and
+within a factor of 6–7 of the highspy batch numpy API which requires the user
+to pre-build a full CSR matrix.
 
 Run: ``python benchmarks/queens_bench.py --build-only``
 
@@ -124,7 +169,7 @@ constraints together eliminate all subtours.
 For :math:`n` cities the model has :math:`2n(n-1)` variables and
 :math:`2n + n(n-1) + (n-1)` constraints.
 
-Model creation times in seconds (CPython 3.14.4):
+Model creation times in seconds — **CPython 3.14.4**:
 
 .. list-table::
    :header-rows: 1
@@ -192,14 +237,58 @@ Model creation times in seconds (CPython 3.14.4):
      - >8s
      - 0.503
 
+Model creation times in seconds — **PyPy 3.11 (7.3.20)**:
+
+.. list-table::
+   :header-rows: 1
+   :align: center
+   :widths: 10 16 16 16
+
+   * - :math:`n`
+     - python-mip / CBC
+     - python-mip / HiGHS
+     - python-mip / Gurobi
+   * - 75
+     - **0.047**
+     - 0.030
+     - 0.020
+   * - 100
+     - **0.028**
+     - 0.031
+     - 0.062
+   * - 150
+     - **0.101**
+     - 0.116
+     - 0.110
+   * - 200
+     - **0.159**
+     - 0.193
+     - 0.195
+   * - 300
+     - **0.383**
+     - 0.433
+     - 0.469
+   * - 400
+     - **0.634**
+     - 0.814
+     - 0.821
+   * - 500
+     - **1.263**
+     - 1.224
+     - 1.345
+
+PyPy delivers a **3–4× speedup** over CPython for the TSP flow model.  At
+small sizes (n ≤ 50) JIT warm-up may exceed CPython; the benefit is clear
+from n=75 onwards.
+
 The TSP flow model interleaves binary and continuous variables with
 variable-density rows (degree rows touch :math:`n-1` variables; capacity rows
 touch 2; flow-conservation rows touch :math:`2(n-1)`).  Python-MIP's cache
 handles this automatically — no manual CSR construction required.
-Python-MIP is roughly **3–5× faster** than the highspy high-level API (which
-times out above n=300 with an 8 s build limit) and within **7–8×** of the
-highspy batch numpy API that requires the caller to pre-build the full CSR
-matrix.
+Python-MIP (CPython) is roughly **3–5× faster** than the highspy high-level
+API (which times out above n=300 with an 8 s build limit) and within **7–8×**
+of the highspy batch numpy API that requires the caller to pre-build the full
+CSR matrix.
 
 To verify correctness and solve a small instance:
 ``python benchmarks/tsp_flow_bench.py --verify``
