@@ -1630,7 +1630,6 @@ class SolverCbc(Solver):
         smaller limits could have been set in a previous iteration"""
 
         if max_time != mip.INF:
-            cbc_set_parameter(self, "timeMode", "elapsed")
             self.set_max_seconds(max_time)
         if max_nodes != mip.INT_MAX:
             self.set_max_nodes(max_nodes)
