@@ -34,7 +34,7 @@ classifiers = [
 ]
 dynamic = ["version"]
 
-dependencies = ["cffi>=1.15", "mipster>=0.2.0"]
+dependencies = ["cffi>=1.15", "mipster>=0.2.4"]
 
 [project.optional-dependencies]
 numpy = [
