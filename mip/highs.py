@@ -51,8 +51,7 @@ except Exception as e:
     has_highs = False
 
 if has_highs:
-    ffi.cdef(
-        """
+    ffi.cdef("""
         /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
         /*                                                                       */
         /*    This file is part of the HiGHS linear optimization suite           */
@@ -675,14 +674,13 @@ if has_highs:
                                       const char* value);
         
         HighsInt Highs_getScaledModelStatus(const void* highs);
-    """
-    )
+    """)
 
     STATUS_ERROR = highslib.kHighsStatusError
 
 # Initial capacities for the pending col/row caches (grows geometrically).
-_CACHE_INITIAL_CAP = 8192       # column / row slots
-_CACHE_INITIAL_NZ_CAP = 32768   # row-NZ slots (4 × col cap)
+_CACHE_INITIAL_CAP = 8192  # column / row slots
+_CACHE_INITIAL_NZ_CAP = 32768  # row-NZ slots (4 × col cap)
 _SIZEOF_INT = ffi.sizeof("int")
 _SIZEOF_DOUBLE = ffi.sizeof("double")
 
@@ -734,28 +732,28 @@ class SolverHighs(mip.Solver):
 
         # ── Column / row caches ────────────────────────────────────────────
         # Pending columns (not yet committed to HiGHS).
-        self._col_committed = 0           # cols actually in HiGHS
-        self._col_fill = 0                # pending cols in cache
+        self._col_committed = 0  # cols actually in HiGHS
+        self._col_fill = 0  # pending cols in cache
         self._col_cap = _CACHE_INITIAL_CAP
-        self._c_col_lb  = ffi.new("double[]", _CACHE_INITIAL_CAP)
-        self._c_col_ub  = ffi.new("double[]", _CACHE_INITIAL_CAP)
+        self._c_col_lb = ffi.new("double[]", _CACHE_INITIAL_CAP)
+        self._c_col_ub = ffi.new("double[]", _CACHE_INITIAL_CAP)
         self._c_col_obj = ffi.new("double[]", _CACHE_INITIAL_CAP)
-        self._c_col_int = ffi.new("int[]",    _CACHE_INITIAL_CAP)
-        self._col_names: list = []        # (logical_idx, encoded_bytes) pairs
-        self._pending_int_count = 0       # integer vars among pending cols
+        self._c_col_int = ffi.new("int[]", _CACHE_INITIAL_CAP)
+        self._col_names: list = []  # (logical_idx, encoded_bytes) pairs
+        self._pending_int_count = 0  # integer vars among pending cols
 
         # Pending rows (not yet committed to HiGHS).  NZs stored in CSR.
         self._row_committed = 0
         self._row_fill = 0
         self._row_cap = _CACHE_INITIAL_CAP
-        self._c_row_lb     = ffi.new("double[]", _CACHE_INITIAL_CAP)
-        self._c_row_ub     = ffi.new("double[]", _CACHE_INITIAL_CAP)
-        self._c_row_starts = ffi.new("int[]",    _CACHE_INITIAL_CAP)  # NZ start per row
+        self._c_row_lb = ffi.new("double[]", _CACHE_INITIAL_CAP)
+        self._c_row_ub = ffi.new("double[]", _CACHE_INITIAL_CAP)
+        self._c_row_starts = ffi.new("int[]", _CACHE_INITIAL_CAP)  # NZ start per row
         self._row_nz_fill = 0
         self._row_nz_cap = _CACHE_INITIAL_NZ_CAP
-        self._c_row_indices = ffi.new("int[]",    _CACHE_INITIAL_NZ_CAP)
-        self._c_row_values  = ffi.new("double[]", _CACHE_INITIAL_NZ_CAP)
-        self._row_names: list = []        # (logical_idx, encoded_bytes) pairs
+        self._c_row_indices = ffi.new("int[]", _CACHE_INITIAL_NZ_CAP)
+        self._c_row_values = ffi.new("double[]", _CACHE_INITIAL_NZ_CAP)
+        self._row_names: list = []  # (logical_idx, encoded_bytes) pairs
 
         # Name→index dicts for O(1) lookups without flushing pending cols/rows.
         # Set to None after remove_vars/remove_constrs/read, which invalidate indices.
@@ -771,65 +769,75 @@ class SolverHighs(mip.Solver):
     def _grow_cols(self: "SolverHighs"):
         new_cap = self._col_cap * 2
         n = self._col_fill
-        new_lb  = ffi.new("double[]", new_cap)
-        new_ub  = ffi.new("double[]", new_cap)
+        new_lb = ffi.new("double[]", new_cap)
+        new_ub = ffi.new("double[]", new_cap)
         new_obj = ffi.new("double[]", new_cap)
-        new_int = ffi.new("int[]",    new_cap)
-        ffi.memmove(new_lb,  self._c_col_lb,  n * _SIZEOF_DOUBLE)
-        ffi.memmove(new_ub,  self._c_col_ub,  n * _SIZEOF_DOUBLE)
+        new_int = ffi.new("int[]", new_cap)
+        ffi.memmove(new_lb, self._c_col_lb, n * _SIZEOF_DOUBLE)
+        ffi.memmove(new_ub, self._c_col_ub, n * _SIZEOF_DOUBLE)
         ffi.memmove(new_obj, self._c_col_obj, n * _SIZEOF_DOUBLE)
         ffi.memmove(new_int, self._c_col_int, n * _SIZEOF_INT)
-        self._c_col_lb  = new_lb
-        self._c_col_ub  = new_ub
+        self._c_col_lb = new_lb
+        self._c_col_ub = new_ub
         self._c_col_obj = new_obj
         self._c_col_int = new_int
-        self._col_cap   = new_cap
+        self._col_cap = new_cap
 
     def _grow_rows(self: "SolverHighs"):
         new_cap = self._row_cap * 2
         n = self._row_fill
-        new_lb     = ffi.new("double[]", new_cap)
-        new_ub     = ffi.new("double[]", new_cap)
-        new_starts = ffi.new("int[]",    new_cap)
-        ffi.memmove(new_lb,     self._c_row_lb,     n * _SIZEOF_DOUBLE)
-        ffi.memmove(new_ub,     self._c_row_ub,     n * _SIZEOF_DOUBLE)
+        new_lb = ffi.new("double[]", new_cap)
+        new_ub = ffi.new("double[]", new_cap)
+        new_starts = ffi.new("int[]", new_cap)
+        ffi.memmove(new_lb, self._c_row_lb, n * _SIZEOF_DOUBLE)
+        ffi.memmove(new_ub, self._c_row_ub, n * _SIZEOF_DOUBLE)
         ffi.memmove(new_starts, self._c_row_starts, n * _SIZEOF_INT)
-        self._c_row_lb     = new_lb
-        self._c_row_ub     = new_ub
+        self._c_row_lb = new_lb
+        self._c_row_ub = new_ub
         self._c_row_starts = new_starts
-        self._row_cap      = new_cap
+        self._row_cap = new_cap
 
     def _grow_row_nz(self: "SolverHighs", needed: int):
         new_cap = max(self._row_nz_cap * 2, self._row_nz_fill + needed)
         nz = self._row_nz_fill
-        new_idx = ffi.new("int[]",    new_cap)
+        new_idx = ffi.new("int[]", new_cap)
         new_val = ffi.new("double[]", new_cap)
         ffi.memmove(new_idx, self._c_row_indices, nz * _SIZEOF_INT)
-        ffi.memmove(new_val, self._c_row_values,  nz * _SIZEOF_DOUBLE)
+        ffi.memmove(new_val, self._c_row_values, nz * _SIZEOF_DOUBLE)
         self._c_row_indices = new_idx
-        self._c_row_values  = new_val
-        self._row_nz_cap    = new_cap
+        self._c_row_values = new_val
+        self._row_nz_cap = new_cap
 
     def _flush_cols(self: "SolverHighs"):
         n = self._col_fill
         if n == 0:
             return
-        check(self._lib.Highs_addCols(
-            self._model, n,
-            self._c_col_obj, self._c_col_lb, self._c_col_ub,
-            0, ffi.NULL, ffi.NULL, ffi.NULL,
-        ))
-        if self._pending_int_count > 0:
-            check(self._lib.Highs_changeColsIntegralityByRange(
+        check(
+            self._lib.Highs_addCols(
                 self._model,
-                self._col_committed,
-                self._col_committed + n - 1,
-                self._c_col_int,
-            ))
+                n,
+                self._c_col_obj,
+                self._c_col_lb,
+                self._c_col_ub,
+                0,
+                ffi.NULL,
+                ffi.NULL,
+                ffi.NULL,
+            )
+        )
+        if self._pending_int_count > 0:
+            check(
+                self._lib.Highs_changeColsIntegralityByRange(
+                    self._model,
+                    self._col_committed,
+                    self._col_committed + n - 1,
+                    self._c_col_int,
+                )
+            )
         for col_idx, name_bytes in self._col_names:
             check(self._lib.Highs_passColName(self._model, col_idx, name_bytes))
-        self._col_committed    += n
-        self._col_fill          = 0
+        self._col_committed += n
+        self._col_fill = 0
         self._pending_int_count = 0
         self._col_names.clear()
 
@@ -837,17 +845,23 @@ class SolverHighs(mip.Solver):
         n = self._row_fill
         if n == 0:
             return
-        check(self._lib.Highs_addRows(
-            self._model, n,
-            self._c_row_lb, self._c_row_ub,
-            self._row_nz_fill,
-            self._c_row_starts, self._c_row_indices, self._c_row_values,
-        ))
+        check(
+            self._lib.Highs_addRows(
+                self._model,
+                n,
+                self._c_row_lb,
+                self._c_row_ub,
+                self._row_nz_fill,
+                self._c_row_starts,
+                self._c_row_indices,
+                self._c_row_values,
+            )
+        )
         for row_idx, name_bytes in self._row_names:
             self._lib.Highs_passRowName(self._model, row_idx, name_bytes)
         self._row_committed += n
-        self._row_fill       = 0
-        self._row_nz_fill    = 0
+        self._row_fill = 0
+        self._row_nz_fill = 0
         self._row_names.clear()
 
     def _flush(self: "SolverHighs"):
@@ -970,13 +984,13 @@ class SolverHighs(mip.Solver):
         # Normal path: buffer the column.
         if self._col_fill == self._col_cap:
             self._grow_cols()
-        self._c_col_lb[self._col_fill]  = lb
-        self._c_col_ub[self._col_fill]  = ub
+        self._c_col_lb[self._col_fill] = lb
+        self._c_col_ub[self._col_fill] = ub
         self._c_col_obj[self._col_fill] = obj
         self._c_col_int[self._col_fill] = self._var_type_map[var_type]
         self._col_fill += 1
         if var_type != mip.CONTINUOUS:
-            self._num_int_vars    += 1
+            self._num_int_vars += 1
             self._pending_int_count += 1
         if name:
             self._col_names.append((col, name.encode("utf-8")))
@@ -1003,12 +1017,12 @@ class SolverHighs(mip.Solver):
         if self._row_nz_fill + num_nz > self._row_nz_cap:
             self._grow_row_nz(num_nz)
 
-        self._c_row_lb[self._row_fill]     = lower
-        self._c_row_ub[self._row_fill]     = upper
+        self._c_row_lb[self._row_fill] = lower
+        self._c_row_ub[self._row_fill] = upper
         self._c_row_starts[self._row_fill] = self._row_nz_fill
         for var, coef in lin_expr.expr.items():
             self._c_row_indices[self._row_nz_fill] = var.idx
-            self._c_row_values[self._row_nz_fill]  = coef
+            self._c_row_values[self._row_nz_fill] = coef
             self._row_nz_fill += 1
         self._row_fill += 1
 
@@ -1301,7 +1315,9 @@ class SolverHighs(mip.Solver):
     def get_max_nodes_same_incumbent(self: "SolverHighs") -> int:
         return self._get_int_option_value("mip_max_stall_nodes")
 
-    def set_max_nodes_same_incumbent(self: "SolverHighs", max_nodes_same_incumbent: int):
+    def set_max_nodes_same_incumbent(
+        self: "SolverHighs", max_nodes_same_incumbent: int
+    ):
         self._set_int_option_value("mip_max_stall_nodes", max_nodes_same_incumbent)
 
     def set_num_threads(self: "SolverHighs", threads: int):
@@ -1794,7 +1810,9 @@ class SolverHighs(mip.Solver):
         return self._get_int_info_value("dual_solution_status")
 
     def _has_dual_solution(self: "SolverHighs"):
-        return self._get_dual_solution_status() == self._lib.kHighsSolutionStatusFeasible
+        return (
+            self._get_dual_solution_status() == self._lib.kHighsSolutionStatusFeasible
+        )
 
     def get_status(self: "SolverHighs") -> mip.OptimizationStatus:
         OS = mip.OptimizationStatus
@@ -1834,7 +1852,9 @@ class SolverHighs(mip.Solver):
         status = status_map[highs_status]
         if status is None:
             # depends on solution status
-            status = OS.FEASIBLE if self._has_primal_solution() else OS.NO_SOLUTION_FOUND
+            status = (
+                OS.FEASIBLE if self._has_primal_solution() else OS.NO_SOLUTION_FOUND
+            )
         return status
 
     def cgraph_density(self: "SolverHighs") -> float:
