@@ -70,36 +70,20 @@ try:
         cbclib = ffi.dlopen(libfile)
         os.chdir(old_dir)
     else:
-        import cbcbox as _cbcbox
+        import mipster as _mipster
 
-        _lib_dir = _cbcbox.cbc_lib_dir()
-        if "linux" in platform.lower():
-            if not os_is_64_bit:
-                raise NotImplementedError("Linux 32 bits platform not supported.")
-            libfile = os.path.join(_lib_dir, "libCbc.so")
-        elif platform.lower().startswith("win"):
-            if not os_is_64_bit:
-                raise NotImplementedError("Win32 platform not supported.")
-            # autotools/MinGW places DLLs under bin/, not lib/
-            _bin_dir = os.path.join(_cbcbox.cbc_dist_dir(), "bin")
-            libfile = os.path.join(_bin_dir, "libCbc-0.dll")
-            if not os.path.exists(libfile):
-                raise FileNotFoundError(
-                    "libCbc-0.dll not found in cbcbox Windows distribution at"
-                    " {}. The cbcbox Windows wheel may only contain a static"
-                    " libCbc.a. A shared libCbc-0.dll is required.".format(_bin_dir)
-                )
-            # Python 3.8+ ignores PATH for DLL resolution; use add_dll_directory
+        if not os_is_64_bit:
+            raise NotImplementedError("32-bit platforms are not supported.")
+        libfile = _mipster.lib_path()
+        if platform.lower().startswith("win"):
+            # Python 3.8+ ignores PATH for DLL resolution; let Windows find
+            # any sibling DLLs (libgcc, libstdc++, libwinpthread) via
+            # add_dll_directory on the directory holding libmipster-N.dll.
+            _bin_dir = os.path.dirname(libfile)
             if hasattr(os, "add_dll_directory"):
                 os.add_dll_directory(_bin_dir)
             elif _bin_dir not in os.environ.get("PATH", ""):
                 os.environ["PATH"] = _bin_dir + ";" + os.environ["PATH"]
-        elif platform.lower().startswith("darwin") or platform.lower().startswith(
-            "macos"
-        ):
-            libfile = os.path.join(_lib_dir, "libCbc.dylib")
-        else:
-            raise NotImplementedError("Your operating system/platform is not supported")
         cbclib = ffi.dlopen(libfile)
     has_cbc = True
 except Exception as e:
@@ -316,11 +300,6 @@ if has_cbc:
 
     void Cbc_setAllowableFractionGap(Cbc_Model *model,
         double allowedFracionGap);
-
-    double Cbc_getAllowablePercentageGap(Cbc_Model *model);
-
-    void Cbc_setAllowablePercentageGap(Cbc_Model *model,
-        double allowedPercentageGap);
 
     double Cbc_getMaximumSeconds(Cbc_Model *model);
 
@@ -1022,7 +1001,9 @@ class SolverCbc(Solver):
             strengthenPacking = cbclib.Cbc_strengthenPackingRows
             strengthenPacking(self._model, nr, idxr)
 
-    def optimize(self, relax: bool = False, lp_preprocess: bool = False) -> OptimizationStatus:
+    def optimize(
+        self, relax: bool = False, lp_preprocess: bool = False
+    ) -> OptimizationStatus:
         # get name indexes from an osi problem
         def cbc_get_osi_name_indexes(osi_solver) -> Dict[str, int]:
             nameIdx = {}
@@ -1203,7 +1184,9 @@ class SolverCbc(Solver):
 
         # user-specified cut passes override the cuts-level default
         if self.model.cut_passes != -1:
-            cbclib.Cbc_setIntParam(self._model, INT_PARAM_CUT_PASS, self.model.cut_passes)
+            cbclib.Cbc_setIntParam(
+                self._model, INT_PARAM_CUT_PASS, self.model.cut_passes
+            )
 
         if self.model.clique == 0:
             cbc_set_parameter(self, "clique", "off")
@@ -1662,7 +1645,8 @@ class SolverCbc(Solver):
         cbclib.Cbc_deleteCols(self._model, len(varsList), idx)
 
     def __del__(self):
-        cbclib.Cbc_deleteModel(self._model)
+        if getattr(self, "_model", None) is not None:
+            cbclib.Cbc_deleteModel(self._model)
 
     def get_problem_name(self) -> str:
         namep = self.__name_space
@@ -1793,7 +1777,7 @@ class SolverOsi(Solver):
         self.__obj_val = None
 
     def __del__(self):
-        if self.owns_solver:
+        if getattr(self, "owns_solver", False):
             cbclib.Osi_deleteSolver(self.osi)
 
     def add_var(

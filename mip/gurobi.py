@@ -428,11 +428,12 @@ class SolverGurobi(Solver):
         self.__obj_val = None
 
     def __del__(self):
-        # freeing Gurobi model and environment
-        if self._ownsModel:
+        # Guard against partially-constructed objects (e.g. PyPy GC may call
+        # __del__ even if __init__ raised before setting these attributes).
+        if getattr(self, "_ownsModel", False):
             if self._model:
                 GRBfreemodel(self._model)
-            if self._env and self._venv_loaded:
+            if self._env and getattr(self, "_venv_loaded", False):
                 GRBfreeenv(self._env)
 
     def add_var(
@@ -589,7 +590,9 @@ class SolverGurobi(Solver):
     def set_num_threads(self, threads: int):
         self.__threads = threads
 
-    def optimize(self, relax: bool = False, lp_preprocess: bool = False) -> OptimizationStatus:
+    def optimize(
+        self, relax: bool = False, lp_preprocess: bool = False
+    ) -> OptimizationStatus:
 
         # todo add branch_selector and incumbent_updater callbacks
         @ffi.callback(
@@ -802,9 +805,7 @@ class SolverGurobi(Solver):
                 self.__obj_val = self.get_dbl_attr("ObjVal")
                 self.__x = ffi.new("double[{}]".format(self.num_cols()))
                 attr = "X".encode("utf-8")
-                st = GRBgetdblattrarray(
-                    self._model, attr, 0, self.num_cols(), self.__x
-                )
+                st = GRBgetdblattrarray(self._model, attr, 0, self.num_cols(), self.__x)
                 if st:
                     raise ParameterNotAvailable("Error querying Gurobi solution")
                 # duals are only valid at optimality for Gurobi, skip Pi/RC
