@@ -22,7 +22,10 @@ try:
         logger.debug(f"Choosing HiGHS library {libfile} via {ENV_KEY}.")
     else:
         # Prefer highspy (official HiGHS package): its _core extension module
-        # statically links the full HiGHS C API and exports all symbols.
+        # contains the full HiGHS C API.  On Linux/macOS all symbols are
+        # visible in the shared library; on Windows only the Python init
+        # symbol is exported from the .pyd, so the C API is not accessible
+        # via dlopen there.  We detect that below after loading.
         try:
             import highspy._core as _highs_core
 
@@ -678,6 +681,23 @@ if has_highs:
     """
     )
 
+    # On Windows, highspy's _core.pyd does not export C symbols (only the
+    # Python init function is exported from a .pyd).  Verify the C API is
+    # actually accessible; if not, disable HiGHS gracefully.
+    try:
+        _ = highslib.Highs_create
+    except AttributeError:
+        logger.error(
+            "HiGHS C API symbols not accessible in the loaded library "
+            f"({libfile!r}). "
+            "This typically happens on Windows with the highspy package "
+            "because its .pyd does not export C symbols. "
+            "Install highsbox for Windows support, or set PMIP_HIGHS_LIBRARY "
+            "to point to a highs.dll that exports the C API."
+        )
+        has_highs = False
+
+if has_highs:
     STATUS_ERROR = highslib.kHighsStatusError
 
 # Initial capacities for the pending col/row caches (grows geometrically).
