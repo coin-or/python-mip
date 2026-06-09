@@ -800,7 +800,8 @@ class SolverHighs(mip.Solver):
 
     def __del__(self):
         self._name_buffer = None
-        self._lib.Highs_destroy(self._model)
+        if getattr(self, "_model", None) is not None:
+            self._lib.Highs_destroy(self._model)
 
     # ── Cache grow / flush helpers ─────────────────────────────────────────
 

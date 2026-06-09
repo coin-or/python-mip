@@ -1645,7 +1645,8 @@ class SolverCbc(Solver):
         cbclib.Cbc_deleteCols(self._model, len(varsList), idx)
 
     def __del__(self):
-        cbclib.Cbc_deleteModel(self._model)
+        if getattr(self, "_model", None) is not None:
+            cbclib.Cbc_deleteModel(self._model)
 
     def get_problem_name(self) -> str:
         namep = self.__name_space
@@ -1776,7 +1777,7 @@ class SolverOsi(Solver):
         self.__obj_val = None
 
     def __del__(self):
-        if self.owns_solver:
+        if getattr(self, "owns_solver", False):
             cbclib.Osi_deleteSolver(self.osi)
 
     def add_var(

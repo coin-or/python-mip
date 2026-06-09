@@ -428,11 +428,12 @@ class SolverGurobi(Solver):
         self.__obj_val = None
 
     def __del__(self):
-        # freeing Gurobi model and environment
-        if self._ownsModel:
+        # Guard against partially-constructed objects (e.g. PyPy GC may call
+        # __del__ even if __init__ raised before setting these attributes).
+        if getattr(self, "_ownsModel", False):
             if self._model:
                 GRBfreemodel(self._model)
-            if self._env and self._venv_loaded:
+            if self._env and getattr(self, "_venv_loaded", False):
                 GRBfreeenv(self._env)
 
     def add_var(
