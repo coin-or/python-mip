@@ -51,7 +51,8 @@ except Exception as e:
     has_highs = False
 
 if has_highs:
-    ffi.cdef("""
+    ffi.cdef(
+        """
         /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
         /*                                                                       */
         /*    This file is part of the HiGHS linear optimization suite           */
@@ -674,7 +675,8 @@ if has_highs:
                                       const char* value);
         
         HighsInt Highs_getScaledModelStatus(const void* highs);
-    """)
+    """
+    )
 
     STATUS_ERROR = highslib.kHighsStatusError
 
@@ -1315,9 +1317,7 @@ class SolverHighs(mip.Solver):
     def get_max_nodes_same_incumbent(self: "SolverHighs") -> int:
         return self._get_int_option_value("mip_max_stall_nodes")
 
-    def set_max_nodes_same_incumbent(
-        self: "SolverHighs", max_nodes_same_incumbent: int
-    ):
+    def set_max_nodes_same_incumbent(self: "SolverHighs", max_nodes_same_incumbent: int):
         self._set_int_option_value("mip_max_stall_nodes", max_nodes_same_incumbent)
 
     def set_num_threads(self: "SolverHighs", threads: int):
@@ -1810,9 +1810,7 @@ class SolverHighs(mip.Solver):
         return self._get_int_info_value("dual_solution_status")
 
     def _has_dual_solution(self: "SolverHighs"):
-        return (
-            self._get_dual_solution_status() == self._lib.kHighsSolutionStatusFeasible
-        )
+        return self._get_dual_solution_status() == self._lib.kHighsSolutionStatusFeasible
 
     def get_status(self: "SolverHighs") -> mip.OptimizationStatus:
         OS = mip.OptimizationStatus
@@ -1852,9 +1850,7 @@ class SolverHighs(mip.Solver):
         status = status_map[highs_status]
         if status is None:
             # depends on solution status
-            status = (
-                OS.FEASIBLE if self._has_primal_solution() else OS.NO_SOLUTION_FOUND
-            )
+            status = OS.FEASIBLE if self._has_primal_solution() else OS.NO_SOLUTION_FOUND
         return status
 
     def cgraph_density(self: "SolverHighs") -> float:

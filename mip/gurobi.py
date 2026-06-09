@@ -99,7 +99,8 @@ else:
     has_gurobi = True
     grblib = ffi.dlopen(lib_path)
 
-    ffi.cdef("""
+    ffi.cdef(
+        """
         typedef struct _GRBmodel GRBmodel;
         typedef struct _GRBenv GRBenv;
 
@@ -242,7 +243,8 @@ else:
         int GRBdelconstrs (GRBmodel *model, int numdel, int *ind);
 
         int	GRBreset (GRBmodel *model, int clearall);
-    """)
+    """
+    )
 
     GRBloadenv = grblib.GRBloadenv
     GRBnewmodel = grblib.GRBnewmodel
@@ -339,11 +341,13 @@ class SolverGurobi(Solver):
         """modelp should be informed if a model should not be created,
         but only allow access to an existing one"""
         if not has_gurobi:
-            raise FileNotFoundError("""Gurobi not found. Plase check if the
+            raise FileNotFoundError(
+                """Gurobi not found. Plase check if the
             Gurobi dynamic loadable library is reachable or define
             the environment variable GUROBI_HOME indicating the gurobi
             installation path.
-            """)
+            """
+            )
 
         super().__init__(model, name, sense)
 
@@ -590,9 +594,11 @@ class SolverGurobi(Solver):
     ) -> OptimizationStatus:
 
         # todo add branch_selector and incumbent_updater callbacks
-        @ffi.callback("""
+        @ffi.callback(
+            """
         int (GRBmodel *, void *, int, void *)
-        """)
+        """
+        )
         def callback(
             p_model: CData, p_cbdata: CData, where: int, p_usrdata: CData
         ) -> int:
@@ -1020,9 +1026,7 @@ class SolverGurobi(Solver):
 
         nnz = ffi.new("int *")
         # obtaining number of non-zeros
-        st = GRBgetconstrs(
-            self._model, nnz, ffi.NULL, ffi.NULL, ffi.NULL, constr.idx, 1
-        )
+        st = GRBgetconstrs(self._model, nnz, ffi.NULL, ffi.NULL, ffi.NULL, constr.idx, 1)
         if st != 0:
             raise ParameterNotAvailable(
                 "Could not get info for constraint {}".format(constr.idx)
