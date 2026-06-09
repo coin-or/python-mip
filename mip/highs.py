@@ -14,6 +14,24 @@ logger = logging.getLogger(__name__)
 
 # try loading the solver library
 ffi = cffi.FFI()
+
+
+def _get_highsbox_libfile():
+    """Return the path to the highsbox HiGHS shared library."""
+    import highsbox
+
+    root = highsbox.highs_dist_dir()
+    platform = sys.platform.lower()
+    if "linux" in platform:
+        return os.path.join(root, "lib", "libhighs.so")
+    elif platform.startswith("win"):
+        return os.path.join(root, "bin", "highs.dll")
+    elif any(platform.startswith(p) for p in ("darwin", "macos")):
+        return os.path.join(root, "lib", "libhighs.dylib")
+    else:
+        raise NotImplementedError(f"{sys.platform} not supported!")
+
+
 try:
     ENV_KEY = "PMIP_HIGHS_LIBRARY"
     if ENV_KEY in os.environ:
@@ -25,26 +43,14 @@ try:
         # contains the full HiGHS C API.  On Linux/macOS all symbols are
         # visible in the shared library; on Windows only the Python init
         # symbol is exported from the .pyd, so the C API is not accessible
-        # via dlopen there.  We detect that below after loading.
+        # via dlopen there.  We detect that below and fall back to highsbox.
         try:
             import highspy._core as _highs_core
 
             libfile = _highs_core.__file__
             logger.debug(f"Choosing HiGHS library {libfile} via highspy package.")
         except ImportError:
-            # Fall back to highsbox (third-party binary distribution).
-            import highsbox
-
-            root = highsbox.highs_dist_dir()
-            platform = sys.platform.lower()
-            if "linux" in platform:
-                libfile = os.path.join(root, "lib", "libhighs.so")
-            elif platform.startswith("win"):
-                libfile = os.path.join(root, "bin", "highs.dll")
-            elif any(platform.startswith(p) for p in ("darwin", "macos")):
-                libfile = os.path.join(root, "lib", "libhighs.dylib")
-            else:
-                raise NotImplementedError(f"{sys.platform} not supported!")
+            libfile = _get_highsbox_libfile()
             logger.debug(f"Choosing HiGHS library {libfile} via highsbox package.")
 
     highslib = ffi.dlopen(libfile)
@@ -682,20 +688,30 @@ if has_highs:
     )
 
     # On Windows, highspy's _core.pyd does not export C symbols (only the
-    # Python init function is exported from a .pyd).  Verify the C API is
-    # actually accessible; if not, disable HiGHS gracefully.
+    # Python init function is exported from a .pyd).  Detect this and
+    # automatically fall back to highsbox, which ships a proper highs.dll.
     try:
         _ = highslib.Highs_create
     except AttributeError:
-        logger.error(
-            "HiGHS C API symbols not accessible in the loaded library "
-            f"({libfile!r}). "
-            "This typically happens on Windows with the highspy package "
-            "because its .pyd does not export C symbols. "
-            "Install highsbox for Windows support, or set PMIP_HIGHS_LIBRARY "
-            "to point to a highs.dll that exports the C API."
+        logger.warning(
+            f"HiGHS C API not accessible via {libfile!r} "
+            "(typical on Windows with highspy). "
+            "Falling back to highsbox."
         )
-        has_highs = False
+        try:
+            libfile = _get_highsbox_libfile()
+            highslib = ffi.dlopen(libfile)
+            _ = highslib.Highs_create  # verify symbols are accessible
+            logger.debug(
+                f"Choosing HiGHS library {libfile} via highsbox package (fallback)."
+            )
+        except Exception as e:
+            logger.error(
+                f"highsbox fallback also failed: {e}. "
+                "HiGHS will not be available. "
+                "Install highsbox (pip install highsbox) for HiGHS support on Windows."
+            )
+            has_highs = False
 
 if has_highs:
     STATUS_ERROR = highslib.kHighsStatusError

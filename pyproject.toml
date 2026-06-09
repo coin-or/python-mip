@@ -41,7 +41,7 @@ numpy = [
     "numpy>=1.25,<3",
 ]
 gurobi = ["gurobipy>=10"]
-highs = ["highspy>=1.9.0"]
+highs = ["highspy>=1.9.0", "highsbox>=1.9.0; sys_platform == 'win32'"]
 test = [
     "pytest>=7.4,<9",
     "networkx>=2.8.8,<4",
