@@ -35,7 +35,7 @@ classifiers = [
 ]
 dynamic = ["version"]
 
-dependencies = ["cffi>=1.15", "cbcbox>=2.933"]
+dependencies = ["cffi>=1.15", "cbcbox>=2.934"]
 
 [project.optional-dependencies]
 numpy = [
