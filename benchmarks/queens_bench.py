@@ -172,33 +172,22 @@ def bench_gurobi_native(n, build_only=False, max_solve_sec=10.0):
 # ── highspy high-level benchmark ─────────────────────────────────────────────
 
 def bench_highspy_hl(n, build_only=False, max_solve_sec=10.0):
-    """highspy with high-level addVariable/addConstr expressions."""
+    """highspy using its recommended vectorized numpy-array API
+    (addBinaries/addConstrs), matching the style used in HiGHS's own
+    examples/nqueens.py."""
     import highspy
+    import numpy as np
 
     t0 = time.perf_counter()
     h = highspy.Highs()
     h.setOptionValue("output_flag", False)
 
-    inf = highspy.kHighsInf
-    x = [[h.addVariable(lb=0, ub=1) for j in range(n)] for i in range(n)]
-    # mark integer
-    kInteger = highspy.HighsVarType.kInteger
-    for i in range(n):
-        for j in range(n):
-            h.changeColIntegrality(i * n + j, kInteger)
-
-    for i in range(n):
-        h.addConstr(sum(x[i][j] for j in range(n)) == 1)
-    for j in range(n):
-        h.addConstr(sum(x[i][j] for i in range(n)) == 1)
-    for k in range(2 - n, n - 1):
-        cells = [x[i][i - k] for i in range(n) if 0 <= i - k < n]
-        if len(cells) >= 2:
-            h.addConstr(sum(cells) <= 1)
-    for k in range(2, 2 * n - 1):
-        cells = [x[i][k - i] for i in range(n) if 0 <= k - i < n]
-        if len(cells) >= 2:
-            h.addConstr(sum(cells) <= 1)
+    x = h.addBinaries(n, n)
+    h.addConstrs(x.sum(axis=1) == 1)
+    h.addConstrs(x.sum(axis=0) == 1)
+    y = np.fliplr(x)
+    h.addConstrs(x.diagonal(k).sum() <= 1 for k in range(-n + 1, n) if abs(k) < n - 1)
+    h.addConstrs(y.diagonal(k).sum() <= 1 for k in range(-n + 1, n) if abs(k) < n - 1)
 
     t_build = time.perf_counter() - t0
 

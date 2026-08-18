@@ -350,8 +350,11 @@ if has_cbc:
       LPM_Dual           = 1,  /*! Dual simplex */
       LPM_Primal         = 2,  /*! Primal simplex */
       LPM_Barrier        = 3,  /*! The barrier algorithm */
-      LPM_BarrierNoCross = 4   /*! Barrier algorithm, not to be followed by crossover */
+      LPM_BarrierNoCross = 4,  /*! Barrier algorithm, not to be followed by crossover */
+      LPM_Racing         = 5,  /*! Opportunistic parallel LP racing (needs >= 2 threads) */
+      LPM_Recommend      = 6   /*! ML-based per-instance LP method recommendation */
     };
+
 
     void
     Cbc_setLPmethod(Cbc_Model *model, enum LPMethod lpm );
@@ -1231,8 +1234,13 @@ class SolverCbc(Solver):
             cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_Dual)
         elif self.model.lp_method == LP_Method.PRIMAL:
             cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_Primal)
+        elif self.model.lp_method == LP_Method.RACING:
+            cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_Racing)
+        elif self.model.lp_method == LP_Method.RECOMMEND:
+            cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_Recommend)
         else:
             cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_Auto)
+
 
         cbclib.Cbc_setAllowableFractionGap(self._model, self.model.max_mip_gap)
         cbclib.Cbc_setAllowableGap(self._model, self.model.max_mip_gap_abs)

@@ -1,8 +1,83 @@
-# Changelog — python-mip 1.17
+# Changelog — python-mip 2.0
 
-> Changes since **1.15.0** (1.16 was an unreleased RC)
+> Changes since **1.17.1**
 
 ---
+
+## Performance
+
+- `LinExpr.add_var` and `xsum` hot paths optimised (single dict operation instead of two;
+  bypass dispatch overhead for the common `Var`-only case), cutting 11–21% off constraint-heavy
+  model build times.
+- HiGHS backend gained a CFFI C-array cache (matching CBC's bulk-add architecture) that
+  accumulates pending columns/rows and flushes via `Highs_addCols`/`Highs_addRows`, plus
+  name→index dicts to avoid unnecessary flushes on variable/constraint lookups.
+- Anonymous variables no longer pay the `str.format`/`str.encode` cost of auto-generated
+  `var(N)` names.
+
+A new reproducible benchmark suite (`benchmarks/`, documented in `docs/bench.rst`) was added to
+measure and track these improvements — comparing python-mip/CBC, python-mip/HiGHS, and
+python-mip/Gurobi model-build speed across CPython 3.14 and PyPy 3.11, against raw `gurobipy`
+and `highspy` (high-level and batch-numpy APIs), on four problems (n-Queens, TSP, RCPSP, and the
+new Capacitated Facility Location Problem). Highlights:
+- python-mip/Gurobi on PyPy is 2–4× faster than on CPython, depending on model structure, and
+  remains the only way to drive Gurobi from PyPy at all (`gurobipy` has no PyPy wheel).
+- For sparse, variable-heavy models python-mip/Gurobi is competitive with or faster than raw
+  `gurobipy` even on CPython; for dense-constraint models `gurobipy`'s own loop is faster on
+  CPython, but PyPy closes much of that gap.
+- Against `highspy`'s own recommended vectorized numpy-array API, python-mip/HiGHS is
+  competitive with or faster than it on sparser/irregular problems (n-Queens, TSP), while the
+  vectorized API pulls ahead on dense, rectangular problems (e.g. CFLP).
+
+---
+
+## New Features
+
+### `Model.add_vars()` batch variable creation
+
+`Model.add_vars(n, ...)` / `VarList.add_vars(n, ...)` create `n` variables in a single call,
+avoiding per-call dispatch overhead compared to `n` calls to `add_var()`.
+
+### New LP solve controls: `TRUNCATED` status, `max_iter`, `lp_method`, `lp_preprocess`
+
+- `OptimizationStatus.TRUNCATED` for LP solves stopped early by a time or iteration limit
+  (populates primal/dual solution and objective bound whenever feasible, instead of reporting
+  a misleading `OPTIMAL`/`INFEASIBLE`).
+- `Model.max_iter` caps simplex/barrier iterations for LP solves, wired through CBC, HiGHS and
+  Gurobi.
+- `Model.optimize(lp_method=...)` selects dual simplex, primal simplex or IPM/barrier — added
+  to HiGHS and Gurobi (CBC already had it).
+- New CBC-specific `LP_Method.RACING` and `LP_Method.RECOMMEND` values: `RACING` runs several
+  LP configurations (dual simplex, primal/Idiot, primal/Sprint) in parallel threads and keeps
+  the first to reach optimality (needs `Model.threads >= 2`; safely degrades to `RECOMMEND`
+  with a log message if fewer threads are available); `RECOMMEND` uses CBC's ML-based
+  per-instance LP method selection. Both are ignored (fall back to their own default) by
+  HiGHS and Gurobi. `LP_Method.AUTO` (the default) already delegates to `RECOMMEND` when
+  sequential and `RACING` when 2+ threads are set, so no behaviour changes for existing code —
+  these are purely new, explicit opt-in values.
+- `Model.optimize(relax=True, lp_preprocess=True)` (CBC-specific) enables CBC's
+  `INT_PARAM_LP_FAST_PREPROCESS` knapsack bound-tightening before an LP relaxation solve.
+
+---
+
+## Infrastructure & Distribution
+
+- `cbcbox` bumped to `>=2.935`, improving binary reliability across platforms.
+- HiGHS backend migrated to `highspy`; added `TRUNCATED` status and `max_iter`/`lp_method`
+  (dual/primal simplex, IPM/barrier) support, also ported to the Gurobi backend.
+- Python 3.14 added to the CI test matrix (alongside 3.10–3.13 and PyPy 3.11).
+
+---
+
+## Bug Fixes
+
+- CBC string parameters migrated to the `INT_PARAM` API; fixed `verbose` reset on `clear()`.
+- Removed an obsolete objective-sense save/restore workaround around `Cbc_reset()`.
+- Stale `highspy`→`highsbox` error message corrected.
+
+---
+
+## Previous release: python-mip 1.17 / 1.17.1
 
 ## New Features
 

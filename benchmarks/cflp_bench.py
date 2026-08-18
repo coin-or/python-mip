@@ -1,28 +1,34 @@
-"""TSP single-commodity flow (Gavish-Graves) model-building benchmark.
+"""Capacitated Facility Location Problem (CFLP) model-building benchmark.
 
-Compares model creation times across solvers and Python interpreters using
-the compact flow formulation for the Traveling Salesman Problem:
+A classic applied supply-chain / logistics problem: decide which facilities
+to open and how to serve customer demand from them at minimum cost, subject
+to facility capacity.
 
   Variables:
-    x[i,j] ∈ {0,1}   — arc (i,j) is used in the tour
-    y[i,j] ≥ 0       — flow units routed on arc (i,j)
+    y[i]   ∈ {0,1}      — facility i is opened
+    x[i,j] ∈ [0,1]       — fraction of customer j's demand served by facility i
 
-  min   Σ_{i≠j} c[i,j] · x[i,j]
-  s.t.  Σ_j x[i,j] = 1               ∀i        (leave each city once)
-        Σ_i x[i,j] = 1               ∀j        (enter each city once)
-        y[i,j] ≤ (n-1) · x[i,j]     ∀i≠j      (flow only on used arcs)
-        Σ_j y[j,i] − Σ_j y[i,j] = 1 ∀i=1..n-1 (flow conservation)
+  min   Σ_i f[i]·y[i] + Σ_{i,j} c[i,j]·d[j]·x[i,j]
+  s.t.  Σ_i x[i,j] = 1                      ∀j        (demand fully served)
+        Σ_j d[j]·x[i,j] ≤ cap[i]·y[i]       ∀i        (aggregated capacity)
 
-  City 0 is the depot; each non-depot city consumes one unit of flow.
-  The capacity + flow constraints eliminate subtours without cutting planes.
+Like n-Queens, this formulation has O(n²) variables (the assignment matrix
+x) but only O(n) constraints (2n: one demand row per customer, one
+aggregated capacity row per facility) — the same "many variables, few
+constraints" profile, but for a widely-used applied combinatorial
+optimisation problem (facility/warehouse location, e.g. the classic
+ORLIB-style capacitated location instances) rather than a puzzle.
 
-Random Euclidean instances are generated with a fixed seed for
-reproducibility across interpreters and solver backends.
+Random Euclidean instances (facilities and customers scattered in a square)
+are generated with a fixed seed for reproducibility across interpreters and
+solver backends. The number of facilities equals the number of customers
+(both set to n) so that instance size is controlled by a single parameter,
+matching the n-Queens benchmark's size range.
 
 Usage:
-    python tsp_flow_bench.py [sizes]          # e.g. 15 20 30 50
-    python tsp_flow_bench.py --build-only     # skip solve timing
-    python tsp_flow_bench.py --verify         # solve small instance only
+    python cflp_bench.py [sizes]          # e.g. 200 400 600 800 1000 1200
+    python cflp_bench.py --build-only     # skip solve timing
+    python cflp_bench.py --verify         # solve small instance only
 """
 
 import math
@@ -32,14 +38,17 @@ import signal
 import sys
 import time
 
-SIZES = [30, 50, 75, 100, 150, 200, 300, 400, 500]
+SIZES = [200, 400, 600, 800, 1000, 1200]
 SEED = 42
-VERIFY_N = 10        # solve to optimality and check
+VERIFY_N = 15
 MAX_SOLVE_SEC = 30.0
 BUILD_TIMEOUT_SEC = 8  # seconds; slower solvers print ">8s" and skip
 
+CAPACITY_SLACK = 1.5  # total capacity ≈ CAPACITY_SLACK × total demand
+
 
 # ── build timeout helper ─────────────────────────────────────────────────────
+
 
 class _BuildTimeout(Exception):
     pass
@@ -64,44 +73,50 @@ def _run_with_timeout(fn, timeout_sec=BUILD_TIMEOUT_SEC):
 
 
 def make_instance(n, seed=SEED):
-    """Random Euclidean TSP on n cities in [0, 1000]²."""
+    """Random Euclidean CFLP: n facilities and n customers in [0, 1000]².
+
+    Returns (c, f, d, cap) where:
+      c[i,j] — unit transportation cost (Euclidean distance) facility i→customer j
+      f[i]   — fixed cost of opening facility i
+      d[j]   — demand of customer j
+      cap[i] — capacity of facility i
+    """
     rng = random.Random(seed)
-    pts = [(rng.uniform(0, 1000), rng.uniform(0, 1000)) for _ in range(n)]
+    fac_pts = [(rng.uniform(0, 1000), rng.uniform(0, 1000)) for _ in range(n)]
+    cus_pts = [(rng.uniform(0, 1000), rng.uniform(0, 1000)) for _ in range(n)]
+
     c = {}
     for i in range(n):
-        xi, yi = pts[i]
+        xi, yi = fac_pts[i]
         for j in range(n):
-            if i != j:
-                dx = xi - pts[j][0]
-                dy = yi - pts[j][1]
-                c[i, j] = math.sqrt(dx * dx + dy * dy)
-    return c
+            dx = xi - cus_pts[j][0]
+            dy = yi - cus_pts[j][1]
+            c[i, j] = math.sqrt(dx * dx + dy * dy) / 100.0
 
-
-def _arc_list(n):
-    return [(i, j) for i in range(n) for j in range(n) if i != j]
+    f = [rng.uniform(500, 1500) for _ in range(n)]
+    d = [rng.uniform(1, 10) for _ in range(n)]
+    total_d = sum(d)
+    avg_cap = (total_d * CAPACITY_SLACK) / n
+    cap = [avg_cap * rng.uniform(0.8, 1.2) for _ in range(n)]
+    return c, f, d, cap
 
 
 # ── CSR builder for highspy batch API ────────────────────────────────────────
 
 
-def _tsp_flow_csr(n):
-    """Build CSR row data for all TSP flow constraints.
+def _cflp_csr(n, d, cap):
+    """Build CSR row data for demand + aggregated capacity constraints.
 
     Variable layout in HiGHS:
-      cols 0 .. na-1      : x[k] binary arc vars  (cost c[i,j])
-      cols na .. 2*na-1   : y[k] continuous flow vars  [0, n-1]
+      cols 0 .. n*n-1     : x[i,j] continuous vars, row-major (i*n + j)
+      cols n*n .. n*n+n-1 : y[i] binary vars
 
     Returns (starts, indices, values, lb, ub) as numpy arrays.
-    Row order: out-degree (n), in-degree (n), capacity (na), flow (n-1).
+    Row order: demand (n), capacity (n).
     """
     import numpy as np
 
-    A = _arc_list(n)
-    na = len(A)
-    arc_idx = {a: k for k, a in enumerate(A)}
-    INF = 1e30
-
+    nn = n * n
     row_idx = []
     row_val = []
     row_lb = []
@@ -118,31 +133,16 @@ def _tsp_flow_csr(n):
         row_ub.append(ub)
         nz += len(idx)
 
-    # out-degree: Σ_j x[i,j] = 1
-    for i in range(n):
-        idx = [arc_idx[i, j] for j in range(n) if j != i]
-        add_row(idx, [1.0] * (n - 1), 1.0, 1.0)
-
-    # in-degree: Σ_i x[i,j] = 1
+    # demand: Σ_i x[i,j] = 1
     for j in range(n):
-        idx = [arc_idx[i, j] for i in range(n) if i != j]
-        add_row(idx, [1.0] * (n - 1), 1.0, 1.0)
+        idx = [i * n + j for i in range(n)]
+        add_row(idx, [1.0] * n, 1.0, 1.0)
 
-    # capacity: y[k] - (n-1)*x[k] ≤ 0
-    for k in range(na):
-        add_row([na + k, k], [1.0, -(n - 1)], -INF, 0.0)
-
-    # flow conservation: Σ_j y[j,i] - Σ_j y[i,j] = 1  for i=1..n-1
-    for i in range(1, n):
-        idx = []
-        val = []
-        for j in range(n):
-            if j != i:
-                idx.append(na + arc_idx[j, i])   # inflow: +1
-                val.append(1.0)
-                idx.append(na + arc_idx[i, j])   # outflow: -1
-                val.append(-1.0)
-        add_row(idx, val, 1.0, 1.0)
+    # aggregated capacity: Σ_j d[j]·x[i,j] − cap[i]·y[i] ≤ 0
+    for i in range(n):
+        idx = [i * n + j for j in range(n)] + [nn + i]
+        val = [d[j] for j in range(n)] + [-cap[i]]
+        add_row(idx, val, -1e30, 0.0)
 
     return (
         np.array(starts, dtype=np.int32),
@@ -160,30 +160,26 @@ def bench_pmip(n, solver_name, build_only=False, max_solve_sec=MAX_SOLVE_SEC):
     import mip
     from mip import BINARY, Model, minimize, xsum
 
-    c = make_instance(n)
-    V = range(n)
-    A = _arc_list(n)
+    c, f, d, cap = make_instance(n)
+    I = range(n)
+    J = range(n)
 
     t0 = time.perf_counter()
     m = Model(solver_name=solver_name)
     m.verbose = 0
 
-    x = {ij: m.add_var(var_type=BINARY) for ij in A}
-    y = {ij: m.add_var(lb=0.0, ub=n - 1) for ij in A}
+    y = [m.add_var(var_type=BINARY) for _ in I]
+    x = {(i, j): m.add_var(lb=0.0, ub=1.0) for i in I for j in J}
 
-    m.objective = minimize(xsum(c[i, j] * x[i, j] for i, j in A))
+    m.objective = minimize(
+        xsum(f[i] * y[i] for i in I)
+        + xsum(c[i, j] * d[j] * x[i, j] for i in I for j in J)
+    )
 
-    for i in V:
-        m += xsum(x[i, j] for j in V if j != i) == 1
-        m += xsum(x[j, i] for j in V if j != i) == 1
-    for i, j in A:
-        m += y[i, j] <= (n - 1) * x[i, j]
-    for i in range(1, n):
-        m += (
-            xsum(y[j, i] for j in V if j != i)
-            - xsum(y[i, j] for j in V if j != i)
-            == 1
-        )
+    for j in J:
+        m += xsum(x[i, j] for i in I) == 1
+    for i in I:
+        m += xsum(d[j] * x[i, j] for j in J) <= cap[i] * y[i]
 
     t_build = time.perf_counter() - t0
 
@@ -198,18 +194,17 @@ def bench_pmip(n, solver_name, build_only=False, max_solve_sec=MAX_SOLVE_SEC):
     return t_build, t_solve, str(status).split(".")[-1], obj
 
 
-
 # ── native gurobipy benchmark ─────────────────────────────────────────────────
 
 
 def bench_gurobi_native(n, build_only=False, max_solve_sec=MAX_SOLVE_SEC):
-    """Build TSP flow model with the native gurobipy API (no python-mip layer)."""
+    """Build CFLP model with the native gurobipy API (no python-mip layer)."""
     import gurobipy as gp
     from gurobipy import GRB
 
-    c = make_instance(n)
-    V = range(n)
-    A = _arc_list(n)
+    c, f, d, cap = make_instance(n)
+    I = range(n)
+    J = range(n)
 
     t0 = time.perf_counter()
     env = gp.Env(empty=True)
@@ -217,22 +212,19 @@ def bench_gurobi_native(n, build_only=False, max_solve_sec=MAX_SOLVE_SEC):
     env.start()
     m = gp.Model(env=env)
 
-    x = {ij: m.addVar(vtype=GRB.BINARY) for ij in A}
-    y = {ij: m.addVar(lb=0.0, ub=n - 1) for ij in A}
+    y = [m.addVar(vtype=GRB.BINARY) for _ in I]
+    x = {(i, j): m.addVar(lb=0.0, ub=1.0) for i in I for j in J}
 
-    m.setObjective(gp.quicksum(c[i, j] * x[i, j] for i, j in A), GRB.MINIMIZE)
+    m.setObjective(
+        gp.quicksum(f[i] * y[i] for i in I)
+        + gp.quicksum(c[i, j] * d[j] * x[i, j] for i in I for j in J),
+        GRB.MINIMIZE,
+    )
 
-    for i in V:
-        m.addConstr(gp.quicksum(x[i, j] for j in V if j != i) == 1)
-        m.addConstr(gp.quicksum(x[j, i] for j in V if j != i) == 1)
-    for i, j in A:
-        m.addConstr(y[i, j] <= (n - 1) * x[i, j])
-    for i in range(1, n):
-        m.addConstr(
-            gp.quicksum(y[j, i] for j in V if j != i)
-            - gp.quicksum(y[i, j] for j in V if j != i)
-            == 1
-        )
+    for j in J:
+        m.addConstr(gp.quicksum(x[i, j] for i in I) == 1)
+    for i in I:
+        m.addConstr(gp.quicksum(d[j] * x[i, j] for j in J) <= cap[i] * y[i])
 
     m.update()
     t_build = time.perf_counter() - t0
@@ -253,33 +245,30 @@ def bench_gurobi_native(n, build_only=False, max_solve_sec=MAX_SOLVE_SEC):
 
 def bench_highspy_hl(n, build_only=False, max_solve_sec=MAX_SOLVE_SEC):
     """highspy using its recommended vectorized numpy-array API
-    (addVariables/addConstrs on dense n×n arrays, diagonal fixed to 0)."""
+    (addVariables/addBinaries/addConstrs on dense arrays)."""
     import highspy
     import numpy as np
 
-    c = make_instance(n)
-    c_dense = np.zeros((n, n), dtype=np.float64)
-    for i in range(n):
-        for j in range(n):
-            if i != j:
-                c_dense[i, j] = c[i, j]
+    c, f, d, cap = make_instance(n)
+    d_arr = np.array(d, dtype=np.float64)
+    cap_arr = np.array(cap, dtype=np.float64)
+    f_arr = np.array(f, dtype=np.float64)
+    c_dense = np.array([[c[i, j] for j in range(n)] for i in range(n)],
+                        dtype=np.float64)
 
     t0 = time.perf_counter()
     h = highspy.Highs()
     h.setOptionValue("output_flag", False)
 
-    x = h.addBinaries(n, n)
-    y = h.addVariables(n, n, lb=0, ub=n - 1)
-    for i in range(n):
-        h.changeColBounds(x[i, i].index, 0, 0)
-        h.changeColBounds(y[i, i].index, 0, 0)
-    h.changeColsCost(n * n, np.arange(n * n, dtype=np.int32), c_dense.flatten())
+    y = h.addBinaries(n)
+    h.changeColsCost(n, np.arange(n, dtype=np.int32), f_arr)
 
-    h.addConstrs(x.sum(axis=1) == 1)
+    x = h.addVariables(n, n, lb=0, ub=1)
+    x_cost = c_dense * d_arr[np.newaxis, :]
+    h.changeColsCost(n * n, np.arange(n, n + n * n, dtype=np.int32), x_cost.flatten())
+
     h.addConstrs(x.sum(axis=0) == 1)
-    h.addConstrs((y - (n - 1) * x).flatten() <= 0)
-    flow = y.sum(axis=0) - y.sum(axis=1)
-    h.addConstrs(flow[1:] == 1)
+    h.addConstrs((x * d_arr[np.newaxis, :]).sum(axis=1) <= cap_arr * y)
 
     t_build = time.perf_counter() - t0
 
@@ -303,36 +292,39 @@ def bench_highspy_batch(n, build_only=False, max_solve_sec=MAX_SOLVE_SEC):
     import highspy
     import numpy as np
 
-    c = make_instance(n)
-    A = _arc_list(n)
-    na = len(A)
+    c, f, d, cap = make_instance(n)
+    nn = n * n
 
     t0 = time.perf_counter()
     h = highspy.Highs()
     h.setOptionValue("output_flag", False)
 
-    # x arc binary vars: addCols passes costs directly
-    x_costs = np.array([c[a] for a in A], dtype=np.float64)
-    x_lb = np.zeros(na, dtype=np.float64)
-    x_ub = np.ones(na, dtype=np.float64)
+    # x[i,j] continuous vars, row-major (i*n + j), cost = c[i,j]*d[j]
+    x_costs = np.array([c[i, j] * d[j] for i in range(n) for j in range(n)],
+                        dtype=np.float64)
+    x_lb = np.zeros(nn, dtype=np.float64)
+    x_ub = np.ones(nn, dtype=np.float64)
     h.addCols(
-        na, x_costs, x_lb, x_ub,
+        nn, x_costs, x_lb, x_ub,
+        0, np.empty(0, np.int32), np.empty(0, np.int32), np.empty(0, np.float64),
+    )
+
+    # y[i] binary vars, cost = f[i]
+    y_costs = np.array(f, dtype=np.float64)
+    y_lb = np.zeros(n, dtype=np.float64)
+    y_ub = np.ones(n, dtype=np.float64)
+    h.addCols(
+        n, y_costs, y_lb, y_ub,
         0, np.empty(0, np.int32), np.empty(0, np.int32), np.empty(0, np.float64),
     )
     kInteger = highspy.HighsVarType.kInteger
     h.changeColsIntegrality(
-        na,
-        np.arange(na, dtype=np.int32),
-        np.full(na, kInteger, dtype=np.uint8),
+        n,
+        np.arange(nn, nn + n, dtype=np.int32),
+        np.full(n, kInteger, dtype=np.uint8),
     )
 
-    # y flow vars: continuous [0, n-1]
-    y_lb = np.zeros(na, dtype=np.float64)
-    y_ub = np.full(na, float(n - 1), dtype=np.float64)
-    h.addVars(na, y_lb, y_ub)
-
-    # all constraints in one CSR batch call
-    starts, idx, val, lb, ub = _tsp_flow_csr(n)
+    starts, idx, val, lb, ub = _cflp_csr(n, d, cap)
     nrows = len(starts)
     h.addRows(nrows, lb, ub, len(idx), starts, idx, val)
 
@@ -400,9 +392,8 @@ def detect_solvers():
 
 
 def _model_size(n):
-    na = n * (n - 1)
-    nvars = 2 * na
-    nrows = 2 * n + na + (n - 1)
+    nvars = n * n + n
+    nrows = 2 * n
     return nvars, nrows
 
 
@@ -430,7 +421,7 @@ if __name__ == "__main__":
 
     py_impl = platform.python_implementation()
     py_ver = platform.python_version()
-    print(f"\nTSP single-commodity flow benchmark — {py_impl} {py_ver}")
+    print(f"\nCapacitated Facility Location benchmark — {py_impl} {py_ver}")
     print(f"Seed: {SEED}  |  Solve limit: {MAX_SOLVE_SEC}s")
     if build_only:
         print("Mode: build-only (no solve)")
@@ -444,11 +435,10 @@ if __name__ == "__main__":
 
     for n in sizes:
         nvars, nrows = _model_size(n)
-        na = n * (n - 1)
         hline()
         print(
-            f"  n = {n}  |  arcs = {na}  |  vars = {nvars}  "
-            f"|  constraints = {nrows}"
+            f"  n = {n}  |  facilities = {n}  |  customers = {n}  "
+            f"|  vars = {nvars}  |  constraints = {nrows}"
         )
         hline()
         print(f"  {'Solver':<32}", end="")
@@ -481,7 +471,7 @@ if __name__ == "__main__":
                     )
                     # cross-check objective between solvers
                     if obj is not None and prev_obj is not None:
-                        assert abs(obj - prev_obj) < 0.5, (
+                        assert abs(obj - prev_obj) < max(1.0, 0.01 * abs(prev_obj)), (
                             f"Obj mismatch: {solver}={obj:.2f} vs {prev_obj:.2f}"
                         )
                     if obj is not None:
