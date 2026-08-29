@@ -106,6 +106,8 @@ class Model:
 
                     self.solver = mip.cbc.SolverCbc(self, name, sense)
                     self.solver_name = mip.CBC
+        else:
+            import mip
 
         # list of constraints and variables
         self.constrs = mip.ConstrList(self)
