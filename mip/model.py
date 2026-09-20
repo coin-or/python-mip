@@ -721,16 +721,24 @@ class Model:
         if path.lower().endswith(".sol") or path.lower().endswith(".mst"):
             mip_start = load_mipstart(path)
             if not mip_start:
-                raise FileNotFoundError("File {} does not contains a valid feasible \
-                                 solution.".format(path))
+                raise FileNotFoundError(
+                    "File {} does not contains a valid feasible \
+                                 solution.".format(
+                        path
+                    )
+                )
             var_list = []
             for name, value in mip_start:
                 var = self.var_by_name(name)
                 if var is not None:
                     var_list.append((var, value))
             if not var_list:
-                raise ValueError("Invalid variable(s) name(s) in \
-                                 mipstart file {}".format(path))
+                raise ValueError(
+                    "Invalid variable(s) name(s) in \
+                                 mipstart file {}".format(
+                        path
+                    )
+                )
 
             self.start = var_list
             return
@@ -755,8 +763,10 @@ class Model:
                 self.constrs.update_constrs(self.solver.num_rows())
                 return
 
-        raise ValueError("Use .lp, .mps, .sol or .mst as file extension \
-                         to indicate the file format.")
+        raise ValueError(
+            "Use .lp, .mps, .sol or .mst as file extension \
+                         to indicate the file format."
+        )
 
     def relax(self: "Model"):
         """Relax integrality constraints of variables
@@ -802,8 +812,10 @@ class Model:
         ):
             self.solver.write(file_path)
         else:
-            raise ValueError("Use .lp, .mps, .sol or .mst as file extension \
-                             to indicate the file format.")
+            raise ValueError(
+                "Use .lp, .mps, .sol or .mst as file extension \
+                             to indicate the file format."
+            )
 
     @property
     def objective_bound(self: "Model") -> mip.Numeric | None:

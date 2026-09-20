@@ -1620,9 +1620,7 @@ class SolverHighs(mip.Solver):
         # CBC and simply pretend that it's always 0.
         return 0
 
-    def var_set_branch_priority(
-        self: "SolverHighs", var: "mip.Var", value: mip.Numeric
-    ):
+    def var_set_branch_priority(self: "SolverHighs", var: "mip.Var", value: mip.Numeric):
         # TODO: better raise warning/error instead?
         pass
 
