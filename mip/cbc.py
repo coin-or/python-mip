@@ -1,12 +1,13 @@
 """Python-MIP interface to the COIN-OR Branch-and-Cut solver CBC"""
 
+from __future__ import annotations
+
 import logging
-from typing import Dict, List, Tuple, Optional, Union
 from sys import platform, maxsize
 from os.path import dirname, isfile
 import os
 import multiprocessing as multip
-import numbers
+
 from cffi import FFI
 from mip.model import xsum
 import mip
@@ -669,7 +670,7 @@ class SolverCbc(Solver):
         self.__name_spacec = ffi.new("char[{}]".format(MAX_NAME_SIZE))
         self.__log = (
             []
-        )  # type: List[Tuple[numbers.Real, Tuple[numbers.Real, numbers.Real]]]
+        )  # type: list[tuple[mip.Numeric, tuple[mip.Numeric, mip.Numeric]]]
         self.set_problem_name(name)
         self.__pumpp = DEF_PUMPP
 
@@ -693,11 +694,11 @@ class SolverCbc(Solver):
 
     def add_var(
         self,
-        obj: numbers.Real = 0,
-        lb: numbers.Real = 0,
-        ub: numbers.Real = float("inf"),
+        obj: mip.Numeric = 0,
+        lb: mip.Numeric = 0,
+        ub: mip.Numeric = float("inf"),
         coltype: str = "C",
-        column: Optional[Column] = None,
+        column: Column | None = None,
         name: str = "",
     ):
         if column is None:
@@ -735,8 +736,8 @@ class SolverCbc(Solver):
 
     def conflicting(
         self: "SolverCbc",
-        e1: Union["LinExpr", "Var"],
-        e2: Union["LinExpr", "Var"],
+        e1: "LinExpr" | "Var",
+        e2: "LinExpr" | "Var",
     ) -> bool:
         idx1, idx2 = (None, None)
         if isinstance(e1, Var):
@@ -794,8 +795,8 @@ class SolverCbc(Solver):
         return cbclib.CG_conflicting(cg, idx1, idx2) == CHAR_ONE
 
     def conflicting_nodes(
-        self: "SolverCbc", v1: Union["Var", "LinExpr"]
-    ) -> Tuple[List["Var"], List["Var"]]:
+        self: "SolverCbc", v1: "Var" | "LinExpr"
+    ) -> tuple[list["Var"], list["Var"]]:
         """Returns all assignment conflicting with the assignment in v1 in the
         conflict graph.
         """
@@ -841,7 +842,7 @@ class SolverCbc(Solver):
 
         return (l1, l0)
 
-    def get_objective_const(self) -> numbers.Real:
+    def get_objective_const(self) -> mip.Numeric:
         return self._objconst
 
     def get_objective(self) -> LinExpr:
@@ -881,10 +882,10 @@ class SolverCbc(Solver):
             if cbclib.Cbc_isInteger(self._model, var.idx):
                 cbclib.Cbc_setContinuous(self._model, var.idx)
 
-    def get_max_seconds(self) -> numbers.Real:
+    def get_max_seconds(self) -> mip.Numeric:
         return cbclib.Cbc_getMaximumSeconds(self._model)
 
-    def set_max_seconds(self, max_seconds: numbers.Real):
+    def set_max_seconds(self, max_seconds: mip.Numeric):
         cbclib.Cbc_setMaximumSeconds(self._model, max_seconds)
 
     def get_max_solutions(self) -> int:
@@ -929,16 +930,16 @@ class SolverCbc(Solver):
             if var.ub != 1.0:
                 var.ub = 1.0
 
-    def var_set_obj(self, var: "Var", value: numbers.Real):
+    def var_set_obj(self, var: "Var", value: mip.Numeric):
         cbclib.Cbc_setObjCoeff(self._model, var.idx, value)
 
     def generate_cuts(
         self,
-        cut_types: Optional[List[CutType]] = None,
+        cut_types: list[CutType] | None = None,
         depth: int = 0,
         npass: int = 0,
         max_cuts: int = maxsize,
-        min_viol: numbers.Real = 1e-4,
+        min_viol: mip.Numeric = 1e-4,
     ) -> CutPool:
         cp = CutPool()
         cbc_model = self._model
@@ -1011,7 +1012,7 @@ class SolverCbc(Solver):
         OsiCuts_delete(osi_cuts)
         return cp
 
-    def clique_merge(self, constrs: Optional[List["mip.Constr"]] = None):
+    def clique_merge(self, constrs: list["mip.Constr"] | None = None):
         if constrs is None:
             cbclib.Cbc_strengthenPacking(self._model)
         else:
@@ -1024,7 +1025,7 @@ class SolverCbc(Solver):
         self, relax: bool = False, lp_preprocess: bool = False
     ) -> OptimizationStatus:
         # get name indexes from an osi problem
-        def cbc_get_osi_name_indexes(osi_solver) -> Dict[str, int]:
+        def cbc_get_osi_name_indexes(osi_solver) -> dict[str, int]:
             nameIdx = {}
             n = cbclib.Osi_getNumCols(osi_solver)
             for i in range(n):
@@ -1046,9 +1047,9 @@ class SolverCbc(Solver):
             phase: int,
             step: int,
             phaseName,
-            seconds: numbers.Real,
-            lb: numbers.Real,
-            ub: numbers.Real,
+            seconds: mip.Numeric,
+            lb: mip.Numeric,
+            ub: mip.Numeric,
             nint: int,
             vint,
             cbData,
@@ -1058,7 +1059,7 @@ class SolverCbc(Solver):
 
         # incumbent callback
         def cbc_inc_callback(
-            cbc_model, obj: numbers.Real, nz: int, colNames, colValues, appData
+            cbc_model, obj: mip.Numeric, nz: int, colNames, colValues, appData
         ):
             return
 
@@ -1319,7 +1320,7 @@ class SolverCbc(Solver):
                 "Unknown sense: {}, use {} or {}".format(sense, MAXIMIZE, MINIMIZE)
             )
 
-    def get_objective_value(self) -> numbers.Real:
+    def get_objective_value(self) -> mip.Numeric | None:
         # return
         return self.__obj_val
 
@@ -1344,13 +1345,13 @@ class SolverCbc(Solver):
 
     def get_log(
         self,
-    ) -> List[Tuple[numbers.Real, Tuple[numbers.Real, numbers.Real]]]:
+    ) -> list[tuple[mip.Numeric, tuple[mip.Numeric, mip.Numeric]]]:
         return self.__log
 
-    def get_objective_bound(self) -> numbers.Real:
+    def get_objective_bound(self) -> mip.Numeric:
         return self.__obj_bound
 
-    def var_get_x(self, var: Var) -> Optional[numbers.Real]:
+    def var_get_x(self, var: Var) -> mip.Numeric | None:
         # model status is *already checked* Var x property
         # (returns None if no solution available)
         return self.__x[var.idx]
@@ -1358,29 +1359,29 @@ class SolverCbc(Solver):
     def get_num_solutions(self) -> int:
         return self.__num_solutions
 
-    def get_objective_value_i(self, i: int) -> numbers.Real:
+    def get_objective_value_i(self, i: int) -> mip.Numeric:
         return cbclib.Cbc_savedSolutionObj(self._model, i) + self._objconst
 
-    def var_get_xi(self, var: "Var", i: int) -> numbers.Real:
+    def var_get_xi(self, var: "Var", i: int) -> mip.Numeric:
         # model status is *already checked* Var xi property
         # (returns None if no solution available)
         return cbclib.Cbc_savedSolution(self._model, i)[var.idx]
 
-    def var_get_rc(self, var: Var) -> numbers.Real:
+    def var_get_rc(self, var: Var) -> mip.Numeric | None:
         # model status is *already checked* Var rc property
         # (returns None if no solution available)
         return self.__rc[var.idx]
 
-    def var_get_lb(self, var: "Var") -> numbers.Real:
+    def var_get_lb(self, var: "Var") -> mip.Numeric:
         return cbclib.Cbc_getColLB(self._model, var.idx)
 
-    def var_set_lb(self, var: "Var", value: numbers.Real):
+    def var_set_lb(self, var: "Var", value: mip.Numeric):
         cbclib.Cbc_setColLower(self._model, var.idx, value)
 
-    def var_get_ub(self, var: "Var") -> numbers.Real:
+    def var_get_ub(self, var: "Var") -> mip.Numeric:
         return cbclib.Cbc_getColUB(self._model, var.idx)
 
-    def var_set_ub(self, var: "Var", value: numbers.Real):
+    def var_set_ub(self, var: "Var", value: mip.Numeric):
         cbclib.Cbc_setColUpper(self._model, var.idx, value)
 
     def var_get_name(self, idx: int) -> str:
@@ -1391,19 +1392,19 @@ class SolverCbc(Solver):
     def var_get_index(self, name: str) -> int:
         return cbclib.Cbc_getColNameIndex(self._model, name.encode("utf-8"))
 
-    def var_get_branch_priority(self, var: "Var") -> numbers.Real:
+    def var_get_branch_priority(self, var: "Var") -> mip.Numeric:
         return 0  # todo: modify branch priority in CBC
 
     def constr_get_index(self, name: str) -> int:
         return cbclib.Cbc_getRowNameIndex(self._model, name.encode("utf-8"))
 
-    def constr_get_rhs(self, idx: int) -> numbers.Real:
+    def constr_get_rhs(self, idx: int) -> mip.Numeric:
         return cbclib.Cbc_getRowRHS(self._model, idx)
 
-    def constr_set_rhs(self, idx: int, rhs: numbers.Real):
+    def constr_set_rhs(self, idx: int, rhs: mip.Numeric):
         cbclib.Cbc_setRowRHS(self._model, idx, rhs)
 
-    def var_get_obj(self, var: Var) -> numbers.Real:
+    def var_get_obj(self, var: Var) -> mip.Numeric:
         return cbclib.Cbc_getColObj(self._model, var.idx)
 
     def var_get_var_type(self, var: "Var") -> str:
@@ -1478,7 +1479,7 @@ class SolverCbc(Solver):
         mp = self._model
         cbclib.Cbc_addLazyConstraint(mp, numnz, cind, cval, sense, rhs)
 
-    def add_sos(self, sos: List[Tuple["Var", numbers.Real]], sos_type: int):
+    def add_sos(self, sos: list[tuple["Var", mip.Numeric]], sos_type: int):
         starts = ffi.new("int[]", [0, len(sos)])
         idx = ffi.new("int[]", [v.idx for (v, f) in sos])
         w = ffi.new("double[]", [f for (v, f) in sos])
@@ -1535,7 +1536,7 @@ class SolverCbc(Solver):
                 to indicate the file format"
             )
 
-    def set_start(self, start: List[Tuple[Var, numbers.Real]]) -> None:
+    def set_start(self, start: list[tuple[Var, mip.Numeric]]) -> None:
         # Augment start list with default zero values for absent non-continuous variables
         start_vars_set = set(var for var, _ in start)
 
@@ -1572,22 +1573,22 @@ class SolverCbc(Solver):
     def num_nz(self) -> int:
         return cbclib.Cbc_getNumElements(self._model)
 
-    def get_cutoff(self) -> numbers.Real:
+    def get_cutoff(self) -> mip.Numeric:
         return cbclib.Cbc_getCutoff(self._model)
 
-    def set_cutoff(self, cutoff: numbers.Real):
+    def set_cutoff(self, cutoff: mip.Numeric):
         cbclib.Cbc_setCutoff(self._model, cutoff)
 
-    def get_mip_gap_abs(self) -> numbers.Real:
+    def get_mip_gap_abs(self) -> mip.Numeric:
         return cbclib.Cbc_getAllowableGap(self._model)
 
-    def set_mip_gap_abs(self, allowable_gap: numbers.Real):
+    def set_mip_gap_abs(self, allowable_gap: mip.Numeric):
         cbclib.Cbc_setAllowableGap(self._model, allowable_gap)
 
-    def get_mip_gap(self) -> numbers.Real:
+    def get_mip_gap(self) -> mip.Numeric:
         return cbclib.Cbc_getAllowableFractionGap(self._model)
 
-    def set_mip_gap(self, allowable_ratio_gap: numbers.Real):
+    def set_mip_gap(self, allowable_ratio_gap: mip.Numeric):
         cbclib.Cbc_setAllowableFractionGap(self._model, allowable_ratio_gap)
 
     def constr_get_expr(self, constr: Constr) -> LinExpr:
@@ -1625,7 +1626,7 @@ class SolverCbc(Solver):
 
     def set_processing_limits(
         self: "Solver",
-        max_time: numbers.Real = mip.INF,
+        max_time: mip.Numeric = mip.INF,
         max_nodes: int = mip.INT_MAX,
         max_sol: int = mip.INT_MAX,
         max_seconds_same_incumbent: int = mip.INT_MAX,
@@ -1660,11 +1661,11 @@ class SolverCbc(Solver):
     def set_num_threads(self, threads: int):
         self.__threads = threads
 
-    def remove_constrs(self, constrs: List[int]):
+    def remove_constrs(self, constrs: list[int]):
         idx = ffi.new("int[]", constrs)
         cbclib.Cbc_deleteRows(self._model, len(constrs), idx)
 
-    def remove_vars(self, varsList: List[int]):
+    def remove_vars(self, varsList: list[int]):
         idx = ffi.new("int[]", varsList)
         cbclib.Cbc_deleteCols(self._model, len(varsList), idx)
 
@@ -1686,13 +1687,13 @@ class SolverCbc(Solver):
     def set_pump_passes(self, passes: int):
         self.__pumpp = passes
 
-    def constr_get_pi(self, constr: Constr) -> Optional[numbers.Real]:
+    def constr_get_pi(self, constr: Constr) -> mip.Numeric | None:
         return self.__pi[constr.idx]
 
-    def constr_get_slack(self, constr: Constr) -> Optional[numbers.Real]:
+    def constr_get_slack(self, constr: Constr) -> mip.Numeric | None:
         return self.__slack[constr.idx]
 
-    def feature_values(self) -> List[float]:
+    def feature_values(self) -> list[float]:
         n = int(Cbc_nFeatures())
         fv = ffi.new("double[%d]" % n)
         Cbc_computeFeatures(self._model, fv)
@@ -1706,7 +1707,7 @@ class SolverCbc(Solver):
         Cbc_reset(self._model)
 
 
-def feature_names() -> List[str]:
+def feature_names() -> list[str]:
     n = int(Cbc_nFeatures())
     return [ffi.string(Cbc_featureName(i)).decode("utf-8") for i in range(n)]
 
@@ -1807,9 +1808,9 @@ class SolverOsi(Solver):
     def add_var(
         self,
         name: str = "",
-        obj: numbers.Real = 0,
-        lb: numbers.Real = 0,
-        ub: numbers.Real = INF,
+        obj: mip.Numeric = 0,
+        lb: mip.Numeric = 0,
+        ub: mip.Numeric = INF,
         var_type: str = CONTINUOUS,
         column: "Column" = None,
     ):
@@ -1894,7 +1895,7 @@ class SolverOsi(Solver):
             name = "cut{}".format(cut_idx)
             self.add_constr(lin_expr, name)
 
-    def get_objective_bound(self) -> numbers.Real:
+    def get_objective_bound(self) -> mip.Numeric:
         raise NotImplementedError("Not available in OsiSolver")
 
     def get_objective(self) -> LinExpr:
@@ -1910,7 +1911,7 @@ class SolverOsi(Solver):
             + self._objconst
         )
 
-    def get_objective_const(self) -> numbers.Real:
+    def get_objective_const(self) -> mip.Numeric:
         return self._objconst
 
     def relax(self):
@@ -1946,15 +1947,15 @@ class SolverOsi(Solver):
             return OptimizationStatus.ERROR
         return OptimizationStatus.LOADED
 
-    def get_objective_value(self) -> numbers.Real:
+    def get_objective_value(self) -> mip.Numeric | None:
         return self.__obj_val
 
     def get_log(
         self,
-    ) -> List[Tuple[numbers.Real, Tuple[numbers.Real, numbers.Real]]]:
+    ) -> list[tuple[mip.Numeric, tuple[mip.Numeric, mip.Numeric]]]:
         return []
 
-    def get_objective_value_i(self, i: int) -> numbers.Real:
+    def get_objective_value_i(self, i: int) -> mip.Numeric:
         raise NotImplementedError("Not available in OsiSolver")
 
     def get_num_solutions(self) -> int:
@@ -1980,7 +1981,7 @@ class SolverOsi(Solver):
                 "Unknown sense: {}, use {} or {}".format(sense, MAXIMIZE, MINIMIZE)
             )
 
-    def set_start(self, start: List[Tuple["Var", numbers.Real]]):
+    def set_start(self, start: list[tuple["Var", mip.Numeric]]):
         raise NotImplementedError("MIPstart not available in OsiSolver")
 
     def set_objective(self, lin_expr: "LinExpr", sense: str = ""):
@@ -1997,21 +1998,21 @@ class SolverOsi(Solver):
         elif sense == MINIMIZE:
             cbclib.Osi_setObjSense(self.osi, 1.0)
 
-    def set_objective_const(self, const: numbers.Real):
+    def set_objective_const(self, const: mip.Numeric):
         raise NotImplementedError("Still not implemented in OsiSolver")
 
     def set_processing_limits(
         self,
-        max_time: numbers.Real = INF,
+        max_time: mip.Numeric = INF,
         max_nodes: int = maxsize,
         max_sol: int = maxsize,
     ):
         raise NotImplementedError("Not available in OsiSolver")
 
-    def get_max_seconds(self) -> numbers.Real:
+    def get_max_seconds(self) -> mip.Numeric:
         raise NotImplementedError("Not available in OsiSolver")
 
-    def set_max_seconds(self, max_seconds: numbers.Real):
+    def set_max_seconds(self, max_seconds: mip.Numeric):
         raise NotImplementedError("Not available in OsiSolver")
 
     def get_max_solutions(self) -> int:
@@ -2059,22 +2060,22 @@ class SolverOsi(Solver):
     def set_emphasis(self, emph: SearchEmphasis):
         raise NotImplementedError("Not available in OsiSolver")
 
-    def get_cutoff(self) -> numbers.Real:
+    def get_cutoff(self) -> mip.Numeric:
         raise NotImplementedError("Not available in OsiSolver")
 
-    def set_cutoff(self, cutoff: numbers.Real):
+    def set_cutoff(self, cutoff: mip.Numeric):
         raise NotImplementedError("Not available in OsiSolver")
 
-    def get_mip_gap_abs(self) -> numbers.Real:
+    def get_mip_gap_abs(self) -> mip.Numeric:
         raise NotImplementedError("Not available in OsiSolver")
 
-    def set_mip_gap_abs(self, mip_gap_abs: numbers.Real):
+    def set_mip_gap_abs(self, mip_gap_abs: mip.Numeric):
         raise NotImplementedError("Not available in OsiSolver")
 
-    def get_mip_gap(self) -> numbers.Real:
+    def get_mip_gap(self) -> mip.Numeric:
         raise NotImplementedError("Not available in OsiSolver")
 
-    def set_mip_gap(self, mip_gap: numbers.Real):
+    def set_mip_gap(self, mip_gap: mip.Numeric):
         raise NotImplementedError("Not available in OsiSolver")
 
     def get_verbose(self) -> int:
@@ -2112,7 +2113,7 @@ class SolverOsi(Solver):
 
         return expr
 
-    def constr_set_expr(self, constr: Constr, value: LinExpr) -> LinExpr:
+    def constr_set_expr(self, constr: Constr, value: LinExpr) -> None:
         raise NotImplementedError("Not available in OsiSolver")
 
     def constr_get_name(self, idx: int) -> str:
@@ -2120,7 +2121,7 @@ class SolverOsi(Solver):
         cbclib.Osi_getRowName(self.osi, idx, namep, MAX_NAME_SIZE)
         return ffi.string(namep).decode("utf-8")
 
-    def remove_constrs(self, constrsList: List[int]):
+    def remove_constrs(self, constrsList: list[int]):
         raise NotImplementedError("Not available in OsiSolver")
 
     def constr_get_index(self, name: str) -> int:
@@ -2134,10 +2135,10 @@ class SolverOsi(Solver):
 
         return -1
 
-    def constr_get_pi(self, constr: Constr) -> Optional[numbers.Real]:
+    def constr_get_pi(self, constr: Constr) -> mip.Numeric | None:
         return self.__pi[constr.idx]
 
-    def constr_get_slack(self, constr: Constr) -> Optional[float]:
+    def constr_get_slack(self, constr: Constr) -> float | None:
         if self.model.status not in [
             OptimizationStatus.OPTIMAL,
             OptimizationStatus.FEASIBLE,
@@ -2162,35 +2163,35 @@ class SolverOsi(Solver):
 
     # Variable-related getters/setters
 
-    def var_get_branch_priority(self, var: "Var") -> numbers.Real:
+    def var_get_branch_priority(self, var: "Var") -> mip.Numeric:
         return 0  # todo: modify branch priority in CBC
 
-    def var_set_branch_priority(self, var: "Var", value: numbers.Real):
+    def var_set_branch_priority(self, var: "Var", value: mip.Numeric):
         raise ParameterNotAvailable(
             "Attribute branch_priority cannot be modified in CBC at the moment"
         )
 
-    def var_get_lb(self, var: "Var") -> numbers.Real:
+    def var_get_lb(self, var: "Var") -> mip.Numeric:
         x = cbclib.Osi_getColLower(self.osi)
         return x[var.idx]
 
-    def var_set_lb(self, var: "Var", value: numbers.Real):
+    def var_set_lb(self, var: "Var", value: mip.Numeric):
         cbclib.Osi_setColLower(self.osi, var.idx, value)
 
-    def var_get_ub(self, var: "Var") -> numbers.Real:
+    def var_get_ub(self, var: "Var") -> mip.Numeric:
         x = cbclib.Osi_getColUpper(self.osi)
         return x[var.idx]
 
-    def var_set_ub(self, var: "Var", value: numbers.Real):
+    def var_set_ub(self, var: "Var", value: mip.Numeric):
         cbclib.Osi_setColUpper(self.osi, var.idx, value)
 
-    def var_get_obj(self, var: "Var") -> numbers.Real:
+    def var_get_obj(self, var: "Var") -> mip.Numeric:
         obj = cbclib.Osi_getObjCoefficients(self.osi)
         if obj == ffi.NULL:
             raise ParameterNotAvailable("Error getting objective function coefficients")
         return obj[var.idx]
 
-    def var_set_obj(self, var: "Var", value: numbers.Real):
+    def var_set_obj(self, var: "Var", value: mip.Numeric):
         cbclib.Osi_setObjCoef(self.osi, var.idx, value)
 
     def var_get_var_type(self, var: "Var") -> str:
@@ -2241,13 +2242,13 @@ class SolverOsi(Solver):
     def var_set_column(self, var: "Var", value: Column):
         raise NotImplementedError("Not available in OsiSolver")
 
-    def var_get_rc(self, var: "Var") -> numbers.Real:
+    def var_get_rc(self, var: "Var") -> mip.Numeric | None:
         return self.__rc[var.idx]
 
-    def var_get_x(self, var: "Var") -> numbers.Real:
+    def var_get_x(self, var: "Var") -> mip.Numeric | None:
         return self.__x[var.idx]
 
-    def var_get_xi(self, var: "Var", i: int) -> numbers.Real:
+    def var_get_xi(self, var: "Var", i: int) -> mip.Numeric:
         raise NotImplementedError("Solution pool not supported in OsiSolver")
 
     def var_get_name(self, idx: int) -> str:
@@ -2255,7 +2256,7 @@ class SolverOsi(Solver):
         cbclib.Osi_getColName(self.osi, idx, namep, MAX_NAME_SIZE)
         return ffi.string(namep).decode("utf-8")
 
-    def remove_vars(self, varsList: List[int]):
+    def remove_vars(self, varsList: list[int]):
         raise NotImplementedError("Not supported in OsiSolver")
 
     def var_get_index(self, name: str) -> int:

@@ -1,13 +1,12 @@
+from __future__ import annotations
 from ctypes.util import find_library
 import logging
 from sys import maxsize, platform
-from typing import List, Tuple
 from os.path import isfile
 import os.path
 from glob import glob
 import re
 from os import environ
-import numbers
 from cffi import FFI
 import importlib.util
 import pathlib
@@ -442,7 +441,7 @@ class SolverGurobi(Solver):
         lb: float = 0,
         ub: float = INF,
         var_type: str = CONTINUOUS,
-        column: Column = None,
+        column: Column | None = None,
         name: str = "",
     ):
         # collecting column data
@@ -510,7 +509,7 @@ class SolverGurobi(Solver):
         self.add_constr(lin_expr, "lz({})".format(self._nlazy))
         self.set_int_attr_element("Lazy", self.num_rows() - 1, 3)
 
-    def add_sos(self, sos: List[Tuple["Var", float]], sos_type: int):
+    def add_sos(self, sos: list[tuple["Var", float]], sos_type: int):
         self.flush_cols()
         types = ffi.new("int[]", [sos_type])
         beg = ffi.new("int[]", [0, len(sos)])
@@ -870,12 +869,12 @@ class SolverGurobi(Solver):
     def get_objective_value(self) -> float:
         return self.__obj_val
 
-    def get_log(self) -> List[Tuple[float, Tuple[float, float]]]:
+    def get_log(self) -> list[tuple[float, tuple[float, float]]]:
         return self.__log
 
     def set_processing_limits(
         self: "Solver",
-        max_time: numbers.Real = mip.INF,
+        max_time: mip.Numeric = mip.INF,
         max_nodes: int = mip.INT_MAX,
         max_sol: int = mip.INT_MAX,
         max_seconds_same_incumbent: float = mip.INF,
@@ -928,7 +927,7 @@ class SolverGurobi(Solver):
         self.set_dbl_attr("ObjCon", const)
         self.__updated = False
 
-    def set_start(self, start: List[Tuple[Var, float]]) -> None:
+    def set_start(self, start: list[tuple[Var, float]]) -> None:
         # collecting data
         nz = len(start)
         cind = ffi.new("int[]", [el[0].idx for el in start])
@@ -1087,7 +1086,7 @@ class SolverGurobi(Solver):
         self.flush_rows()
         return self.get_str_attr_element("ConstrName", idx)
 
-    def constr_set_expr(self, constr: Constr, value: LinExpr) -> LinExpr:
+    def constr_set_expr(self, constr: Constr, value: LinExpr) -> None:
         raise NotImplementedError("Gurobi functionality currently unavailable")
 
     def constr_get_slack(self, constr: "Constr") -> float:
@@ -1104,7 +1103,7 @@ class SolverGurobi(Solver):
             raise ParameterNotAvailable("Error calling GRBgetconstrbyname")
         return idx[0]
 
-    def remove_constrs(self, constrsList: List[int]):
+    def remove_constrs(self, constrsList: list[int]):
         idx = ffi.new("int[]", constrsList)
         st = GRBdelconstrs(self._model, len(constrsList), idx)
         if st != 0:
@@ -1113,11 +1112,11 @@ class SolverGurobi(Solver):
 
     # Variable-related getters/setters\
 
-    def var_get_branch_priority(self: "Solver", var: "mip.Var") -> numbers.Real:
+    def var_get_branch_priority(self: "Solver", var: "mip.Var") -> mip.Numeric:
         self.flush_cols()
         return self.get_int_attr_element("BranchPriority", var.idx)
 
-    def var_set_branch_priority(self: "Solver", var: "mip.Var", value: numbers.Real):
+    def var_set_branch_priority(self: "Solver", var: "mip.Var", value: mip.Numeric):
         self.set_int_attr_element("BranchPriority", var.idx, value)
 
     def var_get_lb(self, var: Var) -> float:
@@ -1206,7 +1205,7 @@ class SolverGurobi(Solver):
         self.flush_cols()
         return self.get_str_attr_element("VarName", idx)
 
-    def remove_vars(self, varsList: List[int]):
+    def remove_vars(self, varsList: list[int]):
         idx = ffi.new("int[]", varsList)
         st = GRBdelvars(self._model, len(varsList), idx)
         if st != 0:

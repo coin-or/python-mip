@@ -1,7 +1,8 @@
+from __future__ import annotations
 import logging
 from os import environ
 from os.path import isfile
-from typing import List, Tuple, Optional, Union, Dict, Any
+from typing import Any, Self
 import numbers
 import mip
 
@@ -50,7 +51,7 @@ class Model:
         name: str = "",
         sense: str = mip.MINIMIZE,
         solver_name: str = "",
-        solver: Optional[mip.Solver] = None,
+        solver: mip.Solver | None = None,
     ):
         """Model constructor
 
@@ -73,7 +74,7 @@ class Model:
         self._ownSolver = True
         # initializing variables with default values
         self.solver_name = solver_name
-        self.solver = solver  # type: Optional[mip.Solver]
+        self.solver = solver  # type: mip.Solver | None
 
         # reading solver_name from an environment variable (if applicable)
         if not solver:
@@ -145,8 +146,8 @@ class Model:
     def _iadd_tensor_element(
         self: "Model",
         tensor: mip.LinExprTensor,
-        element: Union[mip.LinExpr, mip.CutPool, numbers.Real, bool],
-        index: Tuple[int, ...] = None,
+        element: mip.LinExpr | mip.CutPool | mip.Numeric | bool,
+        index: tuple[int, ...] = None,
         label: str = None,
     ):
         # the tensor could contain LinExpr or constraints
@@ -163,7 +164,7 @@ class Model:
 
             self.__iadd__(scalar)
 
-    def __iadd__(self: "Model", other) -> "Model":
+    def __iadd__(self: "Model", other) -> Self:
         if isinstance(other, mip.LinExpr):
             if len(other.sense) == 0:
                 # adding objective function components
@@ -214,9 +215,9 @@ class Model:
     def add_var(
         self: "Model",
         name: str = "",
-        lb: numbers.Real = 0.0,
-        ub: numbers.Real = mip.INF,
-        obj: numbers.Real = 0.0,
+        lb: mip.Numeric = 0.0,
+        ub: mip.Numeric = mip.INF,
+        obj: mip.Numeric = 0.0,
         var_type: str = mip.CONTINUOUS,
         column: "mip.Column" = None,
     ) -> "mip.Var":
@@ -224,9 +225,9 @@ class Model:
 
         Args:
             name (str): variable name (optional)
-            lb (numbers.Real): variable lower bound, default 0.0
-            ub (numbers.Real): variable upper bound, default infinity
-            obj (numbers.Real): coefficient of this variable in the objective
+            lb (mip.Numeric): variable lower bound, default 0.0
+            ub (mip.Numeric): variable upper bound, default infinity
+            obj (mip.Numeric): coefficient of this variable in the objective
               function, default 0
             var_type (str): CONTINUOUS ("C"), BINARY ("B") or INTEGER ("I")
             column (mip.Column): constraints where this variable will appear,
@@ -253,11 +254,11 @@ class Model:
         self: "Model",
         n: int,
         name: str = "",
-        lb: numbers.Real = 0.0,
-        ub: numbers.Real = mip.INF,
-        obj: numbers.Real = 0.0,
+        lb: mip.Numeric = 0.0,
+        ub: mip.Numeric = mip.INF,
+        obj: mip.Numeric = 0.0,
         var_type: str = mip.CONTINUOUS,
-    ) -> List["mip.Var"]:
+    ) -> list["mip.Var"]:
         """Creates *n* variables at once, returning a list of :class:`~mip.Var`.
 
         This is a faster alternative to calling :meth:`add_var` in a loop when
@@ -267,27 +268,27 @@ class Model:
             n (int): number of variables to create
             name (str): optional name prefix; variables will be named
                 ``name_0``, ``name_1``, …, ``name_{n-1}`` when provided
-            lb (numbers.Real): lower bound (default 0)
-            ub (numbers.Real): upper bound (default infinity)
-            obj (numbers.Real): objective coefficient (default 0)
+            lb (mip.Numeric): lower bound (default 0)
+            ub (mip.Numeric): upper bound (default infinity)
+            obj (mip.Numeric): objective coefficient (default 0)
             var_type (str): CONTINUOUS, BINARY or INTEGER
 
         Example::
 
             x = m.add_vars(n * n, var_type=BINARY)
 
-        :rtype: List[mip.Var]
+        :rtype: list[mip.Var]
         """
         return self.vars.add_vars(n, name, lb, ub, obj, var_type)
 
     def add_var_tensor(
-        self: "Model", shape: Tuple[int, ...], name: str, **kwargs
+        self: "Model", shape: tuple[int, ...], name: str, **kwargs
     ) -> mip.LinExprTensor:
         """Creates new variables in the model, arranging them in a numpy
         tensor and returning its reference
 
         Args:
-            shape (Tuple[int, ...]): shape of the numpy tensor
+            shape (tuple[int, ...]): shape of the numpy tensor
             name (str): variable name
             **kwargs: all other named arguments will be used as
               :meth:`~mip.Model.add_var` arguments
@@ -391,14 +392,14 @@ class Model:
         """
         self.solver.add_lazy_constr(expr)
 
-    def add_sos(self: "Model", sos: List[Tuple["mip.Var", numbers.Real]], sos_type: int):
+    def add_sos(self: "Model", sos: list[tuple["mip.Var", mip.Numeric]], sos_type: int):
         r"""Adds an Special Ordered Set (SOS) to the model
 
         An explanation on Special Ordered Sets is provided :ref:`here <chapSOS>`.
 
 
         Args:
-            sos(List[Tuple[Var, numbers.Real]]):
+            sos(list[tuple[Var, mip.Numeric]]):
                 list including variables (not necessarily binary) and
                 respective weights in the model
             sos_type(int):
@@ -485,7 +486,7 @@ class Model:
             orig_expr = c.expr
             priority = c.priority
             expr = mip.LinExpr(const=orig_expr.const, sense=orig_expr.sense)
-            for (var, value) in orig_expr.expr.items():
+            for var, value in orig_expr.expr.items():
                 expr.add_term(self.vars[var.idx], value)
             copy.add_constr(lin_expr=expr, name=c.name, priority=priority)
 
@@ -494,13 +495,13 @@ class Model:
 
         return copy
 
-    def constr_by_name(self: "Model", name: str) -> Optional["mip.Constr"]:
+    def constr_by_name(self: "Model", name: str) -> "mip.Constr" | None:
         """Queries a constraint by its name
 
         Args:
             name(str): constraint name
 
-        :rtype: Optional[mip.Constr]
+        :rtype: mip.Constr | None
 
         Returns:
             constraint or None if not found
@@ -510,10 +511,10 @@ class Model:
             return None
         return self.constrs[cidx]
 
-    def var_by_name(self: "Model", name: str) -> Optional["mip.Var"]:
+    def var_by_name(self: "Model", name: str) -> "mip.Var" | None:
         """Searchers a variable by its name
 
-        :rtype: Optional[mip.Var]
+        :rtype: mip.Var | None
 
         Returns:
             Variable or None if not found
@@ -523,7 +524,7 @@ class Model:
             return None
         return self.vars[v]
 
-    def clique_merge(self, constrs: Optional[List["mip.Constr"]] = None):
+    def clique_merge(self, constrs: list["mip.Constr"] | None = None):
         r"""This procedure searches for constraints with conflicting variables
         and attempts to group these constraints in larger constraints with all
         conflicts merged.
@@ -545,7 +546,7 @@ class Model:
             x_1 + x_2 + x_3 \leq 1
 
         Args:
-            constrs (Optional[List[mip.Constr]]): constraints that should be checked for
+            constrs (list[mip.Constr] | None): constraints that should be checked for
               merging. All constraints will be checked if :code:`constrs` is None.
 
         """
@@ -554,7 +555,7 @@ class Model:
 
     def generate_cuts(
         self: "Model",
-        cut_types: Optional[List["mip.CutType"]] = None,
+        cut_types: list["mip.CutType"] | None = None,
         depth: int = 0,
         npass: int = 0,
         max_cuts: int = 8192,
@@ -569,7 +570,7 @@ class Model:
         supports calling only cut generators.
 
         Args:
-            cut_types (List[CutType]): types of cuts that can be generated, if
+            cut_types (list[CutType]): types of cuts that can be generated, if
                 an empty list is specified then all available cut generators
                 will be called.
             depth: depth of the search tree, when informed the cut generator
@@ -598,10 +599,10 @@ class Model:
 
     def optimize(
         self: "Model",
-        max_seconds: numbers.Real = mip.INF,
+        max_seconds: mip.Numeric = mip.INF,
         max_nodes: int = mip.INT_MAX,
         max_solutions: int = mip.INT_MAX,
-        max_seconds_same_incumbent: numbers.Real = mip.INF,
+        max_seconds_same_incumbent: mip.Numeric = mip.INF,
         max_nodes_same_incumbent: int = mip.INT_MAX,
         relax: bool = False,
         lp_preprocess: bool = False,
@@ -616,10 +617,10 @@ class Model:
             m.optimize(max_seconds=300)
 
         Args:
-            max_seconds (numbers.Real): Maximum runtime in seconds (default: inf)
+            max_seconds (mip.Numeric): Maximum runtime in seconds (default: inf)
             max_nodes (int): Maximum number of nodes (default: inf)
             max_solutions (int): Maximum number of solutions (default: inf)
-            max_seconds_same_incumbent (numbers.Real): Maximum time in seconds
+            max_seconds_same_incumbent (mip.Numeric): Maximum time in seconds
                 that the search can go on if a feasible solution is available
                 and it is not being improved
             max_nodes_same_incumbent (int): Maximum number of nodes
@@ -720,24 +721,16 @@ class Model:
         if path.lower().endswith(".sol") or path.lower().endswith(".mst"):
             mip_start = load_mipstart(path)
             if not mip_start:
-                raise FileNotFoundError(
-                    "File {} does not contains a valid feasible \
-                                 solution.".format(
-                        path
-                    )
-                )
+                raise FileNotFoundError("File {} does not contains a valid feasible \
+                                 solution.".format(path))
             var_list = []
             for name, value in mip_start:
                 var = self.var_by_name(name)
                 if var is not None:
                     var_list.append((var, value))
             if not var_list:
-                raise ValueError(
-                    "Invalid variable(s) name(s) in \
-                                 mipstart file {}".format(
-                        path
-                    )
-                )
+                raise ValueError("Invalid variable(s) name(s) in \
+                                 mipstart file {}".format(path))
 
             self.start = var_list
             return
@@ -762,10 +755,8 @@ class Model:
                 self.constrs.update_constrs(self.solver.num_rows())
                 return
 
-        raise ValueError(
-            "Use .lp, .mps, .sol or .mst as file extension \
-                         to indicate the file format."
-        )
+        raise ValueError("Use .lp, .mps, .sol or .mst as file extension \
+                         to indicate the file format.")
 
     def relax(self: "Model"):
         """Relax integrality constraints of variables
@@ -811,13 +802,11 @@ class Model:
         ):
             self.solver.write(file_path)
         else:
-            raise ValueError(
-                "Use .lp, .mps, .sol or .mst as file extension \
-                             to indicate the file format."
-            )
+            raise ValueError("Use .lp, .mps, .sol or .mst as file extension \
+                             to indicate the file format.")
 
     @property
-    def objective_bound(self: "Model") -> Optional[numbers.Real]:
+    def objective_bound(self: "Model") -> mip.Numeric | None:
         """:A valid estimate computed for the optimal solution cost, lower
         bound in the case of minimization, equals to
         :attr:`~mip.Model.objective_value` if the optimal solution was found.
@@ -874,7 +863,7 @@ class Model:
     @objective.setter
     def objective(
         self: "Model",
-        objective: Union[numbers.Real, "mip.Var", "mip.LinExpr", "mip.LinExprTensor"],
+        objective: mip.Numeric | "mip.Var" | "mip.LinExpr" | "mip.LinExprTensor",
     ):
         if isinstance(objective, numbers.Real):
             self.solver.set_objective(mip.LinExpr([], [], objective))
@@ -957,7 +946,7 @@ class Model:
         self.solver.set_objective_const(objective_const)
 
     @property
-    def objective_value(self: "Model") -> Optional[numbers.Real]:
+    def objective_value(self: "Model") -> mip.Numeric | None:
         """Objective function value of the solution found or None
         if model was not optimized
         """
@@ -1035,7 +1024,7 @@ class Model:
         return self.solver.get_num_solutions()
 
     @property
-    def objective_values(self: "Model") -> List[numbers.Real]:
+    def objective_values(self: "Model") -> list[mip.Numeric]:
         """List of costs of all solutions in the solution pool
 
         Returns:
@@ -1046,26 +1035,26 @@ class Model:
         return [self.solver.get_objective_value_i(i) for i in range(self.num_solutions)]
 
     @property
-    def cuts_generator(self: "Model") -> Optional["mip.ConstrsGenerator"]:
+    def cuts_generator(self: "Model") -> "mip.ConstrsGenerator" | None:
         """A cuts generator is an :class:`~mip.ConstrsGenerator`
         object that receives a fractional solution and tries to generate one or
         more constraints (cuts) to remove it. The cuts generator is called in
         every node of the branch-and-cut tree where a solution that violates
         the integrality constraint of one or more variables is found.
 
-        :rtype: Optional[mip.ConstrsGenerator]
+        :rtype: mip.ConstrsGenerator | None
         """
 
         return self.__cuts_generator
 
     @cuts_generator.setter
-    def cuts_generator(self: "Model", cuts_generator: Optional["mip.ConstrsGenerator"]):
+    def cuts_generator(self: "Model", cuts_generator: "mip.ConstrsGenerator" | None):
         self.__cuts_generator = cuts_generator
 
     @property
     def lazy_constrs_generator(
         self: "Model",
-    ) -> Optional["mip.ConstrsGenerator"]:
+    ) -> "mip.ConstrsGenerator" | None:
         """A lazy constraints generator is an
         :class:`~mip.ConstrsGenerator` object that receives
         an integer solution and checks its feasibility. If
@@ -1078,14 +1067,14 @@ class Model:
         constraints. The use of *only* lazy constraints may be useful then
         integer solutions rarely violate these constraints.
 
-        :rtype: Optional[mip.ConstrsGenerator]
+        :rtype: mip.ConstrsGenerator | None
         """
 
         return self.__lazy_constrs_generator
 
     @lazy_constrs_generator.setter
     def lazy_constrs_generator(
-        self: "Model", lazy_constrs_generator: Optional["mip.ConstrsGenerator"]
+        self: "Model", lazy_constrs_generator: "mip.ConstrsGenerator" | None
     ):
         self.__lazy_constrs_generator = lazy_constrs_generator
 
@@ -1173,7 +1162,7 @@ class Model:
         self.__clique = clq
 
     @property
-    def start(self: "Model") -> Optional[List[Tuple["mip.Var", numbers.Real]]]:
+    def start(self: "Model") -> list[tuple["mip.Var", mip.Numeric]] | None:
         """Initial feasible solution
 
         Enters an initial feasible solution. Only the main binary/integer
@@ -1181,12 +1170,12 @@ class Model:
         feasible solution need to be informed. Auxiliary or continuous
         variables are automatically computed.
 
-        :rtype: Optional[List[Tuple[mip.Var, numbers.Real]]]
+        :rtype: list[tuple[mip.Var, mip.Numeric]] | None
         """
         return self.__start
 
     @start.setter
-    def start(self: "Model", start: Optional[List[Tuple["mip.Var", numbers.Real]]]):
+    def start(self: "Model", start: list[tuple["mip.Var", mip.Numeric]] | None):
         self.__start = start
         if start is not None:
             self.solver.set_start(start)
@@ -1224,7 +1213,7 @@ class Model:
 
         logger.info("Model LP relaxation bound is {}".format(mc.objective_value))
 
-        for (var, value) in self.start:
+        for var, value in self.start:
             logger.info("\tfixing %s to %g ... " % (var.name, value))
             mc += var == value
             mc.optimize()
@@ -1261,7 +1250,7 @@ class Model:
         return self.solver.num_nz()
 
     @property
-    def cutoff(self: "Model") -> numbers.Real:
+    def cutoff(self: "Model") -> mip.Numeric:
         """upper limit for the solution cost, solutions with cost > cutoff
         will be removed from the search space, a small cutoff value may
         significantly speedup the search, but if cutoff is set to a value too
@@ -1456,12 +1445,12 @@ class Model:
 
     def remove(
         self: "Model",
-        objects: Union[mip.Var, mip.Constr, List[Union["mip.Var", "mip.Constr"]]],
+        objects: mip.Var | mip.Constr | list["mip.Var" | "mip.Constr"],
     ):
         """removes variable(s) and/or constraint(s) from the model
 
         Args:
-            objects (Union[mip.Var, mip.Constr, List[Union[mip.Var, mip.Constr]]]):
+            objects (mip.Var | mip.Constr | list[mip.Var | mip.Constr]):
                 can be a :class:`~mip.Var`, a :class:`~mip.Constr` or a list of these objects
         """
         if isinstance(objects, (mip.Var, mip.Constr)):
@@ -1490,16 +1479,16 @@ class Model:
                 "{} from model".format(type(objects))
             )
 
-    def translate(self: "Model", ref) -> Union[List[Any], Dict[Any, Any], "mip.Var"]:
+    def translate(self: "Model", ref) -> list[Any] | dict[Any, Any] | "mip.Var":
         """Translates references of variables/containers of variables
         from another model to this model. Can be used to translate
         references of variables in the original model to references
         of variables in the pre-processed model.
 
-        :rtype: Union[List[Any], Dict[Any, Any], mip.Var]
+        :rtype: list[Any] | dict[Any, Any] | mip.Var
         """
 
-        res = None  # type: Union[List[Any], Dict[Any, Any], Var]
+        res = None  # type: list[Any] | dict[Any, Any] | Var
 
         if isinstance(ref, mip.Var):
             return self.var_by_name(ref.name)
@@ -1573,13 +1562,13 @@ class Model:
         self.__plog = mip.ProgressLog()
 
 
-def maximize(objective: Union["mip.LinExpr", "mip.Var"]) -> "mip.LinExpr":
+def maximize(objective: "mip.LinExpr" | "mip.Var") -> "mip.LinExpr":
     """
     Function that should be used to set the objective function to MAXIMIZE
     a given linear expression (passed as argument).
 
     Args:
-        objective(Union[mip.LinExpr, Var]): linear expression
+        objective(mip.LinExpr | Var): linear expression
 
     :rtype: mip.LinExpr
     """
@@ -1589,13 +1578,13 @@ def maximize(objective: Union["mip.LinExpr", "mip.Var"]) -> "mip.LinExpr":
     return objective
 
 
-def minimize(objective: Union["mip.LinExpr", "mip.Var"]) -> "mip.LinExpr":
+def minimize(objective: "mip.LinExpr" | "mip.Var") -> "mip.LinExpr":
     """
     Function that should be used to set the objective function to MINIMIZE
     a given linear expression (passed as argument).
 
     Args:
-        objective(Union[mip.LinExpr, Var]): linear expression
+        objective(mip.LinExpr | Var): linear expression
 
     :rtype: mip.LinExpr
     """
@@ -1626,7 +1615,7 @@ def xsum(terms) -> "mip.LinExpr":
     return result
 
 
-def compute_features(model: "Model") -> List[float]:
+def compute_features(model: "Model") -> list[float]:
     """This function computes instance features for a MIP. Features are
     instance characteristics, such as number of columns, rows, matrix density,
     etc. These features can be used in machine learning algorithms to recommend
@@ -1639,7 +1628,7 @@ def compute_features(model: "Model") -> List[float]:
     return model.solver.feature_values()
 
 
-def features() -> List[str]:
+def features() -> list[str]:
     """This function returns the list of problem feature names that can be
     computed :py:meth:`~mip.compute_features`
     """
@@ -1652,7 +1641,7 @@ def features() -> List[str]:
 quicksum = xsum
 
 
-def save_mipstart(sol: List[Tuple["mip.Var", numbers.Real]], file_name: str, obj=0.0):
+def save_mipstart(sol: list[tuple["mip.Var", mip.Numeric]], file_name: str, obj=0.0):
     """Saves a solution in a MIPStart (MST) file."""
     f = open(file_name, "w")
     f.write("Feasible solution - objective {}\n".format(obj))
@@ -1661,7 +1650,7 @@ def save_mipstart(sol: List[Tuple["mip.Var", numbers.Real]], file_name: str, obj
     f.close()
 
 
-def load_mipstart(file_name: str) -> List[Tuple[str, numbers.Real]]:
+def load_mipstart(file_name: str) -> list[tuple[str, mip.Numeric]]:
     """Loads a MIPStart (MST) file."""
     f = open(file_name)
     result = []

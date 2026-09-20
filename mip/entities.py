@@ -1,5 +1,5 @@
+from __future__ import annotations
 from builtins import property
-from typing import List, Optional, Dict, Union, Tuple
 import numbers
 import mip
 from math import fabs
@@ -15,8 +15,8 @@ class Column:
 
     def __init__(
         self,
-        constrs=None,  # type : Optional[List["mip.Constr"]]
-        coeffs=None,  # type: Optional[List[numbers.Real]]
+        constrs=None,  # type : list["mip.Constr"] | None
+        coeffs=None,  # type: list[mip.Numeric] | None
     ):
         self.constrs = constrs
         self.coeffs = coeffs
@@ -71,14 +71,14 @@ class LinExpr:
 
     def __init__(
         self,
-        variables: Optional[List["mip.Var"]] = None,
-        coeffs: Optional[List[numbers.Real]] = None,
-        const: numbers.Real = 0.0,
+        variables: list["mip.Var"] | None = None,
+        coeffs: list[mip.Numeric] | None = None,
+        const: mip.Numeric = 0.0,
         sense: str = "",
-        expr: Optional[Dict["mip.Var", numbers.Real]] = None,
+        expr: dict["mip.Var", mip.Numeric] | None = None,
     ):
         self.__const = const
-        self.__expr = {}  # type: Dict[mip.Var, numbers.Real]
+        self.__expr = {}  # type: dict[mip.Var, mip.Numeric]
         self.__sense = sense
 
         if variables is not None and coeffs is not None:
@@ -96,7 +96,7 @@ class LinExpr:
 
     def __add__(
         self,
-        other: Union["mip.Var", "mip.LinExpr", numbers.Real],
+        other: "mip.Var" | "mip.LinExpr" | mip.Numeric,
     ) -> "mip.LinExpr":
         if isinstance(other, numbers.Real) and fabs(other) < mip.EPS:
             return self
@@ -114,13 +114,13 @@ class LinExpr:
 
     def __radd__(
         self,
-        other: Union["mip.Var", "mip.LinExpr", numbers.Real],
+        other: "mip.Var" | "mip.LinExpr" | mip.Numeric,
     ) -> "mip.LinExpr":
         return self.__add__(other)
 
     def __sub__(
         self,
-        other: Union["mip.Var", "mip.LinExpr", numbers.Real],
+        other: "mip.Var" | "mip.LinExpr" | mip.Numeric,
     ) -> "mip.LinExpr":
         result = self.copy()
         if isinstance(other, Var):
@@ -135,11 +135,11 @@ class LinExpr:
 
     def __rsub__(
         self,
-        other: Union["mip.Var", "mip.LinExpr", numbers.Real],
+        other: "mip.Var" | "mip.LinExpr" | mip.Numeric,
     ) -> "mip.LinExpr":
         return (-self).__add__(other)
 
-    def __mul__(self, other: numbers.Real) -> "mip.LinExpr":
+    def __mul__(self, other: mip.Numeric) -> "mip.LinExpr":
         if not isinstance(other, numbers.Real):
             raise TypeError("Can not multiply with type {}".format(type(other)))
 
@@ -152,10 +152,10 @@ class LinExpr:
             result.__expr[var] *= other
         return result
 
-    def __rmul__(self, other: numbers.Real) -> "mip.LinExpr":
+    def __rmul__(self, other: mip.Numeric) -> "mip.LinExpr":
         return self.__mul__(other)
 
-    def __truediv__(self, other: numbers.Real) -> "mip.LinExpr":
+    def __truediv__(self, other: mip.Numeric) -> "mip.LinExpr":
         if not isinstance(other, numbers.Real):
             raise TypeError("Can not divide with type {}".format(type(other)))
         if fabs(other) < mip.EPS:
@@ -208,7 +208,7 @@ class LinExpr:
 
     def __le__(
         self,
-        other: Union["mip.Var", "LinExpr", numbers.Real],
+        other: "mip.Var" | "LinExpr" | mip.Numeric,
     ) -> "mip.LinExpr":
         result = self - other
         result.__sense = "<"
@@ -216,7 +216,7 @@ class LinExpr:
 
     def __ge__(
         self,
-        other: Union["mip.Var", "LinExpr", numbers.Real],
+        other: "mip.Var" | "LinExpr" | mip.Numeric,
     ) -> "mip.LinExpr":
         result = self - other
         result.__sense = ">"
@@ -225,21 +225,21 @@ class LinExpr:
     def __len__(self):
         return len(self.__expr)
 
-    def add_const(self, val: numbers.Real):
+    def add_const(self, val: mip.Numeric):
         """adds a constant value to the linear expression, in the case of
         a constraint this corresponds to the right-hand-side
 
         Args:
-            val(numbers.Real): a real number
+            val(mip.Numeric): a real number
         """
         self.__const += val
 
-    def add_expr(self, expr: "LinExpr", coeff: numbers.Real = 1):
+    def add_expr(self, expr: "LinExpr", coeff: mip.Numeric = 1):
         """Extends a linear expression with the contents of another.
 
         Args:
             expr (LinExpr): another linear expression
-            coeff (numbers.Real): coefficient which will multiply the linear
+            coeff (mip.Numeric): coefficient which will multiply the linear
                 expression added
         """
         self.__const += expr.const * coeff
@@ -248,16 +248,16 @@ class LinExpr:
 
     def add_term(
         self,
-        term: Union["mip.Var", "mip.LinExpr", numbers.Real],
-        coeff: numbers.Real = 1,
+        term: "mip.Var" | "mip.LinExpr" | mip.Numeric,
+        coeff: mip.Numeric = 1,
     ):
         """Adds a term to the linear expression.
 
         Args:
-            term (Union[mip.Var, LinExpr, numbers.Real]) : can be a
+            term (mip.Var | LinExpr | mip.Numeric) : can be a
                 variable, another linear expression or a real number.
 
-            coeff (numbers.Real) : coefficient which will multiply the added
+            coeff (mip.Numeric) : coefficient which will multiply the added
                 term
 
         """
@@ -270,20 +270,20 @@ class LinExpr:
         else:
             raise TypeError("type {} not supported".format(type(term)))
 
-    def add_var(self, var: "mip.Var", coeff: numbers.Real = 1):
+    def add_var(self, var: "mip.Var", coeff: mip.Numeric = 1):
         """Adds a variable with a coefficient to the linear expression.
 
         Args:
             var (mip.Var) : a variable
-            coeff (numbers.Real) : coefficient which the variable will be added
+            coeff (mip.Numeric) : coefficient which the variable will be added
         """
         self.__expr[var] = self.__expr.get(var, 0) + coeff
 
-    def set_expr(self: "LinExpr", expr: Dict["mip.Var", numbers.Real]):
+    def set_expr(self: "LinExpr", expr: dict["mip.Var", mip.Numeric]):
         """Sets terms of the linear expression
 
         Args:
-            expr(Dict[mip.Var, numbers.Real]) : dictionary mapping variables to
+            expr(dict[mip.Var, mip.Numeric]) : dictionary mapping variables to
                 their coefficients in the linear expression.
         """
 
@@ -302,7 +302,7 @@ class LinExpr:
         if abs(self.__const - other.__const) >= 1e-12:
             return False
         other_contents = {vr.idx: coef for vr, coef in other.__expr.items()}
-        for (v, c) in self.__expr.items():
+        for v, c in self.__expr.items():
             if v.idx not in other_contents:
                 return False
             oc = other_contents[v.idx]
@@ -319,18 +319,18 @@ class LinExpr:
         return hash(tuple(hash_el))
 
     @property
-    def const(self) -> numbers.Real:
+    def const(self) -> mip.Numeric:
         """constant part of the linear expression"""
         return self.__const
 
     @property
-    def expr(self) -> Dict["mip.Var", numbers.Real]:
+    def expr(self) -> dict["mip.Var", mip.Numeric]:
         """the non-constant part of the linear expression
 
         Dictionary with pairs: (variable, coefficient) where coefficient
         is a real number.
 
-        :rtype: Dict[mip.Var, numbers.Real]
+        :rtype: dict[mip.Var, mip.Numeric]
         """
         return self.__expr
 
@@ -355,7 +355,7 @@ class LinExpr:
         self.__sense = value
 
     @property
-    def violation(self) -> Optional[numbers.Real]:
+    def violation(self) -> mip.Numeric | None:
         """Amount that current solution violates this constraint
 
         If a solution is available, than this property indicates how much
@@ -381,7 +381,7 @@ class LinExpr:
         return viol
 
     @property
-    def x(self) -> Optional[numbers.Real]:
+    def x(self) -> mip.Numeric | None:
         """Value of this linear expression in the solution. None
         is returned if no solution is available."""
         x = self.__const
@@ -397,11 +397,11 @@ class LinExpr:
         return math.nan if x is None else float(x)
 
     @property
-    def model(self) -> Optional["mip.Model"]:
+    def model(self) -> "mip.Model" | None:
         """Model which this LinExpr refers to, None if no variables are
         involved.
 
-        :rtype: Optional[mip.Model]
+        :rtype: mip.Model | None
         """
         if not self.expr:
             return None
@@ -452,7 +452,7 @@ class Constr:
             res = "constr({}): ".format(self.idx + 1)
         line = ""
         len_line = 0
-        for (var, val) in self.expr.expr.items():
+        for var, val in self.expr.expr.items():
             astr = " {:+} {}".format(val, var.name)
             len_line += len(astr)
             line += astr
@@ -474,23 +474,23 @@ class Constr:
         return res
 
     @property
-    def rhs(self) -> numbers.Real:
+    def rhs(self) -> mip.Numeric:
         """The right-hand-side (constant value) of the linear constraint."""
         return self.__model.solver.constr_get_rhs(self.idx)
 
     @rhs.setter
-    def rhs(self, rhs: numbers.Real):
+    def rhs(self, rhs: mip.Numeric):
         self.__model.solver.constr_set_rhs(self.idx, rhs)
 
     @property
-    def slack(self) -> Optional[numbers.Real]:
+    def slack(self) -> mip.Numeric | None:
         """Value of the slack in this constraint in the optimal
         solution. Available only if the formulation was solved.
         """
         return self.__model.solver.constr_get_slack(self)
 
     @property
-    def pi(self) -> Optional[numbers.Real]:
+    def pi(self) -> mip.Numeric | None:
         """Value for the dual variable of this constraint in the optimal
         solution of a linear programming :class:`~mip.Model`. Only
         available if a pure linear programming problem was solved (only
@@ -537,9 +537,7 @@ class Var:
     def __hash__(self) -> int:
         return self._idx
 
-    def __add__(
-        self, other: Union["mip.Var", LinExpr, numbers.Real]
-    ) -> Union["mip.Var", LinExpr]:
+    def __add__(self, other: "mip.Var" | LinExpr | mip.Numeric) -> "mip.Var" | LinExpr:
         if isinstance(other, Var):
             return LinExpr([self, other], [1, 1])
         if isinstance(other, LinExpr):
@@ -551,14 +549,10 @@ class Var:
 
         raise TypeError("type {} not supported".format(type(other)))
 
-    def __radd__(
-        self, other: Union["mip.Var", LinExpr, numbers.Real]
-    ) -> Union["mip.Var", LinExpr]:
+    def __radd__(self, other: "mip.Var" | LinExpr | mip.Numeric) -> "mip.Var" | LinExpr:
         return self.__add__(other)
 
-    def __sub__(
-        self, other: Union["mip.Var", LinExpr, numbers.Real]
-    ) -> Union["mip.Var", LinExpr]:
+    def __sub__(self, other: "mip.Var" | LinExpr | mip.Numeric) -> "mip.Var" | LinExpr:
         if isinstance(other, Var):
             return LinExpr([self, other], [1, -1])
         if isinstance(other, LinExpr):
@@ -570,9 +564,7 @@ class Var:
 
         raise TypeError("type {} not supported".format(type(other)))
 
-    def __rsub__(
-        self, other: Union["mip.Var", LinExpr, numbers.Real]
-    ) -> Union["mip.Var", LinExpr]:
+    def __rsub__(self, other: "mip.Var" | LinExpr | mip.Numeric) -> "mip.Var" | LinExpr:
         if isinstance(other, Var):
             return LinExpr([self, other], [-1, 1])
         if isinstance(other, LinExpr):
@@ -582,15 +574,15 @@ class Var:
 
         raise TypeError("type {} not supported".format(type(other)))
 
-    def __mul__(self, other: numbers.Real) -> LinExpr:
+    def __mul__(self, other: mip.Numeric) -> LinExpr:
         if not isinstance(other, numbers.Real):
             raise TypeError("Can not multiply with type {}".format(type(other)))
         return LinExpr([self], [other])
 
-    def __rmul__(self, other: numbers.Real) -> LinExpr:
+    def __rmul__(self, other: mip.Numeric) -> LinExpr:
         return self.__mul__(other)
 
-    def __truediv__(self, other: numbers.Real) -> LinExpr:
+    def __truediv__(self, other: mip.Numeric) -> LinExpr:
         if not isinstance(other, numbers.Real):
             raise TypeError("Can not divide with type {}".format(type(other)))
         if abs(other) < mip.EPS:
@@ -610,7 +602,7 @@ class Var:
 
         raise TypeError("type {} not supported".format(type(other)))
 
-    def __le__(self, other: Union["mip.Var", LinExpr, numbers.Real]) -> LinExpr:
+    def __le__(self, other: "mip.Var" | LinExpr | mip.Numeric) -> LinExpr:
         if isinstance(other, Var):
             return LinExpr([self, other], [1, -1], sense="<")
         if isinstance(other, LinExpr):
@@ -620,7 +612,7 @@ class Var:
 
         raise TypeError("type {} not supported".format(type(other)))
 
-    def __ge__(self, other: Union["mip.Var", LinExpr, numbers.Real]) -> LinExpr:
+    def __ge__(self, other: "mip.Var" | LinExpr | mip.Numeric) -> LinExpr:
         if isinstance(other, Var):
             return LinExpr([self, other], [1, -1], sense=">")
         if isinstance(other, LinExpr):
@@ -639,34 +631,34 @@ class Var:
         return self.name
 
     @property
-    def lb(self) -> numbers.Real:
+    def lb(self) -> mip.Numeric:
         """Variable lower bound."""
         return self._model.solver.var_get_lb(self)
 
     @lb.setter
-    def lb(self, value: numbers.Real):
+    def lb(self, value: mip.Numeric):
         self._model.solver.var_set_lb(self, value)
 
     @property
-    def ub(self) -> numbers.Real:
+    def ub(self) -> mip.Numeric:
         """Variable upper bound."""
         return self._model.solver.var_get_ub(self)
 
     @ub.setter
-    def ub(self, value: numbers.Real):
+    def ub(self, value: mip.Numeric):
         self._model.solver.var_set_ub(self, value)
 
     @property
-    def obj(self) -> numbers.Real:
+    def obj(self) -> mip.Numeric:
         """Coefficient of variable in the objective function."""
         return self._model.solver.var_get_obj(self)
 
     @obj.setter
-    def obj(self, value: numbers.Real):
+    def obj(self, value: mip.Numeric):
         self._model.solver.var_set_obj(self, value)
 
     @property
-    def branch_priority(self) -> numbers.Real:
+    def branch_priority(self) -> mip.Numeric:
         """
         Variable's branching priority in the branch and bound process.
         Note: variables with higher priority are selected first. Default value is zero.
@@ -674,7 +666,7 @@ class Var:
         return self._model.solver.var_get_branch_priority(self)
 
     @branch_priority.setter
-    def branch_priority(self, value: numbers.Real):
+    def branch_priority(self, value: mip.Numeric):
         self._model.solver.var_set_branch_priority(self, value)
 
     @property
@@ -705,7 +697,7 @@ class Var:
         self._model.solver.var_set_column(self, value)
 
     @property
-    def rc(self) -> Optional[numbers.Real]:
+    def rc(self) -> mip.Numeric | None:
         """Reduced cost, only available after a linear programming model (only
         continuous variables) is optimized. Note that None is returned if no
         optimum solution is available"""
@@ -713,12 +705,12 @@ class Var:
         return self._model.solver.var_get_rc(self)
 
     @property
-    def x(self) -> Optional[numbers.Real]:
+    def x(self) -> mip.Numeric | None:
         """Value of this variable in the solution. Note that None is returned
         if no solution is not available."""
         return self._model.solver.var_get_x(self)
 
-    def xi(self, i: int) -> Optional[numbers.Real]:
+    def xi(self, i: int) -> mip.Numeric | None:
         """Value for this variable in the :math:`i`-th solution from the solution
         pool. Note that None is returned if the solution is not available."""
         if self._model.status in [
@@ -773,18 +765,18 @@ class ConflictGraph:
 
     def conflicting(
         self,
-        e1: Union["mip.LinExpr", "mip.Var"],
-        e2: Union["mip.LinExpr", "mip.Var"],
+        e1: "mip.LinExpr" | "mip.Var",
+        e2: "mip.LinExpr" | "mip.Var",
     ) -> bool:
         """Checks if two assignments of binary variables are in conflict.
 
         Args:
-            e1 (Union[mip.LinExpr, mip.Var]): binary variable, if assignment to be
+            e1 (mip.LinExpr | mip.Var): binary variable, if assignment to be
                 tested is the assignment to one, or a linear expression like x == 0
                 to indicate that conflict with the complement of the variable
                 should be tested.
 
-            e2 (Union[mip.LinExpr, mip.Var]): binary variable, if assignment to be
+            e2 (mip.LinExpr | mip.Var): binary variable, if assignment to be
                 tested is the assignment to one, or a linear expression like x == 0
                 to indicate that conflict with the complement of the variable
                 should be tested.
@@ -797,17 +789,17 @@ class ConflictGraph:
         return e1.model.solver.conflicting(e1, e2)
 
     def conflicting_assignments(
-        self, v: Union["mip.LinExpr", "mip.Var"]
-    ) -> Tuple[List["mip.Var"], List["mip.Var"]]:
+        self, v: "mip.LinExpr" | "mip.Var"
+    ) -> tuple[list["mip.Var"], list["mip.Var"]]:
         """Returns from the conflict graph all assignments conflicting with one
         specific assignment.
 
         Args:
-            v (Union[mip.Var, mip.LinExpr]): binary variable, if assignment to be
+            v (mip.Var | mip.LinExpr): binary variable, if assignment to be
                 tested is the assignment to one or a linear expression like x == 0
                 to indicate the complement.
 
-        :rtype: Tuple[List[mip.Var], List[mip.Var]]
+        :rtype: tuple[list[mip.Var], list[mip.Var]]
 
         Returns:
             Returns a tuple with two lists. The first one indicates variables

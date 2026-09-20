@@ -1,7 +1,8 @@
 """Classes used in solver callbacks, for a bi-directional communication
 with the solver engine"""
+
+from __future__ import annotations
 from collections import defaultdict
-from typing import List, Tuple
 import mip
 
 
@@ -9,7 +10,7 @@ class BranchSelector:
     def __init__(self, model: "mip.Model"):
         self.model = model
 
-    def select_branch(self, rsol: List[Tuple["mip.Var", float]]) -> Tuple["Var", int]:
+    def select_branch(self, rsol: list[tuple["mip.Var", float]]) -> tuple["Var", int]:
         raise NotImplementedError()
 
 
@@ -114,7 +115,7 @@ class CutPool:
         return True
 
     @property
-    def cuts(self) -> List["mip.LinExpr"]:
+    def cuts(self) -> list["mip.LinExpr"]:
         return self.__cuts
 
 
@@ -131,17 +132,17 @@ class IncumbentUpdater:
         self,
         objective_value: float,
         best_bound: float,
-        solution: List[Tuple["mip.Var", float]],
-    ) -> List[Tuple["mip.Var", float]]:
+        solution: list[tuple["mip.Var", float]],
+    ) -> list[tuple["mip.Var", float]]:
         """Method that is called when a new integer feasible solution is found
 
         Args:
             objective_value(float): cost of the new solution found
             best_bound(float): current lower bound for the optimal solution
               cost
-            solution(List[Tuple[mip.Var,float]]): non-zero variables
+            solution(list[tuple[mip.Var,float]]): non-zero variables
               in the solution
 
-        :rtype: List[Tuple[mip.Var, float]]
+        :rtype: list[tuple[mip.Var, float]]
         """
         raise NotImplementedError()

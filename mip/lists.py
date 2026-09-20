@@ -1,6 +1,5 @@
+from __future__ import annotations
 from collections.abc import Sequence
-from typing import List
-import numbers
 import mip
 
 
@@ -25,14 +24,14 @@ class VarList(Sequence):
 
     def __init__(self: "VarList", model: "mip.Model"):
         self.__model = model
-        self.__vars = []  # type: List[mip.Var]
+        self.__vars = []  # type: list[mip.Var]
 
     def add(
         self,
         name: str = "",
-        lb: numbers.Real = 0.0,
-        ub: numbers.Real = mip.INF,
-        obj: numbers.Real = 0.0,
+        lb: mip.Numeric = 0.0,
+        ub: mip.Numeric = mip.INF,
+        obj: mip.Numeric = 0.0,
         var_type: str = mip.CONTINUOUS,
         column: "mip.Column" = None,
     ) -> "mip.Var":
@@ -50,11 +49,11 @@ class VarList(Sequence):
         self,
         n: int,
         name: str = "",
-        lb: numbers.Real = 0.0,
-        ub: numbers.Real = mip.INF,
-        obj: numbers.Real = 0.0,
+        lb: mip.Numeric = 0.0,
+        ub: mip.Numeric = mip.INF,
+        obj: mip.Numeric = 0.0,
         var_type: str = mip.CONTINUOUS,
-    ) -> List["mip.Var"]:
+    ) -> list["mip.Var"]:
         """Creates *n* variables at once, returning a list of :class:`~mip.Var`.
 
         Faster than calling :meth:`add` in a loop for large *n* because it
@@ -65,12 +64,12 @@ class VarList(Sequence):
             n (int): number of variables to create
             name (str): optional name prefix; variables will be named
                 ``name_0``, ``name_1``, …, ``name_{n-1}`` when provided
-            lb (numbers.Real): lower bound (default 0)
-            ub (numbers.Real): upper bound (default infinity)
-            obj (numbers.Real): objective coefficient (default 0)
+            lb (mip.Numeric): lower bound (default 0)
+            ub (mip.Numeric): upper bound (default infinity)
+            obj (mip.Numeric): objective coefficient (default 0)
             var_type (str): CONTINUOUS, BINARY or INTEGER
 
-        :rtype: List[mip.Var]
+        :rtype: list[mip.Var]
         """
         if var_type == mip.BINARY:
             if ub == mip.INF:
@@ -100,7 +99,7 @@ class VarList(Sequence):
     def update_vars(self: "VarList", n_vars: int):
         self.__vars = [mip.Var(self.__model, i) for i in range(n_vars)]
 
-    def remove(self: "VarList", vars: List["mip.Var"]):
+    def remove(self: "VarList", vars: list["mip.Var"]):
         iv = [1 for i in range(len(self.__vars))]
         vlist = [v.idx for v in vars]
         vlist.sort()
@@ -133,9 +132,9 @@ class VVarList(Sequence):
     def add(
         self: "VVarList",
         name: str = "",
-        lb: numbers.Real = 0.0,
-        ub: numbers.Real = mip.INF,
-        obj: numbers.Real = 0.0,
+        lb: mip.Numeric = 0.0,
+        ub: mip.Numeric = mip.INF,
+        obj: mip.Numeric = 0.0,
         var_type: str = mip.CONTINUOUS,
         column: "mip.Column" = None,
     ) -> "mip.Var":
@@ -175,7 +174,7 @@ class ConstrList(Sequence):
 
     def __init__(self: "ConstrList", model: "mip.Model"):
         self.__model = model
-        self.__constrs = []  # type: List["mip.Constr"]
+        self.__constrs = []  # type: list["mip.Constr"]
 
     def __getitem__(self: "ConstrList", key):
         if isinstance(key, str):
@@ -198,7 +197,7 @@ class ConstrList(Sequence):
     def __len__(self) -> int:
         return len(self.__constrs)
 
-    def remove(self: "ConstrList", constrs: List["mip.Constr"]):
+    def remove(self: "ConstrList", constrs: list["mip.Constr"]):
         iv = [1 for i in range(len(self.__constrs))]
         clist = [c.idx for c in constrs]
         clist.sort()

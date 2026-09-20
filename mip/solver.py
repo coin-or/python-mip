@@ -1,12 +1,13 @@
 """This module implements the solver intependent communication layer of
 Python-MIP
 """
-from typing import List, Tuple, Optional, Union
-import numbers
+
+from __future__ import annotations
+from abc import ABC, abstractmethod
 import mip
 
 
-class Solver:
+class Solver(ABC):
     """The solver is an abstract class with the solver independent
     API to communicate with the solver engine"""
 
@@ -20,127 +21,152 @@ class Solver:
     def __del__(self: "Solver"):
         pass
 
+    @abstractmethod
     def add_var(
         self: "Solver",
-        name: str = "",
-        obj: numbers.Real = 0,
-        lb: numbers.Real = 0,
-        ub: numbers.Real = mip.INF,
+        obj: mip.Numeric = 0,
+        lb: mip.Numeric = 0,
+        ub: mip.Numeric = mip.INF,
         var_type: str = mip.CONTINUOUS,
-        column: "Column" = None,
+        column: "Column | None" = None,
+        name: str = "",
     ):
-        pass
+        ...
 
+    @abstractmethod
     def add_constr(self: "Solver", lin_expr: "mip.LinExpr", name: str = ""):
-        pass
+        ...
 
+    @abstractmethod
     def add_lazy_constr(self: "Solver", lin_expr: "mip.LinExpr"):
-        pass
+        ...
 
     def add_sos(
         self: "Solver",
-        sos: List[Tuple["mip.Var", numbers.Real]],
+        sos: list[tuple["mip.Var", mip.Numeric]],
         sos_type: int,
     ):
         pass
 
+    @abstractmethod
     def add_cut(self: "Solver", lin_expr: "mip.LinExpr"):
-        pass
+        ...
 
-    def get_objective_bound(self: "Solver") -> numbers.Real:
-        pass
+    @abstractmethod
+    def get_objective_bound(self: "Solver") -> mip.Numeric:
+        ...
 
+    @abstractmethod
     def get_objective(self: "Solver") -> "mip.LinExpr":
-        pass
+        ...
 
-    def get_objective_const(self: "Solver") -> numbers.Real:
-        pass
+    @abstractmethod
+    def get_objective_const(self: "Solver") -> mip.Numeric:
+        ...
 
+    @abstractmethod
     def relax(self: "Solver"):
-        pass
+        ...
 
     def generate_cuts(
         self,
-        cut_types: Optional[List[mip.CutType]] = None,
+        cut_types: list[mip.CutType] | None = None,
         depth: int = 0,
         npass: int = 0,
         max_cuts: int = mip.INT_MAX,
-        min_viol: numbers.Real = 1e-4,
+        min_viol: mip.Numeric = 1e-4,
     ) -> "mip.CutPool":
         pass
 
-    def clique_merge(self, constrs: Optional[List["mip.Constr"]] = None):
+    def clique_merge(self, constrs: list["mip.Constr"] | None = None):
         pass
 
+    @abstractmethod
     def optimize(
         self: "Solver",
         relax: bool = False,
         lp_preprocess: bool = False,
     ) -> "mip.OptimizationStatus":
-        pass
+        ...
 
-    def get_objective_value(self: "Solver") -> numbers.Real:
-        pass
+    @abstractmethod
+    def get_objective_value(self: "Solver") -> mip.Numeric | None:
+        ...
 
     def get_log(
         self: "Solver",
-    ) -> List[Tuple[numbers.Real, Tuple[numbers.Real, numbers.Real]]]:
+    ) -> list[tuple[mip.Numeric, tuple[mip.Numeric, mip.Numeric]]]:
         return []
 
-    def get_objective_value_i(self: "Solver", i: int) -> numbers.Real:
-        pass
+    @abstractmethod
+    def get_objective_value_i(self: "Solver", i: int) -> mip.Numeric:
+        ...
 
+    @abstractmethod
     def get_num_solutions(self: "Solver") -> int:
-        pass
+        ...
 
+    @abstractmethod
     def get_objective_sense(self: "Solver") -> str:
-        pass
+        ...
 
+    @abstractmethod
     def set_objective_sense(self: "Solver", sense: str):
-        pass
+        ...
 
-    def set_start(self: "Solver", start: List[Tuple["mip.Var", numbers.Real]]):
-        pass
+    @abstractmethod
+    def set_start(self: "Solver", start: list[tuple["mip.Var", mip.Numeric]]):
+        ...
 
+    @abstractmethod
     def set_objective(self: "Solver", lin_expr: "mip.LinExpr", sense: str = ""):
+        ...
+
+    def set_objective_const(self: "Solver", const: mip.Numeric):
         pass
 
-    def set_objective_const(self: "Solver", const: numbers.Real):
-        pass
-
+    @abstractmethod
     def set_processing_limits(
         self: "Solver",
-        max_time: numbers.Real = mip.INF,
+        max_time: mip.Numeric = mip.INF,
         max_nodes: int = mip.INT_MAX,
         max_sol: int = mip.INT_MAX,
         max_seconds_same_incumbent: float = mip.INF,
         max_nodes_same_incumbent: int = mip.INT_MAX,
     ):
-        pass
+        ...
 
-    def get_max_seconds(self: "Solver") -> numbers.Real:
-        pass
+    @abstractmethod
+    def get_max_seconds(self: "Solver") -> mip.Numeric:
+        ...
 
-    def set_max_seconds(self: "Solver", max_seconds: numbers.Real):
-        pass
+    @abstractmethod
+    def set_max_seconds(self: "Solver", max_seconds: mip.Numeric):
+        ...
 
+    @abstractmethod
     def get_max_solutions(self: "Solver") -> int:
-        pass
+        ...
 
+    @abstractmethod
     def set_max_solutions(self: "Solver", max_solutions: int):
-        pass
+        ...
 
+    @abstractmethod
     def get_pump_passes(self: "Solver") -> int:
-        pass
+        ...
 
+    @abstractmethod
     def set_pump_passes(self: "Solver", passes: int):
-        pass
+        ...
 
+    @abstractmethod
     def get_max_nodes(self: "Solver") -> int:
-        pass
+        ...
 
+    @abstractmethod
     def set_max_nodes(self: "Solver", max_nodes: int):
-        pass
+        ...
 
     def get_max_iter(self: "Solver") -> int:
         pass
@@ -148,150 +174,192 @@ class Solver:
     def set_max_iter(self: "Solver", max_iter: int):
         pass
 
+    @abstractmethod
     def set_num_threads(self: "Solver", threads: int):
-        pass
+        ...
 
+    @abstractmethod
     def write(self: "Solver", file_path: str):
-        pass
+        ...
 
+    @abstractmethod
     def read(self: "Solver", file_path: str):
-        pass
+        ...
 
+    @abstractmethod
     def num_cols(self: "Solver") -> int:
-        pass
+        ...
 
+    @abstractmethod
     def num_rows(self: "Solver") -> int:
-        pass
+        ...
 
+    @abstractmethod
     def num_nz(self: "Solver") -> int:
-        pass
+        ...
 
+    @abstractmethod
     def num_int(self: "Solver") -> int:
-        pass
+        ...
 
+    @abstractmethod
     def get_emphasis(self: "Solver") -> mip.SearchEmphasis:
-        pass
+        ...
 
+    @abstractmethod
     def set_emphasis(self: "Solver", emph: mip.SearchEmphasis):
-        pass
+        ...
 
-    def get_cutoff(self: "Solver") -> numbers.Real:
-        pass
+    @abstractmethod
+    def get_cutoff(self: "Solver") -> mip.Numeric:
+        ...
 
-    def set_cutoff(self: "Solver", cutoff: numbers.Real):
-        pass
+    @abstractmethod
+    def set_cutoff(self: "Solver", cutoff: mip.Numeric):
+        ...
 
-    def get_mip_gap_abs(self: "Solver") -> numbers.Real:
-        pass
+    @abstractmethod
+    def get_mip_gap_abs(self: "Solver") -> mip.Numeric:
+        ...
 
-    def set_mip_gap_abs(self: "Solver", mip_gap_abs: numbers.Real):
-        pass
+    @abstractmethod
+    def set_mip_gap_abs(self: "Solver", mip_gap_abs: mip.Numeric):
+        ...
 
-    def get_mip_gap(self: "Solver") -> numbers.Real:
-        pass
+    @abstractmethod
+    def get_mip_gap(self: "Solver") -> mip.Numeric:
+        ...
 
-    def set_mip_gap(self: "Solver", mip_gap: numbers.Real):
-        pass
+    @abstractmethod
+    def set_mip_gap(self: "Solver", mip_gap: mip.Numeric):
+        ...
 
+    @abstractmethod
     def get_verbose(self: "Solver") -> int:
-        pass
+        ...
 
+    @abstractmethod
     def set_verbose(self: "Solver", verbose: int):
         pass
 
     # Constraint-related getters/setters
 
+    @abstractmethod
     def constr_get_expr(self: "Solver", constr: "mip.Constr") -> "mip.LinExpr":
-        pass
+        ...
 
     def constr_set_expr(
         self: "Solver", constr: "mip.Constr", value: "mip.LinExpr"
-    ) -> "mip.LinExpr":
+    ) -> None:
         pass
 
-    def constr_get_rhs(self: "Solver", idx: int) -> numbers.Real:
+    def constr_get_rhs(self: "Solver", idx: int) -> mip.Numeric:
         pass
 
-    def constr_set_rhs(self: "Solver", idx: int, rhs: numbers.Real):
+    def constr_set_rhs(self: "Solver", idx: int, rhs: mip.Numeric):
         pass
 
+    @abstractmethod
     def constr_get_name(self: "Solver", idx: int) -> str:
-        pass
+        ...
 
-    def constr_get_pi(self: "Solver", constr: "mip.Constr") -> numbers.Real:
-        pass
+    @abstractmethod
+    def constr_get_pi(self: "Solver", constr: "mip.Constr") -> mip.Numeric | None:
+        ...
 
-    def constr_get_slack(self: "Solver", constr: "mip.Constr") -> numbers.Real:
-        pass
+    @abstractmethod
+    def constr_get_slack(self: "Solver", constr: "mip.Constr") -> mip.Numeric:
+        ...
 
-    def remove_constrs(self: "Solver", constrsList: List[int]):
-        pass
+    @abstractmethod
+    def remove_constrs(self: "Solver", constrsList: list[int]):
+        ...
 
+    @abstractmethod
     def constr_get_index(self: "Solver", name: str) -> int:
         pass
 
     # Variable-related getters/setters
 
-    def var_get_branch_priority(self: "Solver", var: "mip.Var") -> numbers.Real:
+    @abstractmethod
+    def var_get_branch_priority(self: "Solver", var: "mip.Var") -> mip.Numeric:
+        ...
+
+    def var_set_branch_priority(self: "Solver", var: "mip.Var", value: mip.Numeric):
         pass
 
-    def var_set_branch_priority(self: "Solver", var: "mip.Var", value: numbers.Real):
-        pass
+    @abstractmethod
+    def var_get_lb(self: "Solver", var: "mip.Var") -> mip.Numeric:
+        ...
 
-    def var_get_lb(self: "Solver", var: "mip.Var") -> numbers.Real:
-        pass
+    @abstractmethod
+    def var_set_lb(self: "Solver", var: "mip.Var", value: mip.Numeric):
+        ...
 
-    def var_set_lb(self: "Solver", var: "mip.Var", value: numbers.Real):
-        pass
+    @abstractmethod
+    def var_get_ub(self: "Solver", var: "mip.Var") -> mip.Numeric:
+        ...
 
-    def var_get_ub(self: "Solver", var: "mip.Var") -> numbers.Real:
-        pass
+    @abstractmethod
+    def var_set_ub(self: "Solver", var: "mip.Var", value: mip.Numeric):
+        ...
 
-    def var_set_ub(self: "Solver", var: "mip.Var", value: numbers.Real):
-        pass
+    @abstractmethod
+    def var_get_obj(self: "Solver", var: "mip.Var") -> mip.Numeric:
+        ...
 
-    def var_get_obj(self: "Solver", var: "mip.Var") -> numbers.Real:
-        pass
+    @abstractmethod
+    def var_set_obj(self: "Solver", var: "mip.Var", value: mip.Numeric):
+        ...
 
-    def var_set_obj(self: "Solver", var: "mip.Var", value: numbers.Real):
-        pass
-
+    @abstractmethod
     def var_get_var_type(self: "Solver", var: "mip.Var") -> str:
-        pass
+        ...
 
+    @abstractmethod
     def var_set_var_type(self: "Solver", var: "mip.Var", value: str):
-        pass
+        ...
 
+    @abstractmethod
     def var_get_column(self: "Solver", var: "mip.Var") -> "Column":
-        pass
+        ...
 
+    @abstractmethod
     def var_set_column(self: "Solver", var: "mip.Var", value: "Column"):
-        pass
+        ...
 
-    def var_get_rc(self: "Solver", var: "mip.Var") -> numbers.Real:
-        pass
+    @abstractmethod
+    def var_get_rc(self: "Solver", var: "mip.Var") -> mip.Numeric | None:
+        ...
 
-    def var_get_x(self: "Solver", var: "mip.Var") -> numbers.Real:
+    @abstractmethod
+    def var_get_x(self: "Solver", var: "mip.Var") -> mip.Numeric | None:
         """Assumes that the solution is available (should be checked
         before calling it"""
 
-    def var_get_xi(self: "Solver", var: "mip.Var", i: int) -> numbers.Real:
-        pass
+    @abstractmethod
+    def var_get_xi(self: "Solver", var: "mip.Var", i: int) -> mip.Numeric:
+        ...
 
+    @abstractmethod
     def var_get_name(self: "Solver", idx: int) -> str:
-        pass
+        ...
 
-    def remove_vars(self: "Solver", varsList: List[int]):
-        pass
+    @abstractmethod
+    def remove_vars(self: "Solver", varsList: list[int]):
+        ...
 
+    @abstractmethod
     def var_get_index(self: "Solver", name: str) -> int:
-        pass
+        ...
 
+    @abstractmethod
     def get_problem_name(self: "Solver") -> str:
-        pass
+        ...
 
+    @abstractmethod
     def set_problem_name(self: "Solver", name: str):
-        pass
+        ...
 
     def get_status(self: "Solver") -> mip.OptimizationStatus:
         pass
@@ -302,23 +370,23 @@ class Solver:
 
     def conflicting(
         self: "Solver",
-        e1: Union["mip.LinExpr", "mip.Var"],
-        e2: Union["mip.LinExpr", "mip.Var"],
+        e1: "mip.LinExpr" | "mip.Var",
+        e2: "mip.LinExpr" | "mip.Var",
     ) -> bool:
         """Checks if two assignment to binary variables are in conflict,
         returns none if no conflict graph is available"""
         pass
 
     def conflicting_nodes(
-        self: "Solver", v1: Union["mip.Var", "mip.LinExpr"]
-    ) -> Tuple[List["mip.Var"], List["mip.Var"]]:
+        self: "Solver", v1: "mip.Var" | "mip.LinExpr"
+    ) -> tuple[list["mip.Var"], list["mip.Var"]]:
         """Returns all assignment conflicting with the assignment in v1 in the
         conflict graph.
         """
         pass
 
-    def feature_values(self: "Solver") -> List[float]:
+    def feature_values(self: "Solver") -> list[float]:
         pass
 
-    def feature_names(self: "Solver") -> List[str]:
+    def feature_names(self: "Solver") -> list[str]:
         pass

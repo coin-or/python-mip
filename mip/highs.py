@@ -1,10 +1,10 @@
 "Python-MIP interface to the HiGHS solver."
 
-import numbers
+from __future__ import annotations
+
 import logging
 import os.path
 import sys
-from typing import List, Optional, Tuple, Union
 
 import cffi
 
@@ -753,9 +753,9 @@ class SolverHighs(mip.Solver):
         self._num_int_vars = 0
 
         # Also store solution (when available)
-        self._x = []
-        self._rc = []
-        self._pi = []
+        self._x: list[mip.Numeric] = []
+        self._rc: list[mip.Numeric] = []
+        self._pi: list[mip.Numeric] = []
 
         # Buffer string for storing names
         self._name_buffer = ffi.new(f"char[{self._lib.kHighsMaximumStringLength}]")
@@ -795,8 +795,8 @@ class SolverHighs(mip.Solver):
 
         # Name→index dicts for O(1) lookups without flushing pending cols/rows.
         # Set to None after remove_vars/remove_constrs/read, which invalidate indices.
-        self._col_name_dict: Optional[dict] = {}
-        self._row_name_dict: Optional[dict] = {}
+        self._col_name_dict: dict | None = {}
+        self._row_name_dict: dict | None = {}
 
     def __del__(self):
         self._name_buffer = None
@@ -986,11 +986,11 @@ class SolverHighs(mip.Solver):
 
     def add_var(
         self: "SolverHighs",
-        obj: numbers.Real = 0,
-        lb: numbers.Real = 0,
-        ub: numbers.Real = mip.INF,
+        obj: mip.Numeric = 0,
+        lb: mip.Numeric = 0,
+        ub: mip.Numeric = mip.INF,
         var_type: str = mip.CONTINUOUS,
-        column: "mip.Column" = None,
+        column: "mip.Column | None" = None,
         name: str = "",
     ):
         col = self._col_committed + self._col_fill
@@ -1075,7 +1075,7 @@ class SolverHighs(mip.Solver):
 
     def add_sos(
         self: "SolverHighs",
-        sos: List[Tuple["mip.Var", numbers.Real]],
+        sos: list[tuple["mip.Var", mip.Numeric]],
         sos_type: int,
     ):
         raise NotImplementedError("HiGHS doesn't support SOS!")
@@ -1083,7 +1083,7 @@ class SolverHighs(mip.Solver):
     def add_cut(self: "SolverHighs", lin_expr: "mip.LinExpr"):
         raise NotImplementedError("HiGHS doesn't support cut callbacks!")
 
-    def get_objective_bound(self: "SolverHighs") -> numbers.Real:
+    def get_objective_bound(self: "SolverHighs") -> mip.Numeric:
         return self._get_double_info_value("mip_dual_bound")
 
     def get_objective(self: "SolverHighs") -> "mip.LinExpr":
@@ -1116,7 +1116,7 @@ class SolverHighs(mip.Solver):
         obj_expr.sense = self.get_objective_sense()
         return obj_expr
 
-    def get_objective_const(self: "SolverHighs") -> numbers.Real:
+    def get_objective_const(self: "SolverHighs") -> mip.Numeric:
         offset = ffi.new("double*")
         check(self._lib.Highs_getObjectiveOffset(self._model, offset))
         return offset[0]
@@ -1132,7 +1132,7 @@ class SolverHighs(mip.Solver):
             )
         )
 
-    def _reset_var_types(self: "SolverHighs", var_types: List[str]):
+    def _reset_var_types(self: "SolverHighs", var_types: list[str]):
         self._flush()
         integrality = ffi.new("int[]", [self._var_type_map[vt] for vt in var_types])
         n = self.num_cols()
@@ -1149,15 +1149,15 @@ class SolverHighs(mip.Solver):
 
     def generate_cuts(
         self,
-        cut_types: Optional[List[mip.CutType]] = None,
+        cut_types: list[mip.CutType] | None = None,
         depth: int = 0,
         npass: int = 0,
         max_cuts: int = mip.INT_MAX,
-        min_viol: numbers.Real = 1e-4,
+        min_viol: mip.Numeric = 1e-4,
     ) -> "mip.CutPool":
         raise NotImplementedError("HiGHS doesn't support manual cut generation.")
 
-    def clique_merge(self, constrs: Optional[List["mip.Constr"]] = None):
+    def clique_merge(self, constrs: list["mip.Constr"] | None = None):
         raise NotImplementedError("HiGHS doesn't support clique merging!")
 
     def optimize(
@@ -1169,7 +1169,7 @@ class SolverHighs(mip.Solver):
         if relax:
             # Temporarily change variable types.
             # Original types are stored in list var_type.
-            var_types: List[str] = [var.var_type for var in self.model.vars]
+            var_types: list[str] = [var.var_type for var in self.model.vars]
             self._all_cols_continuous()
 
         self.set_mip_gap(self.model.max_mip_gap)
@@ -1234,17 +1234,18 @@ class SolverHighs(mip.Solver):
 
         return opt_status
 
-    def get_objective_value(self: "SolverHighs") -> numbers.Real:
+    def get_objective_value(self: "SolverHighs") -> mip.Numeric | None:
         # only give value if we have stored a solution
         if self._x:
             return self._lib.Highs_getObjectiveValue(self._model)
+        return None
 
     def get_log(
         self: "SolverHighs",
-    ) -> List[Tuple[numbers.Real, Tuple[numbers.Real, numbers.Real]]]:
+    ) -> list[tuple[mip.Numeric, tuple[mip.Numeric, mip.Numeric]]]:
         raise NotImplementedError("HiGHS doesn't give access to a progress log.")
 
-    def get_objective_value_i(self: "SolverHighs", i: int) -> numbers.Real:
+    def get_objective_value_i(self: "SolverHighs", i: int) -> mip.Numeric:
         raise NotImplementedError("HiGHS doesn't store multiple solutions.")
 
     def get_num_solutions(self: "SolverHighs") -> int:
@@ -1267,7 +1268,7 @@ class SolverHighs(mip.Solver):
         }
         check(self._lib.Highs_changeObjectiveSense(self._model, sense_map[sense]))
 
-    def set_start(self: "SolverHighs", start: List[Tuple["mip.Var", numbers.Real]]):
+    def set_start(self: "SolverHighs", start: list[tuple["mip.Var", mip.Numeric]]):
         self._flush()
         # using zeros for unset variables
         nvars = len(self.model.vars)
@@ -1299,12 +1300,12 @@ class SolverHighs(mip.Solver):
         if lin_expr.sense:
             self.set_objective_sense(lin_expr.sense)
 
-    def set_objective_const(self: "SolverHighs", const: numbers.Real):
+    def set_objective_const(self: "SolverHighs", const: mip.Numeric):
         check(self._lib.Highs_changeObjectiveOffset(self._model, const))
 
     def set_processing_limits(
         self: "SolverHighs",
-        max_time: numbers.Real = mip.INF,
+        max_time: mip.Numeric = mip.INF,
         max_nodes: int = mip.INT_MAX,
         max_sol: int = mip.INT_MAX,
         max_seconds_same_incumbent: float = mip.INF,
@@ -1321,10 +1322,10 @@ class SolverHighs(mip.Solver):
         if max_nodes_same_incumbent != mip.INT_MAX:
             self.set_max_nodes_same_incumbent(max_nodes_same_incumbent)
 
-    def get_max_seconds(self: "SolverHighs") -> numbers.Real:
+    def get_max_seconds(self: "SolverHighs") -> mip.Numeric:
         return self._get_double_option_value("time_limit")
 
-    def set_max_seconds(self: "SolverHighs", max_seconds: numbers.Real):
+    def set_max_seconds(self: "SolverHighs", max_seconds: mip.Numeric):
         self._set_double_option_value("time_limit", max_seconds)
 
     def get_max_solutions(self: "SolverHighs") -> int:
@@ -1394,22 +1395,22 @@ class SolverHighs(mip.Solver):
     def set_emphasis(self: "SolverHighs", emph: mip.SearchEmphasis):
         raise NotImplementedError("HiGHS doesn't support search emphasis.")
 
-    def get_cutoff(self: "SolverHighs") -> numbers.Real:
+    def get_cutoff(self: "SolverHighs") -> mip.Numeric:
         return self._get_double_option_value("objective_bound")
 
-    def set_cutoff(self: "SolverHighs", cutoff: numbers.Real):
+    def set_cutoff(self: "SolverHighs", cutoff: mip.Numeric):
         self._set_double_option_value("objective_bound", cutoff)
 
-    def get_mip_gap_abs(self: "SolverHighs") -> numbers.Real:
+    def get_mip_gap_abs(self: "SolverHighs") -> mip.Numeric:
         return self._get_double_option_value("mip_abs_gap")
 
-    def set_mip_gap_abs(self: "SolverHighs", mip_gap_abs: numbers.Real):
+    def set_mip_gap_abs(self: "SolverHighs", mip_gap_abs: mip.Numeric):
         self._set_double_option_value("mip_abs_gap", mip_gap_abs)
 
-    def get_mip_gap(self: "SolverHighs") -> numbers.Real:
+    def get_mip_gap(self: "SolverHighs") -> mip.Numeric:
         return self._get_double_option_value("mip_rel_gap")
 
-    def set_mip_gap(self: "SolverHighs", mip_gap: numbers.Real):
+    def set_mip_gap(self: "SolverHighs", mip_gap: mip.Numeric):
         self._set_double_option_value("mip_rel_gap", mip_gap)
 
     def get_verbose(self: "SolverHighs") -> int:
@@ -1493,11 +1494,11 @@ class SolverHighs(mip.Solver):
 
     def constr_set_expr(
         self: "SolverHighs", constr: "mip.Constr", value: "mip.LinExpr"
-    ) -> "mip.LinExpr":
+    ) -> None:
         self._flush()
         # We also have to set to 0 all coefficients of the old row, so we
         # fetch that first.
-        coeffs = {var: 0.0 for var in constr.expr}
+        coeffs = {var: 0.0 for var in constr.expr.expr}
 
         # Then we fetch the new coefficients and overwrite.
         coeffs.update(value.expr.items())
@@ -1506,7 +1507,7 @@ class SolverHighs(mip.Solver):
         for var, coef in coeffs.items():
             self._change_coef(constr.idx, var.idx, coef)
 
-    def constr_get_rhs(self: "SolverHighs", idx: int) -> numbers.Real:
+    def constr_get_rhs(self: "SolverHighs", idx: int) -> mip.Numeric:
         self._flush()
         # fetch both lower and upper bound
         num_row = ffi.new("int*")
@@ -1536,7 +1537,7 @@ class SolverHighs(mip.Solver):
         assert lower[0] == upper[0]
         return lower[0]
 
-    def constr_set_rhs(self: "SolverHighs", idx: int, rhs: numbers.Real):
+    def constr_set_rhs(self: "SolverHighs", idx: int, rhs: mip.Numeric):
         self._flush()
         # first need to figure out which bound to change (lower or upper)
         num_row = ffi.new("int*")
@@ -1574,11 +1575,12 @@ class SolverHighs(mip.Solver):
         check(self._lib.Highs_getRowName(self._model, idx, name))
         return ffi.string(name).decode("utf-8")
 
-    def constr_get_pi(self: "SolverHighs", constr: "mip.Constr") -> numbers.Real:
+    def constr_get_pi(self: "SolverHighs", constr: "mip.Constr") -> mip.Numeric | None:
         if self._pi:
             return self._pi[constr.idx]
+        return None
 
-    def constr_get_slack(self: "SolverHighs", constr: "mip.Constr") -> numbers.Real:
+    def constr_get_slack(self: "SolverHighs", constr: "mip.Constr") -> mip.Numeric:
         expr = constr.expr
         activity = sum(coef * var.x for var, coef in expr.expr.items())
         rhs = -expr.const
@@ -1592,7 +1594,7 @@ class SolverHighs(mip.Solver):
         else:
             raise ValueError(f"Invalid constraint sense: {expr.sense}")
 
-    def remove_constrs(self: "SolverHighs", constrsList: List[int]):
+    def remove_constrs(self: "SolverHighs", constrsList: list[int]):
         self._flush()
         set_ = ffi.new("int[]", constrsList)
         check(self._lib.Highs_deleteRowsBySet(self._model, len(constrsList), set_))
@@ -1613,18 +1615,18 @@ class SolverHighs(mip.Solver):
 
     # Variable-related getters/setters
 
-    def var_get_branch_priority(self: "SolverHighs", var: "mip.Var") -> numbers.Real:
+    def var_get_branch_priority(self: "SolverHighs", var: "mip.Var") -> mip.Numeric:
         # TODO: Is actually not supported by HiGHS, but we mimic the behavior of
         # CBC and simply pretend that it's always 0.
         return 0
 
     def var_set_branch_priority(
-        self: "SolverHighs", var: "mip.Var", value: numbers.Real
+        self: "SolverHighs", var: "mip.Var", value: mip.Numeric
     ):
         # TODO: better raise warning/error instead?
         pass
 
-    def var_get_lb(self: "SolverHighs", var: "mip.Var") -> numbers.Real:
+    def var_get_lb(self: "SolverHighs", var: "mip.Var") -> mip.Numeric:
         self._flush()
         num_col = ffi.new("int*")
         costs = ffi.new("double[]", 1)
@@ -1648,13 +1650,13 @@ class SolverHighs(mip.Solver):
         )
         return lower[0]
 
-    def var_set_lb(self: "SolverHighs", var: "mip.Var", value: numbers.Real):
+    def var_set_lb(self: "SolverHighs", var: "mip.Var", value: mip.Numeric):
         self._flush()
         # can only set both bounds, so we just set the old upper bound
         old_upper = self.var_get_ub(var)
         check(self._lib.Highs_changeColBounds(self._model, var.idx, value, old_upper))
 
-    def var_get_ub(self: "SolverHighs", var: "mip.Var") -> numbers.Real:
+    def var_get_ub(self: "SolverHighs", var: "mip.Var") -> mip.Numeric:
         self._flush()
         num_col = ffi.new("int*")
         costs = ffi.new("double[]", 1)
@@ -1678,13 +1680,13 @@ class SolverHighs(mip.Solver):
         )
         return upper[0]
 
-    def var_set_ub(self: "SolverHighs", var: "mip.Var", value: numbers.Real):
+    def var_set_ub(self: "SolverHighs", var: "mip.Var", value: mip.Numeric):
         self._flush()
         # can only set both bounds, so we just set the old lower bound
         old_lower = self.var_get_lb(var)
         check(self._lib.Highs_changeColBounds(self._model, var.idx, old_lower, value))
 
-    def var_get_obj(self: "SolverHighs", var: "mip.Var") -> numbers.Real:
+    def var_get_obj(self: "SolverHighs", var: "mip.Var") -> mip.Numeric:
         self._flush()
         num_col = ffi.new("int*")
         costs = ffi.new("double[]", 1)
@@ -1708,7 +1710,7 @@ class SolverHighs(mip.Solver):
         )
         return costs[0]
 
-    def var_set_obj(self: "SolverHighs", var: "mip.Var", value: numbers.Real):
+    def var_set_obj(self: "SolverHighs", var: "mip.Var", value: mip.Numeric):
         self._flush()
         check(self._lib.Highs_changeColCost(self._model, var.idx, value))
 
@@ -1793,15 +1795,17 @@ class SolverHighs(mip.Solver):
     def var_set_column(self: "SolverHighs", var: "mip.Var", value: "mip.Column"):
         self._set_column(var.idx, value)
 
-    def var_get_rc(self: "SolverHighs", var: "mip.Var") -> numbers.Real:
+    def var_get_rc(self: "SolverHighs", var: "mip.Var") -> mip.Numeric | None:
         if self._rc:
             return self._rc[var.idx]
+        return None
 
-    def var_get_x(self: "SolverHighs", var: "mip.Var") -> numbers.Real:
+    def var_get_x(self: "SolverHighs", var: "mip.Var") -> mip.Numeric | None:
         if self._x:
             return self._x[var.idx]
+        return None
 
-    def var_get_xi(self: "SolverHighs", var: "mip.Var", i: int) -> numbers.Real:
+    def var_get_xi(self: "SolverHighs", var: "mip.Var", i: int) -> mip.Numeric:
         raise NotImplementedError("HiGHS doesn't store multiple solutions.")
 
     def var_get_name(self: "SolverHighs", idx: int) -> str:
@@ -1810,7 +1814,7 @@ class SolverHighs(mip.Solver):
         check(self._lib.Highs_getColName(self._model, idx, name))
         return ffi.string(name).decode("utf-8")
 
-    def remove_vars(self: "SolverHighs", varsList: List[int]):
+    def remove_vars(self: "SolverHighs", varsList: list[int]):
         self._flush()
         set_ = ffi.new("int[]", varsList)
         check(self._lib.Highs_deleteColsBySet(self._model, len(varsList), set_))
@@ -1896,23 +1900,23 @@ class SolverHighs(mip.Solver):
 
     def conflicting(
         self: "SolverHighs",
-        e1: Union["mip.LinExpr", "mip.Var"],
-        e2: Union["mip.LinExpr", "mip.Var"],
+        e1: "mip.LinExpr" | "mip.Var",
+        e2: "mip.LinExpr" | "mip.Var",
     ) -> bool:
         """Checks if two assignment to binary variables are in conflict,
         returns none if no conflict graph is available"""
         raise NotImplementedError("HiGHS doesn't support conflict graph.")
 
     def conflicting_nodes(
-        self: "SolverHighs", v1: Union["mip.Var", "mip.LinExpr"]
-    ) -> Tuple[List["mip.Var"], List["mip.Var"]]:
+        self: "SolverHighs", v1: "mip.Var" | "mip.LinExpr"
+    ) -> tuple[list["mip.Var"], list["mip.Var"]]:
         """Returns all assignment conflicting with the assignment in v1 in the
         conflict graph.
         """
         raise NotImplementedError("HiGHS doesn't support conflict graph.")
 
-    def feature_values(self: "SolverHighs") -> List[float]:
+    def feature_values(self: "SolverHighs") -> list[float]:
         raise NotImplementedError("HiGHS doesn't support feature extraction.")
 
-    def feature_names(self: "SolverHighs") -> List[str]:
+    def feature_names(self: "SolverHighs") -> list[str]:
         raise NotImplementedError("HiGHS doesn't support feature extraction.")

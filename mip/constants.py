@@ -5,6 +5,14 @@ from cffi import FFI
 
 ffi = FFI()
 
+# Type alias for numeric parameters/attributes (coefficients, bounds, etc).
+# `numbers.Real` is intentionally avoided in annotations: static type checkers
+# such as mypy and Pyright do not support the `numbers` ABC hierarchy for
+# static checking (see PEP 484's numeric tower note), which causes
+# false-positive errors when combined with plain `int`/`float` values.
+# `isinstance` checks in the implementation should keep using `numbers.Real`.
+Numeric = int | float
+
 # epsilon number (practical zero)
 EPS = 10e-64
 
