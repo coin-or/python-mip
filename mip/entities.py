@@ -65,6 +65,9 @@ class LinExpr:
      a = 10*x1 + 7*x4
      print(a.x)
 
+    .. warning::
+    Do not pass identical objects in the ``variables`` argument when constructing
+    a LinExpr manually.   
     """
 
     __slots__ = ["__const", "__expr", "__sense"]
@@ -539,6 +542,8 @@ class Var:
 
     def __add__(self, other: "mip.Var" | LinExpr | mip.Numeric) -> "mip.Var" | LinExpr:
         if isinstance(other, Var):
+            if id(self) == id(other):
+                return LinExpr([self], [2])
             return LinExpr([self, other], [1, 1])
         if isinstance(other, LinExpr):
             return other.__add__(self)
@@ -554,6 +559,8 @@ class Var:
 
     def __sub__(self, other: "mip.Var" | LinExpr | mip.Numeric) -> "mip.Var" | LinExpr:
         if isinstance(other, Var):
+            if id(self) == id(other):
+                return LinExpr([self], [0])
             return LinExpr([self, other], [1, -1])
         if isinstance(other, LinExpr):
             return (-other).__add__(self)
@@ -566,6 +573,8 @@ class Var:
 
     def __rsub__(self, other: "mip.Var" | LinExpr | mip.Numeric) -> "mip.Var" | LinExpr:
         if isinstance(other, Var):
+            if id(self) == id(other):
+                return LinExpr([self], [0])
             return LinExpr([self, other], [-1, 1])
         if isinstance(other, LinExpr):
             return other.__sub__(self)
@@ -594,6 +603,8 @@ class Var:
 
     def __eq__(self, other) -> LinExpr:
         if isinstance(other, Var):
+            if id(self) == id(other):
+                return LinExpr([self], [0], sense="=")
             return LinExpr([self, other], [1, -1], sense="=")
         if isinstance(other, LinExpr):
             return LinExpr([self], [1]) == other
@@ -604,6 +615,8 @@ class Var:
 
     def __le__(self, other: "mip.Var" | LinExpr | mip.Numeric) -> LinExpr:
         if isinstance(other, Var):
+            if id(self) == id(other):
+                return LinExpr([self], [0], sense="<")
             return LinExpr([self, other], [1, -1], sense="<")
         if isinstance(other, LinExpr):
             return LinExpr([self], [1]) <= other
@@ -614,6 +627,8 @@ class Var:
 
     def __ge__(self, other: "mip.Var" | LinExpr | mip.Numeric) -> LinExpr:
         if isinstance(other, Var):
+            if id(self) == id(other):
+                return LinExpr([self], [0], sense=">")
             return LinExpr([self, other], [1, -1], sense=">")
         if isinstance(other, LinExpr):
             return LinExpr([self], [1]) >= other

@@ -4,6 +4,7 @@ from itertools import product
 from os import environ
 
 import networkx as nx
+from mip.entities import LinExpr
 import mip.gurobi
 import mip.highs
 from mip import Model, xsum, OptimizationStatus, MAXIMIZE, BINARY, INTEGER
@@ -586,6 +587,28 @@ class TestAPI(object):
 
         model.objective = 1
         assert model.objective_const == 1
+
+
+@skip_on(NotImplementedError)
+@pytest.mark.parametrize("solver", SOLVERS)
+@pytest.mark.parametrize("constraint, lb, ub", [
+    (lambda x: x + x >= 3, 1, 2),
+    (lambda x: x - x >= 0, 1, 2),
+    (lambda x: x == x, 1, 2),
+    (lambda x: x >= x, 1, 2),
+    (lambda x: x <= x, -2, -1),
+    # (lambda x: LinExpr([x, x, x], [2, -1, -1], sense="="), 1, 2),
+])
+def test_identical_vars(solver: str, constraint, lb, ub):
+    """Try if constraints are correctly added when variables are identical"""
+    m = Model(solver_name=solver)
+    x = m.add_var(name="x", lb=lb, ub=ub, obj=1)
+    
+    m.add_constr(constraint(x))
+
+    m.optimize()
+    assert m.status == OptimizationStatus.OPTIMAL
+    assert lb - TOL <= x.x <= ub + TOL
 
 
 @skip_on(NotImplementedError)
