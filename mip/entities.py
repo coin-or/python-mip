@@ -89,7 +89,17 @@ class LinExpr:
                     "You should pass eiter 'expr' or 'variables and coeffs' to the"
                     "constructor, not the three simultaneously."
                 )
-            self.__expr = dict(zip(variables, coeffs))
+            # dict(zip(...)) silently drops all but the last coefficient when
+            # the same variable appears more than once, so fall back to an
+            # accumulating loop only when duplicates are actually present.
+            # This keeps the common (duplicate-free) case as fast as before.
+            if len(variables) == len(set(variables)):
+                self.__expr = dict(zip(variables, coeffs))
+            else:
+                expr_dict = {}  # type: dict[mip.Var, mip.Numeric]
+                for var, coeff in zip(variables, coeffs):
+                    expr_dict[var] = expr_dict.get(var, 0) + coeff
+                self.__expr = expr_dict
 
         elif expr is not None:
             self.__expr = expr.copy()
