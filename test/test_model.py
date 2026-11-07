@@ -30,6 +30,22 @@ if has_gurobi_license():
 if mip.highs.has_highs:
     SOLVERS += [HIGHS]
 
+
+def test_independent_var_lists_use_model_indices():
+    model = Model(solver_name=CBC)
+    first = mip.VarList(model)
+    first.add(name="x1")
+    first.add(name="x2")
+
+    second = mip.VarList(model)
+    second.add(name="y1")
+    second.add_vars(2, name="y")
+
+    assert [var.name for var in first] == ["x1", "x2"]
+    assert [var.name for var in second] == ["y1", "y_0", "y_1"]
+    assert [var.idx for var in second] == [2, 3, 4]
+
+
 # Overall Optimization Tests
 
 
