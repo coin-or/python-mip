@@ -4,6 +4,12 @@
 
 ---
 
+## 2.0.1
+
+- Raised the minimum `cbcbox` dependency to `>=2.936`.
+
+---
+
 ## Performance
 
 - `LinExpr.add_var` and `xsum` hot paths optimised (single dict operation instead of two;
