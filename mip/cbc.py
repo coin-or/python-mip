@@ -1591,15 +1591,6 @@ class SolverCbc(Solver):
         cbclib.Cbc_setAllowableFractionGap(self._model, allowable_ratio_gap)
 
     def constr_get_expr(self, constr: Constr) -> LinExpr:
-        numnz = cbclib.Cbc_getRowNz(self._model, constr.idx)
-
-        ridx = cbclib.Cbc_getRowIndices(self._model, constr.idx)
-        if ridx == ffi.NULL:
-            raise ParameterNotAvailable("Error getting row indices.")
-        rcoef = cbclib.Cbc_getRowCoeffs(self._model, constr.idx)
-        if rcoef == ffi.NULL:
-            raise ParameterNotAvailable("Error getting row coefficients.")
-
         rhs = cbclib.Cbc_getRowRHS(self._model, constr.idx)
         rsense = cbclib.Cbc_getRowSense(self._model, constr.idx).decode("utf-8").upper()
         sense = ""
@@ -1613,6 +1604,17 @@ class SolverCbc(Solver):
             raise ValueError("Unknow sense: {}".format(rsense))
 
         expr = LinExpr(const=-rhs, sense=sense)
+        if not self.num_cols():
+            return expr
+
+        numnz = cbclib.Cbc_getRowNz(self._model, constr.idx)
+        ridx = cbclib.Cbc_getRowIndices(self._model, constr.idx)
+        if ridx == ffi.NULL:
+            raise ParameterNotAvailable("Error getting row indices.")
+        rcoef = cbclib.Cbc_getRowCoeffs(self._model, constr.idx)
+        if rcoef == ffi.NULL:
+            raise ParameterNotAvailable("Error getting row coefficients.")
+
         for i in range(numnz):
             expr.add_var(self.model.vars[ridx[i]], rcoef[i])
 

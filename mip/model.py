@@ -341,6 +341,10 @@ class Model:
             priority(mip.constants.ConstraintPriority): optional constraint
               priority
 
+        Raises:
+            mip.InvalidLinExpr: if the expression has no comparison, or if it
+                has no variables and the model has no variables.
+
         Examples:
 
         The following code adds the constraint :math:`x_1 + x_2 \leq 1`
@@ -369,6 +373,16 @@ class Model:
         if isinstance(lin_expr, bool):
             raise mip.InvalidLinExpr(
                 "A boolean (true/false) cannot be used as a constraint."
+            )
+
+        if not lin_expr.sense:
+            raise mip.InvalidLinExpr(
+                "A linear expression without a comparison cannot be used as a constraint."
+            )
+
+        if not lin_expr.expr and len(self.vars) == 0:
+            raise mip.InvalidLinExpr(
+                "Cannot add an empty constraint to a model without variables."
             )
 
         return self.constrs.add(lin_expr, name, priority)
