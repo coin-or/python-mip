@@ -756,3 +756,49 @@ def test_empty_contradictory_constraint_is_considered(solver: str):
     # check that all names of constraints could be queried
     assert {c.name for c in m.constrs} == {"c1", "c_contra"}
     assert all(isinstance(m.constr_by_name(c_name), Constr) for c_name in ("c1", "c_contra"))
+
+
+def test_constraint_without_comparison_raises_invalid_lin_expr():
+    m = Model(solver_name=CBC)
+
+    with pytest.raises(mip.InvalidLinExpr, match="without a comparison"):
+        m.add_constr(xsum([]))
+
+    x = m.add_var()
+    with pytest.raises(mip.InvalidLinExpr, match="without a comparison"):
+        m.add_constr(x + 1)
+
+    assert m.num_rows == 0
+
+
+@pytest.mark.parametrize("sense", ["equal", "less_or_equal"])
+def test_empty_constraint_without_variables_raises_invalid_lin_expr(sense):
+    m = Model(solver_name=CBC)
+    if sense == "equal":
+        expr = xsum([]) == 0
+    else:
+        expr = xsum([]) <= 1
+
+    with pytest.raises(mip.InvalidLinExpr, match="model without variables"):
+        m.add_constr(expr)
+
+    assert m.num_rows == 0
+
+
+@pytest.mark.parametrize("rhs", [0, 1])
+def test_empty_constraint_remains_usable_after_last_variable_removed(rhs):
+    m = Model(solver_name=CBC)
+    x = m.add_var(name="x")
+    constr = m.add_constr(xsum([]) == rhs, name="empty")
+
+    assert constr.name == "empty"
+    assert constr.rhs == rhs
+    assert str(constr)
+
+    m.remove(x)
+
+    assert constr.expr.expr == {}
+    assert constr.rhs == rhs
+    assert str(constr)
+    m.remove(constr)
+    assert m.num_rows == 0
