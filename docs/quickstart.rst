@@ -215,6 +215,38 @@ prints all routes found while optimizing the :ref:`Traveling Salesman Problem <t
 
 
 
+LP reoptimization with CBC
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+CBC can use a different algorithm for subsequent LP solves than for the
+initial LP. This also applies to ordinary node and cut-loop LP resolves during
+MIP search. For example, column generation can use primal simplex to reuse the
+current basis after adding columns:
+
+.. code-block:: python
+
+    m = Model(solver_name=CBC)
+    m.lp_method = LP_Method.DUAL
+    m.lp_reopt_method = LP_Method.PRIMAL
+    m.lp_reopt_presolve = False
+    m.lp_reopt_perturbation = 100
+    # Build the model, solve with m.optimize(relax=True), add columns, and
+    # call m.optimize(relax=True) again.
+
+The reoptimization method defaults to :attr:`~mip.LP_Method.AUTO`; DUAL,
+PRIMAL, BARRIER and RACING are also supported. Racing uses warm primal and
+dual solves and requires at least two threads. Barrier uses crossover, but
+does not warm-start the interior-point iterations. Numerical recovery may
+switch simplex algorithms.
+
+:attr:`~mip.Model.lp_reopt_presolve` defaults to ``None`` (inherit CBC's
+setting, normally off); ``True`` enables presolve on each resolve and may
+reduce warm-start benefits. :attr:`~mip.Model.lp_reopt_perturbation` accepts
+integers from -5000 to 102; -1 inherits CBC's persistent perturbation setting
+and 100 disables perturbation. These settings are CBC-only, do not change the
+initial LP, and do not control specialized strong-branching hot starts or fast
+fathoming.
+
 Performance Tuning
 ~~~~~~~~~~~~~~~~~~
 

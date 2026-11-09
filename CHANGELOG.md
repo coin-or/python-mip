@@ -4,6 +4,14 @@
 
 ---
 
+## 2.0.2
+
+- Require `cbcbox>=2.937` and expose CBC's LP reoptimization method,
+  presolve, and perturbation controls as `Model.lp_reopt_method`,
+  `Model.lp_reopt_presolve`, and `Model.lp_reopt_perturbation`.
+
+---
+
 ## 2.0.1
 
 - Raised the minimum `cbcbox` dependency to `>=2.936`.

@@ -124,6 +124,9 @@ class Model:
         self.__start = None
         self.__threads = 0
         self.__lp_method = mip.LP_Method.AUTO
+        self.__lp_reopt_method = mip.LP_Method.AUTO
+        self.__lp_reopt_presolve = None
+        self.__lp_reopt_perturbation = -1
         self.__n_cols = 0
         self.__n_rows = 0
         self.__gap = mip.INF
@@ -414,9 +417,9 @@ class Model:
     def clear(self: "Model"):
         """Clears the model
 
-        All variables, constraints and parameters will be reset. In addition,
-        a new solver instance will be instantiated to implement the
-        formulation.
+        Variables and constraints are reset and a new solver is instantiated.
+        Like ``lp_method``, CBC LP reoptimization settings are retained and
+        applied to the new solver on optimization.
         """
         # creating a new solver instance
         sense = self.sense
@@ -709,8 +712,8 @@ class Model:
            :code:`.bas`
              `optimal basis <http://lpsolve.sourceforge.net/5.5/bas-format.htm>`_ for the linear programming relaxation.
 
-        Note: if a new problem is readed, all variables, constraints
-        and parameters from the current model will be cleared.
+        Note: reading a new problem clears the current formulation. As with
+        ``lp_method``, CBC LP reoptimization settings are retained.
 
         Args:
             path(str): file name
@@ -920,6 +923,67 @@ class Model:
     @lp_method.setter
     def lp_method(self: "Model", lpm: mip.LP_Method):
         self.__lp_method = lpm
+
+    @property
+    def lp_reopt_method(self) -> mip.LP_Method:
+        """CBC algorithm for subsequent LP solves, independent of ``lp_method``.
+
+        Accepts AUTO, DUAL, PRIMAL, BARRIER, or RACING. Simplex methods
+        reuse the basis; barrier uses crossover. RACING requires at least two
+        threads. Applies to ordinary MIP node/cut-loop resolves as well, but
+        not specialized strong-branching hot starts or fast fathoming.
+        CBC-only settings are retained across ``clear`` and ``read``; like
+        other solver parameters, they are not copied by ``Model.copy``.
+        """
+        return self.__lp_reopt_method
+
+    @lp_reopt_method.setter
+    def lp_reopt_method(self, method: mip.LP_Method):
+        methods = {
+            mip.LP_Method.AUTO: "auto",
+            mip.LP_Method.DUAL: "dual",
+            mip.LP_Method.PRIMAL: "primal",
+            mip.LP_Method.BARRIER: "barrier",
+            mip.LP_Method.RACING: "racing",
+        }
+        if not isinstance(method, mip.LP_Method) or method not in methods:
+            raise ValueError("Invalid CBC LP reoptimization method")
+        self.solver.set_lp_reopt_parameter("reoptMethod", methods[method])
+        self.__lp_reopt_method = method
+
+    @property
+    def lp_reopt_presolve(self) -> bool | None:
+        """CBC reoptimization presolve: None inherits, False disables, True enables.
+
+        Enabling presolve on every resolve may reduce warm-start benefits.
+        """
+        return self.__lp_reopt_presolve
+
+    @lp_reopt_presolve.setter
+    def lp_reopt_presolve(self, value: bool | None):
+        if value is not None and not isinstance(value, bool):
+            raise ValueError("lp_reopt_presolve must be None, True, or False")
+        keyword = "auto" if value is None else "on" if value else "off"
+        self.solver.set_lp_reopt_parameter("reoptPresolve", keyword)
+        self.__lp_reopt_presolve = value
+
+    @property
+    def lp_reopt_perturbation(self) -> int:
+        """CBC reoptimization perturbation: -1 inherits; 100 disables it."""
+        return self.__lp_reopt_perturbation
+
+    @lp_reopt_perturbation.setter
+    def lp_reopt_perturbation(self, value: int):
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, int)
+            or not -5000 <= value <= 102
+        ):
+            raise ValueError(
+                "lp_reopt_perturbation must be an integer from -5000 to 102"
+            )
+        self.solver.set_lp_reopt_parameter("reoptPertValue", str(value))
+        self.__lp_reopt_perturbation = value
 
     @property
     def threads(self: "Model") -> int:

@@ -305,6 +305,9 @@ if has_cbc:
     void Cbc_setParameter(Cbc_Model *model, const char *name,
         const char *value);
 
+    int Cbc_setParam(Cbc_Model *model, const char *name, const char *value);
+    int Cbc_getParam(Cbc_Model *model, const char *name, char *value, int maxLen);
+
     double Cbc_getCutoff(Cbc_Model *model);
 
     void Cbc_setCutoff(Cbc_Model *model, double cutoff);
@@ -682,6 +685,10 @@ class SolverCbc(Solver):
         self.__obj_val = None
         self.__obj_bound = None
         self.__num_solutions = 0
+
+    def set_lp_reopt_parameter(self, name: str, value: str):
+        if cbclib.Cbc_setParam(self._model, name.encode(), value.encode()) != 0:
+            raise ValueError(f"CBC rejected {name}={value}")
 
     def __clear_sol(self: "SolverCbc"):
         self.__x = EmptyVarSol(self.model)
@@ -1104,6 +1111,44 @@ class SolverCbc(Solver):
                     osi_model, depth, npass
                 )
 
+        method = self.model.lp_reopt_method
+        threads = self.model.threads
+        if method == LP_Method.RACING and (
+            (threads != -1 and threads < 2) or (threads == -1 and multip.cpu_count() < 2)
+        ):
+            raise ValueError(
+                "CBC LP reoptimization racing requires at least two threads"
+            )
+
+        self.set_lp_reopt_parameter("reoptMethod", method.name.lower())
+        presolve = self.model.lp_reopt_presolve
+        self.set_lp_reopt_parameter(
+            "reoptPresolve", "auto" if presolve is None else "on" if presolve else "off"
+        )
+        self.set_lp_reopt_parameter(
+            "reoptPertValue", str(self.model.lp_reopt_perturbation)
+        )
+
+        if self.__threads >= 1:
+            cbclib.Cbc_setIntParam(self._model, INT_PARAM_THREADS, self.__threads)
+        elif self.__threads == -1:
+            cbclib.Cbc_setIntParam(self._model, INT_PARAM_THREADS, multip.cpu_count())
+
+        if self.model.lp_method == LP_Method.BARRIER:
+            cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_Barrier)
+        elif self.model.lp_method == LP_Method.BARRIERNOCROSS:
+            cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_BarrierNoCross)
+        elif self.model.lp_method == LP_Method.DUAL:
+            cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_Dual)
+        elif self.model.lp_method == LP_Method.PRIMAL:
+            cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_Primal)
+        elif self.model.lp_method == LP_Method.RACING:
+            cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_Racing)
+        elif self.model.lp_method == LP_Method.RECOMMEND:
+            cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_Recommend)
+        else:
+            cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_Auto)
+
         if relax:
             self.__clear_sol()
             cbclib.Cbc_setIntParam(
@@ -1197,11 +1242,6 @@ class SolverCbc(Solver):
             cbclib.Cbc_setIntParam(self._model, INT_PARAM_CUT_PASS, -35)
             cbc_set_parameter(self, "lift", "ifmove")
 
-        if self.__threads >= 1:
-            cbclib.Cbc_setIntParam(self._model, INT_PARAM_THREADS, self.__threads)
-        elif self.__threads == -1:
-            cbclib.Cbc_setIntParam(self._model, INT_PARAM_THREADS, multip.cpu_count())
-
         # user-specified cut passes override the cuts-level default
         if self.model.cut_passes != -1:
             cbclib.Cbc_setIntParam(
@@ -1226,21 +1266,6 @@ class SolverCbc(Solver):
 
         if self.model.opt_tol >= 0.0:
             cbclib.Cbc_setDualTolerance(self._model, self.model.opt_tol)
-
-        if self.model.lp_method == LP_Method.BARRIER:
-            cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_Barrier)
-        elif self.model.lp_method == LP_Method.BARRIERNOCROSS:
-            cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_BarrierNoCross)
-        elif self.model.lp_method == LP_Method.DUAL:
-            cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_Dual)
-        elif self.model.lp_method == LP_Method.PRIMAL:
-            cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_Primal)
-        elif self.model.lp_method == LP_Method.RACING:
-            cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_Racing)
-        elif self.model.lp_method == LP_Method.RECOMMEND:
-            cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_Recommend)
-        else:
-            cbclib.Cbc_setLPmethod(self._model, cbclib.LPM_Auto)
 
         cbclib.Cbc_setAllowableFractionGap(self._model, self.model.max_mip_gap)
         cbclib.Cbc_setAllowableGap(self._model, self.model.max_mip_gap_abs)
