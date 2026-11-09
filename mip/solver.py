@@ -174,6 +174,9 @@ class Solver(ABC):
     def set_max_iter(self: "Solver", max_iter: int):
         pass
 
+    def set_lp_reopt_parameter(self, name: str, value: str):
+        raise NotImplementedError("LP reoptimization controls are only supported by CBC")
+
     @abstractmethod
     def set_num_threads(self: "Solver", threads: int):
         ...
