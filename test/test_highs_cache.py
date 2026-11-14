@@ -6,7 +6,7 @@ results are numerically identical regardless of build order or mid-build query.
 
 import os
 import tempfile
-from math import isfinite
+from unittest.mock import Mock
 
 import pytest
 
@@ -39,26 +39,23 @@ def _pending(m: Model):
 
 
 @pytest.mark.parametrize("complete", (False, True))
-def test_mip_start_preserves_unspecified_values_and_flushes_cache(complete):
+def test_mip_start_preserves_unspecified_values_and_flushes_cache(complete, monkeypatch):
     m = h(sense=mip.MAXIMIZE)
+    library = Mock(wraps=m.solver._lib)
     x = m.add_var(var_type=mip.BINARY, obj=1)
     y = m.add_var(var_type=mip.BINARY, obj=2)
     m += x + y == 1
-    m.start = [(x, 0), (y, 1)] if complete else [(x, 0)]
+    with monkeypatch.context() as patch:
+        patch.setattr(m.solver, "_lib", library)
+        m.start = [(x, 0), (y, 1)] if complete else [(x, 0)]
     assert _committed(m) == (2, 1)
     assert _pending(m) == (0, 0)
-    ffi = mip.highs.ffi
-    values = ffi.new("double[]", 2)
-    mip.highs.check(
-        m.solver._lib.Highs_getSolution(
-            m.solver._model, values, ffi.NULL, ffi.NULL, ffi.NULL
-        )
-    )
-    assert values[0] == 0
-    if complete:
-        assert values[1] == 1
-    else:
-        assert not isfinite(values[1])
+    library.Highs_setSparseSolution.assert_called_once()
+    model, count, indices, values = library.Highs_setSparseSolution.call_args.args
+    assert model == m.solver._model
+    assert count == (2 if complete else 1)
+    assert list(indices) == ([0, 1] if complete else [0])
+    assert list(values) == ([0, 1] if complete else [0])
     assert m.optimize() == OptimizationStatus.OPTIMAL
     assert (x.x, y.x) == pytest.approx((0, 1))
 
