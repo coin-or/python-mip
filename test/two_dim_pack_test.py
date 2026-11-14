@@ -9,7 +9,8 @@ import pytest
 
 import mip.gurobi
 import mip.highs
-from mip import CBC, GUROBI, HIGHS, OptimizationStatus
+import mip.scip
+from mip import CBC, GUROBI, HIGHS, SCIP, OptimizationStatus
 from mip_2d_pack import create_mip
 from util import skip_on, has_gurobi_license
 
@@ -24,6 +25,8 @@ if has_gurobi_license():
     SOLVERS += [GUROBI]
 if mip.highs.has_highs:
     SOLVERS += [HIGHS]
+if mip.scip.has_scip:
+    SOLVERS += [SCIP]
 
 
 @skip_on(NotImplementedError)

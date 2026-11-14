@@ -38,7 +38,7 @@ CPLEX = "CPX"  # we plan to support CPLEX in the future
 GRB = "GRB"
 GUROBI = "GRB"
 HIGHS = "HiGHS"
-SCIP = "SCIP"  # we plan to support SCIP in the future
+SCIP = "SCIP"
 
 # variable types
 BINARY = "B"

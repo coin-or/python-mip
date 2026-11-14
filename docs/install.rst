@@ -19,6 +19,28 @@ The default installation includes pre-compiled libraries of the MIP Solver `CBC 
 If you have the commercial solver `Gurobi <http://gurobi.com>`_ installed in your computer, Python-MIP will automatically use it as long as it finds the Gurobi dynamic loadable library. Gurobi is free for academic use and has an outstanding performance for solving MIPs. Instructions to make it accessible on different operating systems are included bellow.
 
 
+SCIP Installation (optional)
+----------------------------
+
+SCIP support uses `PySCIPOpt <https://pyscipopt.readthedocs.io/>`_ and is
+installed only when requested:
+
+.. code-block:: sh
+
+    python -m pip install "mip[scip]"
+
+Select SCIP explicitly when creating a model:
+
+.. code-block:: python
+
+    from mip import Model, SCIP
+
+    model = Model(solver_name=SCIP)
+
+The default solver selection is unchanged. PySCIPOpt requires CPython;
+SCIP is not available on PyPy.
+
+
 Gurobi Installation and Configuration (optional)
 ------------------------------------------------
 

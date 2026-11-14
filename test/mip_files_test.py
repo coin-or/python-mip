@@ -10,7 +10,8 @@ import pytest
 
 import mip.gurobi
 import mip.highs
-from mip import Model, OptimizationStatus, CBC, GUROBI, HIGHS
+import mip.scip
+from mip import Model, OptimizationStatus, CBC, GUROBI, HIGHS, SCIP
 from util import skip_on, has_gurobi_license
 
 # for each MIP in test/data, best lower and upper bounds
@@ -95,6 +96,8 @@ if has_gurobi_license():
     SOLVERS += [GUROBI]
 if mip.highs.has_highs:
     SOLVERS += [HIGHS]
+if mip.scip.has_scip:
+    SOLVERS += [SCIP]
 
 # check availability of test data
 DATA_DIR = join(join(dirname(mip.__file__)[0:-3], "test"), "data")
@@ -148,6 +151,8 @@ def test_mip_file(solver: str, instance: str):
        m.read(bas_file)
        m.optimize(relax=True)
        print("Basis loaded!!! Obj value: %f" % m.objective_value)
+    if solver == SCIP:
+        m.max_seconds = 30
     m.optimize(max_nodes=MAX_NODES)
     if m.status in [OptimizationStatus.OPTIMAL, OptimizationStatus.FEASIBLE]:
         assert m.num_solutions >= 1

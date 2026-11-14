@@ -6,6 +6,7 @@ results are numerically identical regardless of build order or mid-build query.
 
 import os
 import tempfile
+from math import isfinite
 
 import pytest
 
@@ -35,6 +36,31 @@ def _committed(m: Model):
 def _pending(m: Model):
     s = m.solver
     return s._col_fill, s._row_fill
+
+
+@pytest.mark.parametrize("complete", (False, True))
+def test_mip_start_preserves_unspecified_values_and_flushes_cache(complete):
+    m = h(sense=mip.MAXIMIZE)
+    x = m.add_var(var_type=mip.BINARY, obj=1)
+    y = m.add_var(var_type=mip.BINARY, obj=2)
+    m += x + y == 1
+    m.start = [(x, 0), (y, 1)] if complete else [(x, 0)]
+    assert _committed(m) == (2, 1)
+    assert _pending(m) == (0, 0)
+    ffi = mip.highs.ffi
+    values = ffi.new("double[]", 2)
+    mip.highs.check(
+        m.solver._lib.Highs_getSolution(
+            m.solver._model, values, ffi.NULL, ffi.NULL, ffi.NULL
+        )
+    )
+    assert values[0] == 0
+    if complete:
+        assert values[1] == 1
+    else:
+        assert not isfinite(values[1])
+    assert m.optimize() == OptimizationStatus.OPTIMAL
+    assert (x.x, y.x) == pytest.approx((0, 1))
 
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -39,11 +39,8 @@ try:
         libfile = os.environ[ENV_KEY]
         logger.debug(f"Choosing HiGHS library {libfile} via {ENV_KEY}.")
     else:
-        # Prefer highspy (official HiGHS package): its _core extension module
-        # contains the full HiGHS C API.  On Linux/macOS all symbols are
-        # visible in the shared library; on Windows only the Python init
-        # symbol is exported from the .pyd, so the C API is not accessible
-        # via dlopen there.  We detect that below and fall back to highsbox.
+        # Prefer highspy where its extension exposes the native C API.
+        # Some builds hide these symbols; detect this and fall back to highsbox.
         try:
             import highspy._core as _highs_core
 
@@ -397,6 +394,9 @@ if has_highs:
         HighsInt Highs_setSolution(void* highs, const double* col_value,
                                    const double* row_value, const double* col_dual,
                                    const double* row_dual);
+
+        HighsInt Highs_setSparseSolution(void* highs, const HighsInt num_entries,
+                                        const HighsInt* index, const double* value);
         
         HighsInt Highs_setCallback(void* highs, HighsCCallbackType user_callback,
                                    void* user_callback_data);
@@ -687,16 +687,12 @@ if has_highs:
     """
     )
 
-    # On Windows, highspy's _core.pyd does not export C symbols (only the
-    # Python init function is exported from a .pyd).  Detect this and
-    # automatically fall back to highsbox, which ships a proper highs.dll.
+    # Verify C API visibility before accepting highspy's extension library.
     try:
         _ = highslib.Highs_create
     except AttributeError:
         logger.warning(
-            f"HiGHS C API not accessible via {libfile!r} "
-            "(typical on Windows with highspy). "
-            "Falling back to highsbox."
+            f"HiGHS C API not accessible via {libfile!r} " "Falling back to highsbox."
         )
         try:
             libfile = _get_highsbox_libfile()
@@ -709,7 +705,7 @@ if has_highs:
             logger.error(
                 f"highsbox fallback also failed: {e}. "
                 "HiGHS will not be available. "
-                "Install highsbox (pip install highsbox) for HiGHS support on Windows."
+                "Install HiGHS support with pip install mip[highs]."
             )
             has_highs = False
 
@@ -1270,13 +1266,11 @@ class SolverHighs(mip.Solver):
 
     def set_start(self: "SolverHighs", start: list[tuple["mip.Var", mip.Numeric]]):
         self._flush()
-        # using zeros for unset variables
-        nvars = len(self.model.vars)
-        cval = ffi.new("double[]", [0.0 for _ in range(nvars)])
-        for col in start:
-            cval[col[0].idx] = col[1]
-
-        self._lib.Highs_setSolution(self._model, cval, ffi.NULL, ffi.NULL, ffi.NULL)
+        indices = ffi.new("HighsInt[]", [var.idx for var, _ in start])
+        values = ffi.new("double[]", [value for _, value in start])
+        check(
+            self._lib.Highs_setSparseSolution(self._model, len(start), indices, values)
+        )
 
     def set_objective(self: "SolverHighs", lin_expr: "mip.LinExpr", sense: str = ""):
         self._flush()

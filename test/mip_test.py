@@ -6,9 +6,10 @@ from os import environ
 import networkx as nx
 import mip.gurobi
 import mip.highs
+import mip.scip
 from mip import Model, xsum, OptimizationStatus, MAXIMIZE, BINARY, INTEGER
 from mip.entities import LinExpr
-from mip import ConstrsGenerator, CutPool, maximize, CBC, GUROBI, HIGHS, Column, Constr
+from mip import ConstrsGenerator, CutPool, maximize, CBC, GUROBI, HIGHS, SCIP, Column, Constr
 from os import environ
 from util import skip_on, has_gurobi_license
 import math
@@ -21,6 +22,8 @@ if has_gurobi_license():
     SOLVERS += [GUROBI]
 if mip.highs.has_highs:
     SOLVERS += [HIGHS]
+if mip.scip.has_scip:
+    SOLVERS += [SCIP]
 
 
 @skip_on(NotImplementedError)

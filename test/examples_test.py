@@ -2,7 +2,6 @@
 with all the solvers available"""
 from glob import glob
 from os.path import join
-from os import environ
 from itertools import product
 import types
 import importlib.machinery
@@ -10,7 +9,8 @@ import pytest
 
 import mip.gurobi
 import mip.highs
-from mip import CBC, GUROBI, HIGHS
+import mip.scip
+from mip import CBC, GUROBI, HIGHS, SCIP
 from util import skip_on, has_gurobi_license
 
 EXAMPLES = glob(join("..", "examples", "*.py")) + glob(join(".", "examples", "*.py"))
@@ -20,13 +20,15 @@ if has_gurobi_license():
     SOLVERS += [GUROBI]
 if mip.highs.has_highs:
     SOLVERS += [HIGHS]
+if mip.scip.has_scip:
+    SOLVERS += [SCIP]
 
 
 @skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver, example", product(SOLVERS, EXAMPLES))
-def test_examples(solver, example):
+def test_examples(solver, example, monkeypatch):
     """Executes a given example with using solver 'solver'"""
-    environ["SOLVER_NAME"] = solver
+    monkeypatch.setenv("SOLVER_NAME", solver)
     loader = importlib.machinery.SourceFileLoader("example", example)
     mod = types.ModuleType(loader.name)
     loader.exec_module(mod)

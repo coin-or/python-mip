@@ -6,11 +6,13 @@ import pytest
 import mip
 import mip.gurobi
 import mip.highs
+import mip.scip
 from mip import (
     CBC,
     Column,
     GUROBI,
     HIGHS,
+    SCIP,
     LinExpr,
     Model,
     MAXIMIZE,
@@ -29,6 +31,8 @@ if has_gurobi_license():
     SOLVERS += [GUROBI]
 if mip.highs.has_highs:
     SOLVERS += [HIGHS]
+if mip.scip.has_scip:
+    SOLVERS += [SCIP]
 
 # Overall Optimization Tests
 
@@ -1484,7 +1488,7 @@ def test_solve_relaxation(solver):
 
     # then compare LP relaxation
     # (seems to fail for CBC?!)
-    if solver == HIGHS:
+    if solver in (HIGHS, SCIP):
         status = m.optimize(relax=True)
         assert status == OptimizationStatus.OPTIMAL
         assert x.x == pytest.approx(9.5)

@@ -58,16 +58,16 @@ class Model:
         Creates a Mixed-Integer Linear Programming Model. The default model
         optimization direction is Minimization. To store and optimize the model
         the MIP package automatically searches and connects in runtime to the
-        dynamic library of some MIP solver installed on your computer, nowadays
-        gurobi and cbc are supported. This solver is automatically selected,
+        solver library installed on your computer. CBC, Gurobi, HiGHS and SCIP
+        are supported. Gurobi or CBC is automatically selected,
         but you can force the selection of a specific solver with the parameter
         solver_name.
 
         Args:
             name (str): model name
             sense (str): mip.MINIMIZATION ("MIN") or mip.MAXIMIZATION ("MAX")
-            solver_name(str): gurobi or cbc, searches for which
-                solver is available if not informed
+            solver_name(str): CBC, Gurobi, HiGHS or SCIP; automatically selects
+                Gurobi or CBC if not informed
             solver(mip.Solver): a (:class:`~mip.Solver`) object; note that
                 if this argument is provided, solver_name will be ignored
         """
@@ -96,6 +96,10 @@ class Model:
                 import mip.highs
 
                 self.solver = mip.highs.SolverHighs(self, name, sense)
+            elif self.solver_name.upper() == "SCIP":
+                import mip.scip
+
+                self.solver = mip.scip.SolverScip(self, name, sense)
             else:
                 import mip.gurobi
 
@@ -437,6 +441,10 @@ class Model:
             import mip.highs
 
             self.solver = mip.highs.SolverHighs(self, self.name, sense)
+        elif self.solver_name.upper() == "SCIP":
+            import mip.scip
+
+            self.solver = mip.scip.SolverScip(self, self.name, sense)
         else:
             # checking which solvers are available
             import mip.gurobi

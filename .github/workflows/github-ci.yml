@@ -75,14 +75,40 @@ jobs:
       run: python -m pip install --upgrade pip
 
     - name: Install test and numpy
-      run: python -m pip install .[test,numpy]
+      run: python -m pip install ".[test,numpy]"
 
     - name: Install gurobi
       if: ${{ !startsWith(matrix.python-version, 'pypy') }}
-      run: python -m pip install .[gurobi]
+      run: python -m pip install ".[gurobi]"
 
     - name: Install highs
-      run: python -m pip install .[highs]
+      run: python -m pip install ".[highs]"
+
+    - name: Install scip
+      if: ${{ !startsWith(matrix.python-version, 'pypy') }}
+      run: python -m pip install ".[scip]"
+
+    - name: Verify required solver backends
+      shell: python
+      run: |
+        import math
+        import platform
+        from mip import BINARY, CBC, CONTINUOUS, HIGHS, SCIP, Model, OptimizationStatus
+
+        solvers = [CBC, HIGHS]
+        if platform.python_implementation() == "CPython":
+            solvers.append(SCIP)
+        for solver in solvers:
+            for var_type in (CONTINUOUS, BINARY):
+                model = Model(solver_name=solver)
+                model.verbose = 0
+                x = model.add_var(var_type=var_type, ub=1, obj=1)
+                model += x >= 0.5
+                expected = 1 if var_type == BINARY else 0.5
+                status = model.optimize()
+                if status != OptimizationStatus.OPTIMAL or not math.isclose(x.x, expected):
+                    raise RuntimeError(f"{solver} failed the {var_type} smoke test")
+            print(f"{solver}: LP and MILP verified")
 
     - name: list installed packages
       run: python -m pip list

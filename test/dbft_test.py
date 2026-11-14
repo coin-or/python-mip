@@ -6,6 +6,7 @@ from itertools import product
 import pytest
 import mip.gurobi
 import mip.highs
+import mip.scip
 from mip import (
     Model,
     BINARY,
@@ -16,6 +17,7 @@ from mip import (
     CBC,
     GUROBI,
     HIGHS,
+    SCIP,
 )
 from util import skip_on, has_gurobi_license
 
@@ -26,6 +28,8 @@ if has_gurobi_license():
     SOLVERS += [GUROBI]
 if mip.highs.has_highs:
     SOLVERS += [HIGHS]
+if mip.scip.has_scip:
+    SOLVERS += [SCIP]
 
 # for each pair o N, tMax, the expected: (optimal, columns, rows, non-zeros)
 PDATA = {
