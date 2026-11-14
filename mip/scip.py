@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import gzip
 import logging
 import math
 from numbers import Real
+from pathlib import Path
+import shutil
+from tempfile import TemporaryDirectory
 
 import mip
 
@@ -847,7 +851,15 @@ class SolverScip(mip.Solver):
             params.update(self._lp_params)
         loaded.setParams(params)
         loaded.hideOutput(not self._verbose)
-        loaded.readProblem(file_path)
+        if file_path.lower().endswith(".gz"):
+            # Some SCIP builds do not include the native gzip reader.
+            with TemporaryDirectory() as directory:
+                unpacked = Path(directory) / Path(file_path).stem
+                with gzip.open(file_path, "rb") as source, unpacked.open("wb") as target:
+                    shutil.copyfileobj(source, target)
+                loaded.readProblem(str(unpacked))
+        else:
+            loaded.readProblem(file_path)
         native_vars = loaded.getVars(transformed=False)
         indices = {var.ptr(): idx for idx, var in enumerate(native_vars)}
         types = {

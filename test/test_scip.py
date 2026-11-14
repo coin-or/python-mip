@@ -1,5 +1,8 @@
 """SCIP-specific regressions for the public Python-MIP API."""
 
+import gzip
+from pathlib import Path
+
 import pytest
 
 scip = pytest.importorskip("pyscipopt")
@@ -170,7 +173,8 @@ def test_write_preserves_cached_solution(tmp_path):
 
 @pytest.mark.parametrize("extension", ("lp", "mps"))
 @pytest.mark.parametrize("sense", (mip.MINIMIZE, mip.MAXIMIZE))
-def test_linear_model_round_trip(tmp_path, extension, sense):
+@pytest.mark.parametrize("compressed", (False, True))
+def test_linear_model_round_trip(tmp_path, monkeypatch, extension, sense, compressed):
     m = model(sense=sense)
     x = m.add_var(name="x", var_type=mip.BINARY)
     y = m.add_var(name="y", ub=3)
@@ -180,6 +184,18 @@ def test_linear_model_round_trip(tmp_path, extension, sense):
     expected = m.objective_value
     path = str(tmp_path / f"model.{extension}")
     m.write(path)
+    if compressed:
+        packed = Path(f"{path}.gz")
+        packed.write_bytes(gzip.compress(Path(path).read_bytes()))
+        path = str(packed)
+
+        class WithoutNativeGzip(scip.Model):
+            def readProblem(self, file_path):
+                if file_path.endswith(".gz"):
+                    raise mip.InterfacingError("SCIP gzip plugin is unavailable")
+                return super().readProblem(file_path)
+
+        monkeypatch.setattr(scip, "Model", WithoutNativeGzip)
     restored = model()
     restored.read(path)
     assert restored.num_cols == 2

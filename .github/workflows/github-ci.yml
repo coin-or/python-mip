@@ -40,6 +40,8 @@ jobs:
   test:
 
     runs-on: ${{ matrix.os }}
+    env:
+      SOLVER_NAME: CBC
     strategy:
       fail-fast: false
       matrix:
