@@ -40,8 +40,12 @@ class VarList(Sequence):
                 ub = 1.0
             if not (-mip.EPS <= lb <= 1.0 + mip.EPS and -mip.EPS <= ub <= 1.0 + mip.EPS):
                 raise ValueError("Invalid bounds for binary variable")
-        new_var = mip.Var(self.__model, len(self.__vars))
-        self.__model.solver.add_var(obj, lb, ub, var_type, column, name)
+        solver = self.__model.solver
+        idx = len(self.__vars)
+        if self is not self.__model.vars:
+            idx = solver.num_cols()
+        new_var = mip.Var(self.__model, idx)
+        solver.add_var(obj, lb, ub, var_type, column, name)
         self.__vars.append(new_var)
         return new_var
 
@@ -76,8 +80,10 @@ class VarList(Sequence):
                 ub = 1.0
             if not (-mip.EPS <= lb <= 1.0 + mip.EPS and -mip.EPS <= ub <= 1.0 + mip.EPS):
                 raise ValueError("Invalid bounds for binary variable")
-        start = len(self.__vars)
         solver = self.__model.solver
+        start = len(self.__vars)
+        if self is not self.__model.vars:
+            start = solver.num_cols()
         if name:
             for i in range(n):
                 solver.add_var(obj, lb, ub, var_type, None, f"{name}_{i}")
