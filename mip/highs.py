@@ -1187,6 +1187,13 @@ class SolverHighs(mip.Solver):
         else:
             self._set_string_option_value("solver", "choose")
 
+        if self.model.preprocess == -1:
+            self._set_string_option_value("presolve", "choose")
+        elif self.model.preprocess == 0:
+            self._set_string_option_value("presolve", "off")
+        elif self.model.preprocess == 1:
+            self._set_string_option_value("presolve", "on")
+
         check(self._lib.Highs_run(self._model))
 
         # check whether unsupported callbacks were set
