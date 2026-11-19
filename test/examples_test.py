@@ -1,10 +1,9 @@
 """Tests all examples in the ../examples folder
 with all the solvers available"""
 from glob import glob
-from os.path import join
+from os.path import basename, join
 from itertools import product
-import types
-import importlib.machinery
+import importlib.util
 import pytest
 
 import mip.gurobi
@@ -28,7 +27,12 @@ if mip.scip.has_scip:
 @pytest.mark.parametrize("solver, example", product(SOLVERS, EXAMPLES))
 def test_examples(solver, example, monkeypatch):
     """Executes a given example with using solver 'solver'"""
+    if basename(example) in {"conflict_finder.py", "numpy_tensor.py"}:
+        pytest.importorskip("numpy")
+
     monkeypatch.setenv("SOLVER_NAME", solver)
-    loader = importlib.machinery.SourceFileLoader("example", example)
-    mod = types.ModuleType(loader.name)
-    loader.exec_module(mod)
+    spec = importlib.util.spec_from_file_location("example", example)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Unable to load example {example}")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)

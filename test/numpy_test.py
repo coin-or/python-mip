@@ -1,6 +1,8 @@
 import time
 
-import numpy as np
+import pytest
+
+np = pytest.importorskip("numpy")
 
 from mip import Model, OptimizationStatus
 from mip.ndarray import LinExprTensor

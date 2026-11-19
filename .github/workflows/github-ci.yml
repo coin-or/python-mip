@@ -77,7 +77,12 @@ jobs:
       run: python -m pip install --upgrade pip
 
     - name: Install test and numpy
+      if: ${{ !startsWith(matrix.python-version, 'pypy') }}
       run: python -m pip install ".[test,numpy]"
+
+    - name: Install test dependencies on PyPy
+      if: ${{ startsWith(matrix.python-version, 'pypy') }}
+      run: python -m pip install ".[test]"
 
     - name: Install gurobi
       if: ${{ !startsWith(matrix.python-version, 'pypy') }}

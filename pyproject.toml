@@ -50,7 +50,7 @@ scip = ["pyscipopt>=6.3"]
 test = [
     "pytest>=7.4,<9",
     "networkx>=2.8.8,<4",
-    "matplotlib>=3.7,<4; platform_system!='Windows' or implementation_name!='pypy'",
+    "matplotlib>=3.7,<4; (platform_system!='Windows' or implementation_name!='pypy') and (implementation_name!='pypy' or python_version<'3.12')",
 ]
 
 [project.urls]
