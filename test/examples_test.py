@@ -27,7 +27,7 @@ if mip.scip.has_scip:
 @pytest.mark.parametrize("solver, example", product(SOLVERS, EXAMPLES))
 def test_examples(solver, example, monkeypatch):
     """Executes a given example with using solver 'solver'"""
-    if basename(example) in {"conflict_finder.py", "numpy_tensor.py"}:
+    if basename(example) in {"conflict_finder.py", "gen_cuts.py", "numpy_tensor.py"}:
         pytest.importorskip("numpy")
 
     monkeypatch.setenv("SOLVER_NAME", solver)
