@@ -34,6 +34,23 @@ if mip.highs.has_highs:
 if mip.scip.has_scip:
     SOLVERS += [SCIP]
 
+
+def test_model_accepts_custom_solver_instance():
+    from mip.cbc import SolverCbc
+
+    class CustomSolver(SolverCbc):
+        pass
+
+    class CustomModel(Model):
+        def __init__(self, name="", sense=MINIMIZE, *args, **kwargs):
+            kwargs["solver"] = CustomSolver(self, name, sense)
+            super().__init__(name, sense, *args, **kwargs)
+
+    model = CustomModel(solver_name="CUSTOM")
+
+    assert isinstance(model.solver, CustomSolver)
+
+
 # Overall Optimization Tests
 
 
